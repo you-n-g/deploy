@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x
-
 REPO_PATH=`dirname "$0"`
 REPO_PATH=`cd "$REPO_PATH"; pwd`
 

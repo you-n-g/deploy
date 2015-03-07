@@ -1,4 +1,5 @@
 #!/bin/bash
-apt-get install -y git vim-nox ruby ruby-mkrf ruby-dev exuberant-ctags screen
+apt-get update
+apt-get install -y git vim-nox ruby ruby-mkrf ruby-dev exuberant-ctags screen build-essential
 
 # dpkg-reconfigure locales  # 配置成 LANG=en_US.UTF-8 就可以了

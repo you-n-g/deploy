@@ -1,2 +1,3 @@
 #!/bin/bash
-yum install -y git 
+yum groupinstall 'Development Tools' 
+yum install -y git screen
