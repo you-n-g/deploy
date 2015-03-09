@@ -17,6 +17,9 @@ fi
 # config git
 git config --global user.name Young Yang
 git config --global user.email afe.young@gmail.com
+if ! grep "gitlog" ~/.bashrc ; then
+	echo 'alias gitlog="git log --all --oneline --graph --decorate"' >> ~/.bashrc
+fi
 
 
 # clone repos
@@ -30,6 +33,7 @@ fi
 if ! grep "export EDITOR" ~/.bashrc ; then
 	echo "export EDITOR=`which vim`" >> ~/.bashrc
 fi
+
 
 # config vim
 if [ ! -e ~/.vimrc ]; then
@@ -45,10 +49,19 @@ cd ~/.vim
 if [ ! -e bundle ]; then
     git clone https://github.com/you-n-g/bundle
     cd bundle
-    git submodule init
-    git submodule update
+    # git submodule init
+    git submodule update --init --recursive
 fi
 
 ## config for command-t
 cd ~/.vim/bundle/command-t/ruby/command-t/
 ruby extconf.rb && make
+
+## config for vim-go
+vim -c GoInstallBinaries -c q  # TODO 要不要设置 $GOROOT 和 $GOPATH ???????
+
+## config for YCM
+wget https://raw.githubusercontent.com/rasendubi/dotfiles/master/.vim/.ycm_extra_conf.py -O ~/.vim/.ycm_extra_conf.py
+cd  ~/.vim/bundle/YouCompleteMe/
+git submodule update --init --recursive
+bash ./install.sh
