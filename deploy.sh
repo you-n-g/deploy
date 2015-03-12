@@ -21,6 +21,13 @@ if ! grep "gitlog" ~/.bashrc ; then
 	echo 'alias gitlog="git log --all --oneline --graph --decorate"' >> ~/.bashrc
 fi
 
+# config for go,  vim-go依赖这一步
+
+if ! grep "^export GOPATH" ~/.bashrc ; then
+	echo 'export GOPATH="$HOME/gopath/"' >> ~/.bashrc
+    . ~/.bashrc
+fi
+
 
 # clone repos
 cd ~
@@ -36,9 +43,6 @@ fi
 
 
 # config vim
-if [ ! -e ~/.vimrc ]; then
-	cp code_tools_repo/code_to_copy/backend/etc/vimrc ~/.vimrc
-fi
 
 if [ ! -e ~/.vim ]; then
     git clone https://github.com/tpope/vim-pathogen ~/.vim
@@ -65,3 +69,8 @@ wget https://raw.githubusercontent.com/rasendubi/dotfiles/master/.vim/.ycm_extra
 cd  ~/.vim/bundle/YouCompleteMe/
 git submodule update --init --recursive
 bash ./install.sh
+
+## 最后才copy vimrc， 因为太早拷贝vimrc会导致错误
+if [ ! -e ~/.vimrc ]; then
+	cp code_tools_repo/code_to_copy/backend/etc/vimrc ~/.vimrc
+fi

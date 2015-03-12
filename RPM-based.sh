@@ -1,3 +1,3 @@
 #!/bin/bash
 yum groupinstall 'Development Tools' 
-yum install -y git screen
+yum install -y git screen cmake python-devel
