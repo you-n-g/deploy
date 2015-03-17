@@ -44,9 +44,10 @@ fi
 
 # config vim
 
-if [ ! -e ~/.vim ]; then
-    git clone https://github.com/tpope/vim-pathogen ~/.vim
+if [ -e ~/.vim ]; then
+    mv ~/.vim ~/.vim.bak
 fi
+git clone https://github.com/tpope/vim-pathogen ~/.vim
 
 cd ~/.vim
 
