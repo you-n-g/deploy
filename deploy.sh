@@ -14,12 +14,16 @@ if which yum; then
 	bash RPM-based.sh
 fi
 
+
 # config git
 git config --global user.name Young Yang
 git config --global user.email afe.young@gmail.com
 if ! grep "gitlog" ~/.bashrc ; then
 	echo 'alias gitlog="git log --all --oneline --graph --decorate"' >> ~/.bashrc
 fi
+git config --global merge.tool vimdiff
+git config --global mergetool.prompt false
+
 
 # config for go,  vim-go依赖这一步
 
