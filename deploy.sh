@@ -25,13 +25,6 @@ git config --global merge.tool vimdiff
 git config --global mergetool.prompt false
 
 
-# config for go,  vim-go依赖这一步
-
-if ! grep "^export GOPATH" ~/.bashrc ; then
-	echo 'export GOPATH="$HOME/gopath/"' >> ~/.bashrc
-    . ~/.bashrc
-fi
-
 
 # clone repos
 cd ~
@@ -45,6 +38,23 @@ if ! grep "export EDITOR" ~/.bashrc ; then
 	echo "export EDITOR=`which vim`" >> ~/.bashrc
 fi
 
+if ! grep "export PATH" ~/.bashrc ; then
+    mkdir -p $HOME/bin/
+	echo 'export PATH="$HOME/bin/:$PATH"' >> ~/.bashrc
+fi
+
+if ! grep "^proxy_up" ~/.bashrc ; then
+    cat >>~/.bashrc <<EOF
+proxy_up() {
+    export HTTP_PROXY=127.0.0.1:6489  # when you want to use
+    export HTTPS_PROXY=127.0.0.1:6489  # when you want to use
+    export SOCKS_SERVER=127.0.0.1:8964
+}
+proxy_down() {
+    unset HTTP_PROXY HTTPS_PROXY SOCKS_SERVER
+}
+EOF
+fi
 
 # config vim
 
@@ -66,9 +76,6 @@ fi
 cd ~/.vim/bundle/command-t/ruby/command-t/
 ruby extconf.rb && make
 
-## config for vim-go
-vim -c GoInstallBinaries -c q  # TODO 要不要设置 $GOROOT 和 $GOPATH ???????
-
 ## config for YCM
 wget https://raw.githubusercontent.com/rasendubi/dotfiles/master/.vim/.ycm_extra_conf.py -O ~/.vim/.ycm_extra_conf.py
 cd  ~/.vim/bundle/YouCompleteMe/
@@ -77,5 +84,5 @@ bash ./install.sh
 
 ## 最后才copy vimrc， 因为太早拷贝vimrc会导致错误
 if [ ! -e ~/.vimrc ]; then
-	cp code_tools_repo/code_to_copy/backend/etc/vimrc ~/.vimrc
+	cp ~/code_tools_repo/code_to_copy/backend/etc/vimrc ~/.vimrc
 fi
