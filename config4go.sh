@@ -6,7 +6,6 @@ REPO_PATH=`cd "$REPO_PATH"; pwd`
 cd $REPO_PATH
 
 APPROOT="$HOME/apps/"
-export GOROOT="$APPROOT/go/"
 
 mkdir -p $APPROOT
 
@@ -21,6 +20,7 @@ for bin in `ls ~/apps/go/bin/`; do
 done
 
 if ! grep "^export GOROOT" ~/.bashrc ; then
+    export GOROOT="$HOME/apps/go/"
     echo 'export GOROOT="$HOME/apps/go/"' >> ~/.bashrc
 fi
 
@@ -33,4 +33,4 @@ fi
 
 
 ## config for vim-go
-vim -c GoInstallBinaries -c q  # TODO 要不要设置 $GOROOT 和 $GOPATH ???????
+vim -c GoInstallBinaries -c q

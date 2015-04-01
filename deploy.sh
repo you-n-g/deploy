@@ -46,12 +46,13 @@ fi
 if ! grep "^proxy_up" ~/.bashrc ; then
     cat >>~/.bashrc <<EOF
 proxy_up() {
-    export HTTP_PROXY=127.0.0.1:6489  # when you want to use
-    export HTTPS_PROXY=127.0.0.1:6489  # when you want to use
+    # don't capitalize them
+    export http_proxy=127.0.0.1:6489
+    export https_proxy=127.0.0.1:6489
     export SOCKS_SERVER=127.0.0.1:8964
 }
 proxy_down() {
-    unset HTTP_PROXY HTTPS_PROXY SOCKS_SERVER
+    unset http_proxy https_proxy SOCKS_SERVER
 }
 EOF
 fi
