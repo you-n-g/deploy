@@ -15,13 +15,10 @@ mkdir -p $APPROOT
 wget -qO- https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz | tar xvz -C $APPROOT
 
 
-for bin in `ls ~/apps/go/bin/`; do
-    ln -s $HOME/apps/go/bin/$bin $HOME/bin/
-done
-
 if ! grep "^export GOROOT" ~/.bashrc ; then
     export GOROOT="$HOME/apps/go/"
     echo 'export GOROOT="$HOME/apps/go/"' >> ~/.bashrc
+    echo 'export PATH="$GOROOT/bin/:$PATH"' >> ~/.bashrc
 fi
 
 # config for go,  vim-go依赖这一步
@@ -29,6 +26,7 @@ if ! grep "^export GOPATH" ~/.bashrc ; then
     export GOPATH="$HOME/gopath/"
     mkdir -p $GOPATH
     echo 'export GOPATH="$HOME/gopath/"' >> ~/.bashrc
+    echo 'export PATH="$GOPATH/bin/:$PATH"' >> ~/.bashrc
 fi
 
 
