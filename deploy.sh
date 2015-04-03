@@ -43,19 +43,22 @@ if ! grep "export PATH" ~/.bashrc ; then
 	echo 'export PATH="$HOME/bin/:$PATH"' >> ~/.bashrc
 fi
 
+# proxy_related
 if ! grep "^proxy_up" ~/.bashrc ; then
     cat >>~/.bashrc <<EOF
-proxy_up() {
+function proxy_up() {
     # don't capitalize them
     export http_proxy=127.0.0.1:6489
     export https_proxy=127.0.0.1:6489
     export SOCKS_SERVER=127.0.0.1:8964
 }
-proxy_down() {
+function proxy_down() {
     unset http_proxy https_proxy SOCKS_SERVER
 }
+export no_proxy=localhost,127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.sock
 EOF
 fi
+
 
 # config vim
 
