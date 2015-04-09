@@ -55,7 +55,8 @@ function proxy_up() {
 function proxy_down() {
     unset http_proxy https_proxy SOCKS_SERVER
 }
-export no_proxy=localhost,127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.sock
+# NOTICE: the ip range my not works on some softwares !!!!!
+export no_proxy=localhost,127.0.0.1,127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.sock
 EOF
 fi
 
@@ -80,11 +81,18 @@ fi
 cd ~/.vim/bundle/command-t/ruby/command-t/
 ruby extconf.rb && make
 
+## color schema for tmux
+wget https://raw.githubusercontent.com/altercation/solarized/master/tmux/tmuxcolors-dark.conf -O ~/.tmux.conf
+echo 'set -g default-terminal "screen-256color"' >> ~/.tmux.conf  ## Making tmux compatible with solarized colo schema
+
 ## config for YCM
-wget https://raw.githubusercontent.com/rasendubi/dotfiles/master/.vim/.ycm_extra_conf.py -O ~/.vim/.ycm_extra_conf.py
+# .ycm_extra_conf.py 是为了 C-family Semantic Completion
+# 现在不需要固定配置 .ycm_extra_conf.py 了
+# 应该去这里生成才对 https://github.com/rdnetto/YCM-Generator， 它已经成为一个 plugin了，默认安装
+# it depends on clang
 cd  ~/.vim/bundle/YouCompleteMe/
 git submodule update --init --recursive
-bash ./install.sh
+bash ./install.sh  --clang-completer
 
 ## 最后才copy vimrc， 因为太早拷贝vimrc会导致错误
 if [ ! -e ~/.vimrc ]; then
