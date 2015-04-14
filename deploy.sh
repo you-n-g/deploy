@@ -81,9 +81,12 @@ fi
 cd ~/.vim/bundle/command-t/ruby/command-t/
 ruby extconf.rb && make
 
-## color schema for tmux
+## config schema for tmux, `tmux source-file ~/.tmux.conf` can make all the options affect immediately
+### color schema
 wget https://raw.githubusercontent.com/altercation/solarized/master/tmux/tmuxcolors-dark.conf -O ~/.tmux.conf
 echo 'set -g default-terminal "screen-256color"' >> ~/.tmux.conf  ## Making tmux compatible with solarized colo schema
+### others
+echo 'set-option -g allow-rename off' >> ~/.tmux.conf  ## stop tmux rename window  every time a cmd executed
 
 ## config for YCM
 # .ycm_extra_conf.py 是为了 C-family Semantic Completion
@@ -93,6 +96,15 @@ echo 'set -g default-terminal "screen-256color"' >> ~/.tmux.conf  ## Making tmux
 cd  ~/.vim/bundle/YouCompleteMe/
 git submodule update --init --recursive
 bash ./install.sh  --clang-completer
+
+## config for vim-flake8
+mkdir -p ~/.config
+cat > ~/.config/flake8 <<EOF
+[flake8]
+ignore = F401,E128
+max-line-length = 120
+EOF
+
 
 ## 最后才copy vimrc， 因为太早拷贝vimrc会导致错误
 if [ ! -e ~/.vimrc ]; then
