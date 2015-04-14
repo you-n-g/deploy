@@ -1,7 +1,7 @@
 #!/bin/bash
 apt-get update
 apt-get install -y git vim-nox ruby ruby-mkrf ruby-dev exuberant-ctags tmux build-essential cmake python-dev \
-    clang  python-flake8
+    clang htop python-flake8
 # clang is for YCM
 # python-flake8 is needed by vim-flake8 
 
