@@ -43,6 +43,11 @@ if ! grep "export PATH" ~/.bashrc ; then
 	echo 'export PATH="$HOME/bin/:$PATH"' >> ~/.bashrc
 fi
 
+if ! grep "alias sudo" ~/.bashrc ; then
+    echo 'alias sudo="sudo -E"' >> ~/.bashrc
+    # sudo -E will keep the environment when run sudo. Many env variables like http_proxy need it.
+fi
+
 # proxy_related
 if ! grep "^proxy_up" ~/.bashrc ; then
     cat >>~/.bashrc <<EOF
@@ -51,12 +56,12 @@ function proxy_up() {
     export http_proxy=127.0.0.1:6489
     export https_proxy=127.0.0.1:6489
     export SOCKS_SERVER=127.0.0.1:8964
+    # NOTICE: the ip range my not works on some softwares !!!!!
+    export no_proxy=localhost,127.0.0.1,127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.sock
 }
 function proxy_down() {
-    unset http_proxy https_proxy SOCKS_SERVER
+    unset http_proxy https_proxy SOCKS_SERVER no_proxy
 }
-# NOTICE: the ip range my not works on some softwares !!!!!
-export no_proxy=localhost,127.0.0.1,127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.sock
 EOF
 fi
 
@@ -87,6 +92,7 @@ wget https://raw.githubusercontent.com/altercation/solarized/master/tmux/tmuxcol
 echo 'set -g default-terminal "screen-256color"' >> ~/.tmux.conf  ## Making tmux compatible with solarized colo schema
 ### others
 echo 'set-option -g allow-rename off' >> ~/.tmux.conf  ## stop tmux rename window  every time a cmd executed
+echo 'set-option -g history-limit 10000' >> ~/.tmux.conf 
 
 ## config for YCM
 # .ycm_extra_conf.py 是为了 C-family Semantic Completion
