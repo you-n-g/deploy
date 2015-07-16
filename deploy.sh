@@ -102,6 +102,7 @@ echo 'set-option -g history-limit 10000' >> ~/.tmux.conf
 cd  ~/.vim/bundle/YouCompleteMe/
 git submodule update --init --recursive
 bash ./install.sh  --clang-completer
+cp  ~/.vim/bundle/YouCompleteMe/third_party/ycmd/examples/.ycm_extra_conf.py ~/.vim/.ycm_extra_conf.py
 
 ## config for vim-flake8
 mkdir -p ~/.config
