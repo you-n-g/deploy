@@ -21,8 +21,8 @@ function _scp() {
         return 0
     fi
     for suffix in `seq $3 $4`; do
-        echo "============" scp "$@" $1@$2$suffix:~/  ====================
-        scp "${@:5}" $1@$0$suffix:~/
+        echo "============" scp -r "$@" $1@$2$suffix:~/  ====================
+        scp -r "${@:5}" $1@$0$suffix:~/
     done
 }
 
