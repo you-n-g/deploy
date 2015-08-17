@@ -43,6 +43,10 @@ if ! grep "export PATH" ~/.bashrc ; then
 	echo 'export PATH="$HOME/bin/:$PATH"' >> ~/.bashrc
 fi
 
+if ! grep "export PS1" ~/.bashrc ; then
+	echo 'export PS1="[\\D{%T}]"$PS1' >> ~/.bashrc
+fi
+
 if ! grep "alias sudo" ~/.bashrc ; then
     echo 'alias sudo="sudo -E"' >> ~/.bashrc
     # sudo -E will keep the environment when run sudo. Many env variables like http_proxy need it.
