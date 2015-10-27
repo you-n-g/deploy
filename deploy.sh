@@ -97,6 +97,7 @@ echo 'set -g default-terminal "screen-256color"' >> ~/.tmux.conf  ## Making tmux
 ### others
 echo 'set-option -g allow-rename off' >> ~/.tmux.conf  ## stop tmux rename window  every time a cmd executed
 echo 'set-option -g history-limit 10000' >> ~/.tmux.conf 
+echo 'set-window-option -g mode-keys vi' >> ~/.tmux.conf
 
 ## config for YCM
 # .ycm_extra_conf.py 是为了 C-family Semantic Completion
