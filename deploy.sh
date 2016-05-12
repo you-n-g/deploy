@@ -87,8 +87,17 @@ if [ ! -e bundle ]; then
 fi
 
 ## config for command-t
+
+# 如果ruby 版本不对，则需要切换ruby 脚本
+# install rvm
+# curl -L https://get.rvm.io | bash -s stable 
+# 在vim中通过 `:ruby puts "#{RUBY_VERSION}-p#{RUBY_PATCHLEVEL}"` 得到ruby的版本
+# rvm install ruby-1.9.3-p484  # 记得先切换版本， 后编译,  vim的ruby版本要和编译command-t的版本符合
+# 统一版本后， 因为切换了ruby的版本， 一定要记得 make clean !!!!!! 否则坑到死!!!!!
+
 cd ~/.vim/bundle/command-t/ruby/command-t/
 ruby extconf.rb && make
+
 
 ## config schema for tmux, `tmux source-file ~/.tmux.conf` can make all the options affect immediately
 ### color schema

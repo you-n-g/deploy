@@ -1,6 +1,6 @@
 #!/bin/bash
 
-curl -sSL https://get.docker.com/ubuntu/ | sudo -E sh
+curl -sSL https://get.docker.com/ | sudo -E sh
 # -E for http_proxy
 
 
