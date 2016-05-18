@@ -87,8 +87,17 @@ if [ ! -e bundle ]; then
 fi
 
 ## config for command-t
+
+# 如果ruby 版本不对，则需要切换ruby 脚本
+# install rvm
+# curl -L https://get.rvm.io | bash -s stable
+# 在vim中通过 `:ruby puts "#{RUBY_VERSION}-p#{RUBY_PATCHLEVEL}"` 得到ruby的版本
+# rvm install ruby-1.9.3-p484  # 记得先切换版本， 后编译,  vim的ruby版本要和编译command-t的版本符合
+# 统一版本后， 因为切换了ruby的版本， 一定要记得 make clean !!!!!! 否则坑到死!!!!!
+
 cd ~/.vim/bundle/command-t/ruby/command-t/
 ruby extconf.rb && make
+
 
 ## config schema for tmux, `tmux source-file ~/.tmux.conf` can make all the options affect immediately
 ### color schema
@@ -96,7 +105,7 @@ wget https://raw.githubusercontent.com/altercation/solarized/master/tmux/tmuxcol
 echo 'set -g default-terminal "screen-256color"' >> ~/.tmux.conf  ## Making tmux compatible with solarized colo schema
 ### others
 echo 'set-option -g allow-rename off' >> ~/.tmux.conf  ## stop tmux rename window  every time a cmd executed
-echo 'set-option -g history-limit 10000' >> ~/.tmux.conf 
+echo 'set-option -g history-limit 10000' >> ~/.tmux.conf
 echo 'set-window-option -g mode-keys vi' >> ~/.tmux.conf
 
 ## config for YCM
@@ -106,7 +115,7 @@ echo 'set-window-option -g mode-keys vi' >> ~/.tmux.conf
 # it depends on clang
 cd  ~/.vim/bundle/YouCompleteMe/
 git submodule update --init --recursive
-bash ./install.sh  --clang-completer
+python ./install.py  --clang-completer
 cp  ~/.vim/bundle/YouCompleteMe/third_party/ycmd/examples/.ycm_extra_conf.py ~/.vim/.ycm_extra_conf.py
 
 ## config for vim-flake8
