@@ -1,15 +1,15 @@
 #!/bin/bash
 
 cd ~/code_tools_repo
-git pull -u
+git pull
 
 
 cd ~/deployment4personaluse
-git pull -u
+git pull
 
 
 cd ~/.vim/bundle/
-git pull -u
+git pull
 ./init_bundle.sh
 
 
