@@ -72,22 +72,39 @@ fi
 
 # config vim
 
-if [ -e ~/.vim ]; then
-    mv ~/.vim ~/.vim.bak
-fi
-git clone https://github.com/tpope/vim-pathogen ~/.vim
+# install Dein.vim
+mkdir -p ~/.dein.vim
+curl https://raw.githubusercontent.com/Shougo/dein.vim/master/bin/installer.sh > ~/.dein.vim/installer.sh
+sh ./installer.sh ~/.dein.vim
 
-cd ~/.vim
+# 如果vim的版本比较低，可以按下面的教程安装vim
+# http://tipsonubuntu.com/2016/09/13/vim-8-0-released-install-ubuntu-16-04/
 
-if [ ! -e bundle ]; then
-    git clone https://github.com/you-n-g/bundle
-    cd bundle
-    # git submodule init
-    git submodule update --init --recursive
+## 最后才copy vimrc， 因为太早拷贝vimrc会导致错误
+if [ ! -e ~/.vimrc ]; then
+	cp ~/code_tools_repo/code_to_copy/backend/etc/vimrc ~/.vimrc
 fi
+
+vim -c 'call dein#install()' -c q
+
+
+# if [ -e ~/.vim ]; then
+#     mv ~/.vim ~/.vim.bak
+# fi
+# git clone https://github.com/tpope/vim-pathogen ~/.vim
+#
+# cd ~/.vim
+#
+# if [ ! -e bundle ]; then
+#     git clone https://github.com/you-n-g/bundle
+#     cd bundle
+#     # git submodule init
+#     git submodule update --init --recursive
+# fi
 
 ## config for command-t
 
+# Deprecated
 # 如果ruby 版本不对，则需要切换ruby 脚本
 # install rvm
 # curl -L https://get.rvm.io | bash -s stable
@@ -95,25 +112,16 @@ fi
 # rvm install ruby-1.9.3-p484  # 记得先切换版本， 后编译,  vim的ruby版本要和编译command-t的版本符合
 # 统一版本后， 因为切换了ruby的版本， 一定要记得 make clean !!!!!! 否则坑到死!!!!!
 
-cd ~/.vim/bundle/command-t/ruby/command-t/
-ruby extconf.rb && make
+# cd ~/.vim/bundle/command-t/ruby/command-t/
+# ruby extconf.rb && make
 
-
-## config schema for tmux, `tmux source-file ~/.tmux.conf` can make all the options affect immediately
-### color schema
-wget https://raw.githubusercontent.com/altercation/solarized/master/tmux/tmuxcolors-dark.conf -O ~/.tmux.conf
-echo 'set -g default-terminal "screen-256color"' >> ~/.tmux.conf  ## Making tmux compatible with solarized colo schema
-### others
-echo 'set-option -g allow-rename off' >> ~/.tmux.conf  ## stop tmux rename window  every time a cmd executed
-echo 'set-option -g history-limit 10000' >> ~/.tmux.conf
-echo 'set-window-option -g mode-keys vi' >> ~/.tmux.conf
 
 ## config for YCM
 # .ycm_extra_conf.py 是为了 C-family Semantic Completion
 # 现在不需要固定配置 .ycm_extra_conf.py 了
 # 应该去这里生成才对 https://github.com/rdnetto/YCM-Generator， 它已经成为一个 plugin了，默认安装
 # it depends on clang
-cd  ~/.vim/bundle/YouCompleteMe/
+cd  ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe
 git submodule update --init --recursive
 python ./install.py  --clang-completer
 cp  ~/.vim/bundle/YouCompleteMe/third_party/ycmd/examples/.ycm_extra_conf.py ~/.vim/.ycm_extra_conf.py
@@ -127,7 +135,12 @@ max-line-length = 120
 EOF
 
 
-## 最后才copy vimrc， 因为太早拷贝vimrc会导致错误
-if [ ! -e ~/.vimrc ]; then
-	cp ~/code_tools_repo/code_to_copy/backend/etc/vimrc ~/.vimrc
-fi
+## config schema for tmux, `tmux source-file ~/.tmux.conf` can make all the options affect immediately
+### color schema
+wget https://raw.githubusercontent.com/altercation/solarized/master/tmux/tmuxcolors-dark.conf -O ~/.tmux.conf
+echo 'set -g default-terminal "screen-256color"' >> ~/.tmux.conf  ## Making tmux compatible with solarized colo schema
+### others
+echo 'set-option -g allow-rename off' >> ~/.tmux.conf  ## stop tmux rename window  every time a cmd executed
+echo 'set-option -g history-limit 10000' >> ~/.tmux.conf
+echo 'set-window-option -g mode-keys vi' >> ~/.tmux.conf
+
