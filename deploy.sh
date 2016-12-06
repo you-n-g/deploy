@@ -75,7 +75,7 @@ fi
 # install Dein.vim
 mkdir -p ~/.dein.vim
 curl https://raw.githubusercontent.com/Shougo/dein.vim/master/bin/installer.sh > ~/.dein.vim/installer.sh
-sh ./installer.sh ~/.dein.vim
+sh ~/.dein.vim/installer.sh ~/.dein.vim
 
 # 如果vim的版本比较低，可以按下面的教程安装vim
 # http://tipsonubuntu.com/2016/09/13/vim-8-0-released-install-ubuntu-16-04/
@@ -124,7 +124,7 @@ vim -c 'call dein#install()' -c q
 cd  ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe
 git submodule update --init --recursive
 python ./install.py  --clang-completer
-cp  ~/.vim/bundle/YouCompleteMe/third_party/ycmd/examples/.ycm_extra_conf.py ~/.vim/.ycm_extra_conf.py
+cp  ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/examples/.ycm_extra_conf.py ~/.vim/.ycm_extra_conf.py
 
 ## config for vim-flake8
 mkdir -p ~/.config
