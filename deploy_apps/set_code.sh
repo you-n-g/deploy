@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# 有时候tmux双屏的时候，中间分隔是使用的XXXX， 一般是编码问题，按本配置一般有效
+
 DATE=`date +%Y-%m-%d:%H:%M:%S`
 
 cp /etc/environment /etc/environment.bak."$DATE"
