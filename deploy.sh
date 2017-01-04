@@ -79,6 +79,7 @@ sh ~/.dein.vim/installer.sh ~/.dein.vim
 
 # 如果vim的版本比较低，可以按下面的教程安装vim
 # http://tipsonubuntu.com/2016/09/13/vim-8-0-released-install-ubuntu-16-04/
+# dein.vim对vim的版本要求略高. TODO: 自动判断vim版本， 安装vim8
 
 ## 最后才copy vimrc， 因为太早拷贝vimrc会导致错误
 if [ ! -e ~/.vimrc ]; then
