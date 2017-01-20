@@ -14,6 +14,15 @@ if which yum; then
 	bash RPM-based.sh
 fi
 
+if which brew; then
+	bash MAC-based.sh
+fi
+
+
+if which jumbo; then
+	bash jumbo-based.sh
+fi
+
 
 # config git
 git config --global user.name Young Yang
@@ -71,6 +80,7 @@ fi
 
 
 # config vim
+mkdir -p ~/.vim/
 
 # install Dein.vim
 mkdir -p ~/.dein.vim
@@ -124,6 +134,7 @@ vim -c 'call dein#install()' -c q
 # it depends on clang
 cd  ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe
 git submodule update --init --recursive
+# 如果需要离线安装，请参考 http://vi.stackexchange.com/questions/7470/how-to-install-youcompleteme-with-clang-completer-offline
 python ./install.py  --clang-completer
 cp  ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/examples/.ycm_extra_conf.py ~/.vim/.ycm_extra_conf.py
 
