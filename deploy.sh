@@ -138,6 +138,17 @@ git submodule update --init --recursive
 python ./install.py  --clang-completer
 cp  ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/examples/.ycm_extra_conf.py ~/.vim/.ycm_extra_conf.py
 
+# 自从安装完ycm之后，就会一直出现找到 ycm_core这个module的错误，需要自己手动链接，比如CentOS就是这样
+if which yum; then
+    sudo ln -s ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/libclang.so.*  /usr/lib/python2.7/site-packages/
+    sudo ln -s ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/ycm_core.so  /usr/lib/python2.7/site-packages/
+fi
+
+if which brew; then
+    sudo ln -s ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/ycm_core.so  /usr/local/lib/python2.7/site-packages/
+fi
+
+
 ## config for vim-flake8
 mkdir -p ~/.config
 cat > ~/.config/flake8 <<EOF
