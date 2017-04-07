@@ -2,6 +2,7 @@
 
 cd ~/code_tools_repo
 git pull
+git submodule update --init --recursive
 
 
 cd ~/deployment4personaluse

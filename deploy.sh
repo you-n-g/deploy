@@ -38,7 +38,7 @@ git config --global mergetool.prompt false
 # clone repos
 cd ~
 if [ ! -e code_tools_repo ]; then
-	git clone https://github.com/you-n-g/code_tools_repo
+	git clone --recursive https://github.com/you-n-g/code_tools_repo
 fi
 
 

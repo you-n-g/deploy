@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cd ~/code_tools_repo/
+cd ~/code_tools_repo/code_to_copy/
 tmux new-session -s code_repo -n code -d
 cd ~/deployment4personaluse/
 tmux new-window -n deployment -t code_repo:1
