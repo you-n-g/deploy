@@ -7,10 +7,9 @@ if which apt-get; then
 fi
 
 if which yum; then
-    yum install sudo -y
-    sudo yum install -y wget
-    sudo wget https://copr.fedorainfracloud.org/coprs/mcepl/vim8/repo/epel-7/mcepl-vim8-epel-7.repo -O /etc/yum.repos.d/mcepl-vim8-epel-7.repo
-    sudo yum remove  vim-minimal -y
+    yum install -y wget sudo
+    wget https://copr.fedorainfracloud.org/coprs/mcepl/vim8/repo/epel-7/mcepl-vim8-epel-7.repo -O /etc/yum.repos.d/mcepl-vim8-epel-7.repo
+    yum remove  vim-minimal -y
     # sudo yum update  vim-minimal ?????
-    sudo yum install -y vim-enhanced
+    yum install -y vim-enhanced
 fi
