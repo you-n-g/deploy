@@ -7,8 +7,9 @@ if ! grep -r '^proxyAddress' /etc/polipo/config ; then
     cat >> /etc/polipo/config << EOF
 proxyAddress = "127.0.0.1"
 proxyPort = 6489
-socksParentProxy = "127.0.0.1:8964"
-socksProxyType = socks5
+# Use the following configuration only when use a chinese node to speed up the proxy.
+# socksParentProxy = "127.0.0.1:8964"
+# socksProxyType = socks5
 EOF
 fi
 
