@@ -136,6 +136,11 @@ cd  ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe
 git submodule update --init --recursive
 # 如果需要离线安装，请参考 http://vi.stackexchange.com/questions/7470/how-to-install-youcompleteme-with-clang-completer-offline
 python ./install.py  --clang-completer
+# 这一步ubuntu14.04 有可能g++的版本太低不支持c++11， 所以可以用下面的方式安装
+# sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+# sudo apt-get update
+# sudo apt-get install gcc-4.9
+# CXX='/usr/bin/g++-4.9' python ./install.py  --clang-completer
 cp  ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/examples/.ycm_extra_conf.py ~/.vim/.ycm_extra_conf.py
 
 # 自从安装完ycm之后，就会一直出现找到 ycm_core这个module的错误，需要自己手动链接，比如CentOS就是这样
