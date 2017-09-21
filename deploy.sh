@@ -87,6 +87,9 @@ mkdir -p ~/.dein.vim
 curl https://raw.githubusercontent.com/Shougo/dein.vim/master/bin/installer.sh > ~/.dein.vim/installer.sh
 sh ~/.dein.vim/installer.sh ~/.dein.vim
 
+# autopep8
+sudo pip install autopep8
+
 # 如果vim的版本比较低，可以按下面的教程安装vim
 # http://tipsonubuntu.com/2016/09/13/vim-8-0-released-install-ubuntu-16-04/
 # dein.vim对vim的版本要求略高. TODO: 自动判断vim版本， 安装vim8
