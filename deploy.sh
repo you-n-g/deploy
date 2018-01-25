@@ -61,6 +61,10 @@ if ! grep "alias sudo" ~/.bashrc ; then
     # sudo -E will keep the environment when run sudo. Many env variables like http_proxy need it.
 fi
 
+if ! grep "export BETTER_EXCEPTIONS" ~/.bashrc ; then
+    echo 'export BETTER_EXCEPTIONS=1' >> ~/.bashrc
+fi
+
 # proxy_related
 if ! grep "^proxy_up" ~/.bashrc ; then
     cat >>~/.bashrc <<EOF
@@ -88,7 +92,7 @@ curl https://raw.githubusercontent.com/Shougo/dein.vim/master/bin/installer.sh >
 sh ~/.dein.vim/installer.sh ~/.dein.vim
 
 # autopep8
-sudo pip install autopep8
+sudo pip install autopep8 better_exceptions
 
 # 如果vim的版本比较低，可以按下面的教程安装vim
 # http://tipsonubuntu.com/2016/09/13/vim-8-0-released-install-ubuntu-16-04/
