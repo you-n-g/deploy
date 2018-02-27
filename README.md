@@ -9,7 +9,7 @@ These tools will be installed in your home directory.
 
 If you are using ubuntu 14.04, vim 8 is needed. You can install with the following instruction.
 ```
-sudo apt-get install git
+sudo apt-get install -y git
 cd ~
 git clone https://github.com/you-n-g/deployment4personaluse
 cd deployment4personaluse
