@@ -19,7 +19,7 @@ service polipo restart
 # add monitor to make polipo stable
 # read doc about monit here: http://www.tecmint.com/how-to-install-and-setup-monit-linux-process-and-services-monitoring-program/
 
-sudo apt-get install monit
+sudo apt-get install -y monit
 cat > /etc/monit/conf.d/polipo <<EOF
  check process polipo with pidfile /var/run/polipo/polipo.pid
    group proxy

@@ -3,7 +3,7 @@ if which apt-get; then
     sudo apt-get install -y software-properties-common
     sudo add-apt-repository -y ppa:jonathonf/vim
     sudo apt update
-    sudo apt install vim
+    sudo apt install -y vim
 fi
 
 if which yum; then
