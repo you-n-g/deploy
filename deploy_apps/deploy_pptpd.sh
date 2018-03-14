@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 apt-get install -y pptpd
 
 if ! grep -r '^localip' /etc/pptpd.conf; then
