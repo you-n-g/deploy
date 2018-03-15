@@ -1,15 +1,15 @@
 #!/bin/bash
 
 if which apt-get; then
-    apt-get install -y ntpdate ntp 
+    sudo apt-get install -y ntpdate ntp 
 fi
 
 if which yum; then
-    yum -y install ntpdate ntp 
+    sudo yum -y install ntpdate ntp 
 fi
 
-service ntp stop
+sudo service ntp stop
 
-ntpdate time.windows.com 
+sudo ntpdate time.windows.com 
 
-cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime 
+sudo cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime 

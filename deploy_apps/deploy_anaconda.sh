@@ -4,7 +4,7 @@
 # https://www.anaconda.com/download/#linux
 
 # some
-sudo apt-get install python-dev libmysqlclient-dev
+sudo apt-get install -y python-dev libmysqlclient-dev
 
 
 
