@@ -4,9 +4,7 @@
 
 sudo apt-get update
 
-sudo apt-get install -y xrdp
-
-sudo apt-get install xfce4
+sudo apt-get install -y xrdp xfce4
 
 echo xfce4-session > ~/.xsession
 
