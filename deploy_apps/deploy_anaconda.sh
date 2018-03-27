@@ -25,3 +25,7 @@ do
 done
 
 conda create -n py27 python=2.7
+
+
+# for developing environment
+pip install autopep8 better_exceptions

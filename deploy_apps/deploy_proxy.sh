@@ -1,6 +1,6 @@
 #!/bin/bash
 
-apt-get install -y polipo
+sudo apt-get install -y polipo
 
 
 if ! grep -r '^proxyAddress' /etc/polipo/config ; then

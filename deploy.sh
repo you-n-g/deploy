@@ -27,9 +27,6 @@ fi
 # config git
 git config --global user.name Young Yang
 git config --global user.email afe.young@gmail.com
-if ! grep "gitlog" ~/.bashrc ; then
-	echo 'alias gitlog="git log --all --oneline --graph --decorate"' >> ~/.bashrc
-fi
 git config --global merge.tool vimdiff
 git config --global mergetool.prompt false
 
@@ -42,45 +39,28 @@ if [ ! -e code_tools_repo ]; then
 fi
 
 
+# tmuxinator
+sudo gem install tmuxinator
+mkdir -p ~/.config/tmuxinator/
+cat > ~/.config/tmuxinator/code.yml <<EOF
+# ~/.tmuxinator/code.yml
+
+name: code_repo
+root: ~/
+
+windows:
+  - code_repo: cd ~/code_tools_repo
+  - deployment: cd ~/deployment4personaluse/
+EOF
+
 # config bashrc
-if ! grep "export EDITOR" ~/.bashrc ; then
-	echo "export EDITOR=`which vim`" >> ~/.bashrc
-fi
-
-if ! grep "export PATH" ~/.bashrc ; then
-    mkdir -p $HOME/bin/
-	echo 'export PATH="$HOME/bin/:$PATH"' >> ~/.bashrc
-fi
-
-if ! grep "export PS1" ~/.bashrc ; then
+if ! grep "^export PS1" ~/.bashrc ; then
 	echo 'export PS1="[\\D{%T}]"$PS1' >> ~/.bashrc
 fi
 
-if ! grep "alias sudo" ~/.bashrc ; then
-    echo 'alias sudo="sudo -E"' >> ~/.bashrc
-    # sudo -E will keep the environment when run sudo. Many env variables like http_proxy need it.
-fi
+RC_FILE=~/.bashrc
+. $REPO_PATH/helper_scripts/config_rc.sh
 
-if ! grep "export BETTER_EXCEPTIONS" ~/.bashrc ; then
-    echo 'export BETTER_EXCEPTIONS=1' >> ~/.bashrc
-fi
-
-# proxy_related
-if ! grep "^proxy_up" ~/.bashrc ; then
-    cat >>~/.bashrc <<EOF
-function proxy_up() {
-    # don't capitalize them
-    export http_proxy=127.0.0.1:6489
-    export https_proxy=127.0.0.1:6489
-    export SOCKS_SERVER=127.0.0.1:8964
-    # NOTICE: the ip range my not works on some softwares !!!!!
-    export no_proxy=localhost,127.0.0.1,127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.sock
-}
-function proxy_down() {
-    unset http_proxy https_proxy SOCKS_SERVER no_proxy
-}
-EOF
-fi
 
 
 # config vim
@@ -91,7 +71,8 @@ mkdir -p ~/.dein.vim
 curl https://raw.githubusercontent.com/Shougo/dein.vim/master/bin/installer.sh > ~/.dein.vim/installer.sh
 sh ~/.dein.vim/installer.sh ~/.dein.vim
 
-# autopep8
+# autopep8:
+# note: all of these will not work after install anaconda
 sudo pip install autopep8 better_exceptions
 
 # 如果vim的版本比较低，可以按下面的教程安装vim
@@ -178,9 +159,26 @@ EOF
 ## config schema for tmux, `tmux source-file ~/.tmux.conf` can make all the options affect immediately
 ### color schema
 wget https://raw.githubusercontent.com/altercation/solarized/master/tmux/tmuxcolors-dark.conf -O ~/.tmux.conf
-echo 'set -g default-terminal "screen-256color"' >> ~/.tmux.conf  ## Making tmux compatible with solarized colo schema
-### others
-echo 'set-option -g allow-rename off' >> ~/.tmux.conf  ## stop tmux rename window  every time a cmd executed
-echo 'set-option -g history-limit 10000' >> ~/.tmux.conf
-echo 'set-window-option -g mode-keys vi' >> ~/.tmux.conf
 
+cat >> ~/.tmux.conf <<EOF
+# Making tmux compatible with solarized colo schema
+echo 'set -g default-terminal "screen-256color"'
+# stop tmux rename window  every time a cmd executed
+echo 'set-option -g allow-rename off'
+
+echo 'set-option -g history-limit 10000'
+echo 'set-window-option -g mode-keys vi'
+EOF
+
+
+tmux_version=`tmux -V | awk '{print $2}'`
+if [[ "$tmux_version" > "1.9" ]] 
+then
+    cat >> ~/.tmux.conf <<EOF
+# https://unix.stackexchange.com/a/118381
+# this will not work in low tmux version
+bind '"' split-window -c "#{pane_current_path}"
+bind % split-window -h -c "#{pane_current_path}"
+bind c new-window -c "#{pane_current_path}"
+EOF
+fi

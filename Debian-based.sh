@@ -1,7 +1,7 @@
 #!/bin/bash
 sudo apt-get update
 sudo apt-get install -y git vim vim-nox ruby ruby-dev exuberant-ctags tmux build-essential cmake python-dev \
-    clang htop python-flake8 autossh python-pip software-properties-common # this line is for common use
+    clang htop python-flake8 autossh python-pip software-properties-common zsh silversearcher-ag # this line is for common use
 
 # these should installed separately. Otherwise it will fail together.
 sudo apt-get install -y ruby-mkrf # this line is for ubuntu 14.04
