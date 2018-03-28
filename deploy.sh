@@ -40,7 +40,7 @@ fi
 
 
 # tmuxinator
-sudo gem install tmuxinator
+sudo su - $USER -c 'gem install tmuxinator'
 mkdir -p ~/.config/tmuxinator/
 cat > ~/.config/tmuxinator/code.yml <<EOF
 # ~/.tmuxinator/code.yml
@@ -49,7 +49,7 @@ name: code_repo
 root: ~/
 
 windows:
-  - code_repo: cd ~/code_tools_repo
+  - code_repo: cd ~/code_tools_repo/code_to_copy/
   - deployment: cd ~/deployment4personaluse/
 EOF
 

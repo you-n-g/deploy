@@ -14,6 +14,10 @@ if ! grep "^ *command-time" $RC_FILE ; then
     sed -i '/^plugins=(/a command-time' $RC_FILE
 fi
 
+if ! grep "^ *tmuxinator" $RC_FILE ; then
+    sed -i '/^plugins=(/a tmuxinator' $RC_FILE
+fi
+
 if ! grep "^ZSH_COMMAND_TIME_MSG=" $RC_FILE ; then
 	echo 'ZSH_COMMAND_TIME_MSG="Execution time: %s sec"' >> $RC_FILE
 fi
