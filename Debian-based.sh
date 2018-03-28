@@ -10,7 +10,7 @@ sudo apt-get install -y vim-nox-py2  # this line is for ubuntu 16.04
 sudo apt-get install -y software-properties-common
 sudo apt-add-repository -y ppa:rael-gc/rvm
 sudo apt-get update
-sudo apt-get install rvm  # this is for installing latest 
+sudo apt-get install -y rvm  # this is for installing latest 
 sudo su - $USER -c 'rvm install ruby'
 
 # clang is for YCM
