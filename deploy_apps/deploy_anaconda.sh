@@ -2,6 +2,17 @@
 
 # Please install anaconda manually first.
 # https://www.anaconda.com/download/#linux
+if [ ! -e ~/anaconda3/ ]; then
+    mkdir -p ~/tmp/
+    cd ~/tmp/
+    wget https://repo.continuum.io/archive/Anaconda3-5.1.0-Linux-x86_64.sh -O Anaconda3-latest-Linux-x86_64.sh
+    sh Anaconda3-latest-Linux-x86_64.sh
+fi
+
+. ~/.bashrc
+
+conda update --all
+
 
 # some
 sudo apt-get install -y python-dev libmysqlclient-dev
@@ -24,8 +35,10 @@ do
     jupyter nbextension enable $plg
 done
 
-conda create -n py27 python=2.7
+conda create -y -n py27 python=2.7
 
 
 # for developing environment
 pip install autopep8 better_exceptions
+
+echo 'export PATH="/home/xiaoyang/anaconda3/bin:$PATH"' >> ~/.zshrc
