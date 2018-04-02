@@ -162,16 +162,16 @@ wget https://raw.githubusercontent.com/altercation/solarized/master/tmux/tmuxcol
 
 cat >> ~/.tmux.conf <<EOF
 # Making tmux compatible with solarized colo schema
-echo 'set -g default-terminal "screen-256color"'
+set -g default-terminal "screen-256color"
 # stop tmux rename window  every time a cmd executed
-echo 'set-option -g allow-rename off'
-
-echo 'set-option -g history-limit 10000'
-echo 'set-window-option -g mode-keys vi'
+set-option -g allow-rename off
+set-option -g history-limit 10000
+set-window-option -g mode-keys vi
 EOF
 
 
 tmux_version=`tmux -V | awk '{print $2}'`
+# This syntax does not support sh. zsh and bash are ok
 if [[ "$tmux_version" > "1.9" ]] 
 then
     cat >> ~/.tmux.conf <<EOF
