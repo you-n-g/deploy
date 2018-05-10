@@ -35,7 +35,7 @@ do
     jupyter nbextension enable $plg
 done
 
-conda create -y -n py27 python=2.7
+# conda create -y -n py27 python=2.7
 
 
 # for developing environment
