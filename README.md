@@ -13,7 +13,7 @@ sudo apt-get install -y git
 cd ~
 git clone https://github.com/you-n-g/deployment4personaluse
 cd deployment4personaluse
-sh deploy_apps/install_vim8.sh
+./deploy_apps/install_vim8.sh
 ```
 
 
@@ -24,5 +24,5 @@ sh deploy_apps/install_vim8.sh
 cd ~
 git clone https://github.com/you-n-g/deployment4personaluse
 cd deployment4personaluse
-sh deploy.sh
+./deploy.sh
 ```
