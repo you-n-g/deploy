@@ -52,11 +52,3 @@ cd $REPO_PATH
 # 如果觉得zsh在有git的文件夹下太慢了(特别是我加上了ipynb的版本管理之后)，可以取消掉git文件的提示
 # 比如你根据你用的主题(~/.zshrc中的ZSH_THEME可以得到)  编辑~/.oh-my-zsh/themes/robbyrussell.zsh-theme
 # 把PROMPT中的 $(git_prompt_info) 去掉
-
-
-# 设置用户权限
-for p in $FIELS
-do
-    sudo setfacl -m g:limit_group:000  $p
-done
-sudo usermod -aG limit_group $AIAS
