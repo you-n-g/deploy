@@ -42,6 +42,7 @@ antigen bundle zsh-users/zsh-completions
 antigen bundle zsh-users/zsh-syntax-highlighting
 antigen bundle colored-man-pages
 antigen bundle rupa/z z.sh
+antigen bundle MichaelAquilina/zsh-you-should-use
 antigen apply
 EOF
 fi
