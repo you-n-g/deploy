@@ -9,6 +9,8 @@ cp /etc/environment /etc/environment.bak."$DATE"
 cat >> /etc/environment <<EOF
 LANG="en_US.UTF-8"
 LANGUAGE="en_US:en"
+LC_CTYPE=en_US.UTF-8
+LC_ALL=en_US.UTF-8
 EOF
 
 cp /var/lib/locales/supported.d/local /var/lib/locales/supported.d/local.bak."$DATE"
@@ -22,4 +24,6 @@ cp /etc/default/locale /etc/default/locale.bak."$DATE"
 cat >> /etc/default/locale <<EOF
 LANG="en_US.UTF-8"
 LANGUAGE="en_US:en"
+LC_CTYPE=en_US.UTF-8
+LC_ALL=en_US.UTF-8
 EOF

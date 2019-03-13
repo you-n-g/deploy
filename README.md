@@ -16,6 +16,8 @@ cd deployment4personaluse
 ./deploy_apps/install_vim8.sh
 ```
 
+If you ssh from a new machine to a old machine, maybe you should run the `set_code.sh` script before installation
+
 
 # Installation
 
