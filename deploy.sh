@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 REPO_PATH=`dirname "$0"`
 REPO_PATH=`cd "$REPO_PATH"; pwd`
@@ -123,6 +124,7 @@ vim -c 'call dein#install()' -c q
 cd  ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe
 git submodule update --init --recursive
 # 如果需要离线安装，请参考 http://vi.stackexchange.com/questions/7470/how-to-install-youcompleteme-with-clang-completer-offline
+sudo apt-get install build-essential cmake3  # 运行这个才能让下一步正常运行
 python ./install.py  --clang-completer
 # 这一步ubuntu14.04 有可能g++的版本太低不支持c++11， 所以可以用下面的方式安装
 # sudo add-apt-repository ppa:ubuntu-toolchain-r/test
@@ -133,12 +135,22 @@ cp  ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/example
 
 # 自从安装完ycm之后，就会一直出现找到 ycm_core这个module的错误，需要自己手动链接，比如CentOS就是这样
 if which yum; then
-    sudo ln -s ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/libclang.so.*  /usr/lib/python2.7/site-packages/
+    if [ -e ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/libclang.so.* ]; then
+        sudo ln -s ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/libclang.so.*  /usr/lib/python2.7/site-packages/
+    fi
+    if [ -e ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/third_party/clang/lib/libclang.so.* ]; then
+        sudo ln -s ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/third_party/clang/lib/libclang.so.*  /usr/lib/python2.7/dist-packages/
+    fi
     sudo ln -s ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/ycm_core.so  /usr/lib/python2.7/site-packages/
 fi
 
 if which apt-get; then
-    sudo ln -s ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/libclang.so.?  /usr/lib/python2.7/dist-packages/
+    if [ -e ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/libclang.so.* ]; then
+        sudo ln -s ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/libclang.so.*  /usr/lib/python2.7/dist-packages/
+    fi
+    if [ -e ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/third_party/clang/lib/libclang.so.* ]; then
+        sudo ln -s ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/third_party/clang/lib/libclang.so.*  /usr/lib/python2.7/dist-packages/
+    fi
     sudo ln -s ~/.dein.vim/repos/github.com/Valloric/YouCompleteMe/third_party/ycmd/ycm_core.so  /usr/lib/python2.7/dist-packages/
 fi
 

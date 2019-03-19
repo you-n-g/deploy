@@ -12,12 +12,12 @@ git clone https://github.com/popstas/zsh-command-time.git ~/.oh-my-zsh/custom/pl
 
 RC_FILE=~/.zshrc
 
-if ! grep "^ *command-time" $RC_FILE ; then
-    sed -i '/^plugins=(/a command-time' $RC_FILE
+if ! grep "plugin.*command-time" $RC_FILE ; then
+    sed -i 's/^\(plugins=(\)/\1command-time /' $RC_FILE
 fi
 
-if ! grep "^ *tmuxinator" $RC_FILE ; then
-    sed -i '/^plugins=(/a tmuxinator' $RC_FILE
+if ! grep "plugin.*tmuxinator" $RC_FILE ; then
+    sed -i 's/^\(plugins=(\)/\1tmuxinator /' $RC_FILE
 fi
 
 if ! grep "^ZSH_COMMAND_TIME_MSG=" $RC_FILE ; then
