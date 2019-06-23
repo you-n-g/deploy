@@ -40,7 +40,6 @@ if [ ! -e code_tools_repo ]; then
 fi
 
 
-# tmuxinator
 sudo su - $USER -c 'gem install tmuxinator'
 mkdir -p ~/.config/tmuxinator/
 cat > ~/.config/tmuxinator/code.yml <<EOF
