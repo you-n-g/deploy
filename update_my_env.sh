@@ -11,3 +11,4 @@ git pull
 
 mv ~/.vimrc ~/.vimrc.bak
 cp ~/code_tools_repo/code_to_copy/backend/etc/vimrc ~/.vimrc
+vim -c 'call dein#install()' -c q

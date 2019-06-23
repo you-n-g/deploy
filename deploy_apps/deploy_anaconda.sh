@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 # Please install anaconda manually first.
 # https://www.anaconda.com/download/#linux
