@@ -1,6 +1,9 @@
 #!/bin/bash
 set -x
 
+# TODO:
+# 这个文件是用window包含
+
 # Please install anaconda manually first.
 # https://www.anaconda.com/download/#linux
 if [ ! -e ~/anaconda3/ ]; then
