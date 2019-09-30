@@ -37,9 +37,9 @@ fi
 
 curl -sL install-node.now.sh/lts | sudo bash -s --  -y
 
-~/bin/vim -c "CocInstall coc-python" -c qa
-~/bin/vim -c "CocInstall coc-highlight" -c qa
-~/bin/vim -c "CocInstall coc-lists" -c qa
+~/bin/vim -c "CocInstall coc-python" -c "sleep 3" -c qa
+~/bin/vim -c "CocInstall coc-highlight" -c "sleep 3" -c qa
+~/bin/vim -c "CocInstall coc-lists" -c "sleep 3" -c qa
 
 
 TEMP_DEB="$(mktemp)" && wget -O "$TEMP_DEB" 'https://github.com/BurntSushi/ripgrep/releases/download/11.0.2/ripgrep_11.0.2_amd64.deb' && sudo dpkg -i "$TEMP_DEB"
