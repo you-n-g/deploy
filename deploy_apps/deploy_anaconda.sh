@@ -30,7 +30,7 @@ sudo apt-get install -y python-dev libmysqlclient-dev
 
 
 # install some essential scripts
-conda install -y tensorflow-gpu keras-gpu
+# conda install -y tensorflow-gpu keras-gpu
 conda install -y pandas matplotlib ipywidgets scikit-learn seaborn # some software we should reinstall if we recreate a new environment
 conda install -y -c conda-forge python-cufflinks
 # sudo apt-get install -y libmysqlclient-dev  # https://stackoverflow.com/a/5178698
