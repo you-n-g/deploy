@@ -10,13 +10,13 @@ if ! grep "^alias mx" $RC_FILE ; then
 	echo 'alias mx=tmux' >> $RC_FILE
 fi
 
-if ! grep "^export EDITOR" $RC_FILE ; then
-	echo "export EDITOR=`which vim`" >> $RC_FILE
-fi
-
 if ! grep "^export PATH" $RC_FILE ; then
     mkdir -p $HOME/bin/
 	echo 'export PATH="$HOME/bin/:$PATH"' >> $RC_FILE
+fi
+
+if ! grep "^export EDITOR" $RC_FILE ; then
+	echo 'export EDITOR=`which vim`' >> $RC_FILE
 fi
 
 if ! grep "^alias sudo" $RC_FILE ; then

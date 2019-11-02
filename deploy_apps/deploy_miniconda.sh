@@ -11,17 +11,15 @@ if [ ! -e ~/miniconda3/ ]; then
     cd ~/tmp/
     # wget https://repo.continuum.io/archive/Anaconda3-5.1.0-Linux-x86_64.sh -O Anaconda3-latest-Linux-x86_64.sh
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O Miniconda3-latest-Linux-x86_64.sh
-    sh Miniconda3-latest-Linux-x86_64.sh
+    sh Miniconda3-latest-Linux-x86_64.sh -b
 fi
 
-export PATH="/home/xiaoyang/anaconda3/bin:/home/xiaoyang/miniconda3/bin:$PATH"
+export PATH="~/anaconda3/bin:~/miniconda3/bin:$PATH"
 
 conda init zsh
 conda init bash
 
-source ~/.bashrc
-
-conda update --all
+conda update --all -y
 
 
 # some

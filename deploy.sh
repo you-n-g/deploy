@@ -40,9 +40,10 @@ if [ ! -e code_tools_repo ]; then
 fi
 
 
-sudo su - $USER -c 'gem install tmuxinator'
-mkdir -p ~/.config/tmuxinator/
-cat > ~/.config/tmuxinator/code.yml <<EOF
+for path in ~/.config/tmuxinator/ ~/.tmuxinator/
+do
+    mkdir -p $path
+    cat > $path/code.yml <<EOF
 # ~/.tmuxinator/code.yml
 
 name: code_repo
@@ -52,6 +53,7 @@ windows:
   - code_repo: cd ~/code_tools_repo/code_to_copy/
   - deployment: cd ~/deployment4personaluse/
 EOF
+done
 
 # config bashrc
 if ! grep "^export PS1" ~/.bashrc ; then
@@ -99,3 +101,8 @@ bind % split-window -h -c "#{pane_current_path}"
 bind c new-window -c "#{pane_current_path}"
 EOF
 fi
+
+
+# ./deploy_apps/install_zsh.sh
+# ./deploy_apps/deploy_anaconda.sh
+# ./deploy_apps/install_neovim.sh

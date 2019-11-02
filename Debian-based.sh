@@ -7,11 +7,15 @@ sudo apt-get install -y git vim vim-nox ruby ruby-dev exuberant-ctags tmux build
 sudo apt-get install -y ruby-mkrf # this line is for ubuntu 14.04
 sudo apt-get install -y vim-nox-py2  # this line is for ubuntu 16.04
 
-sudo apt-get install -y software-properties-common
-sudo apt-add-repository -y ppa:rael-gc/rvm
-sudo apt-get update
-sudo apt-get install -y rvm  # this is for installing latest 
-sudo su - $USER -c 'rvm install ruby'
+# sudo apt-get install -y software-properties-common
+# sudo apt-add-repository -y ppa:rael-gc/rvm
+# sudo apt-get update
+# sudo apt-get install -y rvm  # this is for installing latest 
+# sudo su - $USER -c 'rvm install ruby'
+# sudo su - $USER -c 'gem install tmuxinator'
+
+sudo apt-get install -y tmuxinator
+
 
 # clang is for YCM
 # python-flake8 is needed by vim-flake8

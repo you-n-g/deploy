@@ -1,10 +1,14 @@
-#!/bin/sh
+#!/bin/bash
+set -x
+source ~/.bashrc
+
 if [ ! -e ~/bin/vim ]; then
     mkdir -p ~/bin/
     curl -L  -o ~/bin/vim https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
     chmod a+x ~/bin/vim
 fi
 
+# FIXME: 这里在国内有可能被墙
 curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
         https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 
@@ -36,7 +40,7 @@ EOF
 fi
 
 curl -sL install-node.now.sh/lts | sudo bash -s --  -y
-npm install -g neovim  # TODO: make sure this line is right
+sudo npm install -g neovim  # TODO: make sure this line is right
 
 ~/bin/vim -c "CocInstall coc-python" -c "sleep 3"  -c qa
 ~/bin/vim -c "CocInstall coc-highlight" -c "sleep 3"  -c qa
@@ -52,5 +56,6 @@ cat > ~/.config/nvim/coc-settings.json <<EOF
 EOF
 
 
+# FIXME: This will not work on centos system
 TEMP_DEB="$(mktemp)" && wget -O "$TEMP_DEB" 'https://github.com/BurntSushi/ripgrep/releases/download/11.0.2/ripgrep_11.0.2_amd64.deb' && sudo dpkg -i "$TEMP_DEB"
 rm -f "$TEMP_DEB"
