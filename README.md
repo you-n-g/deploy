@@ -13,7 +13,9 @@ sudo apt-get install -y git
 cd ~
 git clone https://github.com/you-n-g/deployment4personaluse
 cd deployment4personaluse
-./deploy_apps/install_vim8.sh
+./deploy_apps/install_vim8.sh  # not required if you use neovim
+
+echo  "<your account> ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/80-service
 ```
 
 If you ssh from a new machine to a old machine, maybe you should run the `set_code.sh` script before installation
