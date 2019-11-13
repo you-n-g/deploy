@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-git clone https://github.com/tmux-plugins/tpm ~/.tmux23/plugins/tpm
+git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 
 if ! grep 'plugins\/tpm' ~/.tmux.conf ; then
     cat >> ~/.tmux.conf <<EOF
