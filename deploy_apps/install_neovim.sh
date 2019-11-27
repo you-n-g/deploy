@@ -42,6 +42,7 @@ fi
 curl -sL install-node.now.sh/lts | sudo bash -s --  -y
 sudo npm install -g neovim  # TODO: make sure this line is right
 
+# TODO:  let g:coc_global_extensions
 ~/bin/vim -c "CocInstall coc-python" -c "sleep 3"  -c qa
 ~/bin/vim -c "CocInstall coc-highlight" -c "sleep 3"  -c qa
 ~/bin/vim -c "CocInstall coc-lists" -c "sleep 3"  -c qa
