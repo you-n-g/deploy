@@ -6,7 +6,8 @@ REPO_PATH=`dirname "$0"`
 REPO_PATH=`cd "$REPO_PATH"; pwd`
 
 # zsh
-sh -c "$(curl -fsSL https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)" "" --unattended
+
 sudo chsh -s /bin/zsh $USER
 git clone https://github.com/popstas/zsh-command-time.git ~/.oh-my-zsh/custom/plugins/command-time
 

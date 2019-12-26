@@ -12,7 +12,7 @@ conda install -y xlwt
 conda install -c conda-forge -y jupyter_contrib_nbextensions
 jupyter contrib nbextension install --user
 
-for plg in toc2/main select_keymap/main execute_time/ExecuteTime scratchpad/main notify/notify
+for plg in toc2/main select_keymap/main execute_time/ExecuteTime scratchpad/main notify/notify codefolding/main
 do
     jupyter nbextension enable $plg
 done
