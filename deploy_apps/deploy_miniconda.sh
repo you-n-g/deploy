@@ -31,3 +31,43 @@ sudo apt-get install -y python-dev libmysqlclient-dev
 
 cd $DIR
 source ./install_fav_py_pack.sh
+
+
+# conda tmux combine related
+# if ! grep "update-environment conda_env" ~/.tmux.conf ; then
+#     cat >> ~/.tmux.conf <<EOF
+# # Support tmux inherit the conda env
+# set-option -a update-environment " conda_env"
+# EOF
+# fi
+
+for RC_FILE in ~/.bashrc ~/.zshrc
+do
+    grep 'show-environment conda_env' $RC_FILE
+    if [ $? -ne 0 -a -f $RC_FILE  ] ; then
+        cat >>$RC_FILE <<"EOF"
+
+# Support tmux inherit the conda env
+
+# this is not necessary, tmux will set the environment automatically
+# env_expr=$(tmux show-environment conda_env 2> /dev/null)
+# if [ $? -eq 0 -a "$env_expr" != "-conda_env" ]; then
+#     eval "export $env_expr"
+# fi
+
+if [ -n "$conda_env" -a "$conda_env" != "base" ]; then
+    conda activate $conda_env
+fi
+
+function yxca() {
+    conda activate $1
+    tmux setenv conda_env $1
+}
+
+function yxcd() {
+    conda deactivate
+    tmux setenv -r conda_env
+}
+EOF
+    fi
+done
