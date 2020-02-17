@@ -53,6 +53,13 @@ if ! grep "^# For showing time" $RC_FILE ; then
 	cat >> $RC_FILE << "EOF"
 # For showing time
 # show right prompt with date ONLY when command is executed
+strlen () {
+    FOO=$1
+    local zero='%([BSUbfksu]|([FB]|){*})'
+    LEN=${#${(S%%)FOO//$~zero/}}
+    echo $LEN
+}
+
 preexec () {
     DATE=$( date +"[%H:%M:%S]" )
     local len_right=$( strlen "$DATE" )
