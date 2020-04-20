@@ -48,11 +48,12 @@ sudo npm install -g neovim  # TODO: make sure this line is right
 ~/bin/vim -c "CocInstall coc-lists" -c "sleep 3"  -c qa
 ~/bin/vim -c "CocInstall coc-json" -c "sleep 3"  -c qa
 
-# :CocConfig可以改变settings
+# :CocConfig 可以改变settings
+# :CocLocalConfig 如果需要每个项目有自己的配置文件
 mkdir -p ~/.config/nvim/
 cat > ~/.config/nvim/coc-settings.json <<EOF
 {
-    "python.linting.pylamaArgs": ["-i E501"]
+    "python.linting.pylamaArgs": ["-i E501,E402"]
 }
 EOF
 
