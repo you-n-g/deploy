@@ -2,6 +2,9 @@
 set -x
 source ~/.bashrc
 
+DIR_PATH=`dirname "$0"`
+DIR_PATH=`cd "$DIR_PATH"; pwd`
+
 if [ ! -e ~/bin/vim ]; then
     mkdir -p ~/bin/
     curl -L  -o ~/bin/vim https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
@@ -39,8 +42,16 @@ set-option -sa terminal-overrides ',screen-256color:RBG'
 EOF
 fi
 
-curl -sL install-node.now.sh/lts | sudo bash -s --  -y
-sudo npm install -g neovim  # TODO: make sure this line is right
+# deploy nodejs
+# curl -sL install-node.now.sh/lts | sudo bash -s --  -y
+# sudo npm install -g neovim  # TODO: make sure this line is right
+
+# TODO: check current lines can replace the above lines
+$DIR_PATH/deploy_nodejs.sh
+NP=~/apps/nodejs
+export PATH="$NP/bin/:$PATH"
+$NP/bin/npm -g neovim
+
 
 # TODO:  let g:coc_global_extensions
 ~/bin/vim -c "CocInstall coc-python" -c "sleep 3"  -c qa

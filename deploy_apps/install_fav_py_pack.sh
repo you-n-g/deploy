@@ -5,6 +5,8 @@ conda install -y pandas matplotlib ipywidgets scikit-learn seaborn ipyparallel #
 conda install -y -c conda-forge python-cufflinks
 # sudo apt-get install -y libmysqlclient-dev  # https://stackoverflow.com/a/5178698
 # pip install mysqlclient  # for python3
+# pip install tensorboardX
+# conda install -y tensorboard
 pip install papermill ipdb nbresuse
 conda install -y xlwt
 
@@ -12,7 +14,7 @@ conda install -y xlwt
 conda install -c conda-forge -y jupyter_contrib_nbextensions
 jupyter contrib nbextension install --user
 
-for plg in toc2/main select_keymap/main execute_time/ExecuteTime scratchpad/main notify/notify codefolding/main
+for plg in toc2/main select_keymap/main execute_time/ExecuteTime scratchpad/main notify/notify codefolding/main collapsible_headings/main
 do
     jupyter nbextension enable $plg
 done

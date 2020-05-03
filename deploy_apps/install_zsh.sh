@@ -2,8 +2,8 @@
 
 # 这里可以找到各种zsh的插件 https://github.com/unixorn/awesome-zsh-plugins
 
-REPO_PATH=`dirname "$0"`
-REPO_PATH=`cd "$REPO_PATH"; pwd`
+DIR_PATH=`dirname "$0"`
+DIR_PATH=`cd "$DIR_PATH"; pwd`
 
 # zsh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)" "" --unattended
@@ -13,22 +13,23 @@ git clone https://github.com/popstas/zsh-command-time.git ~/.oh-my-zsh/custom/pl
 
 RC_FILE=~/.zshrc
 
-if ! grep "plugin.*command-time" $RC_FILE ; then
-    sed -i 's/^\(plugins=(\)/\1command-time /' $RC_FILE
-fi
 
 if ! grep "plugin.*tmuxinator" $RC_FILE ; then
     sed -i 's/^\(plugins=(\)/\1tmuxinator /' $RC_FILE
 fi
 
-if ! grep "^ZSH_COMMAND_TIME_MSG=" $RC_FILE ; then
-	echo 'ZSH_COMMAND_TIME_MSG="Execution time: %s sec"' >> $RC_FILE
+if ! grep "plugin.*shrink-path" $RC_FILE ; then
+    sed -i 's/^\(plugins=(\)/\1shrink-path /' $RC_FILE
 fi
 
-
-if ! grep "^ZSH_COMMAND_TIME_MSG=" $RC_FILE ; then
-	echo 'ZSH_COMMAND_TIME_MSG="Execution time: %s sec"' >> $RC_FILE
-fi
+# 这个命令可以被sindresorhus/pure 代替了
+# if ! grep "plugin.*command-time" $RC_FILE ; then
+#     sed -i 's/^\(plugins=(\)/\1command-time /' $RC_FILE
+# fi
+#
+# if ! grep "^ZSH_COMMAND_TIME_MSG=" $RC_FILE ; then
+# 	echo 'ZSH_COMMAND_TIME_MSG="Execution time: %s sec"' >> $RC_FILE
+# fi
 
 
 # antigen
@@ -45,12 +46,18 @@ antigen bundle zsh-users/zsh-syntax-highlighting
 antigen bundle colored-man-pages
 antigen bundle rupa/z z.sh
 antigen bundle MichaelAquilina/zsh-you-should-use
+antigen bundle mafredri/zsh-async
+antigen bundle sindresorhus/pure
 antigen apply
 EOF
 fi
 
+
 if ! grep "^# For showing time" $RC_FILE ; then
 	cat >> $RC_FILE << "EOF"
+# shrink path
+export PROMPT='${ret_status} %{$fg[cyan]%}$(shrink_path -l -t) %{$reset_color%}'
+
 # For showing time
 # show right prompt with date ONLY when command is executed
 strlen () {
@@ -85,7 +92,17 @@ export PROMPT="[%D{%H:%M:%S}] $PROMPT"
 EOF
 fi
 
-cd $REPO_PATH
+
+# 这些可能不需要， 只要 antigen那两行就行
+cd $DIR_PATH
+./deploy_nodejs.sh
+NP=~/apps/nodejs
+export PATH="$NP/bin/:$PATH"
+$NP/bin/npm install --global pure-prompt
+
+
+
+cd $DIR_PATH
 . ../helper_scripts/config_rc.sh
 
 # 如果觉得zsh在有git的文件夹下太慢了(特别是我加上了ipynb的版本管理之后)，可以取消掉git文件的提示
