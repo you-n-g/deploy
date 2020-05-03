@@ -55,8 +55,10 @@ fi
 
 if ! grep "^# For showing time" $RC_FILE ; then
 	cat >> $RC_FILE << "EOF"
+export PURE_CMD_MAX_EXEC_TIME=1
+
 # shrink path
-export PROMPT='${ret_status} %{$fg[cyan]%}$(shrink_path -l -t) %{$reset_color%}'
+# export PROMPT='${ret_status} %{$fg[cyan]%}$(shrink_path -l -t) %{$reset_color%}'
 
 # For showing time
 # show right prompt with date ONLY when command is executed
@@ -67,26 +69,28 @@ strlen () {
     echo $LEN
 }
 
-preexec () {
-    DATE=$( date +"[%H:%M:%S]" )
-    local len_right=$( strlen "$DATE" )
-    len_right=$(( $len_right+1 ))
-    local right_start=$(($COLUMNS - $len_right))
-
-    local len_cmd=$( strlen "$@" )
-    local len_prompt=$(strlen "$PROMPT" )
-    local len_left=$(($len_cmd+$len_prompt))
-
-    RDATE="\033[${right_start}C ${DATE}"
-
-    if [ $len_left -lt $right_start ]; then
-        # command does not overwrite right prompt
-        # ok to move up one line
-        echo -e "\033[1A${RDATE}"
-    else
-        echo -e "${RDATE}"
-    fi
-}
+# 因为pure可以显示运行时间， prompt又加了prompt出现的时间节点，所以敲命令的时间和实际的执行时间都可以推算出来
+# FIXME: 这里在tmux + pure主题下时，时间设置会多一行
+# preexec () {
+#     DATE=$( date +"[%H:%M:%S]" )
+#     local len_right=$( strlen "$DATE" )
+#     len_right=$(( $len_right+1 ))
+#     local right_start=$(($COLUMNS - $len_right))
+#
+#     local len_cmd=$( strlen "$@" )
+#     local len_prompt=$(strlen "$PROMPT" )
+#     local len_left=$(($len_cmd+$len_prompt))
+#
+#     RDATE="\033[${right_start}C ${DATE}"
+#
+#     if [ $len_left -lt $right_start ]; then
+#         # command does not overwrite right prompt
+#         # ok to move up one line
+#         echo -e "\033[1A${RDATE}"
+#     else
+#         echo -e "${RDATE}"
+#     fi
+# }
 # https://stackoverflow.com/a/26585789
 export PROMPT="[%D{%H:%M:%S}] $PROMPT"
 EOF
