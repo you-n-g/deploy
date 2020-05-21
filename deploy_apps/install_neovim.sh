@@ -53,18 +53,19 @@ export PATH="$NP/bin/:$PATH"
 $NP/bin/npm -g neovim
 
 
-# TODO:  let g:coc_global_extensions
-~/bin/vim -c "CocInstall coc-python" -c "sleep 3"  -c qa
-~/bin/vim -c "CocInstall coc-highlight" -c "sleep 3"  -c qa
-~/bin/vim -c "CocInstall coc-lists" -c "sleep 3"  -c qa
-~/bin/vim -c "CocInstall coc-json" -c "sleep 3"  -c qa
+# TODO:  let g:coc_global_extensions, 还没验证是不是一定能代替
+# ~/bin/vim -c "CocInstall coc-python" -c "sleep 3"  -c qa
+# ~/bin/vim -c "CocInstall coc-highlight" -c "sleep 3"  -c qa
+# ~/bin/vim -c "CocInstall coc-lists" -c "sleep 3"  -c qa
+# ~/bin/vim -c "CocInstall coc-json" -c "sleep 3"  -c qa
 
 # :CocConfig 可以改变settings
 # :CocLocalConfig 如果需要每个项目有自己的配置文件
 mkdir -p ~/.config/nvim/
 cat > ~/.config/nvim/coc-settings.json <<EOF
 {
-    "python.linting.pylamaArgs": ["-i E501,E402"]
+    "python.linting.pylamaArgs": ["-i E501,E402"],
+    "explorer.icon.enableNerdfont": true
 }
 EOF
 

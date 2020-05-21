@@ -108,3 +108,4 @@ cd $REPO_PATH
 ./deploy_apps/install_zsh.sh
 ./deploy_apps/deploy_miniconda.sh
 ./deploy_apps/install_neovim.sh
+./deploy_apps/install_fzf.sh

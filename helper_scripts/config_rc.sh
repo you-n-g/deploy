@@ -44,3 +44,13 @@ function proxy_down() {
 }
 EOF
 fi
+
+
+# for fzf
+# 文件太大常常没法正常运行
+if ! grep "^export FZF_ALT_C_COMMAND" $RC_FILE ; then
+    cat >>$RC_FILE <<"EOF"
+export FZF_ALT_C_COMMAND="command find -L . -maxdepth 1 \\( -path '*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
+                         -o -type d -print 2> /dev/null | cut -b3-"
+EOF
+fi
