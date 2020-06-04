@@ -22,6 +22,11 @@ if ! grep "plugin.*shrink-path" $RC_FILE ; then
     sed -i 's/^\(plugins=(\)/\1shrink-path /' $RC_FILE
 fi
 
+
+if ! grep "plugin.*vi-mode" $RC_FILE ; then
+    sed -i 's/^\(plugins=(\)/\1vi-mode /' $RC_FILE
+fi
+
 # 这个命令可以被sindresorhus/pure 代替了
 # if ! grep "plugin.*command-time" $RC_FILE ; then
 #     sed -i 's/^\(plugins=(\)/\1command-time /' $RC_FILE
