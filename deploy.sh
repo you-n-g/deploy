@@ -104,7 +104,7 @@ fi
 
 
 cd $REPO_PATH
-./deploy_nodejs.sh   # this is for other packages
+./deploy_apps/deploy_nodejs.sh   # this is for other packages
 ./deploy_apps/install_zsh.sh
 ./deploy_apps/deploy_miniconda.sh
 ./deploy_apps/install_neovim.sh
