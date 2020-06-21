@@ -52,7 +52,7 @@ fi
 $DIR_PATH/deploy_nodejs.sh
 NP=~/apps/nodejs
 export PATH="$NP/bin/:$PATH"
-$NP/bin/npm -g neovim
+$NP/bin/npm install -g neovim
 
 
 # :CocConfig 可以改变settings
