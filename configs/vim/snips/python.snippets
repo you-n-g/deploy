@@ -1,0 +1,62 @@
+# A valid snippet should starts with:
+#
+#		snippet trigger_word [ "description" [ options ] ]
+#
+# and end with:
+#
+#		endsnippet
+#
+# Snippet options:
+#
+#		b - Beginning of line.
+#		i - In-word expansion.
+#		w - Word boundary.
+#		r - Regular expression
+#		e - Custom context snippet
+#		A - Snippet will be triggered automatically, when condition matches.
+#
+# Basic example:
+#
+#		snippet emitter "emitter properties" b
+#		private readonly ${1} = new Emitter<$2>()
+#		public readonly ${1/^_(.*)/$1/}: Event<$2> = this.$1.event
+#		endsnippet
+#
+# Online reference: https://github.com/SirVer/ultisnips/blob/master/doc/UltiSnips.txt
+
+snippet import "Normal Import" b
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set(color_codes=True)
+plt.rcParams['font.sans-serif'] = 'SimHei'
+plt.rcParams['axes.unicode_minus'] = False
+from tqdm.cli import tqdm
+# tqdm.pandas()  # for progress_apply
+from IPython import get_ipython
+IPY = get_ipython()
+IPY.run_line_magic("matplotlib", "inline")
+IPY.run_line_magic("load_ext", "autoreload")
+IPY.run_line_magic("load_ext", "autotime")
+endsnippet
+
+
+snippet path "import path" b
+import sys
+sys.path.append('/home/xiaoyang/repos/${1:data_selection}')
+endsnippet
+
+snippet ol "Outlines" b
+# %% [markdown]
+# # Outlines: ${1:header}
+endsnippet
+
+snippet ol2 "Outlines" b
+# %% [markdown]
+# ## Outlines: ${1:header}
+endsnippet
+
+snippet magic "run magic" b
+IPY.run_line_magic("${1:magic command}")
+endsnippet

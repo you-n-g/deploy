@@ -23,7 +23,7 @@ done
 
 
 # for developing environment
-pip install autopep8 better_exceptions neovim
+pip install autopep8 better_exceptions neovim ipython-autotime
 
 
 # snippets

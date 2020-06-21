@@ -50,7 +50,15 @@ fi
 # 文件太大常常没法正常运行
 if ! grep "^export FZF_ALT_C_COMMAND" $RC_FILE ; then
     cat >>$RC_FILE <<"EOF"
+# We want to limit the maxdepth.
 export FZF_ALT_C_COMMAND="command find -L . -maxdepth 1 \\( -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
                          -o -type d -print 2> /dev/null | cut -b3-"
+
+# We don't want to follow the link. This usually consumes a lot of time
+export FZF_CTRL_T_COMMAND="command find . -mindepth 1 \\( -path '*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
+    -o -type f -print \
+    -o -type d -print \
+    -o -type l -print 2> /dev/null | cut -b3-"
 EOF
+
 fi
