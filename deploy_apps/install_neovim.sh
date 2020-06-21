@@ -26,6 +26,7 @@ pip install jupytext
 mkdir -p ~/.config/nvim/
 ln -s ~/code_tools_repo/code_to_copy/backend/etc/init.vim ~/.config/nvim/init.vim
 ln -s ~/deployment4personaluse/configs/vim/snips  ~/.config/nvim/
+ln -s ~/deployment4personaluse/configs/vim/snips  ~/.config/coc/ultisnips
 
 
 
