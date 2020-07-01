@@ -7,7 +7,8 @@ conda install -y -c conda-forge python-cufflinks
 # pip install mysqlclient  # for python3
 # pip install tensorboardX
 # conda install -y tensorboard
-pip install papermill ipdb nbresuse
+pip install papermill ipdb nbresuse jupytext
+# - jupytext: 必须先安装再启动jupyter， 不然不会自动帮你保存py文件
 conda install -y xlwt
 
 # 这些都是针对个人用户的， 别人安装了没有用
@@ -26,7 +27,7 @@ done
 pip install autopep8 better_exceptions neovim ipython-autotime
 
 
-# snippets
+# snippets for juypter
 DIR_P=$(jupyter --data-dir)/nbextensions/snippets/
 FILE_P=$DIR_P/snippets.json
 if [ ! -e $DIR_P  ] || ! grep 'general import' $FILE_P

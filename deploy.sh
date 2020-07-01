@@ -86,6 +86,8 @@ set -g default-terminal "screen-256color"
 set-option -g allow-rename off
 set-option -g history-limit 10000
 set-window-option -g mode-keys vi
+
+bind -T prefix S set-window-option synchronize-panes
 EOF
 
 

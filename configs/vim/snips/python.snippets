@@ -57,6 +57,14 @@ snippet ol2 "Outlines" b
 # ## Outlines: ${1:header}
 endsnippet
 
-snippet magic "run magic" b
+snippet IPY "run magic" b
 IPY.run_line_magic("${1:magic command}")
+endsnippet
+
+snippet groupbyic "calc pred label df ic" b
+groupby("datetime").apply(lambda df: df['${1:score}'].corr(df['${2:label}'], method='${3:spearman}'))
+endsnippet
+
+snippet raisenip "Not Implemented" b
+raise NotImplementedError(f"This type of input is not supported")
 endsnippet
