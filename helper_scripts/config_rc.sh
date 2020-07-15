@@ -62,3 +62,11 @@ export FZF_CTRL_T_COMMAND="command find . -mindepth 1 \\( -path '*/\\.*' -o -fst
 EOF
 
 fi
+
+mkdir -p ~/.dotfiles/
+ln -s ~/deployment4personaluse/configs/shell/rcfile.sh ~/.dotfiles/
+
+
+if ! grep "^source ~/.dotfiles/rcfile.sh" $RC_FILE ; then
+    echo 'source ~/.dotfiles/rcfile.sh' >> $RC_FILE
+fi

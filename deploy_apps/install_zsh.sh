@@ -98,6 +98,8 @@ strlen () {
 # }
 # https://stackoverflow.com/a/26585789
 export PROMPT="[%D{%H:%M:%S}] $PROMPT"
+
+bindkey -M viins '\e.' insert-last-word
 EOF
 fi
 
