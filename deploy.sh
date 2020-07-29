@@ -75,21 +75,18 @@ max-line-length = 120
 EOF
 
 
-## config schema for tmux, `tmux source-file ~/.tmux.conf` can make all the options affect immediately
+## config tmux, `tmux source-file ~/.tmux.conf` can make all the options affect immediately
+TMUX_CONF=~/.tmux.conf
+
 ### color schema
-wget https://raw.githubusercontent.com/altercation/solarized/master/tmux/tmuxcolors-dark.conf -O ~/.tmux.conf
+wget https://raw.githubusercontent.com/altercation/solarized/master/tmux/tmuxcolors-dark.conf -O $TMUX_CONF
 
-cat >> ~/.tmux.conf <<EOF
-# Making tmux compatible with solarized colo schema
-set -g default-terminal "screen-256color"
-# stop tmux rename window  every time a cmd executed
-set-option -g allow-rename off
-set-option -g history-limit 10000
-set-window-option -g mode-keys vi
+mkdir -p ~/.dotfiles/
+ln -s ~/deployment4personaluse/configs/tmux.conf ~/.dotfiles/
 
-bind -T prefix S set-window-option synchronize-panes
-EOF
-
+if ! grep "^source-file ~/.dotfiles/tmux.conf" $TMUX_CONF ; then
+    echo 'source-file ~/.dotfiles/tmux.conf' >> $TMUX_CONF
+fi
 
 tmux_version=`tmux -V | awk '{print $2}'`
 # This syntax does not support sh. zsh and bash are ok
@@ -103,6 +100,7 @@ bind % split-window -h -c "#{pane_current_path}"
 bind c new-window -c "#{pane_current_path}"
 EOF
 fi
+
 
 
 cd $REPO_PATH
