@@ -1,8 +1,10 @@
 
 
-
-mkdir -p ~/.dotfiles/
-ln -s ~/deployment4personaluse/configs/shell/rcfile.sh ~/.dotfiles/
+FILE=~/deployment4personaluse/configs/shell/rcfile.sh
+if [ ! -f "$FILE" ]; then
+    mkdir -p ~/.dotfiles/
+    ln -s $FILE ~/.dotfiles/
+fi
 
 
 if ! grep "^source ~/.dotfiles/rcfile.sh" $RC_FILE ; then

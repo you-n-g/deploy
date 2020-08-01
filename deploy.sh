@@ -35,8 +35,8 @@ git config --global mergetool.prompt false
 
 # clone repos
 cd ~
-if [ ! -e code_tools_repo ]; then
-	git clone --recursive https://github.com/you-n-g/code_tools_repo
+if [ ! -e cheatsheets ]; then
+	git clone --recursive https://github.com/you-n-g/cheatsheets
 fi
 
 
@@ -59,8 +59,9 @@ ignore = F401,E128
 max-line-length = 120
 EOF
 
-
 cd $REPO_PATH
+chmod a+x ./deploy_apps/*
+
 ./deploy_apps/install_tmux.sh
 ./deploy_apps/deploy_nodejs.sh   # this is for other packages
 ./deploy_apps/install_zsh.sh

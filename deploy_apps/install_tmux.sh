@@ -11,7 +11,7 @@ name: code_repo
 root: ~/
 
 windows:
-  - code_repo: cd ~/code_tools_repo/code_to_copy/
+  - code_repo: cd ~/cheatsheets/code_to_copy/
   - deployment: cd ~/deployment4personaluse/
 EOF
 done
@@ -21,7 +21,9 @@ done
 TMUX_CONF=~/.tmux.conf
 
 ### color schema
-wget https://raw.githubusercontent.com/altercation/solarized/master/tmux/tmuxcolors-dark.conf -O $TMUX_CONF
+# This will not work in GFW.
+# This is replaced by egel/tmux-gruvbox installed by tpm
+# wget https://raw.githubusercontent.com/altercation/solarized/master/tmux/tmuxcolors-dark.conf -O $TMUX_CONF
 
 mkdir -p ~/.dotfiles/
 ln -s ~/deployment4personaluse/configs/tmux.conf ~/.dotfiles/
@@ -43,3 +45,4 @@ bind c new-window -c "#{pane_current_path}"
 EOF
 fi
 
+sh ~/deployment4personaluse/deploy_apps/deploy_tpm.sh

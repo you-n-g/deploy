@@ -2,7 +2,7 @@
 
 set -x
 
-cd ~/code_tools_repo
+cd ~/cheatsheets
 git pull
 git submodule update --init --recursive
 
@@ -12,10 +12,10 @@ git pull
 
 
 # mv ~/.vimrc ~/.vimrc.bak
-# cp ~/code_tools_repo/code_to_copy/backend/etc/vimrc ~/.vimrc
+# cp ~/cheatsheets/code_to_copy/backend/etc/vimrc ~/.vimrc
 # vim -c 'call dein#install()' -c q
 
 mv  ~/.config/nvim/init.vim  ~/.config/nvim/init.vim.bak
-cp ~/code_tools_repo/code_to_copy/backend/etc/init.vim ~/.config/nvim/init.vim
+cp ~/cheatsheets/code_to_copy/backend/etc/init.vim ~/.config/nvim/init.vim
 ~/bin/vim -c "PlugInstall"  -c qa
 diff ~/.config/nvim/init.vim  ~/.config/nvim/init.vim.bak

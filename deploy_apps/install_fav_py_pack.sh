@@ -62,4 +62,5 @@ FILE_P=$DIR_P/snippets.json
 # }
 # EOF
 # fi
+rm $FILE_P
 ln -s ~/deployment4personaluse/configs/jupyter/snippets.json $FILE_P

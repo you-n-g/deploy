@@ -106,11 +106,13 @@ fi
 
 
 # 这些可能不需要， 只要 antigen那两行就行
-cd $DIR_PATH
-./deploy_nodejs.sh
-NP=~/apps/nodejs
-export PATH="$NP/bin/:$PATH"
-$NP/bin/npm install --global pure-prompt
+# cd $DIR_PATH
+# ./deploy_nodejs.sh
+# NP=~/apps/nodejs
+# export PATH="$NP/bin/:$PATH"
+# $NP/bin/npm install --global pure-prompt
+# # 这个命令可能会报错， 提示要往 ~/.zshrc 加上 fpath+=('/home/xiaoyang/apps/nodejs/lib/node_modules/pure-prompt/functions')
+# # 但是不加似乎也没问题, 可能pure安装根本不靠他
 
 
 
