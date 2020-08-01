@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 # 这里可以找到各种zsh的插件 https://github.com/unixorn/awesome-zsh-plugins
 
@@ -38,7 +39,7 @@ fi
 
 
 # antigen
-# FIXME: 这里在国内有可能被墙
+# FIXME: 这里在国内有可能被墙 GFW
 curl -L git.io/antigen > ~/.antigen.zsh
 if ! grep "^.*antigen.zsh$" $RC_FILE ; then
     sed -i '1i source ~/.antigen.zsh' $RC_FILE
