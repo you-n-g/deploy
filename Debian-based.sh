@@ -1,5 +1,9 @@
 #!/bin/bash
+
+sudo add-apt-repository ppa:x4121/ripgrep -y
+
 sudo apt-get update
+
 sudo apt-get install -y git vim vim-nox ruby ruby-dev exuberant-ctags tmux build-essential cmake python-dev \
     clang htop python-flake8 autossh python-pip software-properties-common zsh silversearcher-ag # this line is for common use
 
@@ -16,6 +20,7 @@ sudo apt-get install -y vim-nox-py2  # this line is for ubuntu 16.04
 
 sudo apt-get install -y tmuxinator
 
+sudo apt-get install -y ripgrep  # TODO: 可能是不必须的
 
 # clang is for YCM
 # python-flake8 is needed by vim-flake8

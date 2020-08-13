@@ -32,6 +32,10 @@ mkdir -p ~/.config/nvim/
 mkdir -p ~/.config/coc/ultisnips
 ln -s ~/cheatsheets/code_to_copy/backend/etc/init.vim ~/.config/nvim/init.vim
 ln -s ~/deployment4personaluse/configs/vim/snips  ~/.config/nvim/
+
+# 因为这里要重命名，所以要先删一下:  注意这里一定不能加最后的 / !!!
+rm -r  ~/.config/coc/ultisnips
+
 ln -s ~/deployment4personaluse/configs/vim/snips  ~/.config/coc/ultisnips
 
 
