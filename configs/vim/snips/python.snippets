@@ -98,3 +98,13 @@ endsnippet
 snippet ntf "Notify me" b
 from wan import ntf; ntf('${1:Done}')
 endsnippet
+
+snippet read_yaml "read yaml" b
+import yaml
+with open(${1:conf_path}) as f:
+	conf = yaml.load(f, Loader=yaml.FullLoader)
+endsnippet
+
+snippet subrun "subprocess.fun" b
+subprocess.run('${1:command}', shell=True)
+endsnippet
