@@ -1,0 +1,20 @@
+# https://github.com/github/gitignore/blob/master/Python.gitignore
+__pycache__/
+*.pyc
+*.ipynb
+.ipynb_checkpoints
+
+*.pkl
+*.hd5
+
+.env
+.vim
+.nvimrc
+.vscode
+
+
+*.egg-info/
+
+
+# special software
+mlruns/

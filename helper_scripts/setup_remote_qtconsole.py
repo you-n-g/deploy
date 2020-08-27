@@ -2,6 +2,8 @@
 """
 目标: 可以直接在vim中写python，写的python可以低成本地发到kernel中看结果
 qtconsole可以在本地启动远程kernel(我没找到怎么用xserver启动qtconsole
+
+在onedrive的 Personal/APP 已经有更加自动化地打开qtconsole了
 """
 import sys
 
@@ -34,7 +36,7 @@ except json.decoder.JSONDecodeError:
     config = {}
 
 
-ssh_cmd = "ssh <server>"
+ssh_cmd = "ssh azcpu01"
 for k, v in config.items():
     if '_port' in k:
         ssh_cmd += f" -L {v}:127.0.0.1:{v}"
@@ -47,5 +49,4 @@ print(r"将上述json文件贴到 C:\Users\xiaoyang\kernel.json")
 
 print('jupyter qtconsole --existing kernel.json')
 
-
-print("JupyterConnect <之前说的有用的kernel-xxxxx.json的信息>")
+print("JupyterConnect <之前说的有用的kernel-xxxxx.json的信息, 直接从新开的qtconsole中再输入一下 %connect_info 就行>")

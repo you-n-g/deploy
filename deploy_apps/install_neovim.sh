@@ -11,9 +11,14 @@ if [ ! -e ~/bin/vim ]; then
     chmod a+x ~/bin/vim
 fi
 
-# FIXME: 这里在国内有可能被墙
-curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
-        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+# FIXME: 这里在国内有可能被墙 GFW
+# curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
+#         https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+mkdir -p ~/apps/
+mkdir -p ~/.local/share/nvim/site/autoload/
+git clone https://github.com/junegunn/vim-plug ~/apps/vim-plug
+ln -s ~/apps/vim-plug/plug.vim  ~/.local/share/nvim/site/autoload/plug.vim 
+
 
 
 
@@ -24,7 +29,14 @@ pip install jupytext
 
 
 mkdir -p ~/.config/nvim/
-cp ~/code_tools_repo/code_to_copy/backend/etc/init.vim ~/.config/nvim/
+mkdir -p ~/.config/coc/ultisnips
+ln -s ~/cheatsheets/code_to_copy/backend/etc/init.vim ~/.config/nvim/init.vim
+ln -s ~/deployment4personaluse/configs/vim/snips  ~/.config/nvim/
+
+# 因为这里要重命名，所以要先删一下:  注意这里一定不能加最后的 / !!!
+rm -r  ~/.config/coc/ultisnips
+
+ln -s ~/deployment4personaluse/configs/vim/snips  ~/.config/coc/ultisnips
 
 
 
@@ -51,7 +63,7 @@ fi
 $DIR_PATH/deploy_nodejs.sh
 NP=~/apps/nodejs
 export PATH="$NP/bin/:$PATH"
-$NP/bin/npm -g neovim
+$NP/bin/npm install -g neovim
 
 
 # :CocConfig 可以改变settings

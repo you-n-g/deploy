@@ -33,7 +33,7 @@ sudo pip install autopep8 better_exceptions
 
 ## 最后才copy vimrc， 因为太早拷贝vimrc会导致错误
 if [ ! -e ~/.vimrc ]; then
-	cp ~/code_tools_repo/code_to_copy/backend/etc/vimrc ~/.vimrc
+	cp ~/cheatsheets/code_to_copy/backend/etc/vimrc ~/.vimrc
 fi
 
 vim -c 'call dein#install()' -c q
