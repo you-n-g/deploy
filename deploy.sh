@@ -6,7 +6,6 @@ REPO_PATH=`cd "$REPO_PATH"; pwd`
 
 cd $REPO_PATH
 
-
 if which apt-get; then
 	bash Debian-based.sh
 fi
@@ -18,7 +17,6 @@ fi
 if which brew; then
 	bash MAC-based.sh
 fi
-
 
 if which jumbo; then
 	bash jumbo-based.sh
