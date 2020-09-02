@@ -24,7 +24,7 @@ done
 
 
 # for developing environment
-pip install autopep8 better_exceptions neovim ipython-autotime
+pip install autopep8 better_exceptions neovim ipython-autotime yapf
 
 
 # snippets for juypter
@@ -64,3 +64,7 @@ FILE_P=$DIR_P/snippets.json
 # fi
 rm $FILE_P
 ln -s ~/deployment4personaluse/configs/jupyter/snippets.json $FILE_P
+
+
+cd ~/deployment4personaluse/
+python deploy_apps/deploy_plot_cn_font.py

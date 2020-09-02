@@ -5,6 +5,12 @@ source ~/.bashrc
 DIR_PATH=`dirname "$0"`
 DIR_PATH=`cd "$DIR_PATH"; pwd`
 
+
+# install dependacy
+## bat will be used by fzf
+sh $DIR_PATH/install_bat.sh
+
+
 if [ ! -e ~/bin/vim ]; then
     mkdir -p ~/bin/
     curl -L  -o ~/bin/vim https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
