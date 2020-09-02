@@ -18,4 +18,5 @@ jenv enable-plugin export
 # jenv add /usr/lib/jvm/java-7-openjdk-amd64/
 
 
-#jenv global  或者 local 设置全局或者局部环境变量 , 它会生成  .java-version 这个文件
+# jenv global  或者 local 设置全局或者局部环境变量 , 它会生成  .java-version 这个文件
+# 比如  `jenv global 1.7` (改变 system, 通过`jenv versions`可以看到)

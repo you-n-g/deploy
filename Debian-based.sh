@@ -20,7 +20,7 @@ sudo apt-get install -y vim-nox-py2  # this line is for ubuntu 16.04
 
 sudo apt-get install -y tmuxinator
 
-sudo apt-get install -y ripgrep  # TODO: 可能是不必须的
+sudo apt-get install -y ripgrep ack-grep  # TODO: 可能是不必须的
 
 # clang is for YCM
 # python-flake8 is needed by vim-flake8

@@ -73,7 +73,9 @@ cat > ~/.config/nvim/coc-settings.json <<EOF
 {
     "python.linting.pylamaArgs": ["-i E501,E402"],
     "explorer.icon.enableNerdfont": true,
-    "list.source.files.excludePatterns": ["**/__pycache__/**", "**/mlruns/**", "**/runs/**", "**/*.pkl"]
+    "list.source.files.excludePatterns": ["**/__pycache__/**", "**/mlruns/**", "**/runs/**", "**/*.pkl"],
+    "python.formatting.provider": "yapf",
+    "python.formatting.yapfArgs": ["--style", "{column_limit: 120}"]
 }
 EOF
 
