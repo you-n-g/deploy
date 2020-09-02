@@ -37,3 +37,5 @@ export FZF_CTRL_T_COMMAND="command find . -mindepth 1 \\( -path '*/\\.*' -o -fst
     -o -type f -print \
     -o -type d -print \
     -o -type l -print 2> /dev/null | cut -b3-"
+
+export FZF_DEFAULT_COMMAND='fd --type f -L'

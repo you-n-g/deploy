@@ -9,6 +9,7 @@ DIR_PATH=`cd "$DIR_PATH"; pwd`
 # install dependacy
 ## bat will be used by fzf
 sh $DIR_PATH/install_bat.sh
+sh $DIR_PATH/install_fd.sh
 
 
 if [ ! -e ~/bin/vim ]; then

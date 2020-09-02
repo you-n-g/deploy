@@ -108,3 +108,7 @@ endsnippet
 snippet subrun "subprocess.fun" b
 subprocess.run('${1:command}', shell=True)
 endsnippet
+
+snippet loglocal "Description" b
+logger.info({k: v for k, v in locals().items() if k not in {'self'}})
+endsnippet
