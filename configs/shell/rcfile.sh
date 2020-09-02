@@ -25,6 +25,8 @@ function proxy_down() {
 alias pypdb='python -m ipdb -c c'
 alias pyprof='python -m cProfile -o stats_out'
 
+alias ipify="curl 'https://api.ipify.org?format=json'"
+
 # for fzf
 # 文件太大常常没法正常运行
 export FZF_ALT_C_COMMAND="command find -L . -maxdepth 1 \\( -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \
