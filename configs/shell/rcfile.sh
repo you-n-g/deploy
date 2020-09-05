@@ -39,3 +39,17 @@ export FZF_CTRL_T_COMMAND="command find . -mindepth 1 \\( -path '*/\\.*' -o -fst
     -o -type l -print 2> /dev/null | cut -b3-"
 
 export FZF_DEFAULT_COMMAND='fd --type f -L'
+
+
+# Zsh only
+ZF_CMD=$(cat<<"EOF"
+z -l | sort -h -r | awk '{ print $2 }' | fzf --preview="echo {} | xargs ls -lat"
+EOF
+)
+
+function zf() {
+    if [ "$SHELL" = /bin/zsh -o "$0" = '-zsh' ]; then
+        local dir=$(eval $ZF_CMD)
+        cd "$dir"
+    fi
+}

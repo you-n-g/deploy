@@ -6,6 +6,7 @@ __pycache__/
 
 *.pkl
 *.hd5
+*.csv
 
 .env
 .vim

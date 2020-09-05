@@ -4,6 +4,7 @@
 qtconsole可以在本地启动远程kernel(我没找到怎么用xserver启动qtconsole
 
 在onedrive的 Personal/APP 已经有更加自动化地打开qtconsole了
+但是本地 `jupyter_qtconsole_config.py` 的内容还没有加进去
 """
 import sys
 
