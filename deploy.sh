@@ -41,13 +41,7 @@ if which jumbo; then
 	bash jumbo-based.sh
 fi
 
-
-# config git
-git config --global user.name Young Yang
-git config --global user.email afe.young@gmail.com
-git config --global merge.tool vimdiff
-git config --global mergetool.prompt false
-
+./deploy_apps/config_git.sh
 
 
 # clone repos

@@ -1,0 +1,20 @@
+[user]
+        name = Young
+        email = afe.young@gmail.com
+[merge]
+        tool = vimdiff
+[mergetool]
+        prompt = false
+[core]
+        attributesfile = ~/.gitattributes
+# [filter "dropoutput_ipynb"]
+#       clean = ~/bin/ipynb_output_filter.py
+#       smudge = cat
+
+[alias]
+# fzf add in all files
+fza = "!git ls-files -m -o --exclude-standard | fzf --print0 -m | xargs -0 -t -r git add"
+# fzf add in modified files
+fzm = "!git ls-files -m --exclude-standard | fzf --print0 -m | xargs -0 -t -r git add"
+
+# Ref: https://spin.atomicobject.com/2018/04/05/fuzzy-find-git-add/

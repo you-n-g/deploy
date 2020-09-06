@@ -48,7 +48,7 @@ EOF
 )
 
 function zf() {
-    if [ "$SHELL" = /bin/zsh -o "$0" = '-zsh' ]; then
+    if [ `basename "$SHELL"` = zsh -o "$0" = '-zsh' ]; then
         local dir=$(eval $ZF_CMD)
         cd "$dir"
     fi

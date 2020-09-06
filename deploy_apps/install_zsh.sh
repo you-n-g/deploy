@@ -111,7 +111,7 @@ fi
 # NP=~/apps/nodejs
 # export PATH="$NP/bin/:$PATH"
 # $NP/bin/npm install --global pure-prompt
-# # 这个命令可能会报错， 提示要往 ~/.zshrc 加上 fpath+=('/home/xiaoyang/apps/nodejs/lib/node_modules/pure-prompt/functions')
+# # 这个命令可能会报错， 提示要往 ~/.zshrc 加上 fpath+=('~/apps/nodejs/lib/node_modules/pure-prompt/functions')
 # # 但是不加似乎也没问题, 可能pure安装根本不靠他
 
 

@@ -55,7 +55,7 @@ FILE_P=$DIR_P/snippets.json
 #             "name" : "sys path insert",
 #             "code" : [
 #                 "import sys",
-#                 "sys.path.append('/home/xiaoyang/repos/data_selection')"
+#                 "sys.path.append('~/repos/data_selection')"
 #             ]
 #         }
 #     ]
