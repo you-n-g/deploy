@@ -22,8 +22,18 @@ root: ~/
 windows:
   - code_repo: cd ~/cheatsheets/code_to_copy/
   - deployment: cd ~/deployment4personaluse/
+  - commit:
+        panes:
+            - cd ~/cheatsheets/code_to_copy/
+            - cd ~/deployment4personaluse/
 EOF
 done
+
+if [ -e ~/.tmuxinator ]; then
+    rm -r  ~/.tmuxinator
+fi
+
+ln -s ~/deployment4personaluse/configs/tmux/tmuxinator/ ~/.tmuxinator
 
 
 ## config tmux, `tmux source-file ~/.tmux.conf` can make all the options affect immediately
@@ -35,7 +45,7 @@ TMUX_CONF=~/.tmux.conf
 # wget https://raw.githubusercontent.com/altercation/solarized/master/tmux/tmuxcolors-dark.conf -O $TMUX_CONF
 
 mkdir -p ~/.dotfiles/
-ln -s ~/deployment4personaluse/configs/tmux.conf ~/.dotfiles/
+ln -s ~/deployment4personaluse/configs/tmux/tmux.conf ~/.dotfiles/
 
 if ! grep "^source-file ~/.dotfiles/tmux.conf" $TMUX_CONF ; then
     echo 'source-file ~/.dotfiles/tmux.conf' >> $TMUX_CONF

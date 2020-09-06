@@ -48,3 +48,18 @@ while getopts ":a:" opt; do
     esac
 done
 endsnippet
+
+snippet confirm "Confirm (y/n)" b
+while read -p "Continue (y/n)?" CONFIRM_CONTINUE ; do
+	case "$CONFIRM_CONTINUE" in
+	y|Y )
+		break
+		;;
+	n|N )
+		echo "Exited"
+		exit 1
+		;;
+	* ) echo "Invalid";;
+	esac
+done
+endsnippet

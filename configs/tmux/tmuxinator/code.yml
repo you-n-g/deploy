@@ -1,0 +1,12 @@
+# ~/.tmuxinator/code.yml
+name: code
+root: ~/
+
+windows:
+  - code_repo: cd ~/cheatsheets/code_to_copy/
+  - deployment: cd ~/deployment4personaluse/
+  - commit:
+        layout: even-horizontal
+        panes:
+            - cd ~/cheatsheets/code_to_copy/
+            - cd ~/deployment4personaluse/
