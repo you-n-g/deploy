@@ -10,25 +10,6 @@ else
     TMUX_EXE=`which tmux`
 fi
 
-for path in ~/.config/tmuxinator/ ~/.tmuxinator/
-do
-    mkdir -p $path
-    cat > $path/code.yml <<EOF
-# ~/.tmuxinator/code.yml
-
-name: code_repo
-root: ~/
-
-windows:
-  - code_repo: cd ~/cheatsheets/code_to_copy/
-  - deployment: cd ~/deployment4personaluse/
-  - commit:
-        panes:
-            - cd ~/cheatsheets/code_to_copy/
-            - cd ~/deployment4personaluse/
-EOF
-done
-
 if [ -e ~/.tmuxinator ]; then
     rm -r  ~/.tmuxinator
 fi
@@ -51,6 +32,7 @@ if ! grep "^source-file ~/.dotfiles/tmux.conf" $TMUX_CONF ; then
     echo 'source-file ~/.dotfiles/tmux.conf' >> $TMUX_CONF
 fi
 
+# TODO: this may be deprecated in the future
 tmux_version=`$TMUX_EXE -V | awk '{print $2}'`
 # This syntax does not support sh. zsh and bash are ok
 if [[ "$tmux_version" > "1.9" ]] 
