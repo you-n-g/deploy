@@ -1,6 +1,15 @@
 #!/bin/bash
 set -x
 
+# TODO: 还没检查重新安装是否是有用的
+if which conda ;
+then
+    conda install -c conda-forge -y tmux
+    TMUX_EXE=$CONDA_PREFIX/bin/tmux
+else
+    TMUX_EXE=`which tmux`
+fi
+
 for path in ~/.config/tmuxinator/ ~/.tmuxinator/
 do
     mkdir -p $path
@@ -32,7 +41,7 @@ if ! grep "^source-file ~/.dotfiles/tmux.conf" $TMUX_CONF ; then
     echo 'source-file ~/.dotfiles/tmux.conf' >> $TMUX_CONF
 fi
 
-tmux_version=`tmux -V | awk '{print $2}'`
+tmux_version=`$TMUX_EXE -V | awk '{print $2}'`
 # This syntax does not support sh. zsh and bash are ok
 if [[ "$tmux_version" > "1.9" ]] 
 then
