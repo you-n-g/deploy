@@ -53,3 +53,9 @@ function zf() {
         cd "$dir"
     fi
 }
+
+# for rvm and tmuxinator
+# 优先使用个人账户下的rvm
+if [ -e $HOME/.rvm/scripts/rvm ]; then
+    source $HOME/.rvm/scripts/rvm
+fi

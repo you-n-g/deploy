@@ -10,12 +10,7 @@ else
     TMUX_EXE=`which tmux`
 fi
 
-if [ -e ~/.tmuxinator ]; then
-    rm -r  ~/.tmuxinator
-fi
-
-ln -s ~/deployment4personaluse/configs/tmux/tmuxinator/ ~/.tmuxinator
-
+sh ~/deployment4personaluse/deploy_apps/install_tmuxinator.sh
 
 ## config tmux, `tmux source-file ~/.tmux.conf` can make all the options affect immediately
 TMUX_CONF=~/.tmux.conf
