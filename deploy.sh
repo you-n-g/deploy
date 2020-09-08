@@ -26,19 +26,19 @@ done
 
 
 if which apt-get; then
-	bash Debian-based.sh
+    bash Debian-based.sh
 fi
 
 if which yum; then
-	bash RPM-based.sh
+    bash RPM-based.sh
 fi
 
 if which brew; then
-	bash MAC-based.sh
+    bash MAC-based.sh
 fi
 
 if which jumbo; then
-	bash jumbo-based.sh
+    bash jumbo-based.sh
 fi
 
 ./deploy_apps/config_git.sh
@@ -47,13 +47,13 @@ fi
 # clone repos
 cd ~
 if [ ! -e cheatsheets ]; then
-	git clone --recursive $CHEATSHEET_URI
+    git clone --recursive $CHEATSHEET_URI
 fi
 
 
 # config bashrc
 if ! grep "^export PS1" ~/.bashrc ; then
-	echo 'export PS1="[\\D{%T}]"$PS1' >> ~/.bashrc
+    echo 'export PS1="[\\D{%T}]"$PS1' >> ~/.bashrc
 fi
 
 RC_FILE=~/.bashrc

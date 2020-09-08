@@ -47,12 +47,18 @@ z -l | sort -h -r | awk '{ print $2 }' | fzf --preview="echo {} | xargs ls -lat"
 EOF
 )
 
-function zf() {
-    if [ `basename "$SHELL"` = zsh -o "$0" = '-zsh' ]; then
-        local dir=$(eval $ZF_CMD)
-        cd "$dir"
-    fi
-}
+if [ `basename "$SHELL"` = zsh -o "$0" = '-zsh' ]; then
+    function zf() {
+            local dir=$(eval $ZF_CMD)
+            cd "$dir"
+    }
+
+    function hf()  {
+        # select commands from history
+        history | grep -v -P '^ *\d+  history|less|ls' | fzf --tac -m | awk '{$1="";print}'
+        # Ref: https://stackoverflow.com/questions/2626274/print-all-but-the-first-three-columns
+    }
+fi
 
 # for rvm and tmuxinator
 # 优先使用个人账户下的rvm
