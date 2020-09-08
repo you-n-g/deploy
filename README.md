@@ -1,15 +1,11 @@
 
 # Introduction
-This repo will install some tools and vim for development
-
-
-# Requirements
 This toolkit has been tested on
 - ubuntu 14.04
 - ubuntu 16.04
 - ubuntu 18.04
 
-A friendly environment for a python programmer will be deployed in your home directory. The following tools are well-configured.
+This repo will help you to deploy a friendly environment for a python programmer in your home directory. The following tools will be well-configured.
 - neovim
 - zsh
 - miniconda
