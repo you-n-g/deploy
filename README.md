@@ -15,23 +15,16 @@ A friendly environment for a python programmer will be deployed in your home dir
 - miniconda
 - tmux
 
-
-If you are using ubuntu 14.04, vim 8 is needed. You can install with the following instruction.
-```
-sudo apt-get install -y git
-cd ~
-git clone https://github.com/you-n-g/deployment4personaluse
-cd deployment4personaluse
-# Not using visudo is very dangerous!!!  visudo is suggested!!!
-echo  "your_account ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/80-personal
-```
-
 # Installation
 
 
 ```
+sudo apt-get install -y git
 cd ~
 git clone https://github.com/you-n-g/deployment4personaluse
+# Not using visudo is very dangerous!!!  visudo is suggested!!!
+echo  "your_account ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/80-personal
+
 cd deployment4personaluse
 ./deploy.sh
 ```
