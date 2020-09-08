@@ -34,16 +34,18 @@ pip install neovim
 pip install jupytext
 
 
+# :CocConfig 可以改变settings
+# :CocLocalConfig 如果需要每个项目有自己的配置文件
+NVIM_CONF_PATH=~/.config/nvim
+mkdir -p ~/.config/
 
-mkdir -p ~/.config/nvim/
-mkdir -p ~/.config/coc/ultisnips
-ln -s ~/cheatsheets/code_to_copy/backend/etc/init.vim ~/.config/nvim/init.vim
-ln -s ~/deployment4personaluse/configs/vim/snips  ~/.config/nvim/
+if [ -e $NVIM_CONF_PATH ]; then
+    mv $NVIM_CONF_PATH ${NVIM_CONF_PATH}.bak
+fi
+ln -s ~/deployment4personaluse/configs/nvim  $NVIM_CONF_PATH
 
-# 因为这里要重命名，所以要先删一下:  注意这里一定不能加最后的 / !!!
-rm -r  ~/.config/coc/ultisnips
-
-ln -s ~/deployment4personaluse/configs/vim/snips  ~/.config/coc/ultisnips
+rm -r ~/.config/coc/ultisnips
+ln -s ~/deployment4personaluse/configs/nvim/snips  ~/.config/coc/ultisnips
 
 
 
@@ -71,20 +73,6 @@ $DIR_PATH/deploy_nodejs.sh
 NP=~/apps/nodejs
 export PATH="$NP/bin/:$PATH"
 $NP/bin/npm install -g neovim
-
-
-# :CocConfig 可以改变settings
-# :CocLocalConfig 如果需要每个项目有自己的配置文件
-mkdir -p ~/.config/nvim/
-cat > ~/.config/nvim/coc-settings.json <<EOF
-{
-    "python.linting.pylamaArgs": ["-i E501,E402"],
-    "explorer.icon.enableNerdfont": true,
-    "list.source.files.excludePatterns": ["**/__pycache__/**", "**/mlruns/**", "**/runs/**", "**/*.pkl"],
-    "python.formatting.provider": "yapf",
-    "python.formatting.yapfArgs": ["--style", "{column_limit: 120}"]
-}
-EOF
 
 
 # FIXME: This will not work on centos system
