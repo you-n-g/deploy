@@ -112,3 +112,11 @@ endsnippet
 snippet loglocal "Description" b
 logger.info({k: v for k, v in locals().items() if k not in {'self'}})
 endsnippet
+
+snippet joblib "import joblib" b
+from joblib import Parallel, delayed
+endsnippet
+
+snippet paral "use paralllel" b
+Parallel(n_jobs=-1, verbose=10)
+endsnippet
