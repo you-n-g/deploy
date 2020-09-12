@@ -19,7 +19,7 @@ mkdir -p ~/bin/
 
 # FIXME:
 # 下面那部分依赖zsh已经装好了，  但是nodejs是在安装 zsh的过程中用到的
-# 所以最后依赖了 ~/.dotfiles/rcfile.sh 里面的设置！！！！
+# 所以最后依赖了 ~/deploy/configs/shell/rcfile.sh 里面的设置！！！！
 # for RC in ~/.zshrc ~/.bashrc
 # do 
 #     if ! grep $NP $RC

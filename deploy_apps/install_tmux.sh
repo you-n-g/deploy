@@ -20,11 +20,8 @@ TMUX_CONF=~/.tmux.conf
 # This is replaced by egel/tmux-gruvbox installed by tpm
 # wget https://raw.githubusercontent.com/altercation/solarized/master/tmux/tmuxcolors-dark.conf -O $TMUX_CONF
 
-mkdir -p ~/.dotfiles/
-ln -s ~/deploy/configs/tmux/tmux.conf ~/.dotfiles/
-
-if ! grep "^source-file ~/.dotfiles/tmux.conf" $TMUX_CONF ; then
-    echo 'source-file ~/.dotfiles/tmux.conf' >> $TMUX_CONF
+if ! grep "^source-file ~/deploy/configs/tmux/tmux.conf" $TMUX_CONF ; then
+    echo 'source-file ~/deploy/configs/tmux/tmux.conf' >> $TMUX_CONF
 fi
 
 # TODO: this may be deprecated in the future
