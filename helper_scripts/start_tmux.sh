@@ -2,7 +2,7 @@
 
 cd ~/cheatsheets/code_to_copy/
 tmux new-session -s code_repo -n code -d
-cd ~/deployment4personaluse/
+cd ~/deploy/
 tmux new-window -n deployment -t code_repo:1
 
 

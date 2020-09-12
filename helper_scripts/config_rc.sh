@@ -1,6 +1,6 @@
 
 
-FILE=~/deployment4personaluse/configs/shell/rcfile.sh
+FILE=~/deploy/configs/shell/rcfile.sh
 if [ ! -f "$FILE" ]; then
     mkdir -p ~/.dotfiles/
     ln -s $FILE ~/.dotfiles/

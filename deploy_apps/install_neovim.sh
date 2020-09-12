@@ -42,10 +42,10 @@ mkdir -p ~/.config/
 if [ -e $NVIM_CONF_PATH ]; then
     mv $NVIM_CONF_PATH ${NVIM_CONF_PATH}.bak
 fi
-ln -s ~/deployment4personaluse/configs/nvim  $NVIM_CONF_PATH
+ln -s ~/deploy/configs/nvim  $NVIM_CONF_PATH
 
 rm -r ~/.config/coc/ultisnips
-ln -s ~/deployment4personaluse/configs/nvim/snips  ~/.config/coc/ultisnips
+ln -s ~/deploy/configs/nvim/snips  ~/.config/coc/ultisnips
 
 
 

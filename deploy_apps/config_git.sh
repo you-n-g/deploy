@@ -14,4 +14,4 @@ if [ -e $CONF_PATH ]; then
     mv $CONF_PATH ${CONF_PATH}.bak
 fi
 
-ln -s ~/deployment4personaluse/configs/git/gitconfig $CONF_PATH
+ln -s ~/deploy/configs/git/gitconfig $CONF_PATH

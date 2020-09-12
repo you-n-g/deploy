@@ -10,7 +10,7 @@ else
     TMUX_EXE=`which tmux`
 fi
 
-sh ~/deployment4personaluse/deploy_apps/install_tmuxinator.sh
+sh ~/deploy/deploy_apps/install_tmuxinator.sh
 
 ## config tmux, `tmux source-file ~/.tmux.conf` can make all the options affect immediately
 TMUX_CONF=~/.tmux.conf
@@ -21,7 +21,7 @@ TMUX_CONF=~/.tmux.conf
 # wget https://raw.githubusercontent.com/altercation/solarized/master/tmux/tmuxcolors-dark.conf -O $TMUX_CONF
 
 mkdir -p ~/.dotfiles/
-ln -s ~/deployment4personaluse/configs/tmux/tmux.conf ~/.dotfiles/
+ln -s ~/deploy/configs/tmux/tmux.conf ~/.dotfiles/
 
 if ! grep "^source-file ~/.dotfiles/tmux.conf" $TMUX_CONF ; then
     echo 'source-file ~/.dotfiles/tmux.conf' >> $TMUX_CONF
@@ -41,4 +41,4 @@ bind c new-window -c "#{pane_current_path}"
 EOF
 fi
 
-sh ~/deployment4personaluse/deploy_apps/deploy_tpm.sh
+sh ~/deploy/deploy_apps/deploy_tpm.sh

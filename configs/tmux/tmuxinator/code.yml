@@ -4,9 +4,9 @@ root: ~/
 
 windows:
   - code_repo: cd ~/cheatsheets/code_to_copy/
-  - deployment: cd ~/deployment4personaluse/
+  - deployment: cd ~/deploy/
   - commit:
         layout: even-horizontal
         panes:
             - cd ~/cheatsheets/code_to_copy/
-            - cd ~/deployment4personaluse/
+            - cd ~/deploy/

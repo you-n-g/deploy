@@ -30,7 +30,7 @@ if [ -e ~/.tmuxinator ]; then
     rm -r  ~/.tmuxinator
 fi
 
-ln -s ~/deployment4personaluse/configs/tmux/tmuxinator/ ~/.tmuxinator
+ln -s ~/deploy/configs/tmux/tmuxinator/ ~/.tmuxinator
 
 
 
