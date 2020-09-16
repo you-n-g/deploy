@@ -56,6 +56,8 @@ Plug 'kkoomen/vim-doge'
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 
+Plug 'APZelos/blamer.nvim'
+
 call plug#end()
 
 
@@ -284,6 +286,13 @@ vnoremap <silent> <leader>      :<c-u>WhichKeyVisual '<Space>'<CR>
 let g:which_key_map =  {}
 " 我理解这里的所有的map命令 CMD 最后都会变成 :CMD<CR>
 
+" 我一直在尝试解决 vim-which-key 和 context 插件的冲突
+" let g:which_key_use_floating_win = 1
+" let g:which_key_floating_relative_win = 1
+" let g:which_key_run_map_on_popup = 1
+
+let g:which_key_map['t'] = {"name": 'Toggle'}
+
 
 
 "
@@ -312,6 +321,7 @@ let g:vimwiki_hl_headers = 1
 " Nerdtree http://www.vim.org/scripts/script.php?script_id=1658
 "
 nnoremap <silent> <F7> :NERDTreeToggle<CR>
+let g:which_key_map.t.n = ["NERDTreeToggle", 'NERDTreeToggle']
 let NERDTreeIgnore=['\.pyc$', '\.orig$', '\.pyo$']
 
 
@@ -320,6 +330,7 @@ let NERDTreeIgnore=['\.pyc$', '\.orig$', '\.pyo$']
 "
 " nnoremap <silent> <F8> :TlistToggle<CR>
 nnoremap <silent> <F8> :TagbarToggle<CR>
+let g:which_key_map.t.l = ["TagbarToggle", 'TagbarToggle']
 let g:tagbar_sort = 0
 
 
@@ -816,7 +827,7 @@ hi link CtrlSpaceSearch   Search
 hi link CtrlSpaceStatus   StatusLine
 " visual mode is not useful for me at all
 nnoremap <silent>Q :CtrlSpace<CR>
-" set showtabline=0
+" set showtabline=0  " tabline的开关和 vim-airline 的setting得一起修改的
 " 好用的: 
 " - l可以快速列出所有的tab级别的内容
 " 坑:
@@ -941,7 +952,7 @@ nmap <silent> <leader>h] <Plug>(GitGutterNextHunk)
 
 
 " BEGIN 'wellle/context.vim' ------------------------------------------------------
-let g:context_enabled = 1
+let g:context_enabled = 0  " 等待BUG的fix
 
 " 和neovim一起这样用会有bug
 " https://github.com/wellle/context.vim/issues/23
@@ -949,7 +960,7 @@ let g:context_nvim_no_redraw = 1
 
 " 和 vimspector 一起用会出现之前的context留下残影的问题
 " :ContextToggle  可以解决这个问题(似乎也没有解决...)
-
+let g:which_key_map.t.c = ["ContextToggle", 'ContextToggle']
 " END   'wellle/context.vim' ------------------------------------------------------
 
 
@@ -1050,12 +1061,16 @@ endfor
 let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.8 } }
 
 " https://github.com/junegunn/fzf.vim/issues/346
+
 " not include the name of the file
-command! -bang -nargs=* Agc call fzf#vim#ag(<q-args>, {'options': '--delimiter : --nth 4..'}, <bang>0)
+" command! -bang -nargs=* Agc call fzf#vim#ag(<q-args>, {'options': '--delimiter : --nth 4..'}, <bang>0)
+
+" 上面的命令发现preview 没用后， 在这里找到了能用的句子:   https://github.com/junegunn/fzf.vim/issues/362
+command! -bang -nargs=* Agc call fzf#vim#ag(<q-args>, fzf#vim#with_preview(), <bang>0)
 
 nnoremap <silent> <Leader>fc :exe 'Ag '.expand('<cword>')<CR>
 " No name
-nnoremap <silent> <Leader>fCn :exe 'Agc '.expand('<cword>')<CR>
+nnoremap <silent> <Leader>fCc :exe 'Agc '.expand('<cword>')<CR>
 nnoremap <silent> <Leader>fCl :exe 'BLines '.expand('<cword>')<CR>
 nnoremap <silent> <Leader>fCL :exe 'Lines '.expand('<cword>')<CR>
 inoremap <expr> <c-x><c-f> fzf#vim#complete#path('fd')
@@ -1071,6 +1086,7 @@ let g:which_key_map['f'] = {
     \'l' : ['BLines', 'Lines in the current buffer'],
     \'L' : ['Lines', 'Lines in loaded buffer'],
     \'m' : ['Marks', 'Marks'],
+    \'M' : ['Maps', 'Mappings'],
     \'o' : [':Lines Outlines', 'Outlines']
     \ }
 " 这里可以通过tab选多个，回车后变成quick fix
@@ -1082,6 +1098,11 @@ let g:doge_doc_standard_python = 'numpy'
 " END   'kkoomen/vim-doge' -----------------------------------------
 
 
+" BEGIN 'APZelos/blamer.nvim' -----------------------------------------
+" It is useful when reviewing code
+let g:which_key_map.t.b = ["BlamerToggle", 'BlamerToggle']
+let g:blamer_delay = 500
+" END   'APZelos/blamer.nvim' -----------------------------------------
 
 " Nvim usage cheetsheet
 

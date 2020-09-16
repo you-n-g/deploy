@@ -24,7 +24,7 @@ if ! grep "^source-file ~/deploy/configs/tmux/tmux.conf" $TMUX_CONF ; then
     echo 'source-file ~/deploy/configs/tmux/tmux.conf' >> $TMUX_CONF
 fi
 
-# TODO: this may be deprecated in the future
+# TODO: this may be deprecated in the future, please include it in `configs/tmux/tmux.conf`
 tmux_version=`$TMUX_EXE -V | awk '{print $2}'`
 # This syntax does not support sh. zsh and bash are ok
 if [[ "$tmux_version" > "1.9" ]] 

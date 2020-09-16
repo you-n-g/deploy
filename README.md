@@ -1,10 +1,5 @@
 
 # Introduction
-This toolkit has been tested on
-- ubuntu 14.04
-- ubuntu 16.04
-- ubuntu 18.04
-
 This repo will help you to deploy a friendly environment for a python programmer in your home directory. The following tools will be well-configured.
 - neovim
 - zsh
@@ -12,7 +7,6 @@ This repo will help you to deploy a friendly environment for a python programmer
 - tmux
 
 # Installation
-
 
 ```
 sudo apt-get install -y git
