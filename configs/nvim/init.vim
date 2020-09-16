@@ -96,8 +96,8 @@ set isfname-==
 "   \ 'dir':  '\vmodels$',
 "   \ }
 
-" coc-lists相关的都可以用 project下的 .ignore
-" 文件代替，当做它是.gitignore用????
+" coc-lists 和 fzf 相关的都是用 ag, fd 之类的命令， 他们都识别 .ignore 和 .gitignore
+" .ignore 要写全路径才行，不能只写一个文件名
 
 " list.source.files.excludePatterns 是coclist file的ignore
 " 这个在deployment里面有自己动设置参数的脚本
@@ -589,6 +589,11 @@ let g:which_key_map['l'] = {
     \ }
 
 
+let g:which_key_map['c'] = {
+    \ 'name' : 'coc.vim',
+    \'F' : ['Format', 'Format all'],
+    \ }
+
 " scroll the popup
 " comes from https://github.com/neoclide/coc.nvim/issues/1405
 " I think this is still experimental
@@ -1054,6 +1059,10 @@ nnoremap <silent> <Leader>fCn :exe 'Agc '.expand('<cword>')<CR>
 nnoremap <silent> <Leader>fCl :exe 'BLines '.expand('<cword>')<CR>
 nnoremap <silent> <Leader>fCL :exe 'Lines '.expand('<cword>')<CR>
 inoremap <expr> <c-x><c-f> fzf#vim#complete#path('fd')
+inoremap <expr> <c-x><c-k> fzf#vim#complete('cat ~/.english-words/words.txt')
+imap <c-x><c-l> <plug>(fzf-complete-line)
+
+
 
 let g:which_key_map['f'] = {
     \ 'name' : 'fzf',
