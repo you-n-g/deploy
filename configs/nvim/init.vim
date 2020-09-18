@@ -414,12 +414,17 @@ let g:which_key_map['p'] = {
     \'t' : [':SlimeSend1 %load_ext autotime', 'debug mode'],
     \'q' : [':SlimeSend1 exit', 'exit'],
     \'k' : ['IPythonCellPrevCell', 'Prev Cell'],
-    \'j' : ['IPythonCellNextCell', 'Next Cell']
+    \'j' : ['IPythonCellNextCell', 'Next Cell'],
+    \'s' : {
+        \ 'name' : 'Send for sh',
+        \'i' : [':SlimeSend1 ipython --matplotlib', 'start ipython with matplotlib'],
+        \ }
     \ }
 " \'s' : [':SlimeSend1 ipython --matplotlib', 'start ipython with matplotlib'],
 " \'b' : ['SlimeSend0 "b ".expand("%:p").":".line("$")', 'Send file break point'],
 
 nnoremap <leader>psb :SlimeSend0 "b ".expand("%:p").":".line(".")."\n"<CR>
+nnoremap <leader>psr :SlimeSend0 "python ".expand("%:p")."\n"<CR>
 
 " TODO: Combine the ipython cel and jupyter-vim
 " - https://vi.stackexchange.com/a/18946
@@ -1074,7 +1079,7 @@ nnoremap <silent> <Leader>fCc :exe 'Agc '.expand('<cword>')<CR>
 nnoremap <silent> <Leader>fCl :exe 'BLines '.expand('<cword>')<CR>
 nnoremap <silent> <Leader>fCL :exe 'Lines '.expand('<cword>')<CR>
 inoremap <expr> <c-x><c-f> fzf#vim#complete#path('fd')
-inoremap <expr> <c-x><c-k> fzf#vim#complete('cat ~/.english-words/words.txt')
+inoremap <expr> <c-x><c-k> fzf#vim#complete('cat ~/.english-words/words_alpha.txt')
 imap <c-x><c-l> <plug>(fzf-complete-line)
 
 
