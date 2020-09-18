@@ -57,6 +57,7 @@ Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 
 Plug 'APZelos/blamer.nvim'
+Plug 'easymotion/vim-easymotion'
 
 call plug#end()
 
@@ -1055,13 +1056,14 @@ endfor
 " BEGIN 'junegunn/fzf.vim' -----------------------------------------
 let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.8 } }
 
-" https://github.com/junegunn/fzf.vim/issues/346
 
 " not include the name of the file
+" https://github.com/junegunn/fzf.vim/issues/346
 " command! -bang -nargs=* Agc call fzf#vim#ag(<q-args>, {'options': '--delimiter : --nth 4..'}, <bang>0)
+" 其实这里也说了preview怎么一起用
 
 " 上面的命令发现preview 没用后， 在这里找到了能用的句子:   https://github.com/junegunn/fzf.vim/issues/362
-command! -bang -nargs=* Agc call fzf#vim#ag(<q-args>, fzf#vim#with_preview(), <bang>0)
+command! -bang -nargs=* Agc call fzf#vim#ag(<q-args>, fzf#vim#with_preview({'options': '--delimiter : --nth 4..'}), <bang>0)
 
 nnoremap <silent> <Leader>fc :exe 'Ag '.expand('<cword>')<CR>
 " No name
@@ -1081,6 +1083,9 @@ let g:which_key_map['f'] = {
     \'o' : [':Lines Outlines', 'Outlines']
     \ }
 " 这里可以通过tab选多个，回车后变成quick fix
+
+" Search syntax: https://github.com/junegunn/fzf#search-syntax
+" ' ^ . !  有特殊意义
 " END   'junegunn/fzf.vim' -----------------------------------------
 
 
@@ -1094,6 +1099,27 @@ let g:doge_doc_standard_python = 'numpy'
 let g:which_key_map.t.b = ["BlamerToggle", 'BlamerToggle']
 let g:blamer_delay = 500
 " END   'APZelos/blamer.nvim' -----------------------------------------
+
+
+" BEGIN 'easymotion/vim-easymotion' -----------------------------------------
+
+" " <Leader>f{char} to move to {char}
+" map  <Leader>f <Plug>(easymotion-bd-f)
+" nmap <Leader>f <Plug>(easymotion-overwin-f)
+"
+" " s{char}{char} to move to {char}{char}
+" nmap s <Plug>(easymotion-overwin-f2)
+"
+" " Move to line
+" map <Leader>L <Plug>(easymotion-bd-jk)
+" nmap <Leader>L <Plug>(easymotion-overwin-line)
+
+" Move to word
+map  <Leader>w <Plug>(easymotion-bd-w)
+nmap <Leader>w <Plug>(easymotion-overwin-w)
+" BEGIN 'easymotion/vim-easymotion' -----------------------------------------
+
+
 
 " Nvim usage cheetsheet
 
