@@ -99,8 +99,8 @@ set isfname-==
 "   \ 'dir':  '\vmodels$',
 "   \ }
 
-" coc-lists相关的都可以用 project下的 .ignore
-" 文件代替，当做它是.gitignore用????
+" coc-lists 和 fzf 相关的都是用 ag, fd 之类的命令， 他们都识别 .ignore 和 .gitignore
+" .ignore 要写全路径才行，不能只写一个文件名
 
 " list.source.files.excludePatterns 是coclist file的ignore
 " 这个在deployment里面有自己动设置参数的脚本
@@ -415,12 +415,17 @@ let g:which_key_map['p'] = {
     \'t' : [':SlimeSend1 %load_ext autotime', 'debug mode'],
     \'q' : [':SlimeSend1 exit', 'exit'],
     \'k' : ['IPythonCellPrevCell', 'Prev Cell'],
-    \'j' : ['IPythonCellNextCell', 'Next Cell']
+    \'j' : ['IPythonCellNextCell', 'Next Cell'],
+    \'s' : {
+        \ 'name' : 'Send for sh',
+        \'i' : [':SlimeSend1 ipython --matplotlib', 'start ipython with matplotlib'],
+        \ }
     \ }
 " \'s' : [':SlimeSend1 ipython --matplotlib', 'start ipython with matplotlib'],
 " \'b' : ['SlimeSend0 "b ".expand("%:p").":".line("$")', 'Send file break point'],
 
 nnoremap <leader>psb :SlimeSend0 "b ".expand("%:p").":".line(".")."\n"<CR>
+nnoremap <leader>psr :SlimeSend0 "python ".expand("%:p")."\n"<CR>
 
 " TODO: Combine the ipython cel and jupyter-vim
 " - https://vi.stackexchange.com/a/18946
@@ -600,6 +605,11 @@ let g:which_key_map['l'] = {
     \'c' : [':CocList commands', 'commands'],
     \ }
 
+
+let g:which_key_map['c'] = {
+    \ 'name' : 'coc.vim',
+    \'F' : ['Format', 'Format all'],
+    \ }
 
 " scroll the popup
 " comes from https://github.com/neoclide/coc.nvim/issues/1405
@@ -1071,6 +1081,10 @@ nnoremap <silent> <Leader>fCc :exe 'Agc '.expand('<cword>')<CR>
 nnoremap <silent> <Leader>fCl :exe 'BLines '.expand('<cword>')<CR>
 nnoremap <silent> <Leader>fCL :exe 'Lines '.expand('<cword>')<CR>
 inoremap <expr> <c-x><c-f> fzf#vim#complete#path('fd')
+inoremap <expr> <c-x><c-k> fzf#vim#complete('cat ~/.english-words/words_alpha.txt')
+imap <c-x><c-l> <plug>(fzf-complete-line)
+
+
 
 let g:which_key_map['f'] = {
     \ 'name' : 'fzf',

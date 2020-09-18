@@ -80,6 +80,9 @@ TEMP_DEB="$(mktemp)" && wget -O "$TEMP_DEB" 'https://github.com/BurntSushi/ripgr
 rm -f "$TEMP_DEB"
 
 
+# support words: for dictionary compeletion
+git clone https://github.com/dwyl/english-words.git ~/.english-words
+
 
 # docs about neovim
 ## other useful features of neovim
