@@ -105,7 +105,7 @@ with open(${1:conf_path}) as f:
 	conf = yaml.load(f, Loader=yaml.FullLoader)
 endsnippet
 
-snippet subrun "subprocess.fun" b
+snippet subrun "subprocess.run" b
 subprocess.run('${1:command}', shell=True)
 endsnippet
 

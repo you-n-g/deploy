@@ -15,17 +15,20 @@ git clone https://github.com/popstas/zsh-command-time.git ~/.oh-my-zsh/custom/pl
 RC_FILE=~/.zshrc
 
 
+# TODO: 测试过没问题这个就可以删掉了
+# install h:这个在你在浏览文件，发现
+# zsh --stdin  << "EOF"
+# source ~/.zshrc
+# cd $ZSH_CUSTOM/plugins
+# git clone git@github.com:paoloantinori/hhighlighter.git h
+# mv h/h.sh h/h.plugin.zsh
+# EOF
+
+# Plugins
+# - h: https://github.com/paoloantinori/hhighlighter
 if ! grep "plugin.*tmuxinator" $RC_FILE ; then
-    sed -i 's/^\(plugins=(\)/\1tmuxinator /' $RC_FILE
-fi
-
-if ! grep "plugin.*shrink-path" $RC_FILE ; then
-    sed -i 's/^\(plugins=(\)/\1shrink-path /' $RC_FILE
-fi
-
-
-if ! grep "plugin.*vi-mode" $RC_FILE ; then
-    sed -i 's/^\(plugins=(\)/\1vi-mode /' $RC_FILE
+    sed -i 's/^\(plugins=(\)/\1tmuxinator shrink-path vi-mode /' $RC_FILE
+    # Please keep the last blank to make it right
 fi
 
 # 这个命令可以被sindresorhus/pure 代替了
@@ -43,65 +46,6 @@ fi
 curl -L git.io/antigen > ~/.antigen.zsh
 if ! grep "^.*antigen.zsh$" $RC_FILE ; then
     sed -i '1i source ~/.antigen.zsh' $RC_FILE
-fi
-if ! grep "^antigen apply" $RC_FILE ; then
-	cat >> $RC_FILE <<EOF
-antigen bundle zsh-users/zsh-autosuggestions
-antigen bundle zsh-users/zsh-completions
-antigen bundle zsh-users/zsh-syntax-highlighting
-antigen bundle colored-man-pages
-antigen bundle rupa/z z.sh
-antigen bundle MichaelAquilina/zsh-you-should-use
-antigen bundle mafredri/zsh-async
-antigen bundle sindresorhus/pure
-antigen apply
-EOF
-fi
-
-
-if ! grep "^# For showing time" $RC_FILE ; then
-	cat >> $RC_FILE << "EOF"
-export PURE_CMD_MAX_EXEC_TIME=1
-
-# shrink path
-# export PROMPT='${ret_status} %{$fg[cyan]%}$(shrink_path -l -t) %{$reset_color%}'
-
-# For showing time
-# show right prompt with date ONLY when command is executed
-strlen () {
-    FOO=$1
-    local zero='%([BSUbfksu]|([FB]|){*})'
-    LEN=${#${(S%%)FOO//$~zero/}}
-    echo $LEN
-}
-
-# 因为pure可以显示运行时间， prompt又加了prompt出现的时间节点，所以敲命令的时间和实际的执行时间都可以推算出来
-# FIXME: 这里在tmux + pure主题下时，时间设置会多一行
-# preexec () {
-#     DATE=$( date +"[%H:%M:%S]" )
-#     local len_right=$( strlen "$DATE" )
-#     len_right=$(( $len_right+1 ))
-#     local right_start=$(($COLUMNS - $len_right))
-#
-#     local len_cmd=$( strlen "$@" )
-#     local len_prompt=$(strlen "$PROMPT" )
-#     local len_left=$(($len_cmd+$len_prompt))
-#
-#     RDATE="\033[${right_start}C ${DATE}"
-#
-#     if [ $len_left -lt $right_start ]; then
-#         # command does not overwrite right prompt
-#         # ok to move up one line
-#         echo -e "\033[1A${RDATE}"
-#     else
-#         echo -e "${RDATE}"
-#     fi
-# }
-# https://stackoverflow.com/a/26585789
-export PROMPT="[%D{%H:%M:%S}] $PROMPT"
-
-bindkey -M viins '\e.' insert-last-word
-EOF
 fi
 
 

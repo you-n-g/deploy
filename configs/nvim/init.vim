@@ -1,7 +1,7 @@
 call plug#begin('~/.vim/plugged')
 
 Plug 'scrooloose/nerdtree'
-Plug 'majutsushi/tagbar'
+Plug 'majutsushi/tagbar'  " 这个升级后就出错了
 Plug 'fatih/vim-go'
 Plug 'tomtom/tcomment_vim'
 Plug 'nvie/vim-flake8'
@@ -33,6 +33,8 @@ Plug 'hanschen/vim-ipython-cell', { 'for': 'python' }
 
 Plug 'jupyter-vim/jupyter-vim'
 Plug 'goerz/jupytext.vim' " `pip install jupytext` is required
+" let g:jupytext_enable = 0  " to disable jupytext. I tried, but it does not work
+
 Plug 'unblevable/quick-scope'
 Plug 'tpope/vim-repeat'
 Plug 'jiangmiao/auto-pairs'
@@ -58,6 +60,13 @@ Plug 'junegunn/fzf.vim'
 
 Plug 'APZelos/blamer.nvim'
 Plug 'easymotion/vim-easymotion'
+
+" Plug 'sslivkoff/vim-scroll-barnacle'
+Plug 'psliwka/vim-smoothie'
+
+" Plug 'liuchengxu/vista.vim'  "  目前还没发现有啥用， 早点删了吧
+
+Plug 'pevhall/simple_highlighting'
 
 call plug#end()
 
@@ -121,6 +130,7 @@ au BufReadPost *
 
 " highlight current line
 set cursorline
+set cursorcolumn
 
 " 这个得在前面， 不然会对后面的定义有影响, 配合 vim-which-key
 let g:mapleader = "\<Space>"
@@ -176,7 +186,6 @@ func! CompileRunGo()
     exec "!go run %"
 endfunc
 
-nnoremap <F11> :set spell!<CR>
 
 
 " syntax highlight related
@@ -194,18 +203,18 @@ augroup PythonOutlines
 
     " Below is for line hightlight
     if $TERM =~ "256"
-        autocmd FileType python,sh hi Outlines1 cterm=bold ctermbg=017 ctermfg=White
-        autocmd FileType python,sh hi Outlines2 cterm=bold ctermbg=019 ctermfg=White
-        autocmd FileType python,sh hi cellDelimiterHi ctermbg=233 ctermfg=DarkGray
+        autocmd FileType python,sh,zsh hi Outlines1 cterm=bold ctermbg=017 ctermfg=White
+        autocmd FileType python,sh,zsh hi Outlines2 cterm=bold ctermbg=019 ctermfg=White
+        autocmd FileType python,sh,zsh hi cellDelimiterHi ctermbg=233 ctermfg=DarkGray
     else
-        autocmd FileType python,sh hi Outlines1 cterm=bold ctermbg=darkblue ctermfg=White
-        autocmd FileType python,sh hi Outlines2 cterm=bold ctermbg=blue ctermfg=White
-        autocmd FileType python,sh hi cellDelimiterHi ctermbg=Black ctermfg=DarkGray
+        autocmd FileType python,sh,zsh hi Outlines1 cterm=bold ctermbg=darkblue ctermfg=White
+        autocmd FileType python,sh,zsh hi Outlines2 cterm=bold ctermbg=blue ctermfg=White
+        autocmd FileType python,sh,zsh hi cellDelimiterHi ctermbg=Black ctermfg=DarkGray
     endif
 
-    autocmd FileType python,sh sign define cellLine linehl=cellDelimiterHi
-    autocmd FileType python,sh sign define O1 linehl=Outlines1
-    autocmd FileType python,sh sign define O2 linehl=Outlines2
+    autocmd FileType python,sh,zsh sign define cellLine linehl=cellDelimiterHi
+    autocmd FileType python,sh,zsh sign define O1 linehl=Outlines1
+    autocmd FileType python,sh,zsh sign define O2 linehl=Outlines2
 
     function! HighlightCellDelimiter()
       execute "sign unplace * group=cellsDelimiter file=".expand("%")
@@ -294,6 +303,7 @@ let g:which_key_map =  {}
 
 let g:which_key_map['t'] = {"name": 'Toggle'}
 
+let g:which_key_map.t.s = [":set spell!", 'Spell Toggle']
 
 
 "
@@ -333,6 +343,10 @@ let NERDTreeIgnore=['\.pyc$', '\.orig$', '\.pyo$']
 nnoremap <silent> <F8> :TagbarToggle<CR>
 let g:which_key_map.t.l = ["TagbarToggle", 'TagbarToggle']
 let g:tagbar_sort = 0
+
+" For config 
+let g:tagbar_position="topleft vertical" 
+
 
 
 "
@@ -386,7 +400,19 @@ au FileType go nmap <Leader>gd <Plug>(go-doc)
 let g:slime_target = "tmux"
 " 这个一定要和ipython一起用，否则可能出现换行出问题
 let g:slime_python_ipython = 1
+
+" clear previous command
+nnoremap <c-c><c-u> :SlimeSend0 "\x15"<CR>
+" Interupted command
+nnoremap <c-c><c-i> :SlimeSend0 "\x03"<CR>
+" ^D	EOT	004	04	End of Transmission
+nnoremap <c-c><c-d> :SlimeSend0 "\x04"<CR>
+
+
+" TODOs
 " TODO: fix the toggle
+" let g:slime_target = "neovim"  " 这个也支持哦
+
 
 
 " always send text to the pane in the current tmux tab without asking
@@ -1074,10 +1100,12 @@ let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.8 } }
 
 " 上面的命令发现preview 没用后， 在这里找到了能用的句子:   https://github.com/junegunn/fzf.vim/issues/362
 command! -bang -nargs=* Agc call fzf#vim#ag(<q-args>, fzf#vim#with_preview({'options': '--delimiter : --nth 4..'}), <bang>0)
+command! -bang -nargs=* Rgc
+  \ call fzf#vim#grep("rg --column --line-number --no-heading --color=always --smart-case ".shellescape(<q-args>), 1, fzf#vim#with_preview({'options': '--delimiter : --nth 4..'}), <bang>0)
 
-nnoremap <silent> <Leader>fc :exe 'Ag '.expand('<cword>')<CR>
+nnoremap <silent> <Leader>fc :exe 'Rg '.expand('<cword>')<CR>
 " No name
-nnoremap <silent> <Leader>fCc :exe 'Agc '.expand('<cword>')<CR>
+nnoremap <silent> <Leader>fCc :exe 'Rgc '.expand('<cword>')<CR>
 nnoremap <silent> <Leader>fCl :exe 'BLines '.expand('<cword>')<CR>
 nnoremap <silent> <Leader>fCL :exe 'Lines '.expand('<cword>')<CR>
 inoremap <expr> <c-x><c-f> fzf#vim#complete#path('fd')
@@ -1088,8 +1116,8 @@ imap <c-x><c-l> <plug>(fzf-complete-line)
 
 let g:which_key_map['f'] = {
     \ 'name' : 'fzf',
-    \'g' : ['Ag', 'Ag'],
-    \'G' : ['Agc', 'Ag without filename'],
+    \'g' : ['Rg', 'Rg'],
+    \'G' : ['Rgc', 'Rg without filename'],
     \'l' : ['BLines', 'Lines in the current buffer'],
     \'L' : ['Lines', 'Lines in loaded buffer'],
     \'m' : ['Marks', 'Marks'],
@@ -1098,8 +1126,17 @@ let g:which_key_map['f'] = {
     \ }
 " 这里可以通过tab选多个，回车后变成quick fix
 
+
+" 有用的技巧
 " Search syntax: https://github.com/junegunn/fzf#search-syntax
 " ' ^ . !  有特殊意义
+" - 而且这些还可以连着用！！！！
+
+" 待解决的问题
+" https://github.com/junegunn/fzf.vim/issues/374
+" Lines 和 Blines 无法被 preview
+" 无法做Outlines: https://github.com/junegunn/fzf.vim/issues/279
+
 " END   'junegunn/fzf.vim' -----------------------------------------
 
 
@@ -1131,8 +1168,29 @@ let g:blamer_delay = 500
 " Move to word
 map  <Leader>w <Plug>(easymotion-bd-w)
 nmap <Leader>w <Plug>(easymotion-overwin-w)
-" BEGIN 'easymotion/vim-easymotion' -----------------------------------------
 
+" 优点:
+" 可以跳转到任意位置(即使在有多个窗口的情况下)
+
+" END   'easymotion/vim-easymotion' -----------------------------------------
+
+
+" BEGIN 'sslivkoff/vim-scroll-barnacle' -----------------------------------------
+" let g:which_key_map.t.r = ["ScrollbarToggle", 'Scrollbar Toggle']
+" highlight ScrollBlockBottom gui=reverse cterm=reverse
+" END   'sslivkoff/vim-scroll-barnacle' -----------------------------------------
+
+
+" BEGIN 'liuchengxu/vista.vim' -----------------------------------------
+let g:which_key_map.t.v = [":Vista!!", 'Vista Toggle']
+let g:vista_sidebar_position="vertical topleft"
+let g:which_key_map.f.t = [":Vista finder", 'Vista finder']
+left g:vista_default_executive='coc'
+" END   'liuchengxu/vista.vim' -----------------------------------------
+
+" BEGIN 'pevhall/simple_highlighting' -----------------------------------------
+nmap <Leader>H <Plug>HighlightWordUnderCursor
+" END   'pevhall/simple_highlighting' -----------------------------------------
 
 
 " Nvim usage cheetsheet
@@ -1202,8 +1260,8 @@ nmap <Leader>w <Plug>(easymotion-overwin-w)
 
 
 " ========== 其他可能有用的插件 ==========
-" git blame: https://github.com/APZelos/blamer.nvim
 " FZF Redo: https://github.com/junegunn/fzf.vim/pull/941
+" https://github.com/rhysd/conflict-marker.vim
 
 
 " ========== script ==========
