@@ -24,3 +24,5 @@ fi
 
 # TODO: I have to do this manually now
 # Hit prefix + I to fetch the plugin and source it. You should now be able to use the plugin.
+# this script is designed to install tpm
+bash ~/.tmux/plugins/tpm/bindings/install_plugins

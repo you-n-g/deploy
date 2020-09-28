@@ -21,6 +21,9 @@
 # 为[单用户安装rvm](https://rvm.io/rvm/install), 注意页面中的 Single-User installations
 \curl -sSL https://get.rvm.io | bash -s -- --ignore-dotfiles
 # 环境的自动加载依赖了  ./configs/shell/rcfile.sh
+
+
+# FIXME: 第一次找不到 rvm
 . $HOME/.rvm/scripts/rvm
 rvm install ruby   # 这个是害怕rc.local还没生效找不到文件
 gem install tmuxinator  # 的安装完ruby之后才有tmuxinator

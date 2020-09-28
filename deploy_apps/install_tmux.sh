@@ -2,6 +2,10 @@
 set -x
 
 # TODO: 还没检查重新安装是否是有用的
+# - 这里发现第一次根本不会认得conda
+
+export PATH="$HOME/anaconda3/bin:$HOME/miniconda3/bin:$PATH"   # for enable conda after installation
+
 if which conda ;
 then
     conda install -c conda-forge -y tmux
@@ -10,7 +14,7 @@ else
     TMUX_EXE=`which tmux`
 fi
 
-sh ~/deploy/deploy_apps/install_tmuxinator.sh
+bash ~/deploy/deploy_apps/install_tmuxinator.sh
 
 ## config tmux, `tmux source-file ~/.tmux.conf` can make all the options affect immediately
 TMUX_CONF=~/.tmux.conf
@@ -24,18 +28,5 @@ if ! grep "^source-file ~/deploy/configs/tmux/tmux.conf" $TMUX_CONF ; then
     echo 'source-file ~/deploy/configs/tmux/tmux.conf' >> $TMUX_CONF
 fi
 
-# TODO: this may be deprecated in the future, please include it in `configs/tmux/tmux.conf`
-tmux_version=`$TMUX_EXE -V | awk '{print $2}'`
-# This syntax does not support sh. zsh and bash are ok
-if [[ "$tmux_version" > "1.9" ]] 
-then
-    cat >> ~/.tmux.conf <<EOF
-# https://unix.stackexchange.com/a/118381
-# this will not work in low tmux version
-bind '"' split-window -c "#{pane_current_path}"
-bind % split-window -h -c "#{pane_current_path}"
-bind c new-window -c "#{pane_current_path}"
-EOF
-fi
 
 sh ~/deploy/deploy_apps/deploy_tpm.sh

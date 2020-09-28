@@ -17,7 +17,7 @@ if [ ! -e ~/miniconda3/ ]; then
     sh Miniconda3-latest-Linux-x86_64.sh -b
 fi
 
-export PATH="~/anaconda3/bin:~/miniconda3/bin:$PATH"
+export PATH="$HOME/anaconda3/bin:$HOME/miniconda3/bin:$PATH"
 
 conda init zsh
 conda init bash
