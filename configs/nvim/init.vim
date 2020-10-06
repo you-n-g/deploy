@@ -1101,7 +1101,13 @@ let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.8 } }
 " 上面的命令发现preview 没用后， 在这里找到了能用的句子:   https://github.com/junegunn/fzf.vim/issues/362
 command! -bang -nargs=* Agc call fzf#vim#ag(<q-args>, fzf#vim#with_preview({'options': '--delimiter : --nth 4..'}), <bang>0)
 command! -bang -nargs=* Rgc
-  \ call fzf#vim#grep("rg --column --line-number --no-heading --color=always --smart-case ".shellescape(<q-args>), 1, fzf#vim#with_preview({'options': '--delimiter : --nth 4..'}), <bang>0)
+  \ call fzf#vim#grep("rg --column --line-number --no-heading --color=always --smart-case ".shellescape(<q-args>), 1, fzf#vim#with_preview({'options': '--delimiter : --nth 4..'}, 'ctrl-/'), <bang>0)
+
+" [solution for long lines](https://github.com/junegunn/fzf.vim/issues/1051)
+command! -bang -nargs=* Rg
+  \ call fzf#vim#grep(
+  \   "rg --column --line-number --no-heading --color=always --smart-case -- ".shellescape(<q-args>), 1,
+  \   fzf#vim#with_preview('right', 'ctrl-/'), <bang>0)
 
 nnoremap <silent> <Leader>fc :exe 'Rg '.expand('<cword>')<CR>
 " No name
