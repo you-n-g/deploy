@@ -12,13 +12,14 @@ wget https://github.com/v2ray/v2ray-core/releases/download/v4.27.0/v2ray-linux-6
 unzip  v2ray-linux-64.zip
 
 UUID=`python -c 'import uuid; print(uuid.uuid4())'`
+PROXY_PORT=5432
 
 
 cat > config.json  <<EOF
 {
   "inbounds": [
     {
-      "port": 5432, // 服务器监听端口
+      "port": $PROXY_PORT, // 服务器监听端口
       "protocol": "vmess",    // 主传入协议
       "settings": {
         "clients": [
@@ -61,7 +62,7 @@ cat > config_client.json <<EOF
         "vnext": [
           {
             "address": "<SERVER_ADDRSS>", // 服务器地址，请修改为你自己的服务器 IP 或域名
-            "port": 5432,  // 服务器端口
+            "port": $PROXY_PORT,  // 服务器端口
             "users": [
               {
                 "id": "$UUID",  // 用户 ID，必须与服务器端配置相同

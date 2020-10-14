@@ -27,6 +27,7 @@ done
 pip install autopep8 better_exceptions neovim ipython-autotime yapf
 
 
+
 # snippets for juypter
 DIR_P=$(jupyter --data-dir)/nbextensions/snippets/
 FILE_P=$DIR_P/snippets.json

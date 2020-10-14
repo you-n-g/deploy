@@ -24,6 +24,7 @@ EOF
     antigen bundle mafredri/zsh-async
     antigen bundle sindresorhus/pure
     antigen bundle paoloantinori/hhighlighter
+    antigen bundle 1ambda/zsh-snippets
     # hhighlighter
     # 1) 可以让一些暂时不支持高亮的代码 log 等等信息高亮
     # 2) 充当不能筛选内容的grep的作用
@@ -69,6 +70,15 @@ EOF
     export PROMPT="[%D{%H:%M:%S}] $PROMPT"
 
     bindkey -M viins '\e.' insert-last-word
+
+
+    # 1ambda/zsh-snippets
+    alias zsp="zsh_snippets"
+    bindkey '^S^S' zsh-snippets-widget-expand  # CTRL-S CTRL-S (expand)
+    bindkey '^S^A' zsh-snippets-widget-list    # CTRL-S CTRL-A (list)
+    ## useful command
+    # zsp add xxx "XXX"
+    # zsp delete xxx
 fi
 
 
@@ -154,5 +164,7 @@ function tfts() {
     # do
     #     echo "$_line"
     # done
+
+    # 最后用的方法是 zsh 的插件h
 }
 

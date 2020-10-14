@@ -54,7 +54,7 @@ Plug 'kana/vim-submode'
 " Plug 'terryma/vim-multiple-cursors'
 Plug 'mg979/vim-visual-multi'
 
-Plug 'kkoomen/vim-doge'
+Plug 'kkoomen/vim-doge', { 'do': { -> doge#install() } }
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 
@@ -754,6 +754,8 @@ let g:coc_snippet_prev = '<c-k>'
 " Use <C-j> for both expand and jump (make expand higher priority.)
 imap <C-j> <Plug>(coc-snippets-expand-jump)
 
+let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
+
 
 " coc-list ------------------------------
 " 这里感觉和文档写的不太一样
@@ -1152,6 +1154,9 @@ let g:which_key_map['f'] = {
 
 " BEGIN 'kkoomen/vim-doge' -----------------------------------------
 let g:doge_doc_standard_python = 'numpy'
+
+" DEBUG:
+" 如果没有效果可以强行安装一下:  `:call doge#install()`
 " END   'kkoomen/vim-doge' -----------------------------------------
 
 

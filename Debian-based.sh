@@ -5,11 +5,7 @@ sudo add-apt-repository ppa:x4121/ripgrep -y
 sudo apt-get update
 
 sudo apt-get install -y git vim vim-nox exuberant-ctags tmux build-essential cmake python-dev \
-    clang htop python-flake8 autossh python-pip software-properties-common zsh silversearcher-ag # this line is for common use
-
-# these should installed separately. Otherwise it will fail together.
-# sudo apt-get install -y ruby-mkrf # this line is for ubuntu 14.04
-sudo apt-get install -y vim-nox-py2  # this line is for ubuntu 16.04
+    clang htop python-flake8 autossh python-pip software-properties-common zsh silversearcher-ag moreutils # this line is for common use
 
 
 # sudo apt-get install -y gnupg2
