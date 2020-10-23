@@ -43,17 +43,14 @@ if [ -e $NVIM_CONF_PATH ]; then
 fi
 ln -s ~/deploy/configs/nvim  $NVIM_CONF_PATH
 
-rm -r ~/.config/coc/ultisnips
-ln -s ~/deploy/configs/nvim/snips  ~/.config/coc/ultisnips
-# TODO: 这一句没有生效，不知道是不是应该在 PlugInstall 之后才有用
-
-
-
 
 ~/bin/vim -c PlugInstall -c qa
 
 
-# cd ~/.vim/plugged/YouCompleteMe/ && python install.py  # I don't use YCM any longer
+# NOTE: 这一句应该在 PlugInstall 之后才有用
+
+rm -r ~/.config/coc/ultisnips
+ln -s ~/deploy/configs/nvim/snips  ~/.config/coc/ultisnips
 
 
 if ! grep "escape-time" ~/.tmux.conf ; then

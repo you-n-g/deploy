@@ -129,3 +129,11 @@ endsnippet
 snippet raisemnip  "raise method not implemented" b
 raise NotImplementedError(f"Please implement the \`${1:func}\` method")
 endsnippet
+
+snippet vir "Virtual Base class" b
+from abc import ABC, abstractmethod
+class ${1:A}(ABC):
+	@abstractmethod
+	def ${2:f}(self):
+		pass
+endsnippet

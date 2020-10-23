@@ -304,6 +304,7 @@ let g:which_key_map =  {}
 let g:which_key_map['t'] = {"name": 'Toggle'}
 
 let g:which_key_map.t.s = [":set spell!", 'Spell Toggle']
+let g:which_key_map.t.p = [":exec '!sed -n  '.line('w0').','.line('w$').'p %'" , 'Plain text']
 
 
 "
@@ -428,12 +429,12 @@ let g:slime_dont_ask_default = 1
 
 let g:which_key_map['p'] = {
     \ 'name' : 'IPython Cell',
-    \'r' : ['IPythonCellRun', 'IPythonCellRun'],
-    \'R' : ['IPythonCellRunTime', 'IPythonCellRunTime'],
+    \'r' : ['IPythonCellRun', 'Run Script'],
+    \'R' : ['IPythonCellRunTime', 'Run script with time'],
     \'e' : ['IPythonCellExecuteCellVerbose', 'Execute Cell'],
     \'E' : ['IPythonCellExecuteCellVerboseJump', 'Execute Cell Jump'],
-    \'l' : ['IPythonCellClear', 'IPythonCellClear'],
-    \'x' : ['IPythonCellClose', 'IPythonCellClose'],
+    \'l' : ['IPythonCellClear', 'Clear'],
+    \'x' : ['IPythonCellClose', 'Close'],
     \'c' : [':SlimeSend', 'Send line or selected'],
     \'p' : ['IPythonCellPrevCommand', 'Previous Command'],
     \'Q' : ['IPythonCellRestart', 'restart ipython'],
@@ -1083,6 +1084,9 @@ endfor
 " v选择编辑的操作会出错，得用extend模式代替v
 " s不是删除然后立马插入，而是进入到一个selecting模式
 " 选取了多行后 \\c 可以创建多个normal模式的光标，\\a可以创建多个extend模式的光标
+"
+" 有用的功能: https://github.com/mg979/vim-visual-multi/blob/master/doc/vm-tutorial
+" - 在<c-n>时， \\w 可以切换是否要boundary,  \\c 可以切换是否要 case-sensitive
 "
 " 优势
 " - 和用macro记录改一波再应用到别的位置作对比，

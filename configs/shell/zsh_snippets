@@ -1,2 +1,1 @@
-typeset -g -A zshSnippetArr=( jph 'jupyter notebook --port 9000 --ip `hostname`' )
-typeset -g -A zshSnippetArr=( jp0 'jupyter notebook --port 9000 --ip 0.0.0.0' )
+typeset -g -A zshSnippetArr=( jp0 'jupyter notebook --port 9000 --ip 0.0.0.0' jph 'jupyter notebook --port 9000 --ip `hostname`' rgcn 'rg '\''[\p{Han}]'\' trz 'terminalizer record XXX -d zsh' )
