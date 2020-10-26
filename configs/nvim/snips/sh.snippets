@@ -25,7 +25,7 @@
 # Online reference: https://github.com/SirVer/ultisnips/blob/master/doc/UltiSnips.txt
 
 snippet root "Who am I!" b
-if [ \`whoami\` != root \]; then
+if [ \`whoami\` != root ]; then
 	echo Please run this script as root or using sudo
 	exit
 fi
@@ -62,4 +62,12 @@ while read -p "Continue (y/n)?" CONFIRM_CONTINUE ; do
 	* ) echo "Invalid";;
 	esac
 done
+endsnippet
+
+snippet dir "Description" b
+if [ \$0 = "-bash" -o \$0 = "-zsh" ]; then
+	DIR=\`pwd\`
+else
+	DIR="$( cd "$(dirname $(readlink -f "\$0"))" ; pwd -P )"
+fi
 endsnippet
