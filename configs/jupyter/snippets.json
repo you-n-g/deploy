@@ -41,6 +41,12 @@
             "code" : [
                 "from wan import ntf; ntf('Done')"
             ]
+        },
+        {
+            "name" : "small NOTE",
+            "code" : [
+                " <font style='font-weight: bold; color:red '>小而显眼的Note</font>"
+            ]
         }
     ]
 }
