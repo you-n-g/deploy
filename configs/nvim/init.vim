@@ -54,7 +54,7 @@ Plug 'kana/vim-submode'
 " Plug 'terryma/vim-multiple-cursors'
 Plug 'mg979/vim-visual-multi'
 
-Plug 'kkoomen/vim-doge'
+Plug 'kkoomen/vim-doge', { 'do': { -> doge#install() } }
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 
@@ -754,6 +754,8 @@ let g:coc_snippet_prev = '<c-k>'
 " Use <C-j> for both expand and jump (make expand higher priority.)
 imap <C-j> <Plug>(coc-snippets-expand-jump)
 
+let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
+
 
 " coc-list ------------------------------
 " 这里感觉和文档写的不太一样
@@ -787,6 +789,9 @@ imap <C-j> <Plug>(coc-snippets-expand-jump)
 " - 安装: coc-java-debug,  Vimspector, 在项目中配置`.vimspector.json`(配置见项目页)
 " - vimspector快捷键设置， 启动java时加参数 -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=5005,suspend=y 
 " - vimspector设置断点， 通过 <leader>lc java.debug.vimspector.start 链接jvm
+" FAQ
+" - 如果想要在uncaught exception处设置断点，那么将config的  "breakpoints.exception" 配置改成下面就行
+" -  "uncaught": "Y"
 
 
 
@@ -1022,6 +1027,9 @@ let g:which_key_map['v'] = {
     \'O' : ['vimspector#StepOut()', 'step out'],
     \ }
 nnoremap <leader>vB  :call vimspector#ToggleBreakpoint({'condition':''})<left><left><left>
+
+" 其他看文档就能知道的信息
+" - Exception breakpoints
 " END    'puremourning/vimspector' -----------------------------------------
 
 
@@ -1101,7 +1109,11 @@ let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.8 } }
 " 上面的命令发现preview 没用后， 在这里找到了能用的句子:   https://github.com/junegunn/fzf.vim/issues/362
 command! -bang -nargs=* Agc call fzf#vim#ag(<q-args>, fzf#vim#with_preview({'options': '--delimiter : --nth 4..'}), <bang>0)
 command! -bang -nargs=* Rgc
-  \ call fzf#vim#grep("rg --column --line-number --no-heading --color=always --smart-case ".shellescape(<q-args>), 1, fzf#vim#with_preview({'options': '--delimiter : --nth 4..'}), <bang>0)
+  \ call fzf#vim#grep("rg --column --line-number --no-heading --color=always --smart-case ".shellescape(<q-args>), 1, fzf#vim#with_preview({'options': '--delimiter : --nth 4..'}, 'right', 'ctrl-/'), <bang>0)
+
+" [solution for long lines](https://github.com/junegunn/fzf.vim/issues/1051)
+command! -bang -nargs=* Rg
+  \ call fzf#vim#grep("rg --column --line-number --no-heading --color=always --smart-case -- ".shellescape(<q-args>), 1, fzf#vim#with_preview('right', 'ctrl-/'), <bang>0)
 
 nnoremap <silent> <Leader>fc :exe 'Rg '.expand('<cword>')<CR>
 " No name
@@ -1142,6 +1154,9 @@ let g:which_key_map['f'] = {
 
 " BEGIN 'kkoomen/vim-doge' -----------------------------------------
 let g:doge_doc_standard_python = 'numpy'
+
+" DEBUG:
+" 如果没有效果可以强行安装一下:  `:call doge#install()`
 " END   'kkoomen/vim-doge' -----------------------------------------
 
 
@@ -1190,6 +1205,7 @@ left g:vista_default_executive='coc'
 
 " BEGIN 'pevhall/simple_highlighting' -----------------------------------------
 nmap <Leader>H <Plug>HighlightWordUnderCursor
+vmap <Leader>H <Plug>HighlightWordUnderCursor
 " END   'pevhall/simple_highlighting' -----------------------------------------
 
 

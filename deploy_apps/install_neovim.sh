@@ -30,8 +30,7 @@ ln -s ~/apps/vim-plug/plug.vim  ~/.local/share/nvim/site/autoload/plug.vim
 
 
 # this relys on the anaconda
-pip install neovim
-pip install jupytext
+pip install neovim jupytext
 
 
 # :CocConfig 可以改变settings
@@ -46,6 +45,7 @@ ln -s ~/deploy/configs/nvim  $NVIM_CONF_PATH
 
 rm -r ~/.config/coc/ultisnips
 ln -s ~/deploy/configs/nvim/snips  ~/.config/coc/ultisnips
+# TODO: 这一句没有生效，不知道是不是应该在 PlugInstall 之后才有用
 
 
 
