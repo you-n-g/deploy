@@ -68,6 +68,8 @@ Plug 'psliwka/vim-smoothie'
 
 Plug 'pevhall/simple_highlighting'
 
+Plug 'AndrewRadev/sideways.vim'
+
 call plug#end()
 
 
@@ -276,6 +278,10 @@ autocmd BufWritePre [:;"'\[\]]*
 \   try | echoerr 'Forbidden file name: ' . expand('<afile>') | endtry
 " 如果实在想存可一这么操作
 " :noa w '
+
+
+" Remove trailing whitespaces when saving python files
+autocmd FileType python autocmd BufWritePre <buffer> %s/\s\+$//e
 
 
 
@@ -1211,6 +1217,11 @@ left g:vista_default_executive='coc'
 nmap <Leader>H <Plug>HighlightWordUnderCursor
 vmap <Leader>H <Plug>HighlightWordUnderCursor
 " END   'pevhall/simple_highlighting' -----------------------------------------
+
+" BEGIN 'AndrewRadev/sideways.vim' -----------------------------------------
+nnoremap <c-h> :SidewaysLeft<cr>
+nnoremap <c-l> :SidewaysRight<cr>
+" END   'AndrewRadev/sideways.vim' -----------------------------------------
 
 
 " Nvim usage cheetsheet
