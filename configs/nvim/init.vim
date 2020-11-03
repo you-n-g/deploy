@@ -15,7 +15,7 @@ Plug 'morhetz/gruvbox'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'nathanaelkane/vim-indent-guides'
 
-" 这里需要依赖 https://github.com/ryanoasis/nerd-fonts, 需要在本地安装字体
+" 这里需要依赖 https://github.com/ryanoasis/nerd-fonts, 需要在本地安装字体, DejaVu(favorite)
 Plug 'ryanoasis/vim-devicons'
 Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
 Plug 'mhinz/vim-startify'
@@ -281,7 +281,7 @@ autocmd BufWritePre [:;"'\[\]]*
 
 
 " Remove trailing whitespaces when saving python files
-autocmd FileType python autocmd BufWritePre <buffer> %s/\s\+$//e
+autocmd FileType python autocmd BufWritePre <buffer> if &modified | %s/\s\+$//e | endif
 
 
 
@@ -444,21 +444,28 @@ let g:which_key_map['p'] = {
     \'c' : [':SlimeSend', 'Send line or selected'],
     \'p' : ['IPythonCellPrevCommand', 'Previous Command'],
     \'Q' : ['IPythonCellRestart', 'restart ipython'],
-    \'d' : [':SlimeSend1 %debug', 'debug mode'],
-    \'t' : [':SlimeSend1 %load_ext autotime', 'debug mode'],
+    \'t' : [':SlimeSend1 %load_ext autotime', 'load autotime'],
     \'q' : [':SlimeSend1 exit', 'exit'],
     \'k' : ['IPythonCellPrevCell', 'Prev Cell'],
     \'j' : ['IPythonCellNextCell', 'Next Cell'],
+    \'d' : {
+        \ 'name' : 'debug related',
+        \'d' : [':SlimeSend1 %debug', 'debug mode'],
+    \ },
     \'s' : {
         \ 'name' : 'Send for sh',
         \'i' : [':SlimeSend1 ipython --matplotlib', 'start ipython with matplotlib'],
         \ }
     \ }
+" Failed settings
 " \'s' : [':SlimeSend1 ipython --matplotlib', 'start ipython with matplotlib'],
 " \'b' : ['SlimeSend0 "b ".expand("%:p").":".line("$")', 'Send file break point'],
+" \'e' : ['placehoder', 'Create an embeded env']
 
 nnoremap <leader>psb :SlimeSend0 "b ".expand("%:p").":".line(".")."\n"<CR>
 nnoremap <leader>psr :SlimeSend0 "python ".expand("%:p")."\n"<CR>
+nnoremap <leader>psd :SlimeSend0 "pypdb ".expand("%:p")."\n"<CR>
+nnoremap <leader>pde :SlimeSend1 from IPython import embed; embed()<CR>
 
 " TODO: Combine the ipython cel and jupyter-vim
 " - https://vi.stackexchange.com/a/18946
@@ -1035,6 +1042,12 @@ let g:which_key_map['v'] = {
     \ }
 nnoremap <leader>vB  :call vimspector#ToggleBreakpoint({'condition':''})<left><left><left>
 
+" Python DEBUG
+" :VimspectorInstall debugpy
+" vim .vimspector.json   # 贴上这里的结果就行: https://github.com/puremourning/vimspector#python
+"                        # 改几个尖括号里面的内容就行
+" 跑 continue就行
+
 " 其他看文档就能知道的信息
 " - Exception breakpoints
 " END    'puremourning/vimspector' -----------------------------------------
@@ -1293,6 +1306,7 @@ nnoremap <c-l> :SidewaysRight<cr>
 " ========== 其他可能有用的插件 ==========
 " FZF Redo: https://github.com/junegunn/fzf.vim/pull/941
 " https://github.com/rhysd/conflict-marker.vim
+" https://github.com/romgrk/winteract.vim
 
 
 " ========== script ==========
