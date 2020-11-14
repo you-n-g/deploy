@@ -92,7 +92,7 @@ fi
 alias gitlog="git log --all --oneline --graph --decorate"
 alias mux=tmuxinator
 alias mx=tmux
-export PATH="$HOME/bin/:$HOME/apps/nodejs/bin/:$PATH"
+export PATH="$HOME/deploy/helper_scripts/bin/:$HOME/bin/:$HOME/apps/nodejs/bin/:$PATH"
 export EDITOR=`which vim`
 # sudo -E will keep the environment when run sudo. Many env variables like http_proxy need it.
 alias sudo="sudo -E"

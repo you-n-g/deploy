@@ -70,6 +70,8 @@ Plug 'pevhall/simple_highlighting'
 
 Plug 'AndrewRadev/sideways.vim'
 
+Plug 'szw/vim-maximizer'
+
 call plug#end()
 
 
@@ -240,8 +242,7 @@ augroup END
 
 
 " 快速替换
-" TODO: 这个highlight 是个啥鬼.... 好像根本不需要是不是....
-" - 可能我只是想写一个替换highlight的快捷键，结果弄错了
+" Highlight 是为了让用户看清楚现在哪些词会被替换
 nnoremap <expr> <plug>HighlightReplaceW '/\<'.expand('<cword>').'\><CR>``:%s/\<'.expand('<cword>').'\>/'.expand('<cword>').'/g<left><left>'
 " 这里蕴含了单引号字符串包含单引号的技巧(''代表', 后来发现不用了)
 " - https://vi.stackexchange.com/a/9046
@@ -309,7 +310,15 @@ let g:which_key_map =  {}
 
 let g:which_key_map['t'] = {"name": 'Toggle'}
 
+" spell related
 let g:which_key_map.t.s = [":set spell!", 'Spell Toggle']
+" [s ]s: previous(next) spell error
+" zg: 标记为正确词汇
+" zw: 标记为错误词汇
+" zuX: 把 x 从词汇表中删除
+" 词汇表小写代表修改 spellfile, 大写代表 internal-wordlist
+" internal-wordlist 代表存在内存中，下次重新打开vim  或者设置 encoding都会导致它消失
+
 let g:which_key_map.t.p = [":exec '!sed -n  '.line('w0').','.line('w$').'p %'" , 'Plain text']
 
 
@@ -350,6 +359,7 @@ let NERDTreeIgnore=['\.pyc$', '\.orig$', '\.pyo$']
 nnoremap <silent> <F8> :TagbarToggle<CR>
 let g:which_key_map.t.l = ["TagbarToggle", 'TagbarToggle']
 let g:tagbar_sort = 0
+highlight TagbarHighlight ctermfg=17 ctermbg=190 guifg=#00005f guibg=#dfff00
 
 " For config 
 let g:tagbar_position="topleft vertical" 
@@ -465,6 +475,9 @@ let g:which_key_map['p'] = {
 nnoremap <leader>psb :SlimeSend0 "b ".expand("%:p").":".line(".")."\n"<CR>
 nnoremap <leader>psr :SlimeSend0 "python ".expand("%:p")."\n"<CR>
 nnoremap <leader>psd :SlimeSend0 "pypdb ".expand("%:p")."\n"<CR>
+nnoremap <leader>psp :SlimeSend0 "pyprof ".expand("%:p")."\n"<CR>
+nnoremap <leader>pskp :SlimeSend0 "kernprof -l ".expand("%:p")."\n"<CR>
+nnoremap <leader>pskc :SlimeSend0 "python -m line_profiler ".expand("%:t").".lprof\n"<CR>
 nnoremap <leader>pde :SlimeSend1 from IPython import embed; embed()<CR>
 
 " TODO: Combine the ipython cel and jupyter-vim
@@ -1106,6 +1119,7 @@ endfor
 "
 " 有用的功能: https://github.com/mg979/vim-visual-multi/blob/master/doc/vm-tutorial
 " - 在<c-n>时， \\w 可以切换是否要boundary,  \\c 可以切换是否要 case-sensitive
+" - 在visual mode 选择cursor时，m是一个标记操作符， mG 代表从当前标记到结尾
 "
 " 优势
 " - 和用macro记录改一波再应用到别的位置作对比，
@@ -1137,6 +1151,7 @@ command! -bang -nargs=* Rgc
 " [solution for long lines](https://github.com/junegunn/fzf.vim/issues/1051)
 command! -bang -nargs=* Rg
   \ call fzf#vim#grep("rg --column --line-number --no-heading --color=always --smart-case -- ".shellescape(<q-args>), 1, fzf#vim#with_preview('right', 'ctrl-/'), <bang>0)
+" rg直接跳转到特定代码特定行非常管用!!!!
 
 nnoremap <silent> <Leader>fc :exe 'Rg '.expand('<cword>')<CR>
 " No name
@@ -1235,6 +1250,10 @@ vmap <Leader>H <Plug>HighlightWordUnderCursor
 nnoremap <c-h> :SidewaysLeft<cr>
 nnoremap <c-l> :SidewaysRight<cr>
 " END   'AndrewRadev/sideways.vim' -----------------------------------------
+
+" BEGIN 'szw/vim-maximizer' -----------------------------------------
+let g:which_key_map.t.M = ["MaximizerToggle", 'MaximizerToggle']
+" END   'szw/vim-maximizer' -----------------------------------------
 
 
 " Nvim usage cheetsheet

@@ -1,1 +1,1 @@
-typeset -g -A zshSnippetArr=( jp0 'jupyter notebook --port 9000 --ip 0.0.0.0' jph 'jupyter notebook --port 9000 --ip `hostname`' rgcn 'rg '\''[\p{Han}]'\' trz 'terminalizer record XXX -d zsh' )
+typeset -g -A zshSnippetArr=( jp0 'jupyter notebook --port 9000 --ip 0.0.0.0' jph 'jupyter notebook --port 9000 --ip `hostname`' psd 'sudo env "PATH=$PATH"  py-spy dump --pid ' psr 'py-spy record -o profile.svg -- ' pst 'sudo env "PATH=$PATH"  py-spy top --pid ' rgcn 'rg '\''[\p{Han}]'\' sn 'snakeviz -s -H `hostname` stats_out' trz 'terminalizer record XXX -d zsh' )
