@@ -112,7 +112,7 @@ set isfname-==
 "   \ 'dir':  '\vmodels$',
 "   \ }
 
-" coc-lists 和 fzf 相关的都是用 ag, fd 之类的命令， 他们都识别 .ignore 和 .gitignore
+" coc-lists 和 fzf 相关的都是用 ag, fd 之类的命令， 他们都识别 .ignore (不是git仓库也行) 和 .gitignore (前提是这是个git仓库)
 " .ignore 要写全路径才行，不能只写一个文件名
 
 " list.source.files.excludePatterns 是coclist file的ignore
@@ -791,7 +791,7 @@ let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
 " - 所以要做修改需在这些默认值之后操作
 "    - 比如想要follow the link就得这么操作: list.source.files.args": ["-L", "--color", "never", "--files"]
 "    - https://github.com/neoclide/coc-lists/issues/69
-" - NOTE: rg的默认会读入.gitignore
+" - NOTE: rg的默认会读入.gitignore (前提是这是个git仓库)
 " - 对于floating window的看法: https://github.com/neoclide/coc-lists/issues/61
 " 未来有可能的代替品
 " - https://github.com/liuchengxu/vim-clap
