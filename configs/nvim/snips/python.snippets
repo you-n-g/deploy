@@ -137,3 +137,14 @@ class ${1:A}(ABC):
 	def ${2:f}(self):
 		pass
 endsnippet
+
+snippet pdemi "Pandas Example Multi-Index" b
+import pandas as pd
+import numpy as np
+
+arrays = [
+	np.array(['bar', 'bar', 'baz', 'baz', 'foo', 'foo', 'qux', 'qux']),
+	np.array(['one', 'two', 'one', 'two', 'one', 'two', 'one', 'two'])
+]
+df = pd.DataFrame(np.random.randn(8, 4), index=arrays)
+endsnippet
