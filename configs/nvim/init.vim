@@ -57,20 +57,16 @@ Plug 'mg979/vim-visual-multi'
 Plug 'kkoomen/vim-doge', { 'do': { -> doge#install() } }
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
-
 Plug 'APZelos/blamer.nvim'
 Plug 'easymotion/vim-easymotion'
-
 " Plug 'sslivkoff/vim-scroll-barnacle'
 Plug 'psliwka/vim-smoothie'
-
 " Plug 'liuchengxu/vista.vim'  "  目前还没发现有啥用， 早点删了吧
-
 Plug 'pevhall/simple_highlighting'
-
 Plug 'AndrewRadev/sideways.vim'
-
 Plug 'szw/vim-maximizer'
+Plug 'camspiers/lens.vim'  " TODO: toggle function https://stackoverflow.com/a/20579322
+
 
 call plug#end()
 
@@ -228,9 +224,9 @@ augroup PythonOutlines
       for l:lnum in range(line("w0"), line("w$"))
         if getline(l:lnum) =~ "^# %%"
           execute "sign place ".l:lnum." line=".l:lnum." name=cellLine group=cellsDelimiter file=".expand("%")
-        elseif getline(l:lnum) =~ "^# # Outlines:"
+        elseif getline(l:lnum) =~ "^# +# *Outlines:"
           execute "sign place ".l:lnum." line=".l:lnum." name=O1 group=otl1 file=".expand("%")
-        elseif getline(l:lnum) =~ "^# ## Outlines:"
+        elseif getline(l:lnum) =~ "^# +## *Outlines:"
           execute "sign place ".l:lnum." line=".l:lnum." name=O2 group=otl2 file=".expand("%")
         endif
       endfor
@@ -239,6 +235,36 @@ augroup PythonOutlines
     autocmd! CursorMoved *.py,*.sh call HighlightCellDelimiter()
 augroup END
 
+
+augroup JavaOutlines
+    au! 
+    " Below is for line hightlight
+    if $TERM =~ "256"
+        autocmd FileType java hi JavaOutlines1 cterm=bold ctermbg=017 ctermfg=White
+        autocmd FileType java hi JavaOutlines2 cterm=bold ctermbg=019 ctermfg=White
+    else
+        autocmd FileType java hi JavaOutlines1 cterm=bold ctermbg=darkblue ctermfg=White
+        autocmd FileType java hi JavaOutlines2 cterm=bold ctermbg=blue ctermfg=White
+    endif
+
+    autocmd FileType java sign define javaO1 linehl=JavaOutlines1
+    autocmd FileType java sign define javaO2 linehl=JavaOutlines2
+
+    function! HighlightJavaOL()
+      execute "sign unplace * group=javaotl1 file=".expand("%")
+      execute "sign unplace * group=javaotl2 file=".expand("%")
+
+      for l:lnum in range(line("w0"), line("w$"))
+        if getline(l:lnum) =~ "^\\s*// *# *Outlines:"
+          execute "sign place ".l:lnum." line=".l:lnum." name=javaO1 group=javaotl1 file=".expand("%")
+        elseif getline(l:lnum) =~ "^\\s*// *## *Outlines:"
+          execute "sign place ".l:lnum." line=".l:lnum." name=javaO2 group=javaotl2 file=".expand("%")
+        endif
+      endfor
+    endfunction
+
+    autocmd! CursorMoved *.java call HighlightJavaOL()
+augroup END
 
 
 " 快速替换
@@ -359,7 +385,8 @@ let NERDTreeIgnore=['\.pyc$', '\.orig$', '\.pyo$']
 nnoremap <silent> <F8> :TagbarToggle<CR>
 let g:which_key_map.t.l = ["TagbarToggle", 'TagbarToggle']
 let g:tagbar_sort = 0
-highlight TagbarHighlight ctermfg=17 ctermbg=190 guifg=#00005f guibg=#dfff00
+" highlight TagbarHighlight ctermfg=17 ctermbg=190 guifg=#00005f guibg=#dfff00
+highlight link TagbarHighlight Cursor
 
 " For config 
 let g:tagbar_position="topleft vertical" 
@@ -424,6 +451,7 @@ nnoremap <c-c><c-u> :SlimeSend0 "\x15"<CR>
 nnoremap <c-c><c-i> :SlimeSend0 "\x03"<CR>
 " ^D	EOT	004	04	End of Transmission
 nnoremap <c-c><c-d> :SlimeSend0 "\x04"<CR>
+" TODO: 发现无法把 ctrl+arrow 之类的操作符send 过去
 
 
 " TODOs
@@ -656,6 +684,7 @@ let g:which_key_map['l'] = {
     \'o' : [':CocList -I --auto-preview --ignore-case --input=outlines lines', 'Outlines'],
     \'i' : [':CocList -I --auto-preview --ignore-case lines', 'Search in this file'],
     \'c' : [':CocList commands', 'commands'],
+    \'u' : [':CocList mru', 'mru(current dir)'],
     \ }
 
 
@@ -1255,6 +1284,18 @@ nnoremap <c-l> :SidewaysRight<cr>
 let g:which_key_map.t.M = ["MaximizerToggle", 'MaximizerToggle']
 " END   'szw/vim-maximizer' -----------------------------------------
 
+" BEGIN 'camspiers/lens.vim' -----------------------------------------
+" TODO: toggle function https://stackoverflow.com/a/20579322
+
+" let g:lens#height_resize_max = 60
+" let g:lens#width_resize_max = 120
+let g:lens#height_resize_max = winheight('%') / 4 * 3
+let g:lens#width_resize_max = winwidth('%') / 4 * 3
+let g:which_key_map.t.r = ["lens#toggle()", 'lens(resize toggle)']
+let g:lens#disabled_filetypes = ['nerdtree', 'fzf', 'tagbar']
+
+" END   'camspiers/lens.vim' -----------------------------------------
+
 
 " Nvim usage cheetsheet
 
@@ -1332,12 +1373,16 @@ let g:which_key_map.t.M = ["MaximizerToggle", 'MaximizerToggle']
 " vim script cheatsheet https://devhints.io/vimscript
 " help script
 
+" str =~ "<正则表达式，注意\要写成 \\>"
 
 
 " ========== TODO ==========
 " Highlight 整行
 " - https://vi.stackexchange.com/questions/15505/highlight-whole-todo-comment-line
 " - https://stackoverflow.com/questions/2150220/how-do-i-make-vim-syntax-highlight-a-whole-line
+"
+" Snippets 其实是有一套自己的语法
+" - https://www.jianshu.com/p/c0ba049878ca
 
 
 
