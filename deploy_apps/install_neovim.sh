@@ -50,6 +50,7 @@ ln -s ~/deploy/configs/nvim  $NVIM_CONF_PATH
 # NOTE: 这一句应该在 PlugInstall 之后才有用
 
 rm -r ~/.config/coc/ultisnips
+mkdir ~/.config/coc/
 ln -s ~/deploy/configs/nvim/snips  ~/.config/coc/ultisnips
 
 
