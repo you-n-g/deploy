@@ -65,7 +65,7 @@ Plug 'psliwka/vim-smoothie'
 Plug 'pevhall/simple_highlighting'
 Plug 'AndrewRadev/sideways.vim'
 Plug 'szw/vim-maximizer'
-Plug 'camspiers/lens.vim'  " TODO: toggle function https://stackoverflow.com/a/20579322
+" Plug 'camspiers/lens.vim'  " TODO: toggle function https://stackoverflow.com/a/20579322
 
 
 call plug#end()
@@ -500,12 +500,12 @@ let g:which_key_map['p'] = {
 " \'b' : ['SlimeSend0 "b ".expand("%:p").":".line("$")', 'Send file break point'],
 " \'e' : ['placehoder', 'Create an embeded env']
 
-nnoremap <leader>psb :SlimeSend0 "b ".expand("%:p").":".line(".")."\n"<CR>
 nnoremap <leader>psr :SlimeSend0 "python ".expand("%:p")."\n"<CR>
 nnoremap <leader>psd :SlimeSend0 "pypdb ".expand("%:p")."\n"<CR>
 nnoremap <leader>psp :SlimeSend0 "pyprof ".expand("%:p")."\n"<CR>
 nnoremap <leader>pskp :SlimeSend0 "kernprof -l ".expand("%:p")."\n"<CR>
 nnoremap <leader>pskc :SlimeSend0 "python -m line_profiler ".expand("%:t").".lprof\n"<CR>
+nnoremap <leader>pdb :SlimeSend0 "b ".expand("%:p").":".line(".")."\n"<CR>
 nnoremap <leader>pde :SlimeSend1 from IPython import embed; embed()<CR>
 
 " TODO: Combine the ipython cel and jupyter-vim
@@ -1287,12 +1287,12 @@ let g:which_key_map.t.M = ["MaximizerToggle", 'MaximizerToggle']
 " BEGIN 'camspiers/lens.vim' -----------------------------------------
 " TODO: toggle function https://stackoverflow.com/a/20579322
 
-" let g:lens#height_resize_max = 60
-" let g:lens#width_resize_max = 120
-let g:lens#height_resize_max = winheight('%') / 4 * 3
-let g:lens#width_resize_max = winwidth('%') / 4 * 3
-let g:which_key_map.t.r = ["lens#toggle()", 'lens(resize toggle)']
-let g:lens#disabled_filetypes = ['nerdtree', 'fzf', 'tagbar']
+" " let g:lens#height_resize_max = 60
+" " let g:lens#width_resize_max = 120
+" let g:lens#height_resize_max = winheight('%') / 4 * 3
+" let g:lens#width_resize_max = winwidth('%') / 4 * 3
+" let g:which_key_map.t.r = ["lens#toggle()", 'lens(resize toggle)']
+" let g:lens#disabled_filetypes = ['nerdtree', 'fzf', 'tagbar']
 
 " END   'camspiers/lens.vim' -----------------------------------------
 

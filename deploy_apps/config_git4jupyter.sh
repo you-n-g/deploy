@@ -15,6 +15,17 @@ cat > ~/.gitattributes << EOF
 *.ipynb    filter=dropoutput_ipynb
 EOF
 
-git config --global core.attributesfile ~/.gitattributes
-git config --global filter.dropoutput_ipynb.clean ~/bin/ipynb_output_filter.py
-git config --global filter.dropoutput_ipynb.smudge cat
+while getopts "a" opt; do
+    case $opt in
+        a)
+        git config --global core.attributesfile ~/.gitattributes
+        git config --global filter.dropoutput_ipynb.clean ~/bin/ipynb_output_filter.py
+        git config --global filter.dropoutput_ipynb.smudge cat
+        exit 0
+        ;;
+        \?)
+        echo "Invalid option: -$OPTARG" >&2
+        exit 1
+        ;;
+    esac
+done
