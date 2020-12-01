@@ -69,3 +69,5 @@ ln -s ~/deploy/configs/jupyter/snippets.json $FILE_P
 
 cd ~/deploy/
 python deploy_apps/deploy_plot_cn_font.py
+
+sh deploy_apps/set_jupyter_pwd.sh
