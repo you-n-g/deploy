@@ -1384,6 +1384,9 @@ let g:which_key_map.t.M = ["MaximizerToggle", 'MaximizerToggle']
 " Snippets 其实是有一套自己的语法
 " - https://www.jianshu.com/p/c0ba049878ca
 
+" 更好的管理剪切板
+" https://github.com/svermeulen/vim-yoink
+
 
 
 " other cheetsheet
