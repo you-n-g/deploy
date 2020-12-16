@@ -845,9 +845,14 @@ let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
 " - 安装: coc-java-debug,  Vimspector, 在项目中配置`.vimspector.json`(配置见项目页)
 " - vimspector快捷键设置， 启动java时加参数 -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=5005,suspend=y 
 " - vimspector设置断点， 通过 <leader>lc java.debug.vimspector.start 链接jvm
+" - 后来发现 `.vimspector.json` 没有用(参考自coc-java-debug主页)， 得设置 `.gadgets.json` https://github.com/dansomething/coc-java-debug/issues/11#issuecomment-725497630
+"
 " FAQ
 " - 如果想要在uncaught exception处设置断点，那么将config的  "breakpoints.exception" 配置改成下面就行
 " -  "uncaught": "Y"
+"
+" 坑
+" - 如果启动时忘了从 java.debug.vimspector.start 启动而是从 continue 启动，可能会触发bug导致无法继续连上debugger
 
 
 
@@ -1081,6 +1086,7 @@ let g:which_key_map['v'] = {
     \'o' : ['vimspector#StepOver()', 'step over'],
     \'i' : ['vimspector#StepInto()', 'step into'],
     \'O' : ['vimspector#StepOut()', 'step out'],
+    \'R' : ['VimspectorReset', 'reset'],
     \ }
 nnoremap <leader>vB  :call vimspector#ToggleBreakpoint({'condition':''})<left><left><left>
 
