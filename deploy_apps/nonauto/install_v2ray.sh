@@ -40,6 +40,8 @@ cat > config.json  <<EOF
 }
 EOF
 
+# 这边其实也可以直接用HTTP接口的
+
 cat > config_client.json <<EOF
 {
   "inbounds": [

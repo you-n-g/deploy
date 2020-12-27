@@ -224,9 +224,9 @@ augroup PythonOutlines
       for l:lnum in range(line("w0"), line("w$"))
         if getline(l:lnum) =~ "^# %%"
           execute "sign place ".l:lnum." line=".l:lnum." name=cellLine group=cellsDelimiter file=".expand("%")
-        elseif getline(l:lnum) =~ "^# +# *Outlines:"
+        elseif getline(l:lnum) =~ "^# \\+# *Outlines:"
           execute "sign place ".l:lnum." line=".l:lnum." name=O1 group=otl1 file=".expand("%")
-        elseif getline(l:lnum) =~ "^# +## *Outlines:"
+        elseif getline(l:lnum) =~ "^# \\+## *Outlines:"
           execute "sign place ".l:lnum." line=".l:lnum." name=O2 group=otl2 file=".expand("%")
         endif
       endfor
@@ -460,6 +460,7 @@ nnoremap <c-c><c-d> :SlimeSend0 "\x04"<CR>
 
 
 
+" These lines must be deleted if we use "neovim" slime_target
 " always send text to the pane in the current tmux tab without asking
 let g:slime_default_config = {
             \ 'socket_name': get(split($TMUX, ','), 0),
