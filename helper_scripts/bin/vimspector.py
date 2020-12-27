@@ -28,11 +28,37 @@ PY_TPL = {
 
 
 
-JAVA_TPL = {
+JAVA_TPL_G = {
   "adapters": {
     "java-debug-server": {
       "name": "vscode-java",
       "port": "${AdapterPort}"
+    }
+  }
+}
+
+
+JAVA_TPL_V = {
+  "adapters": {
+    "java-debug-server": {
+      "name": "vscode-java",
+      "port": "${AdapterPort}"
+    }
+  },
+  "configurations": {
+    "Java Attach": {
+      "adapter": "java-debug-server",
+      "configuration": {
+        "request": "attach",
+        "host": "127.0.0.1",
+        "port": "5005"
+      },
+      "breakpoints": {
+        "exception": {
+          "caught": "N",
+          "uncaught": "Y"
+        }
+      }
     }
   }
 }
@@ -52,8 +78,10 @@ class VimSpector:
         print('please run `:VimspectorInstall debugpy` in your vim. And press " vc" to start debugger')
 
     def jgen(self):
-        with open(".gadgets.json", "w") as f:
-            json.dump(JAVA_TPL, f)
+        # 后来发现  .gadgets.json 好像不需要呀
+        for cfg, fname in (JAVA_TPL_G, ".gadgets.json"), (JAVA_TPL_V, ".vimspector.json"):
+            with open(fname, "w") as f:
+                json.dump(cfg, f)
 
         print("请参考 init.vim coc-java 部分的代码")
 

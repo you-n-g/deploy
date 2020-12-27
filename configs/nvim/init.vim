@@ -67,11 +67,14 @@ Plug 'AndrewRadev/sideways.vim'
 Plug 'szw/vim-maximizer'
 " Plug 'camspiers/lens.vim'  " TODO: toggle function https://stackoverflow.com/a/20579322
 
+Plug 'numirias/semshi', {'do': ':UpdateRemotePlugins'}
 
 call plug#end()
 
 
 " settings -------------------------
+
+
 
 set ai "auto indent
 set expandtab
@@ -154,6 +157,14 @@ let g:gruvbox_contrast_dark="hard"
 " let g:gruvbox_contrast_dark="soft"
 set background=dark
 colorscheme gruvbox
+
+
+" inoremap <Esc> <NOP>
+" noremap <Esc> <NOP>
+" " TODO: This will make `ctrl+[` disabled.
+
+
+" customized functions
 
 map <F9>p :call CompilePython()<cr>
 func! CompilePython()
@@ -723,12 +734,12 @@ function! s:coc_float_scroll(forward) abort
   return ''
 endfunction
 
-nnoremap <silent><expr> <down> coc#util#has_float() ? coc#util#float_scroll(1) : "\<down>"
-nnoremap <silent><expr> <up> coc#util#has_float() ? coc#util#float_scroll(0) : "\<up>"
-inoremap <silent><expr> <down> coc#util#has_float() ? <SID>coc_float_scroll(1) : "\<down>"
-inoremap <silent><expr> <up> coc#util#has_float() ? <SID>coc_float_scroll(0) : "\<up>"
-vnoremap <silent><expr> <down> coc#util#has_float() ? <SID>coc_float_scroll(1) : "\<down>"
-vnoremap <silent><expr> <up> coc#util#has_float() ? <SID>coc_float_scroll(0) : "\<up>"
+nnoremap <silent><expr> <down> coc#float#has_float() ? coc#util#float_scroll(1) : "\<down>"
+nnoremap <silent><expr> <up> coc#float#has_float() ? coc#util#float_scroll(0) : "\<up>"
+inoremap <silent><expr> <down> coc#float#has_float() ? <SID>coc_float_scroll(1) : "\<down>"
+inoremap <silent><expr> <up> coc#float#has_float() ? <SID>coc_float_scroll(0) : "\<up>"
+vnoremap <silent><expr> <down> coc#float#has_float() ? <SID>coc_float_scroll(1) : "\<down>"
+vnoremap <silent><expr> <up> coc#float#has_float() ? <SID>coc_float_scroll(0) : "\<up>"
 
 
 let g:coc_global_extensions = [
@@ -846,6 +857,7 @@ let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
 " - vimspector快捷键设置， 启动java时加参数 -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=5005,suspend=y 
 " - vimspector设置断点， 通过 <leader>lc java.debug.vimspector.start 链接jvm
 " - 后来发现 `.vimspector.json` 没有用(参考自coc-java-debug主页)， 得设置 `.gadgets.json` https://github.com/dansomething/coc-java-debug/issues/11#issuecomment-725497630
+"       - 再后面发现光有 '.gadgets.json' 也没有用，还是得依赖 '.vimspector.json'
 "
 " FAQ
 " - 如果想要在uncaught exception处设置断点，那么将config的  "breakpoints.exception" 配置改成下面就行
@@ -1303,6 +1315,14 @@ let g:which_key_map.t.M = ["MaximizerToggle", 'MaximizerToggle']
 " END   'camspiers/lens.vim' -----------------------------------------
 
 
+
+" BEGIN 'numirias/semshi' -----------------------------------------
+" This is too noisy when using with  CocActionAsync('highlight')
+let g:semshi#mark_selected_nodes=0
+" END   'numirias/semshi' -----------------------------------------
+
+
+
 " Nvim usage cheetsheet
 
 " 目录
@@ -1393,6 +1413,8 @@ let g:which_key_map.t.M = ["MaximizerToggle", 'MaximizerToggle']
 " 更好的管理剪切板
 " https://github.com/svermeulen/vim-yoink
 
+" 这里的插件可以参考
+" https://github.com/Blacksuan19/init.nvim
 
 
 " other cheetsheet
