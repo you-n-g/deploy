@@ -14,7 +14,10 @@ sh $DIR_PATH/install_fd.sh
 
 if [ ! -e ~/bin/vim ]; then
     mkdir -p ~/bin/
-    curl -L  -o ~/bin/vim https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
+    # Dev version
+    # curl -L  -o ~/bin/vim https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
+    # Stable version: 这里建议安装稳定版本，之前安装 nightly版本的时候遇到过崩溃的事情
+    curl -L  -o ~/bin/vim https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
     chmod a+x ~/bin/vim
 fi
 
