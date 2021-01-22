@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Set the password automatically
-# - 这个有可能因为jupyter版本变化发生变化
+# - 这个有可能因为jupyter版本变化而不work
 
 # `echo N` incase of overriding the existing config
 echo N | jupyter notebook --generate-config
