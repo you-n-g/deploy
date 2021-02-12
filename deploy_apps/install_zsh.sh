@@ -66,9 +66,18 @@ ln -s ~/deploy/configs/shell/zsh_snippets ~/.zsh_snippets
 cd $DIR_PATH
 . ../helper_scripts/config_rc.sh
 
+# zsh性能优化
+# 1) git
 # 如果觉得zsh在有git的文件夹下太慢了(特别是我加上了ipynb的版本管理之后)，可以取消掉git文件的提示
 # 比如你根据你用的主题(~/.zshrc中的ZSH_THEME可以得到)  编辑~/.oh-my-zsh/themes/robbyrussell.zsh-theme
 # 把PROMPT中的 $(git_prompt_info) 去掉
+# - 后来不知道为什么不管用了
+# 2) jenv 可能会很大程度拖慢性能
+
+# *) Ref
+# zsh -xv  : debug性能
+# https://bloggie.io/@kinopyo/debug-and-optimize-zsh-loading-time
+
 
 # Cheatsheet系列
 ## ctrl+r ctrl+s 可以查找历史的命令，并且前后查询

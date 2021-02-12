@@ -24,6 +24,8 @@
 #
 # Online reference: https://github.com/SirVer/ultisnips/blob/master/doc/UltiSnips.txt
 
+# *UltiSnips-python* : 这里可以直接用python脚本自动插入代码
+
 snippet import "Normal Import" b
 import numpy as np
 import pandas as pd
@@ -147,4 +149,15 @@ arrays = [
 	np.array(['one', 'two', 'one', 'two', 'one', 'two', 'one', 'two'])
 ]
 df = pd.DataFrame(np.random.randn(8, 4), index=arrays)
+endsnippet
+
+snippet dfcmp "Compare dataframe" b
+# pip install datacompy
+import datacompy
+compare = datacompy.Compare(df_new, df_old, on_index=True, rel_tol=1e-5, df1_name="new", df2_name="old")
+print(compare.report())
+endsnippet
+
+snippet pwd "python %" b
+python `!v expand('%')`
 endsnippet
