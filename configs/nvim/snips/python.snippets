@@ -161,3 +161,8 @@ endsnippet
 snippet pwd "python %" b
 python `!v expand('%')`
 endsnippet
+
+snippet dw "Deprecation Warning" b
+import warnings
+warnings.warn("${1:XXX} is deprecated; use ${2:XXX}.", DeprecationWarning)
+endsnippet

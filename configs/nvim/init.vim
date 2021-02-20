@@ -69,6 +69,8 @@ Plug 'szw/vim-maximizer'
 
 Plug 'numirias/semshi', {'do': ':UpdateRemotePlugins'}
 
+Plug 'tpope/vim-fugitive'
+
 call plug#end()
 
 
@@ -1061,6 +1063,11 @@ nmap <silent> <leader>h] <Plug>(GitGutterNextHunk)
 
 " END   'airblade/vim-gitgutter' ------------------------------------------------------
 
+" BEGIN 'tpope/vim-fugitive' ------------------------------------------------------
+nmap <silent> <leader>hl :G log --graph --oneline --decorate --all<CR>
+" 其他有用的
+" p : preview 看看里面是个啥
+" END   'tpope/vim-fugitive' ------------------------------------------------------
 
 " BEGIN 'wellle/context.vim' ------------------------------------------------------
 let g:context_enabled = 0  " 等待BUG的fix
@@ -1229,6 +1236,8 @@ let g:which_key_map['f'] = {
 " Search syntax: https://github.com/junegunn/fzf#search-syntax
 " ' ^ . !  有特殊意义
 " - 而且这些还可以连着用！！！！
+" 快捷键
+" - ^t (open in new tab) ^x(open in horizontal split) ^v (open in vertical split)
 
 " 待解决的问题
 " https://github.com/junegunn/fzf.vim/issues/374
