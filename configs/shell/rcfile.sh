@@ -24,11 +24,16 @@ EOF
     antigen bundle mafredri/zsh-async
     antigen bundle sindresorhus/pure
     antigen bundle paoloantinori/hhighlighter
-    antigen bundle 1ambda/zsh-snippets
     # hhighlighter
     # 1) 可以让一些暂时不支持高亮的代码 log 等等信息高亮
     # 2) 充当不能筛选内容的grep的作用
+    antigen bundle 1ambda/zsh-snippets
     antigen apply
+
+    # DEBUG:
+    # 如果发现 antigen一直不生效，但是在console中有效，请检查是不是在其他地方改了antigen
+    # - 我感觉这个错误还会引发 zsh的segment faults: https://github.com/rvm/rvm/issues/4214
+    # Ref:https://github.com/zsh-users/antigen/issues/297
 
     export PURE_CMD_MAX_EXEC_TIME=1
 
