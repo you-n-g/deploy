@@ -708,41 +708,14 @@ let g:which_key_map['c'] = {
     \ }
 
 " scroll the popup
+" 一开始是用了这个
 " comes from https://github.com/neoclide/coc.nvim/issues/1405
 " I think this is still experimental
-function! s:coc_float_scroll(forward) abort
-  let float = coc#util#get_float()
-  if !float | return '' | endif
-  let buf = nvim_win_get_buf(float)
-  let buf_height = nvim_buf_line_count(buf)
-  let win_height = nvim_win_get_height(float)
-  if buf_height < win_height | return '' | endif
-  let pos = nvim_win_get_cursor(float)
-  if a:forward
-    if pos[0] == 1
-      let pos[0] += 3 * win_height / 4
-    elseif pos[0] + win_height / 2 + 1 < buf_height
-      let pos[0] += win_height / 2 + 1
-    endif
-    let pos[0] = pos[0] < buf_height ? pos[0] : buf_height
-  else
-    if pos[0] == buf_height
-      let pos[0] -= 3 * win_height / 4
-    elseif pos[0] - win_height / 2 + 1  > 1
-      let pos[0] -= win_height / 2 + 1
-    endif
-    let pos[0] = pos[0] > 1 ? pos[0] : 1
-  endif
-  call nvim_win_set_cursor(float, pos)
-  return ''
-endfunction
+"
+" 后来发现其实直接用这个就挺好: https://github.com/neoclide/coc.nvim/issues/1405#issuecomment-674587738
+" ctrl+w, w : 进float window
+" ctrl+w, q : 出flaot window
 
-nnoremap <silent><expr> <down> coc#float#has_float() ? coc#util#float_scroll(1) : "\<down>"
-nnoremap <silent><expr> <up> coc#float#has_float() ? coc#util#float_scroll(0) : "\<up>"
-inoremap <silent><expr> <down> coc#float#has_float() ? <SID>coc_float_scroll(1) : "\<down>"
-inoremap <silent><expr> <up> coc#float#has_float() ? <SID>coc_float_scroll(0) : "\<up>"
-vnoremap <silent><expr> <down> coc#float#has_float() ? <SID>coc_float_scroll(1) : "\<down>"
-vnoremap <silent><expr> <up> coc#float#has_float() ? <SID>coc_float_scroll(0) : "\<up>"
 
 
 let g:coc_global_extensions = [
@@ -1065,8 +1038,11 @@ nmap <silent> <leader>h] <Plug>(GitGutterNextHunk)
 
 " BEGIN 'tpope/vim-fugitive' ------------------------------------------------------
 nmap <silent> <leader>hl :G log --graph --oneline --decorate --all<CR>
-" 其他有用的
-" p : preview 看看里面是个啥
+" # 其他有用的
+" ## 在naviage mode下面[疑似]
+" 我感觉 navigate 逻辑是这么走的： 从 commit trace -> commmit内容 -> 这个commit内部的文件原文
+" - 下面的命令都可以在这个文件中看到
+" p : preview 看看里面是个啥;
 " END   'tpope/vim-fugitive' ------------------------------------------------------
 
 " BEGIN 'wellle/context.vim' ------------------------------------------------------
