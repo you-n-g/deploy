@@ -60,6 +60,7 @@ Plug 'junegunn/fzf.vim'
 Plug 'APZelos/blamer.nvim'
 Plug 'easymotion/vim-easymotion'
 " Plug 'sslivkoff/vim-scroll-barnacle'
+" - 后来发现这个可以解决这个问题: https://github.com/wfxr/minimap.vim
 Plug 'psliwka/vim-smoothie'
 " Plug 'liuchengxu/vista.vim'  "  目前还没发现有啥用， 早点删了吧
 Plug 'pevhall/simple_highlighting'
@@ -101,6 +102,7 @@ set smartcase
 set exrc
 set secure
 
+set mouse=a  " enable mouse, shift is required if you want to click like before
 
 " for filename completion in commands like COMMAND=/file/name
 " http://superuser.com/questions/598270/getting-rid-of-characters-when-doing-gf-in-vim
@@ -711,11 +713,24 @@ let g:which_key_map['c'] = {
 " 一开始是用了这个
 " comes from https://github.com/neoclide/coc.nvim/issues/1405
 " I think this is still experimental
+" 后面我感觉他API改动了，这边就跑不通了
 "
 " 后来发现其实直接用这个就挺好: https://github.com/neoclide/coc.nvim/issues/1405#issuecomment-674587738
 " ctrl+w, w : 进float window
 " ctrl+w, q : 出flaot window
+" 这个的缺点是不能在 normal mode下操作
 
+" 再后来通过enable tmux和vim的 mouse实现了鼠标翻页
+
+" 再后来终于找到正确解法了： https://github.com/neoclide/coc.nvim/issues/2902
+if has('nvim-0.4.0') || has('patch-8.2.0750')
+  nnoremap <silent><nowait><expr> <down> coc#float#has_scroll() ? coc#float#scroll(1) : "\<down>"
+  nnoremap <silent><nowait><expr> <up> coc#float#has_scroll() ? coc#float#scroll(0) : "\<up>"
+  inoremap <silent><nowait><expr> <down> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(1)\<cr>" : "\<down>"
+  inoremap <silent><nowait><expr> <up> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(0)\<cr>" : "\<up>"
+  vnoremap <silent><nowait><expr> <down> coc#float#has_scroll() ? coc#float#scroll(1) : "\<down>"
+  vnoremap <silent><nowait><expr> <up> coc#float#has_scroll() ? coc#float#scroll(0) : "\<up>"
+endif
 
 
 let g:coc_global_extensions = [
@@ -1043,6 +1058,8 @@ nmap <silent> <leader>hl :G log --graph --oneline --decorate --all<CR>
 " 我感觉 navigate 逻辑是这么走的： 从 commit trace -> commmit内容 -> 这个commit内部的文件原文
 " - 下面的命令都可以在这个文件中看到
 " p : preview 看看里面是个啥;
+"
+" g?: 可以快速找到mapping的文档
 " END   'tpope/vim-fugitive' ------------------------------------------------------
 
 " BEGIN 'wellle/context.vim' ------------------------------------------------------

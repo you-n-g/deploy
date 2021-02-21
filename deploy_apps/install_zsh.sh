@@ -78,6 +78,11 @@ cd $DIR_PATH
 # zsh -xv  : debug性能
 # https://bloggie.io/@kinopyo/debug-and-optimize-zsh-loading-time
 
+# Debug
+# 1) zsh 18.04 有点问题 https://github.com/rvm/rvm/issues/4214
+#     - 解决方案: 用conda 安装新版的zsh https://anaconda.org/conda-forge/zsh . Tmux要重启一下才能正确加载zsh
+#         - conda install -y -c conda-forge zsh
+#         - sudo chsh  -s /home/xiaoyang/miniconda3/bin/zsh xiaoyang
 
 # Cheatsheet系列
 ## ctrl+r ctrl+s 可以查找历史的命令，并且前后查询
