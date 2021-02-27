@@ -166,3 +166,15 @@ snippet dw "Deprecation Warning" b
 import warnings
 warnings.warn("${1:XXX} is deprecated; use ${2:XXX}.", DeprecationWarning)
 endsnippet
+
+snippet pysn "pysnooper" b
+# pip install pysnooper
+import pysnooper
+@pysnooper.snoop(depth=2)
+endsnippet
+
+snippet fire "fire" b
+import fire
+if __name__ == "__main__":
+	fire.Fire(${1:XXX})
+endsnippet

@@ -754,7 +754,8 @@ let g:coc_global_extensions = [
 " 如果想用black，那么可以尝试 CocLocalConfig中加入这个
 " "python.formatting.provider": "black"
 " python.execInTerminal 还是比较好用的
-
+"
+" FIXME use coc-pyright: https://github.com/fannheyward/coc-pyright
 
 
 " coc-explorer -------------------
@@ -1052,14 +1053,54 @@ nmap <silent> <leader>h] <Plug>(GitGutterNextHunk)
 " END   'airblade/vim-gitgutter' ------------------------------------------------------
 
 " BEGIN 'tpope/vim-fugitive' ------------------------------------------------------
-nmap <silent> <leader>hl :G log --graph --oneline --decorate --all<CR>
+" nmap <silent> <leader>hl :G log --graph --oneline --decorate --all<CR>
+let g:which_key_map['h']  = {"name": "Git Related"}
+let g:which_key_map['h']['l'] = [':G log --graph --oneline --decorate --all', 'commit tree']
+let g:which_key_map['h']['h'] = [':0Glog', 'The commit file of current history']
+
+
+
+function! GoParentDir()
+  if b:fugitive_type =~# '^\(tree\|blob\)$'
+    " execute("e %:h/")
+    e %:h
+    " 这里还有点问题， 从commit 那里往下走时，第一个blob会被卡住
+  endif
+endfunction
+
+augroup FugitiveMappings
+  autocmd!
+  autocmd FileType git nnoremap <buffer>  <BS> :call GoParentDir()<CR>
+  " 这里我不太理解为什们不能  autocmd nnoremap if 直接互相嵌套
+augroup END
+
+
+" \ autocmd FileType git 
+" \ execute("normal G") |
+" \ execute(":nnoremap <buffer> <BS> :edit %:h<CR>") |
+
+" autocmd User fugitive 
+"   \   echom "good" |
+" " \   nnoremap <buffer> .. :edit %:h<CR> |
+
 " # 其他有用的
+" ## 我还没搞明白它的两种运行机制
+" 一种出现quickfix  (Glog)
 " ## 在naviage mode下面[疑似]
 " 我感觉 navigate 逻辑是这么走的： 从 commit trace -> commmit内容 -> 这个commit内部的文件原文
+" - 这些东西都可以在文件中直接打开
+"   - tree: commit
+"   - +++/--- 文件名
+"   - 等等...
 " - 下面的命令都可以在这个文件中看到
 " p : preview 看看里面是个啥;
-"
+" 
+" ## Tips
 " g?: 可以快速找到mapping的文档
+" CTRL_W+C 控制比较方便(不容易退出vim)
+" ## Refs
+" - 非常好的教程: http://vimcasts.org/episodes/fugitive-vim-browsing-the-git-object-database/
+
 " END   'tpope/vim-fugitive' ------------------------------------------------------
 
 " BEGIN 'wellle/context.vim' ------------------------------------------------------
