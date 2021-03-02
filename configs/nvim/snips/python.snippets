@@ -172,3 +172,15 @@ from IPython import get_ipython
 IPY = get_ipython()
 IPY.run_line_magic("load_ext", "autotime")
 endsnippet
+
+snippet pysn "pysnooper" b
+# pip install pysnooper
+import pysnooper
+@pysnooper.snoop(depth=2)
+endsnippet
+
+snippet fire "fire" b
+import fire
+if __name__ == "__main__":
+	fire.Fire(${1:XXX})
+endsnippet

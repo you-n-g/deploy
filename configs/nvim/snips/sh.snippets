@@ -66,7 +66,7 @@ done
 endsnippet
 
 snippet dir "Description" b
-if [ \$0 = "-bash" -o \$0 = "-zsh" ]; then
+if [ \$0 = "-bash" -o \$0 = "-zsh" -o \$0 = "zsh"  ]; then
 	DIR=\`pwd\`
 else
 	DIR="$( cd "$(dirname $(readlink -f "\$0"))" ; pwd -P )"
