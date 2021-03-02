@@ -22,7 +22,7 @@ User could find the individual config and installation scripts below.
 I would like to install all the environment in a single command(This is experimental).
 
 ```
-sudo apt-get install -y git
+sudo apt-get install -y git curl
 cd ~
 git clone https://github.com/you-n-g/deploy
 # Not using visudo is very dangerous!!!  visudo is suggested!!!
