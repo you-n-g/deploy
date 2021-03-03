@@ -66,6 +66,11 @@ ln -s ~/deploy/configs/shell/zsh_snippets ~/.zsh_snippets
 cd $DIR_PATH
 . ../helper_scripts/config_rc.sh
 
+
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+echo  "${RED} Maybe you still have to install zsh with conda ${NC}"
+
 # zsh性能优化
 # 1) git
 # 如果觉得zsh在有git的文件夹下太慢了(特别是我加上了ipynb的版本管理之后)，可以取消掉git文件的提示
@@ -79,7 +84,9 @@ cd $DIR_PATH
 # https://bloggie.io/@kinopyo/debug-and-optimize-zsh-loading-time
 
 # Debug
-# 1) zsh 18.04 有点问题 https://github.com/rvm/rvm/issues/4214
+# 1) zsh 18.04 有点问题
+#     - 问题1) https://github.com/rvm/rvm/issues/4214
+#     - 问题2) 有可能 zsh_snippets 用起来会有问题
 #     - 解决方案: 用conda 安装新版的zsh https://anaconda.org/conda-forge/zsh . Tmux要重启一下才能正确加载zsh
 #         - conda install -y -c conda-forge zsh
 #         - sudo chsh  -s /home/xiaoyang/miniconda3/bin/zsh xiaoyang

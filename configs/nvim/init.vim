@@ -68,6 +68,8 @@ Plug 'AndrewRadev/sideways.vim'
 Plug 'szw/vim-maximizer'
 " Plug 'camspiers/lens.vim'  " TODO: toggle function https://stackoverflow.com/a/20579322
 
+" https://github.com/numirias/semshi/issues/60
+" - 如果报错 'Unknown function: SemshiBufWipeout' ， 记得运行 :UpdateRemotePlugins
 Plug 'numirias/semshi', {'do': ':UpdateRemotePlugins'}
 
 Plug 'tpope/vim-fugitive'

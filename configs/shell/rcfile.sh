@@ -15,6 +15,7 @@ EOF
         history | grep -v -P '^ *\d+  history|less|ls' | fzf --tac -m | awk '{$1="";print}'
         # Ref: https://stackoverflow.com/questions/2626274/print-all-but-the-first-three-columns
     }
+    antigen use oh-my-zsh
     antigen bundle zsh-users/zsh-autosuggestions
     antigen bundle zsh-users/zsh-completions
     antigen bundle zsh-users/zsh-syntax-highlighting
@@ -22,13 +23,23 @@ EOF
     antigen bundle rupa/z z.sh
     antigen bundle MichaelAquilina/zsh-you-should-use
     antigen bundle mafredri/zsh-async
-    antigen bundle sindresorhus/pure
+
+    # 后来发现 pure 似乎不能用 antigen 安装了
+    # antigen bundle sindresorhus/pure
+
+    antigen theme denysdovhan/spaceship-prompt
+
     antigen bundle paoloantinori/hhighlighter
     # hhighlighter
     # 1) 可以让一些暂时不支持高亮的代码 log 等等信息高亮
     # 2) 充当不能筛选内容的grep的作用
+
+    # 如果这个有问题，可以试着重新安装 zsh
     antigen bundle 1ambda/zsh-snippets
+
     antigen apply
+
+    # 后面遇到问题是不是用 zplug可以替代
 
     # DEBUG:
     # 如果发现 antigen一直不生效，但是在console中有效，请检查是不是在其他地方改了antigen
@@ -36,6 +47,7 @@ EOF
     # Ref:https://github.com/zsh-users/antigen/issues/297
 
     export PURE_CMD_MAX_EXEC_TIME=1
+    export SPACESHIP_TIME_SHOW=true
 
     # shrink path
     # export PROMPT='${ret_status} %{$fg[cyan]%}$(shrink_path -l -t) %{$reset_color%}'
@@ -72,7 +84,9 @@ EOF
     #     fi
     # }
     # https://stackoverflow.com/a/26585789
-    export PROMPT="[%D{%H:%M:%S}] $PROMPT"
+    
+    # spaceship-prompt 可以直接显示时间
+    # export PROMPT="[%D{%H:%M:%S}] $PROMPT"
 
     bindkey -M viins '\e.' insert-last-word
 

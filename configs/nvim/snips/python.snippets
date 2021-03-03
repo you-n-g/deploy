@@ -167,6 +167,12 @@ import warnings
 warnings.warn("${1:XXX} is deprecated; use ${2:XXX}.", DeprecationWarning)
 endsnippet
 
+snippet at "autotime" b
+from IPython import get_ipython
+IPY = get_ipython()
+IPY.run_line_magic("load_ext", "autotime")
+endsnippet
+
 snippet pysn "pysnooper" b
 # pip install pysnooper
 import pysnooper
