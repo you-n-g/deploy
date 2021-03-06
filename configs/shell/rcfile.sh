@@ -37,6 +37,8 @@ EOF
     # 如果这个有问题，可以试着重新安装 zsh
     antigen bundle 1ambda/zsh-snippets
 
+    antigen bundle jeffreytse/zsh-vi-mode
+
     antigen apply
 
     # 后面遇到问题是不是用 zplug可以替代
@@ -88,16 +90,29 @@ EOF
     # spaceship-prompt 可以直接显示时间
     # export PROMPT="[%D{%H:%M:%S}] $PROMPT"
 
-    bindkey -M viins '\e.' insert-last-word
+    ZVM_VI_SURROUND_BINDKEY="s-prefix"
 
+    function zvm_after_init() {
+        [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+    }
 
-    # 1ambda/zsh-snippets
     alias zsp="zsh_snippets"
-    bindkey '^S^S' zsh-snippets-widget-expand  # CTRL-S CTRL-S (expand)
-    bindkey '^S^A' zsh-snippets-widget-list    # CTRL-S CTRL-A (list)
-    ## useful command
-    # zsp add xxx "XXX"
-    # zsp delete xxx
+
+    function zvm_after_lazy_keybindings() {
+        # 这个按键绑定在 zvm 上不work
+        # bindkey -M viins '\e.' insert-last-word
+        zvm_bindkey viins '^A^A' insert-last-word
+
+        # 1ambda/zsh-snippets
+        # bindkey '^S^S' zsh-snippets-widget-expand  # CTRL-S CTRL-S (expand)
+        # bindkey '^S^A' zsh-snippets-widget-list    # CTRL-S CTRL-A (list)
+        zvm_bindkey viins '^S^S' zsh-snippets-widget-expand  # CTRL-S CTRL-S (expand)
+        zvm_bindkey viins '^S^A' zsh-snippets-widget-list    # CTRL-S CTRL-A (list)
+        #
+        ## useful command
+        # zsp add xxx "XXX"
+        # zsp delete xxx
+    }
 fi
 
 

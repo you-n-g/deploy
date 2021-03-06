@@ -27,7 +27,9 @@ RC_FILE=~/.zshrc
 # Plugins
 # - h: https://github.com/paoloantinori/hhighlighter
 if ! grep "plugin.*tmuxinator" $RC_FILE ; then
-    sed -i 's/^\(plugins=(\)/\1tmuxinator shrink-path vi-mode /' $RC_FILE
+    # sed -i 's/^\(plugins=(\)/\1tmuxinator shrink-path vi-mode /' $RC_FILE
+    # vi-mode有 jeffreytse/zsh-vi-mode 可以代替
+    sed -i 's/^\(plugins=(\)/\1tmuxinator shrink-path /' $RC_FILE
     # Please keep the last blank to make it right
 fi
 
