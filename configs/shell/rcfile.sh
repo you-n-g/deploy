@@ -15,7 +15,7 @@ EOF
         history | grep -v -P '^ *\d+  history|less|ls' | fzf --tac -m | awk '{$1="";print}'
         # Ref: https://stackoverflow.com/questions/2626274/print-all-but-the-first-three-columns
     }
-    antigen use oh-my-zsh
+    # antigen use oh-my-zsh
     antigen bundle zsh-users/zsh-autosuggestions
     antigen bundle zsh-users/zsh-completions
     antigen bundle zsh-users/zsh-syntax-highlighting
@@ -42,9 +42,10 @@ EOF
     # 后面遇到问题是不是用 zplug可以替代
 
     # DEBUG:
-    # 如果发现 antigen一直不生效，但是在console中有效，请检查是不是在其他地方改了antigen
+    # 1. 如果发现 antigen一直不生效，但是在console中有效，请检查是不是在其他地方改了antigen
     # - 我感觉这个错误还会引发 zsh的segment faults: https://github.com/rvm/rvm/issues/4214
-    # Ref:https://github.com/zsh-users/antigen/issues/297
+    #                                               Ref:https://github.com/zsh-users/antigen/issues/297
+    # 2. 如果发现antigen 改配置后一直不生效， 可以考虑 antigen reset
 
     export PURE_CMD_MAX_EXEC_TIME=1
     export SPACESHIP_TIME_SHOW=true
