@@ -468,6 +468,8 @@ nnoremap <c-c><c-u> :SlimeSend0 "\x15"<CR>
 nnoremap <c-c><c-i> :SlimeSend0 "\x03"<CR>
 " ^D	EOT	004	04	End of Transmission
 nnoremap <c-c><c-d> :SlimeSend0 "\x04"<CR>
+" `esc` `k`  `carriage return`
+nnoremap <c-c><c-p> :SlimeSend0 "\x1bk\x0d"<CR>
 " TODO: 发现无法把 ctrl+arrow 之类的操作符send 过去
 
 
@@ -487,6 +489,7 @@ let g:slime_dont_ask_default = 1
 
 " DEBUG & FAQ
 " 如果发现发送过去的内容不是选中的内容，可以看看你是不是开了 vi-mode
+" 之前创建过一个环境，vim-slime没有用， 目前怀疑是 python 3.9的问题
 
 
 "------------------------------------------------------------------------------
@@ -880,6 +883,8 @@ let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
 " Jedi error: Cannot call write after a stream was destroyed
 " 包括其他的错误，只要错误信息中涉及到了jedi，更新jedi常常都有用
 " pip search jedi, 看看你安装的是不是最新版
+" pip install -U jedi 一般可以解决问题；  后来有一次版本更新到太高(0.18.0)也没用，更新到 `pip install "jedi==0.17.2"`
+" 才解决问题
 " 
 " 如果出现运行特别慢的情况，那么可能是因为数据和代码存在一起了,
 " 数据小文件特别多，建议把数据单独放到外面。不然得一个一个插件单独地配置XXX_ignore
