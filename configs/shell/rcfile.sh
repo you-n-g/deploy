@@ -28,14 +28,18 @@ EOF
     # antigen bundle sindresorhus/pure
 
     antigen theme denysdovhan/spaceship-prompt
+    # TODO: 后面对spaceship-prompt 做做加速
+    # echo $SPACESHIP_PROMPT_ORDER
 
     antigen bundle paoloantinori/hhighlighter
     # hhighlighter
     # 1) 可以让一些暂时不支持高亮的代码 log 等等信息高亮
     # 2) 充当不能筛选内容的grep的作用
 
-    # 如果这个有问题，可以试着重新安装 zsh
+    # 如果这个有问题，可以试着重新安装 zsh,  看看.zsh_snippets有没有做link(zsp list)
     antigen bundle 1ambda/zsh-snippets
+
+    antigen bundle jeffreytse/zsh-vi-mode
 
     antigen apply
 
@@ -47,8 +51,12 @@ EOF
     #                                               Ref:https://github.com/zsh-users/antigen/issues/297
     # 2. 如果发现antigen 改配置后一直不生效， 可以考虑 antigen reset
 
-    export PURE_CMD_MAX_EXEC_TIME=1
+    # export PURE_CMD_MAX_EXEC_TIME=1
+
     export SPACESHIP_TIME_SHOW=true
+    # export SPACESHIP_DIR_TRUNC=false
+
+    export SPACESHIP_PROMPT_ORDER=(time user dir host git package node docker venv conda pyenv dotnet exec_time battery vi_mode jobs exit_code char)
 
     # shrink path
     # export PROMPT='${ret_status} %{$fg[cyan]%}$(shrink_path -l -t) %{$reset_color%}'
@@ -89,16 +97,29 @@ EOF
     # spaceship-prompt 可以直接显示时间
     # export PROMPT="[%D{%H:%M:%S}] $PROMPT"
 
-    bindkey -M viins '\e.' insert-last-word
+    ZVM_VI_SURROUND_BINDKEY="s-prefix"
 
+    function zvm_after_init() {
+        [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+    }
 
-    # 1ambda/zsh-snippets
     alias zsp="zsh_snippets"
-    bindkey '^S^S' zsh-snippets-widget-expand  # CTRL-S CTRL-S (expand)
-    bindkey '^S^A' zsh-snippets-widget-list    # CTRL-S CTRL-A (list)
-    ## useful command
-    # zsp add xxx "XXX"
-    # zsp delete xxx
+
+    function zvm_after_lazy_keybindings() {
+        # 这个按键绑定在 zvm 上不work
+        # bindkey -M viins '\e.' insert-last-word
+        zvm_bindkey viins '^S^L' insert-last-word
+
+        # 1ambda/zsh-snippets
+        # bindkey '^S^S' zsh-snippets-widget-expand  # CTRL-S CTRL-S (expand)
+        # bindkey '^S^A' zsh-snippets-widget-list    # CTRL-S CTRL-A (list)
+        zvm_bindkey viins '^S^S' zsh-snippets-widget-expand  # CTRL-S CTRL-S (expand)
+        zvm_bindkey viins '^S^A' zsh-snippets-widget-list    # CTRL-S CTRL-A (list)
+        #
+        ## useful command
+        # zsp add xxx "XXX"
+        # zsp delete xxx
+    }
 fi
 
 

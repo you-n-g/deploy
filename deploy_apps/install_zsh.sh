@@ -27,7 +27,9 @@ RC_FILE=~/.zshrc
 # Plugins
 # - h: https://github.com/paoloantinori/hhighlighter
 if ! grep "plugin.*tmuxinator" $RC_FILE ; then
-    sed -i 's/^\(plugins=(\)/\1tmuxinator shrink-path vi-mode /' $RC_FILE
+    # sed -i 's/^\(plugins=(\)/\1tmuxinator shrink-path vi-mode /' $RC_FILE
+    # vi-mode有 jeffreytse/zsh-vi-mode 可以代替
+    sed -i 's/^\(plugins=(\)/\1tmuxinator shrink-path /' $RC_FILE
     # Please keep the last blank to make it right
 fi
 
@@ -87,9 +89,14 @@ echo  "${RED} Maybe you still have to install zsh with conda ${NC}"
 # 1) zsh 18.04 有点问题
 #     - 问题1) https://github.com/rvm/rvm/issues/4214
 #     - 问题2) 有可能 zsh_snippets 用起来会有问题
-#     - 解决方案: 用conda 安装新版的zsh https://anaconda.org/conda-forge/zsh . Tmux要重启一下才能正确加载zsh
+#     - 解决方案: 用conda 安装新版的zsh https://anaconda.org/conda-forge/zsh 
 #         - conda install -y -c conda-forge zsh
 #         - sudo chsh  -s /home/xiaoyang/miniconda3/bin/zsh xiaoyang
+#         - Tmux要重启一下才能正确加载zsh
+#         - 如果不重启: 
+#             - 先tmux set-option -g default-shell /home/xiaoyang/miniconda3/bin/zsh
+#             - 然后后面新开的tmux 就都可以了， 倒是 respawn-pan 的结果不行
+#         
 
 # Cheatsheet系列
 ## ctrl+r ctrl+s 可以查找历史的命令，并且前后查询

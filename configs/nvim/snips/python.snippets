@@ -184,3 +184,24 @@ import fire
 if __name__ == "__main__":
 	fire.Fire(${1:XXX})
 endsnippet
+
+snippet ree "re example" b
+m = re.match(r"(?P<first_name>\w+) (?P<last_name>\w+)", "Malcolm Reynolds")
+print(m.groupdict())
+endsnippet
+
+snippet setup "simple setup.py" b
+from setuptools import setup, find_packages
+setup(
+	name='${1:XXX}',
+	version='0.0.1',
+	packages=find_packages(),
+	install_requires=[
+		'loguru>=0.5.1',
+	],
+)
+endsnippet
+
+snippet rei "next iter re" b
+next(iter(re.findall(r'^([^_\]+_)?z(\d*)(_r)?$', ${1:XXX})))
+endsnippet
