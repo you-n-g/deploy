@@ -20,6 +20,7 @@ sudo apt-get install -y git vim vim-nox exuberant-ctags tmux build-essential cma
 # sudo apt-get install -y tmuxinator  # this will be installed by gem
 
 sudo apt-get install -y ripgrep ack-grep  # TODO: 可能是不必须的
+sudo apt-get install -y cloc
 
 # clang is for YCM
 # python-flake8 is needed by vim-flake8

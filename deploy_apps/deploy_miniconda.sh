@@ -29,6 +29,10 @@ conda update --all -y
 sudo apt-get install -y python-dev libmysqlclient-dev
 
 
+# 因为我的zsh已经有相关的提示了，所以不要conda这个东西了
+# - https://stackoverflow.com/a/39447588/443311
+conda config --set changeps1 False
+
 cd $DIR
 source ./install_fav_py_pack.sh
 
