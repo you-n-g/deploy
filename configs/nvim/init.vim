@@ -80,6 +80,9 @@ call plug#end()
 " settings -------------------------
 
 
+" Neovim有的缺陷:
+" - encoding似乎只能设置utf8, 对其他encoding支持没有那么好
+
 
 set ai "auto indent
 set expandtab
@@ -1214,7 +1217,9 @@ endfor
 " 不记得了就多复习 vim -Nu ~/.vim/plugged/vim-visual-multi/tutorialrc
 "
 " 反vimer直觉的
-" <c-v> 才是那个每行都有差异的粘贴， p会粘贴一样的东西
+" 复制粘贴
+" - 有时候normal模式下x删除多行，再<c-v>粘贴会没用; extend模式d删除，然后在<c-v>粘贴我这边能work
+" - <c-v> 才是那个每行都有差异的粘贴， p会粘贴一样的东西
 " v选择编辑的操作会出错，得用extend模式代替v
 " s不是删除然后立马插入，而是进入到一个selecting模式
 " 选取了多行后 \\c 可以创建多个normal模式的光标，\\a可以创建多个extend模式的光标

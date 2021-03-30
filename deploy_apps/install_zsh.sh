@@ -95,7 +95,7 @@ echo  "${RED} Maybe you still have to install zsh with conda ${NC}"
 #         - Tmux要重启一下才能正确加载zsh
 #         - 如果不重启: 
 #             - 先tmux set-option -g default-shell /home/xiaoyang/miniconda3/bin/zsh
-#             - 然后后面新开的tmux 就都可以了， 倒是 respawn-pan 的结果不行
+#             - 然后后面新开的tmux 就都可以了(虽然换了环境`which zsh`不一定是这个)， 倒是 respawn-pan 的结果不行
 #         
 
 # Cheatsheet系列
