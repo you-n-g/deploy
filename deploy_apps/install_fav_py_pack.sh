@@ -24,9 +24,10 @@ done
 
 
 # for developing environment
-pip install autopep8 better_exceptions neovim ipython-autotime yapf
+pip install autopep8 better_exceptions neovim ipython-autotime yapf fire
 
-
+# candidates packages
+# - https://github.com/tartley/colorama
 
 # snippets for juypter
 DIR_P=$(jupyter --data-dir)/nbextensions/snippets/
