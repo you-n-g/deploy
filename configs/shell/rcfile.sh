@@ -134,6 +134,7 @@ alias gitlog="git log --all --oneline --graph --decorate"
 alias mux=tmuxinator
 alias mx=tmux
 export PATH="$HOME/deploy/helper_scripts/bin/:$HOME/bin/:$HOME/apps/nodejs/bin/:$PATH"
+export MANPATH="$HOME/.local/share/man/:$MANPATH"
 export EDITOR=`which vim`
 # sudo -E will keep the environment when run sudo. Many env variables like http_proxy need it.
 alias sudo="sudo -E"
@@ -209,3 +210,17 @@ function tfts() {
     # 最后用的方法是 zsh 的插件h
 }
 
+
+# ## Outlines: ranger
+# ranger的安装依赖  deploy_apps/install_fav_py_pack.sh
+alias .r=". ranger"
+# 其他
+# -快捷键篇
+#   - r: 可以open_with调用当前文件，1是less
+
+
+# # Outlines: 准备删掉的
+
+# ## Outlines: nnn
+
+export NNN_OPENER=~/apps/nnn/plugins/nuke
