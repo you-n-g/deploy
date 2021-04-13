@@ -3,5 +3,15 @@
     "explorer.icon.enableNerdfont": true,
     "list.source.files.excludePatterns": ["**/__pycache__/**", "**/mlruns/**", "**/runs/**", "**/*.pkl"],
     "python.formatting.provider": "yapf",
-    "python.formatting.yapfArgs": ["--style", "{column_limit: 120}"]
+    "python.formatting.yapfArgs": ["--style", "{column_limit: 120}"],
+
+    "python.linting.pylintEnabled": true,
+    "pyright.disableDiagnostics": true
+    // pyright的静态类型检查过于严格，而且一直无法解决 self报错的问题， 所以这里就先换 pylint 了
+    // - 后来似乎解决了self报错的问题，init.vim/pyright中找方法
+
+//    "diagnostic.showUnused": false
+//   "diagnostic.level": "information"
+// 上面的方法来自 https://github.com/fannheyward/coc-pyright/issues/271
+//  - 问题是它会把所有的 showUnused 都关闭
 }

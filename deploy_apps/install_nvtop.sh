@@ -2,6 +2,8 @@
 
 set +x
 
+# 一定要在有GPU的机器上才能成功装上
+
 APP_PATH=~/apps/
 
 cd $APP_PATH
@@ -11,7 +13,7 @@ mkdir -p nvtop/build && cd nvtop/build
 
 
 # 这一点很重要，不然装不起来
-sudo apt-get install cmake libncurses5-dev libncursesw5-dev git
+sudo apt-get install -y cmake libncurses5-dev libncursesw5-dev git
 
 cmake ..
 

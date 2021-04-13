@@ -25,8 +25,12 @@ Plug 'liuchengxu/vim-which-key'
 " Plug 'vim-vdebug/vdebug'   " 等待确认这个插件没有问题,
 " 希望这个插件可以代替vscode
 
-" Plug 'wellle/tmux-complete.vim'  #
-" 好是好，但是我tmux窗口太多了，会引起性能问题
+" Plug 'wellle/tmux-complete.vim'
+" 好是好
+" - 但是我tmux窗口太多了，会引起性能问题
+"   后来发现这个参数 `"scrollback':      0,`,  不会追溯到历史，所以性能问题也不严重
+" - 而且会影响其他snippets的选择
+" TODO: 是不是有可能只包含同个window的tmux信息
 
 Plug 'jpalardy/vim-slime' " , { 'for': 'python' } 加上这个之后会导致只对python有用
 Plug 'hanschen/vim-ipython-cell', { 'for': 'python' }
@@ -73,6 +77,14 @@ Plug 'szw/vim-maximizer'
 Plug 'numirias/semshi', {'do': ':UpdateRemotePlugins'}
 
 Plug 'tpope/vim-fugitive'
+
+
+" 这边是为了给 coc-snippets 提供文件支持
+" Track the engine.
+Plug 'SirVer/ultisnips'
+" Snippets are separated from the engine. Add this if you want them:
+Plug 'honza/vim-snippets'
+
 
 call plug#end()
 
@@ -209,12 +221,12 @@ endfunc
 
 
 " syntax highlight related
-" The colors come from 
-" https://stackoverflow.com/questions/16014361/how-to-set-a-custom-color-to-folded-highlighting-in-vimrc-for-use-with-putty 
+" The colors come from
+" https://stackoverflow.com/questions/16014361/how-to-set-a-custom-color-to-folded-highlighting-in-vimrc-for-use-with-putty
 " https://upload.wikimedia.org/wikipedia/commons/1/15/Xterm_256color_chart.svg
 
 augroup PythonOutlines
-    au! 
+    au!
     " this is for simple words highlight syntax
     " autocmd FileType python,sh syntax match Outlines1 /\(^# # Outlines:\)\@=.*/
     " autocmd FileType python,sh syntax match Outlines2 /\(^# ## Outlines:\)\@=.*/
@@ -257,7 +269,7 @@ augroup END
 
 
 augroup JavaOutlines
-    au! 
+    au!
     " Below is for line hightlight
     if $TERM =~ "256"
         autocmd FileType java hi JavaOutlines1 cterm=bold ctermbg=017 ctermfg=White
@@ -408,8 +420,8 @@ let g:tagbar_sort = 0
 " highlight TagbarHighlight ctermfg=17 ctermbg=190 guifg=#00005f guibg=#dfff00
 highlight link TagbarHighlight Cursor
 
-" For config 
-let g:tagbar_position="topleft vertical" 
+" For config
+let g:tagbar_position="topleft vertical"
 
 
 
@@ -747,7 +759,7 @@ endif
 
 
 let g:coc_global_extensions = [
- \ "coc-python",
+ \ "coc-pyright",
  \ "coc-highlight",
  \ "coc-lists",
  \ "coc-json",
@@ -769,6 +781,17 @@ let g:coc_global_extensions = [
 " python.execInTerminal 还是比较好用的
 "
 " FIXME use coc-pyright: https://github.com/fannheyward/coc-pyright
+" coc-pyright ------------------
+" 优点
+" - 感觉代码补全(带自动import) 更方便了(虽然还不是很确定这是它带来的)
+"
+" TODO:
+" - 我怀疑它还不能自动安装缺失的包 (比如pylint在有的环境中不起作用)
+" - self变成 不提示的: https://github.com/fannheyward/coc-pyright/issues/271
+"   - 这边有一个思路可以 通过改  pyrightconfig.json 来实现 reportSelfClsParameterName
+"     https://github.com/fannheyward/coc-pyright/issues/381#issuecomment-814027504
+"     但是我改了没有用
+"   - 后面据说在这里改好了: https://github.com/fannheyward/coc-pyright/pull/428
 
 
 " coc-explorer -------------------
@@ -844,9 +867,15 @@ let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
 
 " coc java 相关 ------------------------
 "
-" coc-java 一直启动失败[java exited with code: 13](https://github.com/neoclide/coc-java/issues/20)
-" 设置 "java.home":
-" 
+" coc-java 一直启动失败(https://github.com/neoclide/coc-java/issues/20)
+" - 表现为:
+"   - [java exited with code: 13] 这是用了 troubleshooting 后才能看到的东西
+"   -  "⠹ jdt starting" ???
+" - 可能的原因
+"   - 没有指定11版本以上的jdk
+" 解决方法:
+" - 设置 "java.home":
+"
 
 " coc-java不能识别classpath
 " 1)
@@ -859,7 +888,7 @@ let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
 
 " coc-java-debug minimal setting
 " - 安装: coc-java-debug,  Vimspector, 在项目中配置`.vimspector.json`(配置见项目页)
-" - vimspector快捷键设置， 启动java时加参数 -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=5005,suspend=y 
+" - vimspector快捷键设置， 启动java时加参数 -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=5005,suspend=y
 " - vimspector设置断点， 通过 <leader>lc java.debug.vimspector.start 链接jvm
 " - 后来发现 `.vimspector.json` 没有用(参考自coc-java-debug主页)， 得设置 `.gadgets.json` https://github.com/dansomething/coc-java-debug/issues/11#issuecomment-725497630
 "       - 再后面发现光有 '.gadgets.json' 也没有用，还是得依赖 '.vimspector.json'
@@ -870,6 +899,10 @@ let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
 "
 " 坑
 " - 如果启动时忘了从 java.debug.vimspector.start 启动而是从 continue 启动，可能会触发bug导致无法继续连上debugger
+"
+"  
+"  Ref:
+"  - 全面的debug思路: https://github.com/neoclide/coc-java/#troubleshooting
 
 
 
@@ -878,7 +911,7 @@ let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
 " 当出现下面情况都先确认环境有没有弄错
 " - 解析pylama解析包失败时(找不到包, 比如import时提示无法解析)
 " - 做代码跳转时，提示版本太老
-" <space>c -> python.setInterpreter 
+" <space>c -> python.setInterpreter
 " 如果上述命令出错了，很可能是python插件没有加载:  <space>e 来加载插件
 " 会频繁出现上面问题的原因是它会因为新项目不知道default interpreter是什么
 " - https://github.com/neoclide/coc-python/issues/55
@@ -888,7 +921,7 @@ let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
 " pip search jedi, 看看你安装的是不是最新版
 " pip install -U jedi 一般可以解决问题；  后来有一次版本更新到太高(0.18.0)也没用，更新到 `pip install "jedi==0.17.2"`
 " 才解决问题
-" 
+"
 " 如果出现运行特别慢的情况，那么可能是因为数据和代码存在一起了,
 " 数据小文件特别多，建议把数据单独放到外面。不然得一个一个插件单独地配置XXX_ignore
 "
@@ -908,7 +941,7 @@ let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
 " mkdir ~/.config/coc/extensions/node_modules/coc-marketplace/ 后再创建插件
 
 
-" 各种配置通过这里来设置 
+" 各种配置通过这里来设置
 " 直接编辑 ~/.config/nvim/coc-settings.json 或者  CocConfig
 " 每个插件的所有配置都可以通过插件项目中的 `package.json` 来找到
 " 注意事项
@@ -945,7 +978,7 @@ hi link CtrlSpaceStatus   StatusLine
 " visual mode is not useful for me at all
 nnoremap <silent>Q :CtrlSpace<CR>
 " set showtabline=0  " tabline的开关和 vim-airline 的setting得一起修改的
-" 好用的: 
+" 好用的:
 " - l可以快速列出所有的tab级别的内容
 " 坑:
 " - workspace进去默认是一个向上的箭头，表示load;
@@ -1002,7 +1035,7 @@ let g:startify_lists = [
 
 " BEGIN for 'vim-vdebug/vdebug' ---------------------------------------------------
 "
-" TODO: 
+" TODO:
 " 调整mapping, 和 which-key 兼容
 " 安装pydbgp:   pip install komodo-python3-dbgp
 " 1) :VdebugStart
@@ -1090,11 +1123,11 @@ augroup FugitiveMappings
 augroup END
 
 
-" \ autocmd FileType git 
+" \ autocmd FileType git
 " \ execute("normal G") |
 " \ execute(":nnoremap <buffer> <BS> :edit %:h<CR>") |
 
-" autocmd User fugitive 
+" autocmd User fugitive
 "   \   echom "good" |
 " " \   nnoremap <buffer> .. :edit %:h<CR> |
 
@@ -1110,7 +1143,7 @@ augroup END
 " - 下面的命令都可以在这个文件中看到
 " p : preview 看看里面是个啥;
 " dp: 根据当前光标看看 diff 啥的(到底改了哪里), 可以直接看文件的， 也可以直接看stage的
-" 
+"
 " ## Tips
 " g?: 可以快速找到mapping的文档
 " CTRL_W+C 控制比较方便(不容易退出vim)
@@ -1124,7 +1157,7 @@ let g:context_enabled = 0  " 等待BUG的fix
 
 " 和neovim一起这样用会有bug
 " https://github.com/wellle/context.vim/issues/23
-let g:context_nvim_no_redraw = 1 
+let g:context_nvim_no_redraw = 1
 
 " 和 vimspector 一起用会出现之前的context留下残影的问题
 " :ContextToggle  可以解决这个问题(似乎也没有解决...)

@@ -6,6 +6,9 @@ if [ `whoami` != root ]; then
     exit
 fi
 
+# 常用用法:  
+# sudo sh deploy_apps/nonauto/install_swap.sh -s 200G -k 
+
 SWAP_SIZE=100G
 SWAP_PATH=/mnt/swapfile
 SKIP_WRITE_FSTAB=false

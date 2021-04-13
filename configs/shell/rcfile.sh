@@ -216,7 +216,7 @@ function tfts() {
 alias .r=". ranger"
 # 其他
 # -快捷键篇
-#   - r: 可以open_with调用当前文件，1是less
+#   - r: 可以open_with调用当前文件，1是less/pager
 
 
 # # Outlines: 准备删掉的
