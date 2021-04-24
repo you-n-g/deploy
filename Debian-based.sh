@@ -1,6 +1,7 @@
 #!/bin/bash
 
-sudo add-apt-repository ppa:x4121/ripgrep -y
+# sudo add-apt-repository ppa:x4121/ripgrep -y
+# ripgrep 不靠这个安装了
 
 sudo apt-get update
 
@@ -19,7 +20,7 @@ sudo apt-get install -y git vim vim-nox exuberant-ctags tmux build-essential cma
 
 # sudo apt-get install -y tmuxinator  # this will be installed by gem
 
-sudo apt-get install -y ripgrep ack-grep  # TODO: 可能是不必须的
+sudo apt-get install -y ack-grep  # TODO: 可能是不必须的
 sudo apt-get install -y cloc
 
 # clang is for YCM

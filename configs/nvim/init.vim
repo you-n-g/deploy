@@ -542,6 +542,7 @@ let g:which_key_map['p'] = {
 " \'e' : ['placehoder', 'Create an embeded env']
 
 nnoremap <leader>psr :SlimeSend0 "python ".expand("%:p")."\n"<CR>
+nnoremap <leader>pss :SlimeSend0 "bash ".expand("%:p")."\n"<CR>
 nnoremap <leader>psd :SlimeSend0 "pypdb ".expand("%:p")."\n"<CR>
 nnoremap <leader>psp :SlimeSend0 "pyprof ".expand("%:p")."\n"<CR>
 nnoremap <leader>pskp :SlimeSend0 "kernprof -l ".expand("%:p")."\n"<CR>
@@ -868,13 +869,18 @@ let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
 " coc java 相关 ------------------------
 "
 " coc-java 一直启动失败(https://github.com/neoclide/coc-java/issues/20)
+" - <space>lc workspace.showOutput  java 来看详细信息
 " - 表现为:
 "   - [java exited with code: 13] 这是用了 troubleshooting 后才能看到的东西
 "   -  "⠹ jdt starting" ???
 " - 可能的原因
 "   - 没有指定11版本以上的jdk
-" 解决方法:
-" - 设置 "java.home":
+"     - 解决方法: 设置 "java.home":
+"   - 未知:
+"       - 解决方法: 强行删除文件&重装 https://github.com/neoclide/coc-java/issues/133
+"   - gradle有自己的版本要求:
+"       - 设置正确的 "java.import.gradle.java.home"
+"
 "
 
 " coc-java不能识别classpath
@@ -900,9 +906,11 @@ let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
 " 坑
 " - 如果启动时忘了从 java.debug.vimspector.start 启动而是从 continue 启动，可能会触发bug导致无法继续连上debugger
 "
+" 未解决的问题
+" - 如何同时import 多个项目，比如 jpf-core 和 jpf-ranger
 "  
-"  Ref:
-"  - 全面的debug思路: https://github.com/neoclide/coc-java/#troubleshooting
+" Ref:
+" - 全面的debug思路: https://github.com/neoclide/coc-java/#troubleshooting
 
 
 
@@ -1097,6 +1105,11 @@ nmap <silent> <leader>h[ <Plug>(GitGutterPrevHunk)
 
 nmap <silent> <leader>h] <Plug>(GitGutterNextHunk)
 \:silent! call repeat#set("\<Plug>(GitGutterNextHunk)", v:count)<CR>
+
+
+" add following to `.nvimrc` to set the code
+" let g:gitgutter_diff_base = '<commit SHA>'
+
 
 " END   'airblade/vim-gitgutter' ------------------------------------------------------
 
@@ -1294,6 +1307,7 @@ command! -bang -nargs=* Rg
 " rg直接跳转到特定代码特定行非常管用!!!!
 
 nnoremap <silent> <Leader>fc :exe 'Rg '.expand('<cword>')<CR>
+" FIXME: 这个命令有一个意外的地方是 <cword> 不会搜索名字; 进去之后就算名字了
 " No name
 nnoremap <silent> <Leader>fCc :exe 'Rgc '.expand('<cword>')<CR>
 nnoremap <silent> <Leader>fCl :exe 'BLines '.expand('<cword>')<CR>
