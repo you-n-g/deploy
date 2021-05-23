@@ -180,7 +180,7 @@ import pysnooper
 @pysnooper.snoop(depth=2)
 endsnippet
 
-snippet fire "fire" b
+snippet fir "fire & main" b
 import fire
 if __name__ == "__main__":
 	fire.Fire(${1:XXX})
@@ -217,4 +217,14 @@ snippet tracep "call trace print" b
 import traceback
 for line in traceback.format_stack():
 	print(line)
+endsnippet
+
+snippet qlibex "Qlib example" b
+from qlib import init
+init()
+
+from qlib.data import D
+exp_l = ["$vwap + $close", "$vwap", "$close"]
+data = D.features(D.instruments("csi300"), exp_l)
+data.head()
 endsnippet

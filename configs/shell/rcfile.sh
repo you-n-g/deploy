@@ -138,7 +138,7 @@ export MANPATH="$HOME/.local/share/man/:$MANPATH"
 export EDITOR=`which vim`
 # sudo -E will keep the environment when run sudo. Many env variables like http_proxy need it.
 alias sudo="sudo -E"
-export BETTER_EXCEPTIONS=1
+# export BETTER_EXCEPTIONS=1
 
 
 function proxy_up() {
