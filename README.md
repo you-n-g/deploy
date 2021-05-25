@@ -19,7 +19,7 @@ User could find the individual config and installation scripts below.
 
 
 # Installation
-I would like to install all the environment in a single command(This is experimental).
+I would like to install all the environment with a single command(This is experimental).
 
 ```
 sudo apt-get install -y git curl
