@@ -1,6 +1,6 @@
 
 # Introduction
-This repo will help you to deploy a friendly environment for a python programmer in your home directory. The following tools will be well-configured.
+This repo will help you to deploy a friendly environment for a Python programmer in your home directory. The following tools will be well-configured.
 - neovim
 - zsh
 - miniconda
