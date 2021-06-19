@@ -1,6 +1,6 @@
 
 # Introduction
-This repo will help you to deploy a friendly environment for a python programmer in your home directory. The following tools will be well-configured.
+This repo will help you to deploy a friendly environment for a Python programmer in your home directory. The following tools will be well-configured.
 - neovim
 - zsh
 - miniconda
@@ -19,7 +19,7 @@ User could find the individual config and installation scripts below.
 
 
 # Installation
-I would like to install all the environment in a single command(This is experimental).
+I would like to install all the environment with a single command(This is experimental).
 
 ```
 sudo apt-get install -y git curl
