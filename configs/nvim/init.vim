@@ -85,6 +85,7 @@ Plug 'SirVer/ultisnips'
 " Snippets are separated from the engine. Add this if you want them:
 Plug 'honza/vim-snippets'
 
+Plug 'junegunn/vim-peekaboo'  " 看剪切板非常方便
 
 call plug#end()
 
@@ -1203,6 +1204,9 @@ let g:which_key_map['v'] = {
     \'i' : ['vimspector#StepInto()', 'step into'],
     \'O' : ['vimspector#StepOut()', 'step out'],
     \'R' : ['VimspectorReset', 'reset'],
+    \'r' : ['vimspector#RunToCursor()', 'run to cursor'],
+    \'u' : ['vimspector#UpFrame()', 'Move up call stack'],
+    \'d' : ['vimspector#DownFrame()', 'Move down call stack'],
     \ }
 nnoremap <leader>vB  :call vimspector#ToggleBreakpoint({'condition':''})<left><left><left>
 
