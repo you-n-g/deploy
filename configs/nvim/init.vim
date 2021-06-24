@@ -87,6 +87,8 @@ Plug 'honza/vim-snippets'
 
 Plug 'junegunn/vim-peekaboo'  " 看剪切板非常方便
 
+Plug 'voldikss/vim-translator'
+
 call plug#end()
 
 
@@ -1435,6 +1437,25 @@ let g:semshi#mark_selected_nodes=0
 " END   'numirias/semshi' -----------------------------------------
 
 
+" BEGIN 'voldikss/vim-translator' -----------------------------------------
+""" Configuration example
+" Echo translation in the cmdline
+nmap <silent> <Leader>Dt <Plug>Translate
+vmap <silent> <Leader>Dt <Plug>TranslateV
+" Display translation in a window
+nmap <silent> <Leader>Dw <Plug>TranslateW
+vmap <silent> <Leader>Dw <Plug>TranslateWV
+" Replace the text with translation
+nmap <silent> <Leader>Dr <Plug>TranslateR
+vmap <silent> <Leader>Dr <Plug>TranslateRV
+" Translate the text in clipboard
+nmap <silent> <Leader>Dx <Plug>TranslateX
+" 因为可以用  ctrl+w 来做， 所以这里就不管了
+" nnoremap <silent><expr> <M-f> translator#window#float#has_scroll() ?
+"                             \ translator#window#float#scroll(1) : "\<M-f>"
+" nnoremap <silent><expr> <M-b> translator#window#float#has_scroll() ?
+"                             \ translator#window#float#scroll(0) : "\<M-f>"
+" END   'voldikss/vim-translator' -----------------------------------------
 
 " Nvim usage cheetsheet
 
