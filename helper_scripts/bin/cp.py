@@ -34,7 +34,7 @@ class CP:
             if (lib_path / "qlib").exists() and force_qlib:
                 subprocess.run('rm -rf qlib', shell=True, cwd=lib_path)
 
-            subprocess.run('git clone https://github.com/microsoft/qlib.git', shell=True)
+            subprocess.run('git clone https://github.com/microsoft/qlib.git', shell=True, cwd=lib_path)
 
             subprocess.run('cd qlib && python setup.py develop', shell=True, cwd=lib_path)
 
