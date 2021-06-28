@@ -28,5 +28,12 @@ if ! grep "^source-file ~/deploy/configs/tmux/tmux.conf" $TMUX_CONF ; then
     echo 'source-file ~/deploy/configs/tmux/tmux.conf' >> $TMUX_CONF
 fi
 
+# 这个地方是为了无论在哪个 conda 环境中， 都能找到正常的tmux
+# 需要下面的假设成立
+# - ~/bin/ 被加到了PATH中，这个依赖 rcfile.sh
+# 如果不加这个会导致
+# - 在老的系统中找不到正确版本的tmux，导致 vim-slime 之类的命令失效
+ln -s $CONDA_PREFIX/bin/tmux ~/bin/tmux
+
 
 sh ~/deploy/deploy_apps/deploy_tpm.sh

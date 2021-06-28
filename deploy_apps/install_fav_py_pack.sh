@@ -35,38 +35,6 @@ pip install ranger-fm # 试了一下， 感觉ranger比nnn好用
 # snippets for juypter
 DIR_P=$(jupyter --data-dir)/nbextensions/snippets/
 FILE_P=$DIR_P/snippets.json
-# if [ ! -e $DIR_P  ] || ! grep 'general import' $FILE_P
-# then
-#     mkdir -p $DIR_P
-#     cat > $FILE_P <<EOF
-# {
-#     "snippets" : [
-#         {
-#             "name" : "general import",
-#             "code" : [
-#                 "import numpy as np",
-#                 "import pandas as pd",
-#                 "import matplotlib.pyplot as plt",
-#                 "import seaborn as sns; sns.set(color_codes=True)",
-#                 "plt.rcParams['font.sans-serif'] = 'SimHei'",
-#                 "plt.rcParams['axes.unicode_minus'] = False",
-#                 "from tqdm.auto import tqdm",
-#                 "# tqdm.pandas()  # for progress_apply",
-#                 "%matplotlib inline",
-#                 "%load_ext autoreload"
-#             ]
-#         },
-#         {
-#             "name" : "sys path insert",
-#             "code" : [
-#                 "import sys",
-#                 "sys.path.append('~/repos/data_selection')"
-#             ]
-#         }
-#     ]
-# }
-# EOF
-# fi
 rm $FILE_P
 ln -s ~/deploy/configs/jupyter/snippets.json $FILE_P
 

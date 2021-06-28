@@ -85,7 +85,7 @@ Plug 'SirVer/ultisnips'
 " Snippets are separated from the engine. Add this if you want them:
 Plug 'honza/vim-snippets'
 
-Plug 'junegunn/vim-peekaboo'  " 看剪切板非常方便
+" Plug 'junegunn/vim-peekaboo'  " 看剪切板非常方便:  但是常常会造成我的电脑卡死。。。 不知为何
 
 Plug 'voldikss/vim-translator'
 
@@ -469,7 +469,7 @@ au FileType go nmap <Leader>gd <Plug>(go-doc)
 " gc 确定一切
 
 
-"
+" BEGIN for vim-slime  &  vim-ipython-cell --------------------------------
 " vim-slime  &  vim-ipython-cell
 " https://github.com/jpalardy/vim-slime
 " NOTICE: slime代表着一种边写脚本边搞bash的习惯！一种新的思维方式
@@ -504,10 +504,15 @@ let g:slime_default_config = {
             \ 'target_pane': '{top-right}' }
 let g:slime_dont_ask_default = 1
 
-
 " DEBUG & FAQ
 " 如果发现发送过去的内容不是选中的内容，可以看看你是不是开了 vi-mode
 " 之前创建过一个环境，vim-slime没有用， 目前怀疑是 python 3.9的问题
+" vim-slime 需要依赖 tmux 配置对(即`where tmux`可以找到正确的结果);
+" - 具体卡死的命令: `tmux -S /tmp/tmux-1003/default load-buffer /data1/<user>/home/.slime_paste`
+" - 解决方法见tmux安装的脚本
+
+" END   for vim-slime  &  vim-ipython-cell --------------------------------
+
 
 
 "------------------------------------------------------------------------------
