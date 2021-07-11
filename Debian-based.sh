@@ -5,8 +5,11 @@
 
 sudo apt-get update
 
-sudo apt-get install -y git vim vim-nox exuberant-ctags tmux build-essential cmake python-dev \
-    clang htop python-flake8 autossh python-pip software-properties-common zsh silversearcher-ag moreutils # this line is for common use
+# Essential
+sudo apt-get install -y git build-essential cmake python-dev htop zsh autossh exuberant-ctags
+# Optional (the installation of these softwares may fail due to different system versions)
+sudo apt-get install -y vim vim-nox tmux \
+    clang python-flake8 python-pip software-properties-common silversearcher-ag moreutils # this line is for common use
 
 
 # sudo apt-get install -y gnupg2
