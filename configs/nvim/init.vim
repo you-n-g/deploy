@@ -76,6 +76,10 @@ Plug 'szw/vim-maximizer'
 " - 如果报错 'Unknown function: SemshiBufWipeout' ， 记得运行 :UpdateRemotePlugins
 Plug 'numirias/semshi', {'do': ':UpdateRemotePlugins'}
 
+" Treesitter 里面有很多插件似乎很棒
+Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
+Plug 'romgrk/nvim-treesitter-context'
+
 Plug 'tpope/vim-fugitive'
 
 
@@ -1344,7 +1348,7 @@ let g:which_key_map['f'] = {
 
 " 有用的技巧
 " Search syntax: https://github.com/junegunn/fzf#search-syntax
-" ' ^ . !  有特殊意义
+" '(exact-match) ^(prefix-exact-match) $(suffix-exact-match) !(inverse-exact-match)  有特殊意义
 " - 而且这些还可以连着用！！！！
 " 快捷键
 " - ^t (open in new tab) ^x(open in horizontal split) ^v (open in vertical split)
@@ -1461,6 +1465,31 @@ nmap <silent> <Leader>Dx <Plug>TranslateX
 " nnoremap <silent><expr> <M-b> translator#window#float#has_scroll() ?
 "                             \ translator#window#float#scroll(0) : "\<M-f>"
 " END   'voldikss/vim-translator' -----------------------------------------
+
+
+lua <<EOF
+require'nvim-treesitter.configs'.setup {
+  highlight = {
+    enable = true,
+    custom_captures = {
+      -- Highlight the @foo.bar capture group with the "Identifier" highlight group.
+      ["foo.bar"] = "Identifier",
+    },
+    -- Setting this to true will run `:h syntax` and tree-sitter at the same time.
+    -- Set this to `true` if you depend on 'syntax' being enabled (like for indentation).
+    -- Using this option may slow down your editor, and you may see some duplicate highlights.
+    -- Instead of true it can also be a list of languages
+    additional_vim_regex_highlighting = false,
+  },
+}
+EOF
+
+ 
+set foldmethod=expr
+set foldexpr=nvim_treesitter#foldexpr()
+set foldlevel=99
+
+
 
 " Nvim usage cheetsheet
 

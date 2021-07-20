@@ -12,8 +12,13 @@ then
     echo 'eval "$(jenv init -)"' >> $RC_FILE
 fi
 
+export PATH="$HOME/.jenv/bin:$PATH"
+eval "$(jenv init -)"
 
 jenv enable-plugin export
+# This command will raise following error
+# - You may restart your session to activate jenv export plugin echo export plugin activated
+
 
 # jenv add /usr/lib/jvm/java-7-openjdk-amd64/
 
