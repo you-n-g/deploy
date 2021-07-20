@@ -1,0 +1,7 @@
+provider: telegram
+kwargs:
+    chat_id: '950299473'
+    token: '1041146693:AAF3jg-4wsIWQKM553CjqwdFzRUWj2JW72M'
+
+# log_level: DEBUG
+log_level: INFO

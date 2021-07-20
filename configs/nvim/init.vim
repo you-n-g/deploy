@@ -90,6 +90,7 @@ Plug 'SirVer/ultisnips'
 Plug 'honza/vim-snippets'
 
 " Plug 'junegunn/vim-peekaboo'  " 看剪切板非常方便:  但是常常会造成我的电脑卡死。。。 不知为何
+Plug 'tversteeg/registers.nvim', { 'branch': 'main' }   " 第二个看register的插件
 
 Plug 'voldikss/vim-translator'
 
