@@ -77,7 +77,7 @@ snippet TODOPI "Implemented TODO" b
 return
 endsnippet
 
-snippet dirname "get current dirname" b
+snippet dirn "get current dirname" b
 from pathlib import Path
 DIRNAME = Path(__file__).absolute().resolve().parent
 endsnippet
@@ -258,4 +258,11 @@ if __name__ == "__main__":
 
     pool.join()
     # one must call close or terminate() before call join. 不然主进程会等子进程结束，子进程会等主进程分配任务
+endsnippet
+
+snippet tc "type checking" b
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+	pass
 endsnippet

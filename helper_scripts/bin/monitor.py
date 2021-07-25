@@ -79,6 +79,7 @@ class Monitor:
     def anap(self, fname=MP_FN):
         data = pd.read_csv(fname, sep=" ", index_col=2, names=["col", "memory", "time"], skiprows=1)
         print(data["memory"].astype("float").describe())
+        return data
 
 
 if __name__ == "__main__":
