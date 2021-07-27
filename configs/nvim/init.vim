@@ -1,5 +1,5 @@
 call plug#begin('~/.vim/plugged')
-
+" cspell:disable
 Plug 'scrooloose/nerdtree'
 Plug 'majutsushi/tagbar'  " 这个升级后就出错了
 Plug 'fatih/vim-go'
@@ -94,8 +94,13 @@ Plug 'tversteeg/registers.nvim', { 'branch': 'main' }   " 第二个看register�
 
 Plug 'voldikss/vim-translator'
 
+" just for help tags
+Plug 'nvim-lua/popup.nvim'
+Plug 'nvim-lua/plenary.nvim'
+Plug 'nvim-telescope/telescope.nvim'
 call plug#end()
 
+" cspell:enable
 
 " settings -------------------------
 
@@ -350,7 +355,10 @@ autocmd BufWritePre [:;"'\[\]]*
 " Remove trailing whitespaces when saving python files
 autocmd FileType python autocmd BufWritePre <buffer> if &modified | %s/\s\+$//e | endif
 
-
+augroup highlight_yank
+    autocmd!
+    au TextYankPost * silent! lua vim.highlight.on_yank{higroup="IncSearch", timeout=700}
+augroup END
 
 "
 " The plugins I always need -------------------------
@@ -783,9 +791,10 @@ let g:coc_global_extensions = [
  \ "coc-sh",
  \ "coc-java",
  \ "coc-java-debug",
- \ "coc-marketplace"
+ \ "coc-marketplace",
+ \ "coc-spell-checker"
  \ ]
-
+"  \ "coc-zi"
 " 个人经验 <space>c  setLinter ，把pylama 设置成错误提示的工具方便
 
 
@@ -1320,6 +1329,11 @@ command! -bang -nargs=* Rgc
 " [solution for long lines](https://github.com/junegunn/fzf.vim/issues/1051)
 command! -bang -nargs=* Rg
   \ call fzf#vim#grep("rg --column --line-number --no-heading --color=always --smart-case -- ".shellescape(<q-args>), 1, fzf#vim#with_preview('right', 'ctrl-/'), <bang>0)
+
+command! -bang -nargs=* RgPlug
+  \ call fzf#vim#grep("rg --column --line-number --no-heading --color=always --smart-case -- ".shellescape(<q-args>), 1, fzf#vim#with_preview({"dir": "~/.vim/plugged/"}), <bang>0)
+" - 不能和 right ctrl-/ 兼容
+
 " rg直接跳转到特定代码特定行非常管用!!!!
 
 nnoremap <silent> <Leader>fc :exe 'Rg '.expand('<cword>')<CR>
@@ -1342,9 +1356,25 @@ let g:which_key_map['f'] = {
     \'L' : ['Lines', 'Lines in loaded buffer'],
     \'m' : ['Marks', 'Marks'],
     \'M' : ['Maps', 'Mappings'],
-    \'o' : [':Lines Outlines', 'Outlines']
+    \'o' : [':Lines Outlines', 'Outlines'],
+    \'h' : [':Telescope help_tags', 'help tags'],
+    \'d' : {
+        \"name": "deploy and cheatsheets",
+            \'g' : [':execute '''.'lua require("telescope.builtin").live_grep({search_dirs={"~/deploy/", "~/cheatsheets/code_to_copy/"}})'.'''', 'deploy and cheatsheet(live_grep)'],
+            \'f' : [':execute '''.'lua require("telescope.builtin").find_files({search_dirs={"~/deploy/", "~/cheatsheets/code_to_copy/"}})'.'''', 'deploy and cheatsheet(find_files)']
+        \ },
+        \'p' : {
+            \"name": "plugins",
+            \'g' : ['RgPlug', 'plugins(live_grep)'],
+            \'f' : [':execute '''.'lua require("telescope.builtin").find_files({search_dirs={"~/.vim/plugged"}})'.'''', 'plugins(find_files)']
+        \}
     \ }
 " 这里可以通过tab选多个，回车后变成quick fix
+
+" 发现 telescope 还是太慢了， fzf比较快
+" \'g' : [':execute '''.'lua require("telescope.builtin").live_grep({search_dirs={"~/.vim/plugged"}})'.'''', 'plugins(live_grep)'],
+" \'dg' : [':execute '''.'lua require("telescope.builtin").live_grep({search_dirs={"~/deploy/", "~/cheatsheets/code_to_copy/"}})'.'''', 'deploy and cheatsheet(live_grep)'],
+" \'df' : [':execute '''.'lua require("telescope.builtin").find_files({search_dirs={"~/deploy/", "~/cheatsheets/code_to_copy/"}})'.'''', 'deploy and cheatsheet(find_files)']
 
 
 " 有用的技巧
@@ -1502,6 +1532,7 @@ set foldlevel=99
 " - Moving
 " - Mode相关
 " - experssion
+" - 数据类型 & 流程语法
 " - 其他
 " - 坑
 " - script
@@ -1540,6 +1571,8 @@ set foldlevel=99
 " 可以直接 <C-R><寄存器>, 插入寄存器的内容
 " https://vim.fandom.com/wiki/Pasting_registers
 
+" ===== 数据类型 & 流程语法 =====
+" echo ''''   代表 echo "'"
 
 " ========= Expression =========
 " echo expand("%:p").":".line("$")
@@ -1587,6 +1620,10 @@ set foldlevel=99
 " 这里的插件可以参考
 " https://github.com/Blacksuan19/init.nvim
 
+" 要不要用 nvim-lsp
+" 相应的套装
+" - https://github.com/hrsh7th/nvim-compe
+"       - 优点: spell completion( 后面发现 :CocInstall coc-zi 有相应的功能)
 
 " other cheetsheet
 " deploy_apps/install_neovim.sh
