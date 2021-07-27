@@ -20,7 +20,7 @@ if [ ! -e ~/bin/vim ]; then
     curl -L  -o ~/bin/vim_latest https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
     chmod a+x ~/bin/vim_latest
     chmod a+x ~/bin/vim_nightly
-    ln -s ~/bin/vim ~/bin/vim_latest
+    ln -s ~/bin/vim_nightly ~/bin/vim
 fi
 
 # FIXME: 这里在国内有可能被墙 GFW

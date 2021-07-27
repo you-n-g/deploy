@@ -7,6 +7,8 @@ import fire
 
 NAME = 'Launch Debugger'
 
+# Here is the detailed options
+# https://github.com/microsoft/debugpy/wiki/Debug-configuration-settings
 PY_TPL = {
   "configurations": {
     NAME: {
@@ -20,7 +22,8 @@ PY_TPL = {
         "stopOnEntry": True,
         "console": "externalTerminal",
         "debugOptions": [],
-        "program": "<path to main python file>"
+        "program": "<path to main python file>",
+        "args": []  # the arguments you start the program
       }
     }
   }
