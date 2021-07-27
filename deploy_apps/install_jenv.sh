@@ -31,6 +31,7 @@ jenv enable-plugin export
 # jenv local XXX
 # - XXX 是 `jenv versions` 输出的某个版本
 # - 它会在当前目录生成 .java-version 文件，  当下次进入当前目录时， 就会自动切换成你选择的java版本
+# - 可以到不同路径下通过  `java --version`  查看 java环境是否
 
 # jenv global  或者 local 设置全局或者局部环境变量 , 它会生成  .java-version 这个文件
 # 比如  `jenv global 1.7` (改变 system, 通过`jenv versions`可以看到)
