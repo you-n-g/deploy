@@ -77,6 +77,8 @@ NP=~/apps/nodejs
 export PATH="$NP/bin/:$PATH"
 $NP/bin/npm install -g neovim
 
+$NP/bin/npm i -g pyright # for nvim-lspconfig
+
 
 bash $DIR_PATH/install_rg.sh
 

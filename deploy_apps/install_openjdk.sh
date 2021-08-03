@@ -17,3 +17,5 @@ tar xf openjdk-15.0.2_linux-x64_bin.tar.gz
 echo 'JAVA_HOME is ~/apps/java/jdk-15.0.2/'
 
 
+# 历史版本这里找
+# https://jdk.java.net/archive/

@@ -11,6 +11,7 @@
     "cSpell.userWords": [
       "astype",
       "coclist",
+      "conda",
       "fname",
       "gruvbox",
       "iloc",
@@ -18,7 +19,18 @@
       "mprof",
       "nvimrc",
       "qlib",
-      "tqdm"
+      "tqdm",
+      "xiaoyang",
+      "zscore"
+    ],
+    "cSpell.languageSettings": [
+        {
+            "languageId": "python",
+            "allowCompoundWords": true,
+            "dictionaries": [
+                "python"
+            ]
+        }
     ]
     // pyright的静态类型检查过于严格，而且一直无法解决 self报错的问题， 所以这里就先换 pylint 了
     // - 后来似乎解决了self报错的问题，init.vim/pyright中找方法

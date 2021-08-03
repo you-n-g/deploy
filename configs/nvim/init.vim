@@ -98,6 +98,9 @@ Plug 'voldikss/vim-translator'
 Plug 'nvim-lua/popup.nvim'
 Plug 'nvim-lua/plenary.nvim'
 Plug 'nvim-telescope/telescope.nvim'
+
+Plug 'neovim/nvim-lspconfig'
+Plug 'nvim-treesitter/playground'
 call plug#end()
 
 " cspell:enable
@@ -1010,6 +1013,9 @@ nnoremap <silent>Q :CtrlSpace<CR>
 " set showtabline=0  " tabline的开关和 vim-airline 的setting得一起修改的
 " 好用的:
 " - l可以快速列出所有的tab级别的内容
+" 用好这个插件需要知道的
+" - `?` 可以找到help
+" - <cr> 可以找用vim页面单独打开文件， 这样就可以在help中快速索引
 " 坑:
 " - workspace进去默认是一个向上的箭头，表示load;
 "   按下s后，会变成向下的箭头代表save，箭头非常不明显
@@ -1498,6 +1504,7 @@ nmap <silent> <Leader>Dx <Plug>TranslateX
 " END   'voldikss/vim-translator' -----------------------------------------
 
 
+" BEGIN 'nvim-treesitter/nvim-treesitter' ---------------------------------
 lua <<EOF
 require'nvim-treesitter.configs'.setup {
   ensure_installed = "maintained", -- one of "all", "maintained" (parsers with maintainers), or a list of languages
@@ -1521,8 +1528,16 @@ EOF
 set foldmethod=expr
 set foldexpr=nvim_treesitter#foldexpr()
 set foldlevel=99
+" END   'nvim-treesitter/nvim-treesitter' ---------------------------------
 
 
+
+" BEGIN 'telescope related' -----------------------------------------
+
+" END   'telescope related' -----------------------------------------
+
+
+runtime yx_conf/plugins.nvim
 
 " Nvim usage cheetsheet
 
@@ -1553,6 +1568,8 @@ set foldlevel=99
 " - 它可以映射成一段直接输入，也能映射成一个将会被解析成字符串的表达式
 "   - :help <expr>  " 如果想让map映射到一个可解释的字符串
 
+" ============ 快捷键 ============
+" `@:` : 执行上一个命令; 通过mapping调用的命令不会进入这个, q: 中的命令才会
 
 " ========== 查看当前设置 ==========
 " global settings
