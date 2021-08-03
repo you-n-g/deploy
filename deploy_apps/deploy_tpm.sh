@@ -18,6 +18,7 @@ set -g @plugin 'tmux-plugins/tmux-resurrect'
 # set -g @plugin 'egel/tmux-gruvbox'
 set -g @plugin 'thewtex/tmux-mem-cpu-load'
 set -g @plugin 'you-n-g/tmux-gruvbox'  # Modified Version
+set -g @plugin 'sainnhe/tmux-fzf'
 
 # Initialize TMUX plugin manager (keep this line at the very bottom of tmux.conf)
 run -b '~/.tmux/plugins/tpm/tpm'

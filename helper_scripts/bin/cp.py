@@ -10,6 +10,8 @@ import os
 import pandas as pd
 from io import StringIO
 
+# TODO:
+# - replace git https url with ssh url
 
 class CP:
     """(C)reate (P)roject"""

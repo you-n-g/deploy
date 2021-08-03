@@ -9,19 +9,27 @@
     "pyright.disableDiagnostics": true,
     // cSpell.addWordToUserDictionary will add words here
     "cSpell.userWords": [
+      "arange",
       "astype",
       "coclist",
       "conda",
+      "cuda",
+      "dtype",
       "fname",
       "gruvbox",
       "iloc",
       "inplace",
+      "mlflow",
       "mprof",
       "nvimrc",
       "qlib",
       "tqdm",
       "xiaoyang",
-      "zscore"
+      "zscore",
+      "reindex",
+      "tqdm",
+      "twap",
+      "vwap"
     ],
     "cSpell.languageSettings": [
         {

@@ -16,6 +16,7 @@ tar xf openjdk-15.0.2_linux-x64_bin.tar.gz
 
 echo 'JAVA_HOME is ~/apps/java/jdk-15.0.2/'
 
-
-# 历史版本这里找
-# https://jdk.java.net/archive/
+# Cheatsheet
+# 这里有很多老版本的java https://jdk.java.net/archive/
+# java 8 在这里找到了 https://builds.openlogic.com/downloadJDK/openlogic-openjdk/8u262-b10/openlogic-openjdk-8u262-b10-linux-x64.tar.gz
+# 新版的 ubuntu系统可以多个 java版本并存
