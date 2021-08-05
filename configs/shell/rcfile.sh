@@ -41,6 +41,8 @@ EOF
 
     antigen bundle jeffreytse/zsh-vi-mode
 
+    antigen bundle Aloxaf/fzf-tab
+
     antigen apply
 
     # 后面遇到问题是不是用 zplug可以替代
@@ -97,13 +99,17 @@ EOF
     # spaceship-prompt 可以直接显示时间
     # export PROMPT="[%D{%H:%M:%S}] $PROMPT"
 
+    alias zsp="zsh_snippets"
+
     ZVM_VI_SURROUND_BINDKEY="s-prefix"
 
+    # NOTE:
+    # zsh vim mode 常常会和其他的插件起冲突(启用后会覆盖其他插件)
+    # 所以很多插件需要 后面再补一发启动
     function zvm_after_init() {
         [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+        enable-fzf-tab
     }
-
-    alias zsp="zsh_snippets"
 
     function zvm_after_lazy_keybindings() {
         # 这个按键绑定在 zvm 上不work
