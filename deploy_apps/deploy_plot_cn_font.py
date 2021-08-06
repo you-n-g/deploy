@@ -1,4 +1,3 @@
-from matplotlib.font_manager import _rebuild
 import subprocess
 from pathlib import Path
 
@@ -19,4 +18,13 @@ for p in conda_path.parent.parent.glob('lib/*/site-packages/matplotlib/mpl-data/
     run(f'cp /tmp/SimHei.ttf {p}')
 run('rm /tmp/simhei.zip /tmp/SimHei.ttf')
 
+# 还得删除缓存：https://www.zhihu.com/question/25404709/answer/309784195
+# 这个缓存是用户相关的，只会影响自己的用户
+from matplotlib.font_manager import _rebuild
 _rebuild()
+
+
+## 使用
+# 在代码中需要用下面的方式指定字体
+# plt.rcParams['font.sans-serif'] = 'SimHei'
+# plt.rcParams['axes.unicode_minus'] = False
