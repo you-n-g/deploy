@@ -20,8 +20,14 @@ run('rm /tmp/simhei.zip /tmp/SimHei.ttf')
 
 # 还得删除缓存：https://www.zhihu.com/question/25404709/answer/309784195
 # 这个缓存是用户相关的，只会影响自己的用户
-from matplotlib.font_manager import _rebuild
-_rebuild()
+try:
+    from matplotlib.font_manager import _rebuild
+    _rebuild()
+except ImportError:
+    # 新版的接口改了
+    from matplotlib.font_manager import _load_fontmanager
+    _load_fontmanager(try_read_cache=False)
+
 
 
 ## 使用

@@ -165,7 +165,8 @@ function proxy_down() {
 alias pypdb='python -m ipdb -c c'
 alias pyprof='python -m cProfile -o stats_out'
 
-alias ipify="curl 'https://api.ipify.org?format=json'"
+alias ipify="curl cip.cc"
+# using this alias name  because the previous tool is ipify
 
 # for fzf
 # 文件太大常常没法正常运行

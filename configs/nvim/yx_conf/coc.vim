@@ -250,6 +250,30 @@ let g:which_key_map['e'] = {
     \'e' : [':CocCommand explorer --sources=buffer+,file+ --preset floating', 'Full Explorer'],
     \ }
 
+
+function! s:explorer_cur_dir()
+  let node_info = CocAction('runCommand', 'explorer.getNodeInfo', 0)
+  return fnamemodify(node_info['fullpath'], ':h')
+endfunction
+
+function! s:exec_cur_dir()
+  let dir = s:explorer_cur_dir()
+  " close coc-explorer
+  execute 'CocCommand explorer --sources=buffer+,file+ --preset floating'
+  " call telescope
+  execute 'lua require("telescope.builtin").live_grep({search_dirs={"'.l:dir.'"}})'
+endfunction
+
+function! s:init_explorer()
+  " set winblend=10
+  nnoremap <buffer> <Leader>ff :call <SID>exec_cur_dir()<CR>
+endfunction
+
+augroup CocExplorerCustom
+  autocmd!
+  autocmd FileType coc-explorer call <SID>init_explorer()
+augroup END
+
 " List all presets
 " nmap <leader>el :CocList explPresets
 

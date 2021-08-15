@@ -11,10 +11,12 @@
     "cSpell.userWords": [
       "arange",
       "astype",
+      "chdir",
       "coclist",
       "conda",
       "cuda",
       "dtype",
+      "fillna",
       "fname",
       "gruvbox",
       "iloc",
@@ -23,13 +25,13 @@
       "mprof",
       "nvimrc",
       "qlib",
-      "tqdm",
-      "xiaoyang",
-      "zscore",
       "reindex",
+      "reweight",
       "tqdm",
       "twap",
-      "vwap"
+      "vwap",
+      "xiaoyang",
+      "zscore"
     ],
     "cSpell.languageSettings": [
         {

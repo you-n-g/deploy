@@ -117,7 +117,7 @@ set expandtab
 set tabstop=4
 set shiftwidth=4
 autocmd FileType c,cpp setlocal shiftwidth=2 tabstop=2
-set textwidth=120
+" set textwidth=120  " vim keeps break lines when we are editing long strings
 set number
 set relativenumber
 " augroup FIX_COC_EXP
@@ -968,7 +968,8 @@ let g:which_key_map['f'] = {
     \'G' : ['Rgc', 'Rg without filename'],
     \'l' : ['BLines', 'Lines in the current buffer'],
     \'L' : ['Lines', 'Lines in loaded buffer'],
-    \'m' : ['Marks', 'Marks'],
+    \'m' : [':Telescope marks', 'Marks'],
+    \'b' : [':Telescope buffers', 'Buffers'],
     \'M' : ['Maps', 'Mappings'],
     \'o' : [':Lines Outlines', 'Outlines'],
     \'h' : [':Telescope help_tags', 'help tags'],
@@ -1141,16 +1142,17 @@ set foldlevel=99
 
 
 " BEGIN 'telescope related' -----------------------------------------
-
+" Mappings https://github.com/nvim-telescope/telescope.nvim#mappings
+" <c-q>: 上面还漏了一个， 这个可以用quick fix 打开， 批量修复非常方便
 " END   'telescope related' -----------------------------------------
+
+
+runtime yx_conf/plugins.vim
 
 
 lua << EOF
 require("yx_conf")
 EOF
-
-runtime yx_conf/plugins.vim
-
 
 
 " Nvim usage cheetsheet
@@ -1255,6 +1257,9 @@ runtime yx_conf/plugins.vim
 " 相应的套装
 " - https://github.com/hrsh7th/nvim-compe
 "       - 优点: spell completion( 后面发现 :CocInstall coc-zi 有相应的功能)
+
+" :changes 可视化
+" https://github.com/axlebedev/footprints
 
 " other cheetsheet
 " deploy_apps/install_neovim.sh
