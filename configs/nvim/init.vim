@@ -38,6 +38,7 @@ Plug 'hanschen/vim-ipython-cell', { 'for': 'python' }
 Plug 'jupyter-vim/jupyter-vim'
 Plug 'goerz/jupytext.vim' " `pip install jupytext` is required
 " let g:jupytext_enable = 0  " to disable jupytext. I tried, but it does not work
+" 这个能使用需要你能对你阅读的目录有写权限（因为jupytext会往目录下新写一个文件）
 
 Plug 'unblevable/quick-scope'
 Plug 'tpope/vim-repeat'
@@ -566,8 +567,10 @@ let g:which_key_map['p'] = {
 " \'e' : ['placehoder', 'Create an embeded env']
 
 nnoremap <leader>psr :SlimeSend0 "python ".expand("%:p")."\n"<CR>
+nnoremap <leader>psR :SlimeSend0 "python ".expand("%")."\n"<CR>
 nnoremap <leader>pss :SlimeSend0 "bash ".expand("%:p")."\n"<CR>
 nnoremap <leader>psd :SlimeSend0 "pypdb ".expand("%:p")."\n"<CR>
+nnoremap <leader>psD :SlimeSend0 "pypdb ".expand("%")."\n"<CR>
 nnoremap <leader>psp :SlimeSend0 "pyprof ".expand("%:p")."\n"<CR>
 nnoremap <leader>pskp :SlimeSend0 "kernprof -l ".expand("%:p")."\n"<CR>
 nnoremap <leader>pskc :SlimeSend0 "python -m line_profiler ".expand("%:t").".lprof\n"<CR>

@@ -1,0 +1,99 @@
+[[snippets]]
+  description = "grep cn"
+  command = "rg '[\\p{Han}]'"
+  output = ""
+
+[[snippets]]
+  description = "conda create"
+  command = "conda create -y -n <env_name=XXX> python=3.8"
+  output = ""
+
+[[snippets]]
+  description = "rsync high freq used"
+  command = "rsync  -avzrP -e ssh XXX XXX  # z(compression) P(progress)"
+  output = ""
+
+[[snippets]]
+  description = "black format"
+  command = "python -m black .  -l 120"
+  output = ""
+
+[[snippets]]
+  description = "terminalizer record"
+  command = "terminalizer record XXX -d zsh"
+  output = ""
+
+[[snippets]]
+  description = "process tree"
+  command = "pstree -pas"
+  output = ""
+
+[[snippets]]
+  description = "jupyter --ip 0.0.0.0"
+  command = "jupyter notebook --no-browser --port 9000 --ip 0.0.0.0"
+  output = ""
+
+[[snippets]]
+  description = "jupyter --ip `hostname`"
+  command = "jupyter notebook --no-browser --port 9000 --ip `hostname` # You can not access 127.0.0.1 when binding hostname"
+  output = ""
+
+[[snippets]]
+  description = "tmux list pane"
+  command = "tmux list-panes -a -F \"#{pane_pid} #{session_name}:#{window_index}:#{pane_index}\""
+  output = ""
+
+[[snippets]]
+  description = "py-spy record"
+  command = "py-spy record -o profile.svg --"
+  output = ""
+
+[[snippets]]
+  description = "git add me qlib"
+  command = "git remote add me git@github.com:you-n-g/qlib.git"
+  output = ""
+
+[[snippets]]
+  description = "py-spy top"
+  command = "sudo env \"PATH=$PATH\"  py-spy top --pid"
+  output = ""
+
+[[snippets]]
+  description = "snakeviz"
+  command = "snakeviz -s -H `hostname` stats_out"
+  output = ""
+
+[[snippets]]
+  description = "py-spy dump"
+  command = "sudo env \"PATH=$PATH\"  py-spy dump --pid"
+  output = ""
+
+[[snippets]]
+  description = "autossh proxy"
+  command = "autossh -R 6489:127.0.0.1:6489 XXX # http proxy deployed locally, XXX configured in .ssh/config"
+  output = ""
+
+[[snippets]]
+  description = "fzf preview for output lines"
+  command = "fzf  --preview \"echo {} | bat -l  Python --style plain # --color=always\" --preview-window :wrap"
+  output = ""
+
+[[snippets]]
+  description = "tmux edit pane name"
+  command = "printf '\\033]2;%s\\033\\\\' '<pane-name>'"
+  output = ""
+
+[[snippets]]
+  description = "tmux enable boarder (this will conflict with vim-slime)"
+  command = "tmux set pane-border-status top"
+  output = ""
+
+[[snippets]]
+  description = "for each dir git status"
+  command = "for d in `ls` ; do  cd $d ; echo \"=================`pwd`\" ;  git status  ; cd .. ;  done"
+  output = ""
+
+[[snippets]]
+  description = "clone my style project"
+  command = "python ./clone.py all online_V05 online_V06  /home/xiaoyang/repos/online3rd_projects/V05 /home/xiaoyang/repos/online3rd_projects/V06"
+  output = ""
