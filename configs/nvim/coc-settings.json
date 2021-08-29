@@ -23,6 +23,7 @@
       "inplace",
       "mlflow",
       "mprof",
+      "ndarray",
       "nvimrc",
       "qlib",
       "reindex",
