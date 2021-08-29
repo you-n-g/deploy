@@ -16,6 +16,7 @@ EOF
         # Ref: https://stackoverflow.com/questions/2626274/print-all-but-the-first-three-columns
     }
     # antigen use oh-my-zsh
+    # 
     antigen bundle zsh-users/zsh-autosuggestions
     antigen bundle zsh-users/zsh-completions
     antigen bundle zsh-users/zsh-syntax-highlighting
@@ -37,8 +38,11 @@ EOF
     # 2) 充当不能筛选内容的grep的作用
 
     # 如果这个有问题，可以试着重新安装 zsh,  看看.zsh_snippets有没有做link(zsp list)
+    # 这个后面要被 pet  +  tmux-pet 替掉了
     antigen bundle 1ambda/zsh-snippets
 
+    # 有用的功能
+    # C-x C-e 被 vv 替代掉了
     antigen bundle jeffreytse/zsh-vi-mode
 
     antigen bundle Aloxaf/fzf-tab

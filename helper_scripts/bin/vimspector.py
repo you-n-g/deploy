@@ -5,65 +5,43 @@ from pathlib import Path
 import sys
 import fire
 
-NAME = 'Launch Debugger'
+NAME = "Launch Debugger"
 
 # Here is the detailed options
 # https://github.com/microsoft/debugpy/wiki/Debug-configuration-settings
 PY_TPL = {
-  "configurations": {
-    NAME: {
-      "adapter": "debugpy",
-      "configuration": {
-        "name": NAME,
-        "type": "python",
-        "request": "launch",
-        "cwd": "<working directory>",
-        "python": "</path/to/python/interpreter/to/use>",
-        "stopOnEntry": True,
-        "console": "externalTerminal",
-        "debugOptions": [],
-        "program": "<path to main python file>",
-        "args": []  # the arguments you start the program
-      }
+    "configurations": {
+        NAME: {
+            "adapter": "debugpy",
+            "configuration": {
+                "name": NAME,
+                "type": "python",
+                "request": "launch",
+                "cwd": "<working directory>",
+                "python": "</path/to/python/interpreter/to/use>",
+                "stopOnEntry": True,
+                "console": "externalTerminal",
+                "debugOptions": [],
+                "program": "<path to main python file>",
+                "args": [],  # the arguments you start the program
+            },
+        }
     }
-  }
 }
 
 
-
-JAVA_TPL_G = {
-  "adapters": {
-    "java-debug-server": {
-      "name": "vscode-java",
-      "port": "${AdapterPort}"
-    }
-  }
-}
+JAVA_TPL_G = {"adapters": {"java-debug-server": {"name": "vscode-java", "port": "${AdapterPort}"}}}
 
 
 JAVA_TPL_V = {
-  "adapters": {
-    "java-debug-server": {
-      "name": "vscode-java",
-      "port": "${AdapterPort}"
-    }
-  },
-  "configurations": {
-    "Java Attach": {
-      "adapter": "java-debug-server",
-      "configuration": {
-        "request": "attach",
-        "host": "127.0.0.1",
-        "port": "5005"
-      },
-      "breakpoints": {
-        "exception": {
-          "caught": "N",
-          "uncaught": "Y"
+    "adapters": {"java-debug-server": {"name": "vscode-java", "port": "${AdapterPort}"}},
+    "configurations": {
+        "Java Attach": {
+            "adapter": "java-debug-server",
+            "configuration": {"request": "attach", "host": "127.0.0.1", "port": "5005"},
+            "breakpoints": {"exception": {"caught": "N", "uncaught": "Y"}},
         }
-      }
-    }
-  }
+    },
 }
 
 
@@ -75,7 +53,7 @@ class VimSpector:
         cfg["python"] = str(Path(sys.executable).absolute())
         cfg["program"] = str(Path(script).absolute())
 
-        with open('.vimspector.json', 'w') as f:
+        with open(".vimspector.json", "w") as f:
             json.dump(tpl, f)
 
         print('please run `:VimspectorInstall debugpy` in your vim. And press " vc" to start debugger')

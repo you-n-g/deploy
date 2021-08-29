@@ -25,7 +25,7 @@ while True:
         lines.append(line)
     else:
         break
-text = '\n'.join(lines)
+text = "\n".join(lines)
 
 
 import json
@@ -39,7 +39,7 @@ except json.decoder.JSONDecodeError:
 
 ssh_cmd = "ssh azcpu01"
 for k, v in config.items():
-    if '_port' in k:
+    if "_port" in k:
         ssh_cmd += f" -L {v}:127.0.0.1:{v}"
 
 print("启动powershell, 用ssh做端口转发。")
@@ -48,6 +48,6 @@ print(ssh_cmd)
 
 print(r"将上述json文件贴到 C:\Users\xiaoyang\kernel.json")
 
-print('jupyter qtconsole --existing kernel.json')
+print("jupyter qtconsole --existing kernel.json")
 
 print("JupyterConnect <之前说的有用的kernel-xxxxx.json的信息, 直接从新开的qtconsole中再输入一下 %connect_info 就行>")

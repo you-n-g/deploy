@@ -85,3 +85,13 @@ cat <<EOF
 Maybe the following things should be done mannually
 - Install tpm
 EOF
+
+
+
+
+# FAQ
+## 对于共享home目录，换了机器可能有以下问题需要解决
+# - ~/.antigen/init.zsh  这个文件里面可能有路径硬编码
+# - 系统级别的软件需要重新装一下， 比如 `Debian-based.sh`
+# - deploy_apps/install_rg.sh
+# - tmux set-option -g default-shell ...

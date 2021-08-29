@@ -29,13 +29,13 @@ class Monitor:
         """
         bar = tqdm()
         while True:
-            subprocess.run(f'vmstat -t >> {fname}', shell=True)
+            subprocess.run(f"vmstat -t >> {fname}", shell=True)
             bar.update(1)
             time.sleep(1)
 
     def mprof(self, pid, fname=MP_FN):
         # RES mprof 第二列是内存占用， 代表物理内存占用(我核对过相当于htop的RES列)， 单位是 MB,
-        subprocess.run(f'mprof attach -o {fname} -C {pid}', shell=True)
+        subprocess.run(f"mprof attach -o {fname} -C {pid}", shell=True)
 
     def pydump(self, pid, fname=PD_FN):
         bar = tqdm()
@@ -84,12 +84,12 @@ class Monitor:
             df.append(sr)
         df = pd.DataFrame(df)
 
-        df['UTC'] = df['UTC'].apply(pd.to_datetime)
+        df["UTC"] = df["UTC"].apply(pd.to_datetime)
 
         df.set_index("UTC", inplace=True)
         df = df.astype(np.int)
 
-        print((df["free"] / 2**20).describe())  # the unit is GB
+        print((df["free"] / 2 ** 20).describe())  # the unit is GB
         return df
 
     def ana_pm(self, fname=MP_FN):
@@ -97,7 +97,7 @@ class Monitor:
         The unit is MB
         """
         data = pd.read_csv(fname, sep=" ", index_col=2, names=["col", "memory", "time"], skiprows=1)
-        data.index = data['memory'].index.to_series().apply(datetime.fromtimestamp)
+        data.index = data["memory"].index.to_series().apply(datetime.fromtimestamp)
         print(data["memory"].astype("float").describe())
         return data
 
@@ -110,7 +110,7 @@ class Monitor:
         for l in lines:
             m = re.match(r"Timestamp: (?P<time>.+)", l)
             if m is not None:
-                tss.append(float(m.groupdict()['time']))
+                tss.append(float(m.groupdict()["time"]))
                 content.append([])
             else:
                 content[-1].append(l)
