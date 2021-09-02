@@ -566,6 +566,7 @@ let g:which_key_map['p'] = {
 " \'b' : ['SlimeSend0 "b ".expand("%:p").":".line("$")', 'Send file break point'],
 " \'e' : ['placehoder', 'Create an embeded env']
 
+" shell related
 nnoremap <leader>psr :SlimeSend0 "python ".expand("%:p")."\n"<CR>
 nnoremap <leader>psR :SlimeSend0 "python ".expand("%")."\n"<CR>
 nnoremap <leader>pss :SlimeSend0 "bash ".expand("%:p")."\n"<CR>
@@ -574,6 +575,8 @@ nnoremap <leader>psD :SlimeSend0 "pypdb ".expand("%")."\n"<CR>
 nnoremap <leader>psp :SlimeSend0 "pyprof ".expand("%:p")."\n"<CR>
 nnoremap <leader>pskp :SlimeSend0 "kernprof -l ".expand("%:p")."\n"<CR>
 nnoremap <leader>pskc :SlimeSend0 "python -m line_profiler ".expand("%:t").".lprof\n"<CR>
+nnoremap <leader>pst :SlimeSend0 "nosetests --nocapture --ipdb --ipdb-failures ".expand("%:p")."\n"<CR>
+
 nnoremap <leader>pdb :SlimeSend0 "b ".expand("%:p").":".line(".")."\n"<CR>
 nnoremap <leader>pde :SlimeSend1 from IPython import embed; embed()<CR>
 
