@@ -15,7 +15,16 @@ from io import StringIO
 
 
 class CP:
-    """(C)reate (P)roject"""
+    """
+        (C)reate (P)roject
+
+        运行命令之前需要确保:
+        - 这里需要用户已经在特定目录下
+
+        其他的各种检查已经把能做的都做了
+
+        在NFS集群上大概会花 5min; 在本地磁盘的一台新机器上只会花1min
+    """
 
     BASE_ENV = "base"
 
@@ -42,9 +51,8 @@ class CP:
 
     def create(self, inst_qlib=True, force_qlib=False):
         """
-        这里假设用户已经 yxca了环境, 并且已经在目录下面了
+        这里假设用户已经在特定目录下面了
 
-        这里大概会花 5min
         """
         self.check_env()
         pp = Path(".").absolute().resolve()
@@ -80,13 +88,13 @@ setup(
             cmd = f"{self._act()} ; {cmd}"
         subprocess.run(cmd, shell=True)
 
-    def all(self):
+    def all(self, inst_qlib=False):
         """
         Typically usage:
             cp.py --name nestedV02 --py_ver 3.7 all
         """
         self.env()
-        self.create()
+        self.create(inst_qlib=inst_qlib)
         self.setup()
 
 
