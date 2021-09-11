@@ -20,8 +20,9 @@ mkdir -p ~/bin/
 
 ln -s  $FILE_PATH  ~/bin
 
-unlink ~/.config/pet/snippet.toml
 
+mkdir -p ~/.config/pet/
+unlink ~/.config/pet/snippet.toml
 ln -s ~/deploy/configs/pet/snippet.toml ~/.config/pet/snippet.toml
 
 

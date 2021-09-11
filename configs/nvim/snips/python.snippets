@@ -272,3 +272,16 @@ if globals().get("YX_CONFIRM_${1:XXX}") is None:
 	__import__('ipdb').set_trace()
 	# globals()["YX_CONFIRM_${1:XXX}"] = True
 endsnippet
+
+snippet testtpl "test template" b
+import unittest
+
+
+class TimeUtils(unittest.TestCase):
+    def test_index_data(self):
+        pass
+
+
+if __name__ == "__main__":
+	unittest.main()
+endsnippet

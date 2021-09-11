@@ -9,6 +9,7 @@ conda install -y -c conda-forge python-cufflinks
 # conda install -y tensorboard
 pip install papermill ipdb nbresuse jupytext
 # - jupytext: 必须先安装再启动jupyter， 不然不会自动帮你保存py文件
+
 conda install -y xlwt
 
 # 这些都是针对个人用户的， 别人安装了没有用
@@ -43,3 +44,8 @@ cd ~/deploy/
 python deploy_apps/deploy_plot_cn_font.py
 
 sh deploy_apps/set_jupyter_pwd.sh
+
+
+
+# 一般常用的软件
+pip install nose ipdbplugin
