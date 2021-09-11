@@ -2,7 +2,7 @@
 
 -- require'lspconfig'.pyright.setup{}
 
-
+require("run_func")
 
 
 

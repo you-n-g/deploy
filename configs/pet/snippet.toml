@@ -97,3 +97,8 @@
   description = "clone my style project"
   command = "python ./clone.py all online_V05 online_V06  /home/xiaoyang/repos/online3rd_projects/V05 /home/xiaoyang/repos/online3rd_projects/V06"
   output = ""
+
+[[snippets]]
+  description = "conda clone"
+  command = "conda create --name <env_name=online_V06>_gpu --clone <env_name=online_V06>"
+  output = ""

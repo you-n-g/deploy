@@ -267,7 +267,7 @@ if TYPE_CHECKING:
 	pass
 endsnippet
 
-snippet confi "confirm" b
+snippet ipdbconfi "confirm" b
 if globals().get("YX_CONFIRM_${1:XXX}") is None:
 	__import__('ipdb').set_trace()
 	# globals()["YX_CONFIRM_${1:XXX}"] = True
