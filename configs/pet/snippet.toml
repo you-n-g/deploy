@@ -102,3 +102,8 @@
   description = "reload tmux config"
   command = "tmux source ~/.tmux.conf"
   output = ""
+
+[[snippets]]
+  description = "run mlflow server"
+  command = "mlflow ui -h `hostname` -p 5000"
+  output = ""

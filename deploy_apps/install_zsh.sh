@@ -69,8 +69,8 @@ cd $DIR_PATH
 . ../helper_scripts/config_rc.sh
 
 
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+RED="\033[0;31m"
+NC="\033[0m" # No Color
 echo  "${RED} Maybe you still have to install zsh with conda ${NC}"
 
 # zsh性能优化

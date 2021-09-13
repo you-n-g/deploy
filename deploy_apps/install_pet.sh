@@ -25,4 +25,5 @@ mkdir -p ~/.config/pet/
 unlink ~/.config/pet/snippet.toml
 ln -s ~/deploy/configs/pet/snippet.toml ~/.config/pet/snippet.toml
 
-
+# 可能存在的问题
+# - 如果重复安装pet, 可能导致 snippet.toml 变为空(未知原因)

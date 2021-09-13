@@ -16,6 +16,6 @@ fi
 bash ~/.tmux/plugins/tpm/bindings/install_plugins
 
 
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+RED="\033[0;31m"
+NC="\033[0m" # No Color
 echo  "${RED} Maybe you still have to run tmux's 'prefix + I' under zsh to install TPM${NC}"
