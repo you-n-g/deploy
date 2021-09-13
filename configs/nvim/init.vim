@@ -569,6 +569,7 @@ let g:which_key_map['p'] = {
 " shell related
 nnoremap <leader>psr :SlimeSend0 "python ".expand("%:p")."\n"<CR>
 nnoremap <leader>psR :SlimeSend0 "python ".expand("%")."\n"<CR>
+nnoremap <leader>psf :SlimeSend0 "python ".expand("%:p")." ".luaeval('require("run_func").get_current_function_name()')."\n"<CR>
 nnoremap <leader>pss :SlimeSend0 "bash ".expand("%:p")."\n"<CR>
 nnoremap <leader>psd :SlimeSend0 "pypdb ".expand("%:p")."\n"<CR>
 nnoremap <leader>psD :SlimeSend0 "pypdb ".expand("%")."\n"<CR>

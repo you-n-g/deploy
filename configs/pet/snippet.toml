@@ -99,6 +99,11 @@
   output = ""
 
 [[snippets]]
+  description = "conda clone"
+  command = "conda create --name <env_name=online_V06>_gpu --clone <env_name=online_V06>"
+  output = ""
+
+[[snippets]]
   description = "reload tmux config"
   command = "tmux source ~/.tmux.conf"
   output = ""
