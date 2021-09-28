@@ -52,6 +52,7 @@ echo '- 用vnc登录到本地 127.0.0.1 不需要密码'
 # vncserver -kill :1 
 # vncserver -geometry 1600x1200 # -randr 1600x1200,1440x900,1024x768
 # export DISPLAY=:1
+# ps aux | grep Xtightvnc  # 看看当前开了什么server了
 
 # ref
 # 本教程参考了: https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-vnc-on-ubuntu-16-04
