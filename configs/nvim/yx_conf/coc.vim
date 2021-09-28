@@ -95,9 +95,10 @@ nmap <leader>cac  <Plug>(coc-codeaction)
 nmap <leader>cqf  <Plug>(coc-fix-current)
 
 " Use <tab> for select selections ranges, needs server support, like: coc-tsserver, coc-python
-nmap <silent> <TAB> <Plug>(coc-range-select)
-xmap <silent> <TAB> <Plug>(coc-range-select)
-xmap <silent> <S-TAB> <Plug>(coc-range-select-backword)
+" nmap <silent> <TAB> <Plug>(coc-range-select)
+" xmap <silent> <TAB> <Plug>(coc-range-select)
+" xmap <silent> <S-TAB> <Plug>(coc-range-select-backword)
+" These features are replaced by tree sitter
 
 " Use `:Format` to format current buffer
 command! -nargs=0 Format :call CocAction('format')

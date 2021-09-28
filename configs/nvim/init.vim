@@ -420,6 +420,9 @@ let g:ctrlp_cmd = ''
 " map t<space> <Plug>VimwikiToggleListItem
 let g:vimwiki_hl_headers = 1
 " let g:vimwiki_conceallevel = 0
+" 据说可以管理vimwiki的backlinks
+" https://github.com/michal-h21/vim-zettel
+
 
 
 "
@@ -569,8 +572,13 @@ let g:which_key_map['p'] = {
 " shell related
 nnoremap <leader>psr :SlimeSend0 "python ".expand("%:p")."\n"<CR>
 nnoremap <leader>psR :SlimeSend0 "python ".expand("%")."\n"<CR>
+
+" 这里有点缺陷，在Python的 docstring的位置不能正确输出结果
 nnoremap <leader>psf :SlimeSend0 "python ".expand("%:p")." ".luaeval('require("run_func").get_current_function_name()')."\n"<CR>
+nnoremap <leader>psF :SlimeSend0 "python ".expand("%")." ".luaeval('require("run_func").get_current_function_name()')."\n"<CR>
+
 nnoremap <leader>pss :SlimeSend0 "bash ".expand("%:p")."\n"<CR>
+
 nnoremap <leader>psd :SlimeSend0 "pypdb ".expand("%:p")."\n"<CR>
 nnoremap <leader>psD :SlimeSend0 "pypdb ".expand("%")."\n"<CR>
 nnoremap <leader>psp :SlimeSend0 "pyprof ".expand("%:p")."\n"<CR>
@@ -1121,26 +1129,8 @@ nmap <silent> <Leader>Dx <Plug>TranslateX
 
 
 " BEGIN 'nvim-treesitter/nvim-treesitter' ---------------------------------
-lua <<EOF
-require'nvim-treesitter.configs'.setup {
-  ensure_installed = "maintained", -- one of "all", "maintained" (parsers with maintainers), or a list of languages
-  ignore_install = {  }, -- List of parsers to ignore installing
-  highlight = {
-    enable = true,              -- false will disable the whole extension
-    disable = { },  -- list of language that will be disabled
-    -- Setting this to true will run `:h syntax` and tree-sitter at the same time.
-    -- Set this to `true` if you depend on 'syntax' being enabled (like for indentation).
-    -- Using this option may slow down your editor, and you may see some duplicate highlights.
-    -- Instead of true it can also be a list of languages
-    additional_vim_regex_highlighting = false,
-  },
-  indent = {
-      enable = true
-  }
-}
-EOF
 
-
+" The lua part is in yx_conf.lua
 set foldmethod=expr
 set foldexpr=nvim_treesitter#foldexpr()
 set foldlevel=99

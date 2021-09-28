@@ -12,6 +12,8 @@
 
 -- 下面的代码是基于下面的讨论
 -- https://www.reddit.com/r/neovim/comments/nnru7r/how_do_i_get_the_name_of_the_current_function_i/
+-- 这个版本还有如下问题
+-- - 遇到comments，就直接变成<node source了>
 local ts_utils = require'nvim-treesitter.ts_utils'
 local M = {}
 

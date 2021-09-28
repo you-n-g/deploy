@@ -118,6 +118,7 @@ EOF
     function zvm_after_lazy_keybindings() {
         # 这个按键绑定在 zvm 上不work
         # bindkey -M viins '\e.' insert-last-word
+        # - 一般的shell中的就是 ESC + .
         zvm_bindkey viins '^S^L' insert-last-word
 
         # 1ambda/zsh-snippets
@@ -125,7 +126,7 @@ EOF
         # bindkey '^S^A' zsh-snippets-widget-list    # CTRL-S CTRL-A (list)
         zvm_bindkey viins '^S^S' zsh-snippets-widget-expand  # CTRL-S CTRL-S (expand)
         zvm_bindkey viins '^S^A' zsh-snippets-widget-list    # CTRL-S CTRL-A (list)
-        #
+
         ## useful command
         # zsp add xxx "XXX"
         # zsp delete xxx

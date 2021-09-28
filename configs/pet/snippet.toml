@@ -107,3 +107,13 @@
   description = "reload tmux config"
   command = "tmux source ~/.tmux.conf"
   output = ""
+
+[[snippets]]
+  description = "start mlflow ui"
+  command = "mlflow ui -h `hostname` -p <port=5000>"
+  output = ""
+
+[[snippets]]
+  description = "initial the tmux session for coding"
+  command = "tmux rename-window code ; tmux new-window -n shell ; tmux new-window -n ops ; tmux new-window -n service"
+  output = ""
