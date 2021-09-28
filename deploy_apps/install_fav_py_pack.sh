@@ -7,8 +7,9 @@ conda install -y -c conda-forge python-cufflinks
 # pip install mysqlclient  # for python3
 # pip install tensorboardX
 # conda install -y tensorboard
-pip install papermill ipdb nbresuse jupytext
+pip install papermill ipdb nbresuse jupytext pdbpp
 # - jupytext: 必须先安装再启动jupyter， 不然不会自动帮你保存py文件
+# - pdbpp: sticky 功能非常好用!!!!
 
 conda install -y xlwt
 
@@ -38,6 +39,10 @@ DIR_P=$(jupyter --data-dir)/nbextensions/snippets/
 FILE_P=$DIR_P/snippets.json
 rm $FILE_P
 ln -s ~/deploy/configs/jupyter/snippets.json $FILE_P
+
+if [[ ! -e ~/.pdbrc.py  ]]; then
+    ln -s ~/deploy/configs/python/pdbrc.py ~/.pdbrc.py
+fi
 
 
 cd ~/deploy/
