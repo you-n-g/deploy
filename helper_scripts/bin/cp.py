@@ -98,7 +98,7 @@ setup(
     def all(self, inst_qlib=False):
         """
         Typically usage:
-            cp.py --name nestedV02 --py_ver 3.7 all
+            cp.py --name nestedV02 --py_ver 3.7 all --inst_qlib
         """
         self.env()
         self.create(inst_qlib=inst_qlib)
