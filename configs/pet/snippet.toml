@@ -117,3 +117,18 @@
   description = "initial the tmux session for coding"
   command = "tmux rename-window code ; tmux new-window -n shell ; tmux new-window -n ops ; tmux new-window -n service"
   output = ""
+
+[[snippets]]
+  description = "my repos"
+  command = "git clone git@ssh.dev.azure.com:v3/you-n-g/qutils/cluster_manager ; git clone git@ssh.dev.azure.com:v3/you-n-g/qutils/qutils"
+  output = ""
+
+[[snippets]]
+  description = "grep with ignore"
+  command = "rg  --no-ignore --no-ignore-dot <grep_path=XX>"
+  output = ""
+
+[[snippets]]
+  description = "clean jupyter output"
+  command = "ipynb_output_filter.py < <notebook=name.ipynb> > _yx_tmp  &&  mv _yx_tmp <notebook=name.ipynb> "
+  output = "Nothing"

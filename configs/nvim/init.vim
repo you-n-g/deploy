@@ -918,7 +918,7 @@ endfor
 "
 " 反vimer直觉的
 " 复制粘贴
-" - 有时候normal模式下x删除多行，再<c-v>粘贴会没用; extend模式d删除，然后在<c-v>粘贴我这边能work
+" - 有时候normal模式下x剪切，再<c-v>粘贴会没用; extend模式d删除，然后在<c-v>粘贴我这边能work
 " - <c-v> 才是那个每行都有差异的粘贴， p会粘贴一样的东西
 " v选择编辑的操作会出错，得用extend模式代替v
 " s不是删除然后立马插入，而是进入到一个selecting模式
@@ -1128,8 +1128,13 @@ nmap <silent> <Leader>Dx <Plug>TranslateX
 " END   'voldikss/vim-translator' -----------------------------------------
 
 
-" BEGIN 'nvim-treesitter/nvim-treesitter' ---------------------------------
+" BEGIN 'dhruvasagar/vim-table-mode' --------------------------------------
+" 好用的功能
+" - :TableSort   # 后面还有一堆参数可以研究一下
+" END   'dhruvasagar/vim-table-mode' --------------------------------------
 
+
+" BEGIN 'nvim-treesitter/nvim-treesitter' ---------------------------------
 " The lua part is in yx_conf.lua
 set foldmethod=expr
 set foldexpr=nvim_treesitter#foldexpr()
