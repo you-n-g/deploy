@@ -132,3 +132,8 @@
   description = "clean jupyter output"
   command = "ipynb_output_filter.py < <notebook=name.ipynb> > _yx_tmp  &&  mv _yx_tmp <notebook=name.ipynb> "
   output = "Nothing"
+
+[[snippets]]
+  description = "add git ignore"
+  command = "cp ~/deploy/configs/git/py.gitignore .gitignore"
+  output = ""
