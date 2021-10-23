@@ -20,7 +20,9 @@ Plug 'ryanoasis/vim-devicons'
 Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
 Plug 'mhinz/vim-startify'
 Plug 'vim-ctrlspace/vim-ctrlspace'
-Plug 'liuchengxu/vim-which-key'
+" Plug 'liuchengxu/vim-which-key'  这个插件有问题， 和context冲突,
+" 如果第一次按没有触发， 第二次再按空着就会出错
+Plug 'folke/which-key.nvim'  " 这个修复了 vim-which-key 的问题
 
 " Plug 'vim-vdebug/vdebug'   " 等待确认这个插件没有问题,
 " 希望这个插件可以代替vscode
@@ -46,7 +48,8 @@ Plug 'jiangmiao/auto-pairs'
 Plug 'kshenoy/vim-signature'
 Plug 'airblade/vim-gitgutter'
 
-Plug 'wellle/context.vim'
+" Plug 'wellle/context.vim'  "  被tree  sitter 替代了
+
 Plug 'machakann/vim-sandwich'
 
 Plug 'ludovicchabant/vim-gutentags'  " 自动生成更新ctags
@@ -67,7 +70,6 @@ Plug 'easymotion/vim-easymotion'
 " Plug 'sslivkoff/vim-scroll-barnacle'
 " - 后来发现这个可以解决这个问题: https://github.com/wfxr/minimap.vim
 Plug 'psliwka/vim-smoothie'
-" Plug 'liuchengxu/vista.vim'  "  目前还没发现有啥用， 早点删了吧
 Plug 'pevhall/simple_highlighting'
 Plug 'AndrewRadev/sideways.vim'
 Plug 'szw/vim-maximizer'
@@ -91,7 +93,7 @@ Plug 'SirVer/ultisnips'
 Plug 'honza/vim-snippets'
 
 " Plug 'junegunn/vim-peekaboo'  " 看剪切板非常方便:  但是常常会造成我的电脑卡死。。。 不知为何
-Plug 'tversteeg/registers.nvim', { 'branch': 'main' }   " 第二个看register的插件
+" Plug 'tversteeg/registers.nvim', { 'branch': 'main' }   " 第二个看register的插件,  但是这个和 which_key 功能一样， 所以先不用了
 
 Plug 'voldikss/vim-translator'
 
@@ -370,34 +372,10 @@ augroup END
 "
 
 " Plug 'liuchengxu/vim-which-key'
+" & WhichKey
 " I should before any key define based on vim-which-key
 
 set timeoutlen=500 " By default timeoutlen is 1000 ms
-call which_key#register('<Space>', "g:which_key_map")
-nnoremap <silent> <leader>      :<c-u>WhichKey '<Space>'<CR>
-vnoremap <silent> <leader>      :<c-u>WhichKeyVisual '<Space>'<CR>
-" nnoremap <silent> <localleader> :<c-u>WhichKey  ','<CR>
-" vnoremap <silent> <localleader> :<c-u>WhichKeyVisual ','<CR>
-let g:which_key_map =  {}
-" 我理解这里的所有的map命令 CMD 最后都会变成 :CMD<CR>
-
-" 我一直在尝试解决 vim-which-key 和 context 插件的冲突
-" let g:which_key_use_floating_win = 1
-" let g:which_key_floating_relative_win = 1
-" let g:which_key_run_map_on_popup = 1
-
-let g:which_key_map['t'] = {"name": 'Toggle'}
-
-" spell related
-let g:which_key_map.t.s = [":set spell!", 'Spell Toggle']
-" [s ]s: previous(next) spell error
-" zg: 标记为正确词汇
-" zw: 标记为错误词汇
-" zuX: 把 x 从词汇表中删除
-" 词汇表小写代表修改 spellfile, 大写代表 internal-wordlist
-" internal-wordlist 代表存在内存中，下次重新打开vim  或者设置 encoding都会导致它消失
-
-let g:which_key_map.t.p = [":exec '!sed -n  '.line('w0').','.line('w$').'p %'" , 'Plain text']
 
 
 "
@@ -429,7 +407,6 @@ let g:vimwiki_hl_headers = 1
 " Nerdtree http://www.vim.org/scripts/script.php?script_id=1658
 "
 nnoremap <silent> <F7> :NERDTreeToggle<CR>
-let g:which_key_map.t.n = ["NERDTreeToggle", 'NERDTreeToggle']
 let NERDTreeIgnore=['\.pyc$', '\.orig$', '\.pyo$']
 
 
@@ -438,7 +415,6 @@ let NERDTreeIgnore=['\.pyc$', '\.orig$', '\.pyo$']
 "
 " nnoremap <silent> <F8> :TlistToggle<CR>
 nnoremap <silent> <F8> :TagbarToggle<CR>
-let g:which_key_map.t.l = ["TagbarToggle", 'TagbarToggle']
 let g:tagbar_sort = 0
 " highlight TagbarHighlight ctermfg=17 ctermbg=190 guifg=#00005f guibg=#dfff00
 highlight link TagbarHighlight Cursor
@@ -539,35 +515,6 @@ let g:slime_dont_ask_default = 1
 " ipython-cell configuration
 "------------------------------------------------------------------------------
 " Keyboard mappings. <Leader> is \ (backslash) by default
-
-let g:which_key_map['p'] = {
-    \ 'name' : 'IPython Cell',
-    \'r' : ['IPythonCellRun', 'Run Script'],
-    \'R' : ['IPythonCellRunTime', 'Run script with time'],
-    \'e' : ['IPythonCellExecuteCellVerbose', 'Execute Cell'],
-    \'E' : ['IPythonCellExecuteCellVerboseJump', 'Execute Cell Jump'],
-    \'l' : ['IPythonCellClear', 'Clear'],
-    \'x' : ['IPythonCellClose', 'Close'],
-    \'c' : [':SlimeSend', 'Send line or selected'],
-    \'p' : ['IPythonCellPrevCommand', 'Previous Command'],
-    \'Q' : ['IPythonCellRestart', 'restart ipython'],
-    \'t' : [':SlimeSend1 %load_ext autotime', 'load autotime'],
-    \'q' : [':SlimeSend1 exit', 'exit'],
-    \'k' : ['IPythonCellPrevCell', 'Prev Cell'],
-    \'j' : ['IPythonCellNextCell', 'Next Cell'],
-    \'d' : {
-        \ 'name' : 'debug related',
-        \'d' : [':SlimeSend1 %debug', 'debug mode'],
-    \ },
-    \'s' : {
-        \ 'name' : 'Send for sh',
-        \'i' : [':SlimeSend1 ipython --matplotlib', 'start ipython with matplotlib'],
-        \ }
-    \ }
-" Failed settings
-" \'s' : [':SlimeSend1 ipython --matplotlib', 'start ipython with matplotlib'],
-" \'b' : ['SlimeSend0 "b ".expand("%:p").":".line("$")', 'Send file break point'],
-" \'e' : ['placehoder', 'Create an embeded env']
 
 " shell related
 nnoremap <leader>psr :SlimeSend0 "python ".expand("%:p")."\n"<CR>
@@ -704,11 +651,6 @@ let g:startify_lists = [
 
 
 " jupyter-vim
-let g:which_key_map['j'] = {
-    \ 'name' : 'jupyter-vim',
-    \'e' : ['JupyterSendCell', 'Jupyter Send Cell'],
-    \'d' : ['JupyterDisconnect', 'Jupyter Disconnect'],
-    \ }
 let g:jupyter_mapkeys=0
 nmap <leader>jc  :<C-u>JupyterSendCount<CR>
 vmap <leader>jc  :<C-u>'<,'>JupyterSendRange<CR>
@@ -765,11 +707,6 @@ nmap <silent> <leader>h] <Plug>(GitGutterNextHunk)
 " END   'airblade/vim-gitgutter' ------------------------------------------------------
 
 " BEGIN 'tpope/vim-fugitive' ------------------------------------------------------
-" nmap <silent> <leader>hl :G log --graph --oneline --decorate --all<CR>
-let g:which_key_map['h']  = {"name": "Git Related"}
-let g:which_key_map['h']['l'] = [':G log --graph --oneline --decorate --all', 'commit tree']
-let g:which_key_map['h']['h'] = [':0Glog', 'The commit file of current history']
-
 
 
 function! GoParentDir()
@@ -816,17 +753,6 @@ augroup END
 
 " END   'tpope/vim-fugitive' ------------------------------------------------------
 
-" BEGIN 'wellle/context.vim' ------------------------------------------------------
-let g:context_enabled = 0  " 等待BUG的fix
-
-" 和neovim一起这样用会有bug
-" https://github.com/wellle/context.vim/issues/23
-let g:context_nvim_no_redraw = 1
-
-" 和 vimspector 一起用会出现之前的context留下残影的问题
-" :ContextToggle  可以解决这个问题(似乎也没有解决...)
-let g:which_key_map.t.c = ["ContextToggle", 'ContextToggle']
-" END   'wellle/context.vim' ------------------------------------------------------
 
 
 " BEGIN  'machakann/vim-sandwich' -----------------------------------------
@@ -843,21 +769,6 @@ let g:which_key_map.t.c = ["ContextToggle", 'ContextToggle']
 
 
 " BEGIN  'puremourning/vimspector' -----------------------------------------
-let g:which_key_map['v'] = {
-    \ 'name' : 'vimspector',
-    \'c' : ['vimspector#Continue()', 'continue'],
-    \'C' : ['vimspector#ClearBreakpoints()', 'clear all breakpoints'],
-    \'S' : ['vimspector#Stop()', 'stop'],
-    \'p' : ['vimspector#Pause()', 'pause'],
-    \'b' : ['vimspector#ToggleBreakpoint()', 'breakpoint toggle'],
-    \'o' : ['vimspector#StepOver()', 'step over'],
-    \'i' : ['vimspector#StepInto()', 'step into'],
-    \'O' : ['vimspector#StepOut()', 'step out'],
-    \'R' : ['VimspectorReset', 'reset'],
-    \'r' : ['vimspector#RunToCursor()', 'run to cursor'],
-    \'u' : ['vimspector#UpFrame()', 'Move up call stack'],
-    \'d' : ['vimspector#DownFrame()', 'Move down call stack'],
-    \ }
 nnoremap <leader>vB  :call vimspector#ToggleBreakpoint({'condition':''})<left><left><left>
 
 " Python DEBUG
@@ -976,37 +887,6 @@ inoremap <expr> <c-x><c-k> fzf#vim#complete('cat ~/.english-words/words_alpha.tx
 imap <c-x><c-l> <plug>(fzf-complete-line)
 
 
-
-let g:which_key_map['f'] = {
-    \ 'name' : 'fzf',
-    \'g' : ['Rg', 'Rg'],
-    \'G' : ['Rgc', 'Rg without filename'],
-    \'l' : ['BLines', 'Lines in the current buffer'],
-    \'L' : ['Lines', 'Lines in loaded buffer'],
-    \'m' : [':Telescope marks', 'Marks'],
-    \'b' : [':Telescope buffers', 'Buffers'],
-    \'M' : ['Maps', 'Mappings'],
-    \'o' : [':Lines Outlines', 'Outlines'],
-    \'h' : [':Telescope help_tags', 'help tags'],
-    \'d' : {
-        \"name": "deploy and cheatsheets",
-            \'g' : [':execute '''.'lua require("telescope.builtin").live_grep({search_dirs={"~/deploy/", "~/cheatsheets/code_to_copy/"}})'.'''', 'deploy and cheatsheet(live_grep)'],
-            \'f' : [':execute '''.'lua require("telescope.builtin").find_files({search_dirs={"~/deploy/", "~/cheatsheets/code_to_copy/"}})'.'''', 'deploy and cheatsheet(find_files)']
-        \ },
-        \'p' : {
-            \"name": "plugins",
-            \'g' : ['RgPlug', 'plugins(live_grep)'],
-            \'f' : [':execute '''.'lua require("telescope.builtin").find_files({search_dirs={"~/.vim/plugged"}})'.'''', 'plugins(find_files)']
-        \}
-    \ }
-" 这里可以通过tab选多个，回车后变成quick fix
-
-" 发现 telescope 还是太慢了， fzf比较快
-" \'g' : [':execute '''.'lua require("telescope.builtin").live_grep({search_dirs={"~/.vim/plugged"}})'.'''', 'plugins(live_grep)'],
-" \'dg' : [':execute '''.'lua require("telescope.builtin").live_grep({search_dirs={"~/deploy/", "~/cheatsheets/code_to_copy/"}})'.'''', 'deploy and cheatsheet(live_grep)'],
-" \'df' : [':execute '''.'lua require("telescope.builtin").find_files({search_dirs={"~/deploy/", "~/cheatsheets/code_to_copy/"}})'.'''', 'deploy and cheatsheet(find_files)']
-
-
 " 有用的技巧
 " Search syntax: https://github.com/junegunn/fzf#search-syntax
 " '(exact-match) ^(prefix-exact-match) $(suffix-exact-match) !(inverse-exact-match)  有特殊意义
@@ -1032,7 +912,7 @@ let g:doge_doc_standard_python = 'numpy'
 
 " BEGIN 'APZelos/blamer.nvim' -----------------------------------------
 " It is useful when reviewing code
-let g:which_key_map.t.b = ["BlamerToggle", 'BlamerToggle']
+nnoremap <silent> <Leader>tb :BlamerToggle<CR>
 let g:blamer_delay = 500
 " END   'APZelos/blamer.nvim' -----------------------------------------
 
@@ -1065,14 +945,6 @@ nmap <Leader>w <Plug>(easymotion-overwin-w)
 " highlight ScrollBlockBottom gui=reverse cterm=reverse
 " END   'sslivkoff/vim-scroll-barnacle' -----------------------------------------
 
-
-" BEGIN 'liuchengxu/vista.vim' -----------------------------------------
-let g:which_key_map.t.v = [":Vista!!", 'Vista Toggle']
-let g:vista_sidebar_position="vertical topleft"
-let g:which_key_map.f.t = [":Vista finder", 'Vista finder']
-left g:vista_default_executive='coc'
-" END   'liuchengxu/vista.vim' -----------------------------------------
-
 " BEGIN 'pevhall/simple_highlighting' -----------------------------------------
 nmap <Leader>H <Plug>HighlightWordUnderCursor
 vmap <Leader>H <Plug>HighlightWordUnderCursor
@@ -1084,7 +956,7 @@ nnoremap <c-l> :SidewaysRight<cr>
 " END   'AndrewRadev/sideways.vim' -----------------------------------------
 
 " BEGIN 'szw/vim-maximizer' -----------------------------------------
-let g:which_key_map.t.M = ["MaximizerToggle", 'MaximizerToggle']
+nnoremap <leader>tM :SidewaysRight<cr>
 " END   'szw/vim-maximizer' -----------------------------------------
 
 " BEGIN 'camspiers/lens.vim' -----------------------------------------

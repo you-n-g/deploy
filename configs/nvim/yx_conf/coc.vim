@@ -144,20 +144,6 @@ nnoremap <silent> <Leader>gc :exe 'CocList -I --input='.expand('<cword>').' grep
 nnoremap <silent> <Leader>gr :exe 'CocList -I grep --ignore-case'<CR>
 
 
-" TODO: 上面的一堆命令终究将纳入到下面的 which_key_map 中
-let g:which_key_map['l'] = {
-    \ 'name' : 'coc-list',
-    \'o' : [':CocList -I --auto-preview --ignore-case --input=outlines lines', 'Outlines'],
-    \'i' : [':CocList -I --auto-preview --ignore-case lines', 'Search in this file'],
-    \'c' : [':CocList commands', 'commands'],
-    \'u' : [':CocList mru', 'mru(current dir)'],
-    \ }
-
-
-let g:which_key_map['c'] = {
-    \ 'name' : 'coc.vim',
-    \'F' : ['Format', 'Format all'],
-    \ }
 
 " scroll the popup
 " 一开始是用了这个
@@ -245,13 +231,6 @@ let g:coc_explorer_global_presets = {
 \ }
 
 " Use preset argument to open it
-let g:which_key_map['e'] = {
-    \ 'name' : 'coc-list',
-    \'f' : [':CocCommand explorer --sources=buffer+,file+ --preset floatingRightside', 'Float Explorer'],
-    \'c' : [':CocCommand explorer --sources=buffer+,file+', 'Side Explorer'],
-    \'e' : [':CocCommand explorer --sources=buffer+,file+ --preset floating', 'Full Explorer'],
-    \ }
-
 
 function! s:explorer_cur_dir()
   let node_info = CocAction('runCommand', 'explorer.getNodeInfo', 0)
@@ -299,8 +278,6 @@ let g:coc_snippet_prev = '<c-k>'
 
 " Use <C-j> for both expand and jump (make expand higher priority.)
 imap <C-j> <Plug>(coc-snippets-expand-jump)
-
-let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
 
 
 " coc-list ------------------------------

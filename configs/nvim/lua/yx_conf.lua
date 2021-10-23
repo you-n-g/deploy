@@ -54,3 +54,5 @@ require'nvim-treesitter.configs'.setup {
 }
 
 require("run_func")
+
+require("which_key")
