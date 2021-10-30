@@ -46,6 +46,8 @@ require'nvim-treesitter.configs'.setup {
     enable = true,
     keymaps = {
       init_selection = "<tab><tab>", -- I want <tab>. But it will conflict with vim-visual-multi
+                                     -- To be compatible wtih which-key, please use '\t' in triggers_blacklist
+                                     -- https://github.com/folke/which-key.nvim/issues/185
       node_incremental = "<tab>",
       -- scope_incremental = "<tab>",  这个会扩展非常多， 感觉不容易用上
       node_decremental = "<s-tab>",
