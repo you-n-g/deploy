@@ -5,16 +5,28 @@ mprof attach -C <pid>
 pip install py-spy
 
 # NOTE: sudo is required for py-spy
+
+
+# 一个经典用法
+
+CMD &
+BACK_PID=$!
+monitor.py all $BACK_PID &
+MONI_PID=$!
+wait $BACK_PID
+kill $MONI_PID
 """
 from datetime import datetime
 import re
 import fire
 import time
+import psutil
 import subprocess
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 from joblib import Parallel, delayed
+from threading import Thread
 from pathlib import Path
 
 
@@ -47,14 +59,16 @@ class Monitor:
             time.sleep(1)
 
     def all(self, pid=None):
-        tasks = [delayed(self.vs)()]
-        if pid is not None:
-            tasks.append(delayed(self.mprof)(pid=pid))
-            tasks.append(delayed(self.pydump)(pid=pid))
-        try:
-            Parallel(n_jobs=len(tasks))(tasks)
-        except KeyboardInterrupt:
-            pass
+        threads = [
+            Thread(target=self.vs),
+            Thread(target=self.mprof, args=(pid, )),
+            Thread(target=self.pydump, args=(pid, ))
+        ]
+        for t in threads:
+            t.start()
+
+        for t in threads:
+            t.join()
 
     def clear(self):
         for fname in self.VS_FN, self.MP_FN:
@@ -74,19 +88,22 @@ class Monitor:
         with fi.open("r") as f:
             lines = f.readlines()
 
+        TIME_COL = ["UTC", "CST"]  # 根据系统时区设置， 这里可能会不一样
+        t_col_name = None
         df = []
         for idx in range(0, len(lines), 3):
             data = lines[idx + 2].split()
             idx = lines[idx + 1].split()
-            if idx[-1] == "UTC":
+            if idx[-1] in TIME_COL:
                 data[-2:] = [" ".join(data[-2:])]
+                t_col_name = idx[-1]
             sr = pd.Series(data, idx)
             df.append(sr)
         df = pd.DataFrame(df)
 
-        df["UTC"] = df["UTC"].apply(pd.to_datetime)
+        df[t_col_name] = df[t_col_name].apply(pd.to_datetime)
 
-        df.set_index("UTC", inplace=True)
+        df.set_index(t_col_name, inplace=True)
         df = df.astype(np.int)
 
         print((df["free"] / 2 ** 20).describe())  # the unit is GB
@@ -97,6 +114,7 @@ class Monitor:
         The unit is MB
         """
         data = pd.read_csv(fname, sep=" ", index_col=2, names=["col", "memory", "time"], skiprows=1)
+        data = data[~data.index.isna()]  # 我遇到过算出index有NA的
         data.index = data["memory"].index.to_series().apply(datetime.fromtimestamp)
         print(data["memory"].astype("float").describe())
         return data
