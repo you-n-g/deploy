@@ -115,7 +115,7 @@
 
 [[snippets]]
   description = "initial the tmux session for coding"
-  command = "tmux rename-window code ; tmux new-window -n shell ; tmux new-window -n ops ; tmux new-window -n service"
+  command = "tmux rename-window code ; tmux new-window -n code_shell ; tmux new-window -n ops ; tmux new-window -n ops_shell ; tmux new-window -n service"
   output = ""
 
 [[snippets]]
@@ -125,7 +125,7 @@
 
 [[snippets]]
   description = "grep with ignore"
-  command = "rg  --no-ignore --no-ignore-dot <grep_path=XX>"
+  command = "rg  --no-ignore --no-ignore-dot <grep_pattern=XXX> <grep_path=.>"
   output = ""
 
 [[snippets]]
@@ -136,4 +136,9 @@
 [[snippets]]
   description = "add git ignore"
   command = "cp ~/deploy/configs/git/py.gitignore .gitignore"
+  output = ""
+
+[[snippets]]
+  description = "Forward proxy"
+  command = "ssh xiaoyang@52.229.162.130 -L0.0.0.0:6489:0.0.0.0:6489  -D 0.0.0.0:8964"
   output = ""

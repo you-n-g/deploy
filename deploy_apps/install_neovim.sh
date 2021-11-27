@@ -16,11 +16,14 @@ if [ ! -e ~/bin/vim ]; then
     mkdir -p ~/bin/
     # Dev version
     curl -L  -o ~/bin/vim_nightly https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
-    # Stable version: 这里建议安装稳定版本，之前安装 nightly版本的时候遇到过崩溃的事情
+    # - 之前安装 nightly版本的时候遇到过崩溃的事情
+    # - nightly 曾经出过问题;
+    # Stable version: 这里建议安装稳定版本
+    # - stable version 用 tree-sitter 等等插件也没出什么问题了
     curl -L  -o ~/bin/vim_latest https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
     chmod a+x ~/bin/vim_latest
     chmod a+x ~/bin/vim_nightly
-    ln -s ~/bin/vim_nightly ~/bin/vim
+    ln -s ~/bin/vim_latest ~/bin/vim
 fi
 
 # FIXME: 这里在国内有可能被墙 GFW
