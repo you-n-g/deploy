@@ -472,7 +472,34 @@ au FileType go nmap <Leader>gd <Plug>(go-doc)
 " ":i.j" means the ith window, jth pane
 " C-c, C-c  --- the same as slime
 " C-c, v    --- mnemonic: "variables"
-let g:slime_target = "tmux"
+
+" let g:slime_target = "tmux"
+" " These lines must be deleted if we use "neovim" slime_target
+" " always send text to the pane in the current tmux tab without asking
+" let g:slime_default_config = {
+"             \ 'socket_name': get(split($TMUX, ','), 0),
+"             \ 'target_pane': '{top-right}' }
+" let g:slime_dont_ask_default = 1
+
+let g:slime_target = "neovim"
+" pro:
+" - 这里如果能换成 neovim 的话， 会更方便 (navigate更方便,
+"   而且颜色高亮等等功能还可以临时加)
+" - 而且 速度比 tmux 快很多!!!!
+" - 可以用vim直接看结果，能方便地在不同的文件中跳转
+" con:
+" - neovim有时候不稳定， 会导致 termin也一起出错:
+"   可能先把其他关掉，留下这个terminal比较合适
+" TODO:
+" - 这里如果能自动选择 terminal的话就比较爽了
+"   - 只有一个terminal时， 会自动选择
+"   - echo &channel
+" 发现的高效的习惯
+" - 这玩意不能像 tmux 那样swap时还保留 布局的窗口大小 ,
+"   它保留的是本身的窗口大小; 所以 ctrl + 6 来切换
+"   terminal和code也是一个不错的选择
+"
+"
 " 这个一定要和ipython一起用，否则可能出现换行出问题
 let g:slime_python_ipython = 1
 
@@ -491,14 +518,6 @@ nnoremap <c-c><c-p> :SlimeSend0 "\x1bk\x0d"<CR>
 " TODO: fix the toggle
 " let g:slime_target = "neovim"  " 这个也支持哦
 
-
-
-" These lines must be deleted if we use "neovim" slime_target
-" always send text to the pane in the current tmux tab without asking
-let g:slime_default_config = {
-            \ 'socket_name': get(split($TMUX, ','), 0),
-            \ 'target_pane': '{top-right}' }
-let g:slime_dont_ask_default = 1
 
 " DEBUG & FAQ
 " 如果发现发送过去的内容不是选中的内容，可以看看你是不是开了 vi-mode
