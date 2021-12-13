@@ -2,7 +2,7 @@
 # install some essential scripts
 # conda install -y tensorflow-gpu keras-gpu
 conda install -y pandas matplotlib ipywidgets scikit-learn seaborn ipyparallel # some software we should reinstall if we recreate a new environment
-conda install -y -c conda-forge python-cufflinks
+conda install -y -c conda-forge python-cufflinks shellcheck
 # sudo apt-get install -y libmysqlclient-dev  # https://stackoverflow.com/a/5178698
 # pip install mysqlclient  # for python3
 # pip install tensorboardX
