@@ -1,4 +1,4 @@
--- https://github.com/nanotee/nvim-lua-guie
+-- https://github.com/nanotee/nvim-lua-guide
 
 -- require'lspconfig'.pyright.setup{}
 
@@ -58,3 +58,19 @@ require'nvim-treesitter.configs'.setup {
 require("run_func")
 
 require("which_key")
+
+
+
+-- 不知道为什么我的telescope 出问题而且无法配置了
+-- require('telescope').setup({
+--   defaults = {
+--     layout_config = {
+--       vertical = { width = 0.2 }
+--       -- other layout configuration here
+--     },
+--     -- other defaults configuration here
+--   },
+--   -- other configuration values here
+-- })
+
+require'telescope'.load_extension'my_config'
