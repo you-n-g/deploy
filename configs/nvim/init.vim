@@ -19,7 +19,7 @@ Plug 'nathanaelkane/vim-indent-guides'
 Plug 'ryanoasis/vim-devicons'
 Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
 Plug 'mhinz/vim-startify'
-Plug 'vim-ctrlspace/vim-ctrlspace'
+" Plug 'vim-ctrlspace/vim-ctrlspace'
 " Plug 'liuchengxu/vim-which-key'  这个插件有问题， 和context冲突,
 " 如果第一次按没有触发， 第二次再按空着就会出错
 Plug 'folke/which-key.nvim'  " 这个修复了 vim-which-key 的问题
@@ -105,6 +105,10 @@ Plug 'nvim-telescope/telescope.nvim'
 
 Plug 'neovim/nvim-lspconfig'
 Plug 'nvim-treesitter/playground' " treesitter dependent
+
+" Dev lua
+" Plug 'tjdevries/nlua.nvim'  "  this seems  require builtin lsp
+Plug 'bfredl/nvim-luadev'
 call plug#end()
 
 " cspell:enable
@@ -483,6 +487,7 @@ au FileType go nmap <Leader>gd <Plug>(go-doc)
 " let g:slime_dont_ask_default = 1
 
 let g:slime_target = "neovim"
+
 " pro:
 " - 这里如果能换成 neovim 的话， 会更方便 (navigate更方便,
 "   而且颜色高亮等等功能还可以临时加)
@@ -597,15 +602,18 @@ let g:indent_guides_start_level = 2
 
 
 " 'vim-ctrlspace/vim-ctrlspace'
-set nocompatible
-set hidden
-set encoding=utf-8
-hi link CtrlSpaceNormal   PMenu
-hi link CtrlSpaceSelected PMenuSel
-hi link CtrlSpaceSearch   Search
-hi link CtrlSpaceStatus   StatusLine
-" visual mode is not useful for me at all
-nnoremap <silent>Q :CtrlSpace<CR>
+" 本来走的下面的逻辑
+" set nocompatible
+" set hidden
+" set encoding=utf-8
+" hi link CtrlSpaceNormal   PMenu
+" hi link CtrlSpaceSelected PMenuSel
+" hi link CtrlSpaceSearch   Search
+" hi link CtrlSpaceStatus   StatusLine
+" " visual mode is not useful for me at all
+" nnoremap <silent>Q :CtrlSpace<CR>
+nnoremap <silent>Q :Telescope buffers<CR>
+
 " set showtabline=0  " tabline的开关和 vim-airline 的setting得一起修改的
 " 好用的:
 " - l可以快速列出所有的tab级别的内容
@@ -618,6 +626,9 @@ nnoremap <silent>Q :CtrlSpace<CR>
 " - 想disable 文件搜索，但是一直没有成功
 "   - let g:CtrlSpaceIgnoredFiles = '*'
 "   - let g:CtrlSpaceGlobCommand = 'echo "disabled"'
+" - 会影响sesesion的 load 和 save
+"   - https://github.com/vim-ctrlspace/vim-ctrlspace/issues/293
+"   - https://github.com/vim-ctrlspace/vim-ctrlspace/issues/294
 
 
 
@@ -1068,7 +1079,7 @@ EOF
 " - TODO
 
 
-" ========== 设计理念 ==========
+" ========== 设计理念/内嵌机制 ==========
 " buffer, window, tab的设计理念
 " A buffer is the in-memory text of a file
 " A window is a viewport on a buffer.
@@ -1080,6 +1091,11 @@ EOF
 " - 前缀代表它在什么模式下生效
 " - 它可以映射成一段直接输入，也能映射成一个将会被解析成字符串的表达式
 "   - :help <expr>  " 如果想让map映射到一个可解释的字符串
+
+" autocmd
+" autoloading
+" command function
+
 
 " ============ 快捷键 ============
 " `@:` : 执行上一个命令; 通过mapping调用的命令不会进入这个, q: 中的命令才会
@@ -1130,8 +1146,12 @@ EOF
 
 
 " ========== script ==========
-" vim script cheatsheet https://devhints.io/vimscript
+" vim script cheatsheet
+" - https://devhints.io/vimscript
+" - https://github.com/johngrib/vimscript-cheatsheet
 " help script
+
+" 内置config在scripts中引用: 类似于 `echo &filetype` 等价于 `set filetype`
 
 " str =~ "<正则表达式，注意\要写成 \\>"
 

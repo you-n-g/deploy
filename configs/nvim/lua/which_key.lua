@@ -32,6 +32,7 @@ wk.register({
     n = { "<cmd>NERDTreeToggle<cr>", 'NERDTreeToggle'},
     l = {"<cmd>TagbarToggle<cr>", 'TagbarToggle'},
     M = {"MaximizerToggle", 'MaximizerToggle'},
+    c = {"<cmd>Telescope my_config<cr>", 'My Config'},
   },
   p = {
        name = 'IPython Cell',
@@ -88,7 +89,11 @@ wk.register({
     c = {'<cmd>CocList commands<cr>', 'commands'},
     u = {'<cmd>CocList mru<cr>', 'mru(current dir)'},
   },
-
+  L = {
+     name = 'lua',
+     i = {"<cmd>Luadev<cr>", "lunch"},
+     -- c = {"<Plug>(Luadev-RunLine)", "run line"}
+  },
   v = {
      name = 'vimspector',
     c = {'<cmd>call vimspector#Continue()<cr>', 'continue'},
@@ -139,3 +144,17 @@ wk.register({
     }
 
 }, { prefix = "<leader>" })
+
+wk.register({
+  L = {
+     name = 'lua',
+     c = {"<Plug>(Luadev-RunLine)", "run line"},
+  }
+}, { prefix = "<leader>", mode = "n"})
+
+wk.register({
+  L = {
+     name = 'lua',
+     c = {"<Plug>(Luadev-Run)", "run selected"}
+  }
+}, { prefix = "<leader>", mode = "v"})

@@ -181,10 +181,10 @@ let g:coc_global_extensions = [
  \ "coc-java",
  \ "coc-java-debug",
  \ "coc-marketplace",
- \ "coc-spell-checker",
- \ "coc-sumneko-lua"
+ \ "coc-spell-checker"
  \ ]
 "  \ "coc-zi"
+" \ "coc-sumneko-lua"   " 有时候这个没有用， coc-lua才有用
 " 个人经验 <space>c  setLinter ，把pylama 设置成错误提示的工具方便
 
 
