@@ -31,6 +31,7 @@ wk.register({
     p = { "<cmd>exec '!sed -n  '.line('w0').','.line('w$').'p %'<cr>", 'Plain text'  },
     n = { "<cmd>NERDTreeToggle<cr>", 'NERDTreeToggle'},
     l = {"<cmd>TagbarToggle<cr>", 'TagbarToggle'},
+    M = {"MaximizerToggle", 'MaximizerToggle'},
   },
   p = {
        name = 'IPython Cell',

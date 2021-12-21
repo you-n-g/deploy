@@ -81,7 +81,8 @@ Plug 'numirias/semshi', {'do': ':UpdateRemotePlugins'}
 
 " Treesitter 里面有很多插件似乎很棒
 Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
-Plug 'romgrk/nvim-treesitter-context'
+Plug 'romgrk/nvim-treesitter-context'  " treesitter dependent
+Plug 'p00f/nvim-ts-rainbow'  " treesitter dependent
 
 Plug 'tpope/vim-fugitive'
 
@@ -103,7 +104,7 @@ Plug 'nvim-lua/plenary.nvim'
 Plug 'nvim-telescope/telescope.nvim'
 
 Plug 'neovim/nvim-lspconfig'
-Plug 'nvim-treesitter/playground'
+Plug 'nvim-treesitter/playground' " treesitter dependent
 call plug#end()
 
 " cspell:enable
@@ -980,9 +981,6 @@ nnoremap <c-h> :SidewaysLeft<cr>
 nnoremap <c-l> :SidewaysRight<cr>
 " END   'AndrewRadev/sideways.vim' -----------------------------------------
 
-" BEGIN 'szw/vim-maximizer' -----------------------------------------
-nnoremap <leader>tM :SidewaysRight<cr>
-" END   'szw/vim-maximizer' -----------------------------------------
 
 " BEGIN 'camspiers/lens.vim' -----------------------------------------
 " TODO: toggle function https://stackoverflow.com/a/20579322
