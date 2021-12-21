@@ -16,7 +16,7 @@ require'nvim-treesitter.configs'.setup {
   },
   indent = {
       enable = true
-  }
+  },
 }
 
 
@@ -55,12 +55,7 @@ require'nvim-treesitter.configs'.setup {
   },
 }
 
-
-require("nvim-treesitter.configs").setup {
-  highlight = {
-      -- ...
-  },
-  -- ...
+require'nvim-treesitter.configs'.setup {
   rainbow = {
     enable = true,
     -- disable = { "jsx", "cpp" }, list of languages you want to disable the plugin for
