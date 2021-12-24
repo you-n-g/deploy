@@ -142,3 +142,8 @@
   description = "Forward proxy"
   command = "ssh xiaoyang@52.229.162.130 -L0.0.0.0:6489:0.0.0.0:6489  -D 0.0.0.0:8964"
   output = ""
+
+[[snippets]]
+  description = "install favorate package"
+  command = "sh ~/deploy/deploy_apps/install_fav_py_pack.sh"
+  output = ""
