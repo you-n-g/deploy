@@ -147,3 +147,8 @@
   description = "install favorate package"
   command = "sh ~/deploy/deploy_apps/install_fav_py_pack.sh"
   output = ""
+
+[[snippets]]
+  description = "python minimal install after create conda env"
+  command = "pip install ipdb ipython neovim"
+  output = ""
