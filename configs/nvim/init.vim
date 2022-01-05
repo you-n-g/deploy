@@ -494,7 +494,8 @@ let g:slime_target = "neovim"
 " - 而且 速度比 tmux 快很多!!!!
 " - 可以用vim直接看结果，能方便地在不同的文件中跳转
 " con:
-" - neovim有时候不稳定， 会导致 termin也一起出错:
+" - neovim有时候不稳定， 会导致 terminal也一起出错;
+"   建议要稳定性的话，就走路线
 "   可能先把其他关掉，留下这个terminal比较合适
 " TODO:
 " - 这里如果能自动选择 terminal的话就比较爽了
@@ -1147,6 +1148,9 @@ EOF
 " FZF Redo: https://github.com/junegunn/fzf.vim/pull/941
 " https://github.com/rhysd/conflict-marker.vim
 " https://github.com/romgrk/winteract.vim
+" https://github.com/akinsho/toggleterm.nvim
+" - 开关terminal更方便
+" - terminal的名字更容易理解
 " 解决Buffer delete的问题: delete buffer会连带着它相应的 layout 都关掉(比如tab, split等等)，当只有最后一个layout窗口时，它才会保留并只删除buffer
 " - https://www.reddit.com/r/vim/comments/jtpluq/close_buffer_but_not_the_window/
 " - https://github.com/qpkorr/vim-bufkill
