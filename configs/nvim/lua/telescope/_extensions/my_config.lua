@@ -10,7 +10,7 @@ local function my_config(opts)
     opts = opts or {}
     pickers.new(opts, {
         prompt_title = "My config",
-        finder = finders.new_table({"neovim", "tmux"}, opts),
+        finder = finders.new_table({"tmux", "clear", "neovim"}, opts),
 		sorter = conf.generic_sorter(),
         -- previewer = conf.qflist_previewer(opts),
         attach_mappings = function(prompt_bufnr)
@@ -28,6 +28,9 @@ local function my_config(opts)
                     pcall(vim.api.nvim_buf_del_var, 0, "slime_config")
                     vim.api.nvim_set_var("slime_default_config", { socket_name = vim.api.nvim_eval("get(split($TMUX, ','), 0)"), target_pane = "{top-right}" })
                     vim.api.nvim_set_var("slime_dont_ask_default", 1)
+                end
+                if entry[1] == "clear" then
+                    pcall(vim.api.nvim_buf_del_var, 0, "slime_config")
                 end
             end)
             return true

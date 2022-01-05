@@ -81,7 +81,8 @@ Plug 'numirias/semshi', {'do': ':UpdateRemotePlugins'}
 
 " Treesitter 里面有很多插件似乎很棒
 Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
-Plug 'romgrk/nvim-treesitter-context'
+Plug 'romgrk/nvim-treesitter-context'  " treesitter dependent
+Plug 'p00f/nvim-ts-rainbow'  " treesitter dependent
 
 Plug 'tpope/vim-fugitive'
 
@@ -103,7 +104,7 @@ Plug 'nvim-lua/plenary.nvim'
 Plug 'nvim-telescope/telescope.nvim'
 
 Plug 'neovim/nvim-lspconfig'
-Plug 'nvim-treesitter/playground'
+Plug 'nvim-treesitter/playground' " treesitter dependent
 
 " Dev lua
 " Plug 'tjdevries/nlua.nvim'  "  this seems  require builtin lsp
@@ -992,9 +993,6 @@ nnoremap <c-h> :SidewaysLeft<cr>
 nnoremap <c-l> :SidewaysRight<cr>
 " END   'AndrewRadev/sideways.vim' -----------------------------------------
 
-" BEGIN 'szw/vim-maximizer' -----------------------------------------
-nnoremap <leader>tM :SidewaysRight<cr>
-" END   'szw/vim-maximizer' -----------------------------------------
 
 " BEGIN 'camspiers/lens.vim' -----------------------------------------
 " TODO: toggle function https://stackoverflow.com/a/20579322
@@ -1149,6 +1147,13 @@ EOF
 " https://github.com/akinsho/toggleterm.nvim
 " - 开关terminal更方便
 " - terminal的名字更容易理解
+" 解决Buffer delete的问题: delete buffer会连带着它相应的 layout 都关掉(比如tab, split等等)，当只有最后一个layout窗口时，它才会保留并只删除buffer
+" - https://www.reddit.com/r/vim/comments/jtpluq/close_buffer_but_not_the_window/
+" - https://github.com/qpkorr/vim-bufkill
+" - https://github.com/moll/vim-bbye
+" - 因为手动解决方法好用: ctrl+^ :bd#， 所以一直没有想着用插件;
+"   但是它有如下缺陷: 如果 alternative buffer
+"   也有一个对应的layout(在另外的tab或者split)，那么这个layout会被删掉
 
 
 " ========== script ==========
