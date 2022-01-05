@@ -109,8 +109,8 @@
   output = ""
 
 [[snippets]]
-  description = "start mlflow ui"
-  command = "mlflow ui -h `hostname` -p <port=5000>"
+  description = "start mlflow ui with long timeout"
+  command = "GUNICORN_CMD_ARGS='--timeout 120'  mlflow ui -h `hostname` -p <port=5000>"
   output = ""
 
 [[snippets]]
@@ -141,4 +141,9 @@
 [[snippets]]
   description = "Forward proxy"
   command = "ssh xiaoyang@52.229.162.130 -L0.0.0.0:6489:0.0.0.0:6489  -D 0.0.0.0:8964"
+  output = ""
+
+[[snippets]]
+  description = "agedu"
+  command = "agedu --auth none -f agedu.dat -w --address 0.0.0.0:5432"
   output = ""

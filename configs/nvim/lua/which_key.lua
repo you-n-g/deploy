@@ -77,7 +77,7 @@ wk.register({
 
   c = {
      name = 'coc.vim',
-     s = {'<cmd><Plug>(coc-convert-snippet)<cr>', 'Convert to Snippets'},
+     s = {'<Plug>(coc-convert-snippet)', 'Convert to Snippets'},
      F = {'<cmd>Format<cr>', 'Format all'},
   },
 
@@ -155,5 +155,9 @@ wk.register({
   L = {
      name = 'lua',
      c = {"<Plug>(Luadev-Run)", "run selected"}
+  },
+  c = {
+     name = 'coc.vim',
+     s = {'<Plug>(coc-convert-snippet)', 'Convert to Snippets'},
   }
 }, { prefix = "<leader>", mode = "v"})
