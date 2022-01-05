@@ -150,5 +150,10 @@
 
 [[snippets]]
   description = "python minimal install after create conda env"
-  command = "pip install ipdb ipython neovim"
+  command = "pip install ipdb ipython neovim fire"
+  output = ""
+
+[[snippets]]
+  description = "conda remove"
+  command = "conda remove --name <env_name=XXX> --all"
   output = ""

@@ -612,7 +612,11 @@ let g:indent_guides_start_level = 2
 " hi link CtrlSpaceStatus   StatusLine
 " " visual mode is not useful for me at all
 " nnoremap <silent>Q :CtrlSpace<CR>
-nnoremap <silent>Q :Telescope buffers<CR>
+" nnoremap <silent>Q :Telescope buffers<CR>
+
+lua << EOF
+vim.api.nvim_set_keymap('n', 'Q', ":lua require('telescope/buffer').my_buffers()<cr>", {noremap = true})
+EOF
 
 " set showtabline=0  " tabline的开关和 vim-airline 的setting得一起修改的
 " 好用的:
