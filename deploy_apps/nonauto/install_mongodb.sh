@@ -71,3 +71,7 @@ sudo sed -i "s:^dbpath=.*:dbpath=$new_mongo_path:" /etc/mongodb.conf
 sudo sed -i -E 's/^(bind_ip.*)/# \1/ ; /^# bind_ip/a bind_ip=0.0.0.0' /etc/mongodb.conf
 
 sudo service mongodb restart
+
+
+# 后续可能的操作
+# - 麻烦不想 设置mongdb的账号密码:  /etc/mongodb.conf 中的 `auth = true` 改成 `noauth = true`

@@ -71,9 +71,9 @@ wk.register({
 
   e = {
      name = 'coc-explorer',
-    f = {'<cmd>CocCommand explorer --sources=buffer+,file+ --preset floatingRightside<cr>', 'Float Explorer'},
-    c = {'<cmd>CocCommand explorer --sources=buffer+,file+<cr>', 'Side Explorer'},
-    e = {'<cmd>CocCommand explorer --sources=buffer+,file+ --preset floating<cr>', 'Full Explorer'},
+    r = {'<cmd>CocCommand explorer --sources=buffer+,file+ --preset floatingRightside<cr>', 'Float Explorer'},
+    e = {'<cmd>CocCommand explorer --sources=buffer+,file+<cr>', 'Side Explorer'},
+    f = {'<cmd>CocCommand explorer --sources=buffer+,file+ --preset floating<cr>', 'Full Explorer'},
   },
 
   c = {

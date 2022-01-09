@@ -98,6 +98,10 @@ Plug 'honza/vim-snippets'
 
 Plug 'voldikss/vim-translator'
 
+
+Plug 'akinsho/toggleterm.nvim'
+" - 试用的困难请在 yx_conf 中查找
+
 " just for help tags
 Plug 'nvim-lua/popup.nvim'
 Plug 'nvim-lua/plenary.nvim'
@@ -563,7 +567,8 @@ nnoremap <leader>psD :SlimeSend0 "pypdb ".expand("%")."\n"<CR>
 nnoremap <leader>psp :SlimeSend0 "pyprof ".expand("%:p")."\n"<CR>
 nnoremap <leader>pskp :SlimeSend0 "kernprof -l ".expand("%:p")."\n"<CR>
 nnoremap <leader>pskc :SlimeSend0 "python -m line_profiler ".expand("%:t").".lprof\n"<CR>
-nnoremap <leader>pst :SlimeSend0 "nosetests --nocapture --ipdb --ipdb-failures ".expand("%:p")."\n"<CR>
+" nnoremap <leader>pst :SlimeSend0 "nosetests --nocapture --ipdb --ipdb-failures ".expand("%:p")."\n"<CR>
+nnoremap <leader>pst :SlimeSend0 "pytest -s --pdb --disable-warnings ".expand("%:p")."::".luaeval('require("run_func").get_current_function_name(true)')."\n"<CR>
 
 nnoremap <leader>pdb :SlimeSend0 "b ".expand("%:p").":".line(".")."\n"<CR>
 nnoremap <leader>pde :SlimeSend1 from IPython import embed; embed()<CR>

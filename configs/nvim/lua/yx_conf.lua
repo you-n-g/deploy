@@ -1,4 +1,11 @@
--- https://github.com/nanotee/nvim-lua-guide
+-- lua cheatsheets
+-- - https://github.com/nanotee/nvim-lua-guide
+-- APIs
+-- - nvim api: help api,  可以通过 vim.api.XXX 调用
+-- - vim.fn.XXX 直接调用vimscripts 的functions
+-- - vim eval: help eval, 可以通过 vim.fn.XXX 调用
+-- TODO:
+-- 快速切换出buffer: https://codereview.stackexchange.com/questions/268130/get-list-of-buffers-from-current-neovim-instance
 
 -- require'lspconfig'.pyright.setup{}
 
@@ -85,3 +92,51 @@ require("which_key")
 -- })
 
 require'telescope'.load_extension'my_config'
+
+
+
+
+-- 用起来还有下面的问题
+-- - 如果想快速全屏显示，还有点麻烦
+require("toggleterm").setup{
+  -- size can be a number or function which is passed the current terminal
+  size = function(term)
+    if term.direction == "horizontal" then
+      return 15
+    elseif term.direction == "vertical" then
+      return vim.o.columns * 0.4
+    end
+  end,
+  open_mapping = [[<c-\><c-\>]],
+  -- on_open = fun(t: Terminal), -- function to run when the terminal opens
+  hide_numbers = true, -- hide the number column in toggleterm buffers
+  shade_filetypes = {},
+  shade_terminals = true,
+  -- shading_factor = '<number>', -- the degree by which to darken to terminal colour, default: 1 for dark backgrounds, 3 for light
+  -- start_in_insert = true,
+  start_in_insert = false,
+  insert_mappings = true, -- whether or not the open mapping applies in insert mode
+  persist_size = true,
+  -- direction = 'vertical' | 'horizontal' | 'window' | 'float',
+  -- direction = 'float',
+  direction = 'horizontal',
+  close_on_exit = true, -- close the terminal window when the process exits
+  shell = vim.o.shell, -- change the default shell
+  -- This field is only relevant if direction is set to 'float'
+  float_opts = {
+    -- The border key is *almost* the same as 'nvim_open_win'
+    -- see :h nvim_open_win for details on borders however
+    -- the 'curved' border is a custom border type
+    -- not natively supported but implemented in this plugin.
+    -- border = 'single' | 'double' | 'shadow' | 'curved' | ... other options supported by win open
+    -- width = <value>,
+    -- height = <value>,
+    -- winblend = 3,
+    highlights = {
+      border = "Normal",
+      background = "Normal",
+    }
+  }
+}
+
+

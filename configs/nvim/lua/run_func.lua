@@ -17,7 +17,11 @@
 local ts_utils = require'nvim-treesitter.ts_utils'
 local M = {}
 
-function M.get_current_function_name()
+function M.get_current_function_name(find_cls, sep)
+    -- default value is false
+    find_cls = (find_cls == nil and false) or find_cls
+    sep = (sep == nil and "::") or sep
+
     local current_node = ts_utils.get_node_at_cursor()
 
     if not current_node then return "" end
@@ -34,7 +38,22 @@ function M.get_current_function_name()
 
     if not expr then return "" end
 
-    return (ts_utils.get_node_text(expr:child(1)))[1]
+    local func_name = (ts_utils.get_node_text(expr:child(1)))[1]
+    if not find_cls then return func_name end
+
+    -- find class name
+    while expr do
+        -- in lua, the definition of function are with type "function"
+        if expr:type() == 'class_definition' then
+            break
+        end
+        expr = expr:parent()
+    end
+
+    if not expr or expr:type() ~= "class_definition" then return func_name end
+
+    local cls_name = (ts_utils.get_node_text(expr:child(1)))[1]
+    return cls_name .. sep .. func_name
 end
 
 return M
