@@ -1089,7 +1089,7 @@ require("yx_conf")
 EOF
 
 
-" Nvim usage cheetsheet
+" Nvim usage cheatsheet
 
 " 目录
 " - 设计理念
@@ -1179,6 +1179,7 @@ EOF
 " - 因为手动解决方法好用: ctrl+^ :bd#， 所以一直没有想着用插件;
 "   但是它有如下缺陷: 如果 alternative buffer
 "   也有一个对应的layout(在另外的tab或者split)，那么这个layout会被删掉
+" https://alpha2phi.medium.com/jupyter-notebook-vim-neovim-c2d67d56d563#ba87
 
 
 " ========== script ==========
@@ -1214,5 +1215,5 @@ EOF
 " :changes 可视化
 " https://github.com/axlebedev/footprints
 
-" other cheetsheet
+" other cheatsheet
 " deploy_apps/install_neovim.sh

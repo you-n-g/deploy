@@ -76,6 +76,8 @@ wk.register({
     t = {'<cmd>CocCommand explorer --sources=buffer+,file+ --preset tab<cr>', 'Tab Explorer'},
     -- Tab的优点是显示大， 缺点是不会在原来的window 中打开，容易把windows弄乱
     e = {'<cmd>CocCommand explorer --toggle --sources=buffer+,file+ --position right<cr>', 'Side Explorer'},
+    -- 默认用 split 有如下好处
+    -- 1) f 和 F 可以用了 2) 用float有时候会突然冒出行号，打乱样式
     f = {'<cmd>CocCommand explorer --sources=buffer+,file+ --preset floating<cr>', 'Full Explorer'},
   },
 

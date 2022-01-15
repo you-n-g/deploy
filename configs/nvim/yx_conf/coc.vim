@@ -243,8 +243,10 @@ endfunction
 
 function! s:exec_cur_dir()
   let dir = s:explorer_cur_dir()
-  " close coc-explorer
-  execute 'CocCommand explorer --sources=buffer+,file+ --preset floating'
+  " close coc-explorer  这一句和你怎么打开 coc-explorer 有关系，
+  " 怎么开的就怎么关
+  " execute 'CocCommand explorer --sources=buffer+,file+ --preset floating'
+  execute 'CocCommand explorer --sources=buffer+,file+'
   " call telescope
   execute 'lua require("telescope.builtin").live_grep({search_dirs={"'.l:dir.'"}})'
 endfunction

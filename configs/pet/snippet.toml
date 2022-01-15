@@ -146,6 +146,7 @@
 [[snippets]]
   description = "agedu"
   command = "agedu --auth none -f agedu.dat -w --address 0.0.0.0:5432"
+  output = ""
 
 [[snippets]]
   description = "install favorate package"
