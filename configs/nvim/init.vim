@@ -102,6 +102,13 @@ Plug 'voldikss/vim-translator'
 Plug 'akinsho/toggleterm.nvim'
 " - 试用的困难请在 yx_conf 中查找
 
+
+" Plug 'untitled-ai/jupyter_ascending.vim'
+" 这种模式我非常喜欢，但是现在还有不足的地方
+" - 它运行cell的时候感觉位置不对, 等待这个错误的解决
+"   https://github.com/untitled-ai/jupyter_ascending.vim/issues/8
+
+
 " just for help tags
 Plug 'nvim-lua/popup.nvim'
 Plug 'nvim-lua/plenary.nvim'
@@ -528,6 +535,15 @@ nnoremap <c-c><c-p> :SlimeSend0 "\x1bk\x0d"<CR>
 " TODOs
 " TODO: fix the toggle
 " let g:slime_target = "neovim"  " 这个也支持哦
+
+
+if get(g:, "slime_target", "") == "neovim"
+  augroup auto_channel
+    autocmd!
+    " autocmd TermEnter * let g:slime_last_channel = &channel
+    autocmd BufEnter * lua require"slime".reset_slime()
+  augroup END
+end
 
 
 " DEBUG & FAQ

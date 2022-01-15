@@ -31,6 +31,7 @@ function M.my_buffers(opts)
       end
     end
 
+    -- 请用 cc 代替 dd
     map('n', 'd', delete_buf)
     return true
   end

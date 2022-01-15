@@ -215,6 +215,10 @@ let g:coc_explorer_global_presets = {
 \   'floating': {
 \      'position': 'floating',
 \   },
+\   'tab': {
+\     'position': 'tab',
+\     'quit-on-open': v:true,
+\   },
 \   'floatingLeftside': {
 \      'position': 'floating',
 \      'floating-position': 'left-center',

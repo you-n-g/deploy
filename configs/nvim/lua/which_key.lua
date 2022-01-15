@@ -72,7 +72,10 @@ wk.register({
   e = {
      name = 'coc-explorer',
     r = {'<cmd>CocCommand explorer --sources=buffer+,file+ --preset floatingRightside<cr>', 'Float Explorer'},
-    e = {'<cmd>CocCommand explorer --sources=buffer+,file+<cr>', 'Side Explorer'},
+    -- e = {'<cmd>CocCommand explorer --sources=buffer+,file+ --position tab:0<cr>', 'Tab Explorer'},
+    t = {'<cmd>CocCommand explorer --sources=buffer+,file+ --preset tab<cr>', 'Tab Explorer'},
+    -- Tab的优点是显示大， 缺点是不会在原来的window 中打开，容易把windows弄乱
+    e = {'<cmd>CocCommand explorer --toggle --sources=buffer+,file+ --position right<cr>', 'Side Explorer'},
     f = {'<cmd>CocCommand explorer --sources=buffer+,file+ --preset floating<cr>', 'Full Explorer'},
   },
 

@@ -1,9 +1,11 @@
 -- lua cheatsheets
 -- - https://github.com/nanotee/nvim-lua-guide
+-- - https://devhints.io/lua
 -- APIs
 -- - nvim api: help api,  可以通过 vim.api.XXX 调用
 -- - vim.fn.XXX 直接调用vimscripts 的functions
 -- - vim eval: help eval, 可以通过 vim.fn.XXX 调用
+-- - vim.cmd("new")
 -- TODO:
 -- 快速切换出buffer: https://codereview.stackexchange.com/questions/268130/get-list-of-buffers-from-current-neovim-instance
 
@@ -92,6 +94,7 @@ require("which_key")
 -- })
 
 require'telescope'.load_extension'my_config'
+-- require'telescope'.load_extension'view'  -- 写着着卡住了
 
 
 
