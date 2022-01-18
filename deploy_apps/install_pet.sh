@@ -25,4 +25,5 @@ mkdir -p ~/.config/pet/
 unlink ~/.config/pet/snippet.toml
 ln -s ~/deploy/configs/pet/snippet.toml ~/.config/pet/snippet.toml
 
-
+# 不知道为什么每次这里都会被清空， 所以这里主动还原一步
+cd ~/deploy/configs/pet/ && git checkout snippet.toml

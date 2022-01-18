@@ -53,6 +53,7 @@ ln -s ~/deploy/configs/nvim  $NVIM_CONF_PATH
 
 
 ~/bin/vim -c PlugInstall -c qa
+~/bin/vim -c UpdateRemotePlugins -c qa
 
 
 # NOTE: 这一句应该在 PlugInstall 之后才有用
