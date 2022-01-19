@@ -162,3 +162,13 @@
   description = "conda remove"
   command = "conda remove --name <env_name=XXX> --all"
   output = ""
+
+[[snippets]]
+  description = "view view file head"
+  command = "head -n <top=50> <fname=600519.csv> | vim -"
+  output = ""
+
+[[snippets]]
+  description = "git clean all untracked data"
+  command = "git clean -d -x -f"
+  output = ""

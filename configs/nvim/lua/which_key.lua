@@ -56,13 +56,20 @@ wk.register({
       s = {
            name = 'Send for sh',
            i = {'<cmd>SlimeSend1 ipython --matplotlib<cr>', 'start ipython with matplotlib'},
-           }
+
+          f = {'<cmd>:SlimeSend0 "python ".expand("%:p")." ".luaeval(\'require("run_func").get_current_function_name()\')."\n"<CR>',  "send abs path"},
+          F = {'<cmd>:SlimeSend0 "python ".expand("%")." ".luaeval(\'require("run_func").get_current_function_name()\')."\n"<CR>',  "send relative path"},
+      },
         -- Failed settings
         -- \'s' : [':SlimeSend1 ipython --matplotlib', 'start ipython with matplotlib'],
         -- \'b' : ['SlimeSend0 "b ".expand("%:p").":".line("$")', 'Send file break point'],
         -- \'e' : ['placehoder', 'Create an embeded env']
+      S = {
+          name = "Send for sh(without <cr>)",
+          f = {'<cmd>SlimeSend0 "python ".expand("%:p")." ".luaeval(\'require("run_func").get_current_function_name()\')<CR>',  "send abs path without <cr>"},
+          F = {'<cmd>SlimeSend0 "python ".expand("%")." ".luaeval(\'require("run_func").get_current_function_name()\')<CR>',  "send relative path without <cr>"},
       },
-
+      },
   j = {
       name = 'jupyter-vim',
       e = {'<cmd>JupyterSendCell<cr>', 'Jupyter Send Cell'},

@@ -570,11 +570,11 @@ nnoremap <leader>pSr :SlimeSend0 "python ".expand("%:p")<CR>
 nnoremap <leader>pSR :SlimeSend0 "python ".expand("%")<CR>
 
 " 这里有点缺陷，在Python的 docstring的位置不能正确输出结果
-nnoremap <leader>psf :SlimeSend0 "python ".expand("%:p")." ".luaeval('require("run_func").get_current_function_name()')."\n"<CR>
-nnoremap <leader>psF :SlimeSend0 "python ".expand("%")." ".luaeval('require("run_func").get_current_function_name()')."\n"<CR>
+" nnoremap <leader>psf :SlimeSend0 "python ".expand("%:p")." ".luaeval('require("run_func").get_current_function_name()')."\n"<CR>
+" nnoremap <leader>psF :SlimeSend0 "python ".expand("%")." ".luaeval('require("run_func").get_current_function_name()')."\n"<CR>
 
-nnoremap <leader>pSf :SlimeSend0 "python ".expand("%:p")." ".luaeval('require("run_func").get_current_function_name()')<CR>
-nnoremap <leader>pSF :SlimeSend0 "python ".expand("%")." ".luaeval('require("run_func").get_current_function_name()')<CR>
+" nnoremap <leader>pSf :SlimeSend0 "python ".expand("%:p")." ".luaeval('require("run_func").get_current_function_name()')<CR>
+" nnoremap <leader>pSF :SlimeSend0 "python ".expand("%")." ".luaeval('require("run_func").get_current_function_name()')<CR>
 
 nnoremap <leader>pss :SlimeSend0 "bash ".expand("%:p")."\n"<CR>
 
@@ -1011,6 +1011,13 @@ nmap <Leader>w <Plug>(easymotion-overwin-w)
 " BEGIN 'pevhall/simple_highlighting' -----------------------------------------
 nmap <Leader>H <Plug>HighlightWordUnderCursor
 vmap <Leader>H <Plug>HighlightWordUnderCursor
+
+" 有用的命令
+" Ha 3 @
+" - *HighlightAddMultiple*
+" Hwb
+" - *HighlightCommandsBuffer*  注意，这里要求用户现在已经开了一个buffer
+
 " END   'pevhall/simple_highlighting' -----------------------------------------
 
 " BEGIN 'AndrewRadev/sideways.vim' -----------------------------------------
