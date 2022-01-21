@@ -80,6 +80,7 @@ chmod a+x ./deploy_apps/*
 ./deploy_apps/install_neovim.sh
 ./deploy_apps/install_fzf.sh
 ./deploy_apps/install_pet.sh
+./deploy_apps/install_wan.sh
 
 
 cat <<EOF

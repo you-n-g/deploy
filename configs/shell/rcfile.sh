@@ -234,7 +234,9 @@ function tfts() {
 # wan
 alias wan="~/miniconda3/bin/wan"
 ## this assume wan is installed by `install_wan`
+
 export PYTHONPATH=~/apps/wan/:$PYTHONPATH
+# make it possible to make wan available in all conda environment
 
 # ## Outlines: ranger
 # ranger的安装依赖  deploy_apps/install_fav_py_pack.sh

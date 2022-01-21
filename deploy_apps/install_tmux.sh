@@ -32,8 +32,8 @@ fi
 # 需要下面的假设成立
 # - ~/bin/ 被加到了PATH中，这个依赖 rcfile.sh
 # 如果不加这个会导致
-# - 在老的系统中找不到正确版本的tmux，导致 vim-slime 之类的命令失效
-ln -s $CONDA_PREFIX/bin/tmux ~/bin/tmux
+# - 在老的系统中找不到正确版本的tmux，导致 vim-slime, ranger 之类的软件失效(失效表现为遇到tmux相关的的步骤就卡住)
+ln -s $TMUX_EXE ~/bin/tmux
 
 
 sh ~/deploy/deploy_apps/deploy_tpm.sh

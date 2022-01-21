@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 """
 create project
+
+# TODO: this scripts has following flaws
+# - the second dependancy of Qlib will not be installed....  I don't know why.
+#    - I tried install qlib with both `pip install -e` and `python setup.py develop` from a clean environment manually, both of them works well
+# - It will be better to use `pip install -e .[dev]` for install qlib.
 """
 import subprocess
 from pathlib import Path
