@@ -1,11 +1,14 @@
 -- lua cheatsheets
 -- - https://github.com/nanotee/nvim-lua-guide
 -- - https://devhints.io/lua
--- APIs
+-- APIs (列几个使用频率较高的)
 -- - nvim api: help api,  可以通过 vim.api.XXX 调用
 -- - vim.fn.XXX 直接调用vimscripts 的functions
 -- - vim eval: help eval, 可以通过 vim.fn.XXX 调用
--- - vim.cmd("new")
+-- - vim.cmd("new") 可以执行一片命令, vim.api.nvim_command() 用于执行一行命令
+-- vim.api.nvim_set_keymap('i', '<Tab>', 'v:lua.smart_tab()', {expr = true, noremap = true})
+
+--
 -- TODO:
 -- 快速切换出buffer: https://codereview.stackexchange.com/questions/268130/get-list-of-buffers-from-current-neovim-instance
 
@@ -49,6 +52,20 @@ require "nvim-treesitter.configs".setup {
     },
   }
 }
+-- inspired by https://vi.stackexchange.com/a/2363
+-- for i = 1,2 do
+--     vim.api.nvim_command("set <M-"..tostring(i)..">=\\e1")
+-- end
+
+for k, mode in pairs({'i','v','n'}) do
+    for i = 1,4 do
+        -- vim.api.nvim_set_keymap(mode, "<c-"..tostring(i)..">", "<cmd>ToggleTerm "..tostring(i).."<cr>", {expr = true, noremap = true})
+        vim.api.nvim_set_keymap(mode, "<F"..tostring(i)..">", "<cmd>ToggleTerm "..tostring(i).."<cr>", {expr = false, noremap = true})
+        -- expr = false 非常重要； 不然就会触发 vim mapping 的  <expr> 机制， 导致先用vim命令执行一遍， 再把结果作为map的目标
+    end
+end
+
+
 
 require'nvim-treesitter.configs'.setup {
   incremental_selection = {

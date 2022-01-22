@@ -1025,6 +1025,9 @@ nnoremap <c-h> :SidewaysLeft<cr>
 nnoremap <c-l> :SidewaysRight<cr>
 " END   'AndrewRadev/sideways.vim' -----------------------------------------
 
+" BEGIN 'szw/vim-maximizer' -----------------------------------------
+let g:maximizer_default_mapping_key = '<F5>'
+" END   'szw/vim-maximizer' -----------------------------------------
 
 " BEGIN 'camspiers/lens.vim' -----------------------------------------
 " TODO: toggle function https://stackoverflow.com/a/20579322
@@ -1124,6 +1127,8 @@ EOF
 " - 前缀代表它在什么模式下生效
 " - 它可以映射成一段直接输入，也能映射成一个将会被解析成字符串的表达式
 "   - :help <expr>  " 如果想让map映射到一个可解释的字符串
+" - 按键不一定会按你想的那样； 比如 <C-1> 不会映射到特定的按钮
+"   - 参见 https://vi.stackexchange.com/a/19359
 
 " autocmd
 " autoloading
