@@ -334,6 +334,37 @@ augroup JavaOutlines
 augroup END
 
 
+augroup ShOutlines
+    au!
+    " Below is for line hightlight
+    if $TERM =~ "256"
+        autocmd FileType sh hi ShOutlines1 cterm=bold ctermbg=017 ctermfg=White
+        autocmd FileType sh hi ShOutlines2 cterm=bold ctermbg=019 ctermfg=White
+    else
+        autocmd FileType sh hi ShOutlines1 cterm=bold ctermbg=darkblue ctermfg=White
+        autocmd FileType sh hi ShOutlines2 cterm=bold ctermbg=blue ctermfg=White
+    endif
+
+    autocmd FileType sh sign define shO1 linehl=ShOutlines1
+    autocmd FileType sh sign define shO2 linehl=ShOutlines2
+
+    function! HighlightShOL()
+      execute "sign unplace * group=shotl1 file=".expand("%")
+      execute "sign unplace * group=shotl2 file=".expand("%")
+
+      for l:lnum in range(line("w0"), line("w$"))
+        if getline(l:lnum) =~ "^\\s*# *Outlines:"
+          execute "sign place ".l:lnum." line=".l:lnum." name=shO1 group=shotl1 file=".expand("%")
+        elseif getline(l:lnum) =~ "^\\s*## *Outlines:"
+          execute "sign place ".l:lnum." line=".l:lnum." name=shO2 group=shotl2 file=".expand("%")
+        endif
+      endfor
+    endfunction
+
+    autocmd! CursorMoved *.sh call HighlightShOL()
+augroup END
+
+
 " 快速替换
 " Highlight 是为了让用户看清楚现在哪些词会被替换
 nnoremap <expr> <plug>HighlightReplaceW '/\<'.expand('<cword>').'\><CR>``:%s/\<'.expand('<cword>').'\>/'.expand('<cword>').'/g<left><left>'
@@ -798,7 +829,7 @@ augroup END
 " # 其他有用的
 " ## 我还没搞明白它的两种运行机制
 " 一种出现quickfix  (Glog)
-" ## 在naviage mode下面[疑似]
+" ## 在navigate mode下面[疑似]
 " 我感觉 navigate 逻辑是这么走的： 从 commit trace -> commmit内容 -> 这个commit内部的文件原文
 " - 这些东西都可以在文件中直接打开
 "   - tree: commit
@@ -807,6 +838,7 @@ augroup END
 " - 下面的命令都可以在这个文件中看到
 " p : preview 看看里面是个啥;
 " dp: 根据当前光标看看 diff 啥的(到底改了哪里), 可以直接看文件的， 也可以直接看stage的
+" = : 在当前 toggle diff;  可以快速地浏览很多文件， 非常好用！！！！
 "
 " ## Tips
 " g?: 可以快速找到mapping的文档

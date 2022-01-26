@@ -5,7 +5,7 @@
 
 [[snippets]]
   description = "conda create"
-  command = "conda create -y -n <env_name=XXX> python=3.8"
+  command = "conda create -y -n <env_name=XXX> python=<py_version=3.8>"
   output = ""
 
 [[snippets]]
@@ -155,8 +155,9 @@
 
 [[snippets]]
   description = "python minimal install after create conda env"
-  command = "pip install ipdb ipython neovim fire yapf"
+  command = "pip install ipdb ipython neovim fire yapf pylint"
   output = ""
+  # pylint yapf are for neovim plugins
 
 [[snippets]]
   description = "conda remove"

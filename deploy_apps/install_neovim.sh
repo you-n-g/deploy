@@ -53,7 +53,9 @@ ln -s ~/deploy/configs/nvim  $NVIM_CONF_PATH
 
 
 ~/bin/vim -c PlugInstall -c qa
-~/bin/vim -c UpdateRemotePlugins -c qa
+~/bin/vim -c UpdateRemotePlugins -c '!sleep 10' -c qa
+# 这个是为了正常安装 semshi 相关的插件， TODO: 还没有验证过它是不是有效
+# 我感觉 PlugInstall 好像也没生效
 
 
 # NOTE: 这一句应该在 PlugInstall 之后才有用

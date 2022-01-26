@@ -26,4 +26,6 @@ unlink ~/.config/pet/snippet.toml
 ln -s ~/deploy/configs/pet/snippet.toml ~/.config/pet/snippet.toml
 
 # 不知道为什么每次这里都会被清空， 所以这里主动还原一步
+# 但是最后似乎还是没有用， 感觉是第一次启动pet时清空的
+$PET_PATH/pet list    # 那就启动一次试试
 cd ~/deploy/configs/pet/ && git checkout snippet.toml

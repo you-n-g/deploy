@@ -72,3 +72,16 @@ else
 	DIR="$( cd "$(dirname $(readlink -f "\$0"))" ; pwd -P )"
 fi
 endsnippet
+
+snippet set "set script" b
+set -x  # show command
+set -e  # Error on exception
+endsnippet
+
+snippet ol "Outlines" b
+# Outlines: ${1:header}
+endsnippet
+
+snippet ol2 "Outlines" b
+## Outlines: ${1:header}
+endsnippet

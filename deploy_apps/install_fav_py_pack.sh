@@ -26,7 +26,7 @@ done
 
 
 # for developing environment
-pip install autopep8 better_exceptions neovim ipython-autotime yapf fire
+pip install autopep8 better_exceptions neovim ipython-autotime yapf fire pylint
 
 pip install ranger-fm # 试了一下， 感觉ranger比nnn好用
 

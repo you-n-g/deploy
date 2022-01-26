@@ -9,7 +9,9 @@ export PATH="$HOME/anaconda3/bin:$HOME/miniconda3/bin:$PATH"   # for enable cond
 if which conda ;
 then
     conda install -c conda-forge -y tmux
-    TMUX_EXE=$CONDA_PREFIX/bin/tmux
+    # TMUX_EXE=$CONDA_PREFIX/bin/tmux
+    TMUX_EXE=~/miniconda3/bin/tmux
+    # 这里硬编码了， 但是也没有更好的，一直找不到环境变量
 else
     TMUX_EXE=`which tmux`
 fi

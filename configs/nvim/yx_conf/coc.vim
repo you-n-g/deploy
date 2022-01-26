@@ -349,6 +349,11 @@ imap <C-j> <Plug>(coc-snippets-expand-jump)
 
 
 " DEBUG相关
+" 通用解法
+" - 先看log: https://github.com/neoclide/coc.nvim/wiki/Debug-language-server#using-output-channel
+" - CocInfo: 看Coc的log
+" - CocOpenLog:  这个会显示和 CocInfo一样的内容，会在buffer 里面更新
+"
 " 当出现下面情况都先确认环境有没有弄错
 " - 解析pylama解析包失败时(找不到包, 比如import时提示无法解析)
 " - 做代码跳转时，提示版本太老
@@ -391,6 +396,7 @@ imap <C-j> <Plug>(coc-snippets-expand-jump)
 
 
 " 还不能解决的问题
+" doHover 和 goToDefintion 在编辑代码出现语法错误时，就会出错 https://github.com/neoclide/coc.nvim/issues/2024
 
 
 
