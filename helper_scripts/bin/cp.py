@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 """
 create project
+
+# TODO: this scripts has following flaws
+# - the second dependancy of Qlib will not be installed....  I don't know why.
+#    - I tried install qlib with both `pip install -e` and `python setup.py develop` from a clean environment manually, both of them works well
+# - It will be better to use `pip install -e .[dev]` for install qlib.
 """
 import subprocess
 from pathlib import Path
@@ -19,11 +24,13 @@ class CP:
         (C)reate (P)roject
 
         运行命令之前需要确保:
-        - 这里需要用户已经在特定目录下
+        - **这里需要用户已经在特定目录下**
 
         其他的各种检查已经把能做的都做了
 
         在NFS集群上大概会花 5min; 在本地磁盘的一台新机器上只会花1min
+
+        直接运行 `cp.py` 可以看到比 `cp.py -h` 更完整的信息
     """
 
     BASE_ENV = "base"
@@ -35,6 +42,11 @@ class CP:
         assert os.environ["CONDA_DEFAULT_ENV"] == self.BASE_ENV
 
     def env(self):
+        """
+        cp.py --name auto_ops --py_ver=3.8 env
+
+        大概需要 2m 53s
+        """
         assert self.name is not None
         subprocess.run(f"conda create -y -n {self.name} python={self.py_ver}", shell=True)
         subprocess.run(f"{self._act()}; sh ~/deploy/deploy_apps/install_fav_py_pack.sh", shell=True)
@@ -91,7 +103,7 @@ setup(
     def all(self, inst_qlib=False):
         """
         Typically usage:
-            cp.py --name nestedV02 --py_ver 3.7 all
+            cd nestedV02 && cp.py --name nestedV02 --py_ver 3.8 all --inst_qlib
         """
         self.env()
         self.create(inst_qlib=inst_qlib)

@@ -87,9 +87,13 @@ echo  "${RED} Maybe you still have to install zsh with conda ${NC}"
 
 # Debug
 # 1) zsh 18.04 有点问题
-#     - 问题1) https://github.com/rvm/rvm/issues/4214
+#     - 问题1) "realloc(): invalid next size" when using autocomplete and rvm
+#       - 表现为: git补全时有时候会直接 crash并出现上述错误
+#       - 相关问题
+#         - https://github.com/rvm/rvm/issues/4214
+#         - https://bugs.launchpad.net/ubuntu/+source/zsh/+bug/1777899
 #     - 问题2) 有可能 zsh_snippets 用起来会有问题
-#     - 解决方案: 用conda 安装新版的zsh https://anaconda.org/conda-forge/zsh 
+#     - 解决方案: 用 conda 安装新版的zsh https://anaconda.org/conda-forge/zsh 
 #         - conda install -y -c conda-forge zsh
 #         - sudo chsh  -s /home/xiaoyang/miniconda3/bin/zsh xiaoyang
 #         - Tmux要重启一下才能正确加载zsh

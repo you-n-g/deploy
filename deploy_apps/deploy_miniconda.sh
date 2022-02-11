@@ -65,11 +65,13 @@ fi
 
 function yxca() {
     conda activate $1
+    export conda_env=$1
     tmux setenv conda_env $1
 }
 
 function yxcd() {
     conda deactivate
+    unset conda_env
     tmux setenv -r conda_env
 }
 EOF

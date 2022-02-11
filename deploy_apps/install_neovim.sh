@@ -16,14 +16,13 @@ if [ ! -e ~/bin/vim ]; then
     mkdir -p ~/bin/
     # Dev version
     curl -L  -o ~/bin/vim_nightly https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
-    chmod a+x ~/bin/vim_nightly
-
-    # Stable version: 这里建议安装稳定版本，之前安装 nightly版本的时候遇到过崩溃的事情
+    # - 之前安装 nightly版本的时候遇到过崩溃的事情
+    # - nightly 曾经出过问题;
+    # Stable version: 这里建议安装稳定版本
+    # - stable version 用 tree-sitter 等等插件也没出什么问题了
     curl -L  -o ~/bin/vim_latest https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
     chmod a+x ~/bin/vim_latest
-
-    # 最后我试着 latest 版本也能使用 treesitter;
-    # ln -s ~/bin/vim_nightly ~/bin/vim
+    chmod a+x ~/bin/vim_nightly
     ln -s ~/bin/vim_latest ~/bin/vim
 fi
 
@@ -54,6 +53,9 @@ ln -s ~/deploy/configs/nvim  $NVIM_CONF_PATH
 
 
 ~/bin/vim -c PlugInstall -c qa
+~/bin/vim -c UpdateRemotePlugins -c '!sleep 10' -c qa
+# 这个是为了正常安装 semshi 相关的插件， TODO: 还没有验证过它是不是有效
+# 我感觉 PlugInstall 好像也没生效
 
 
 # NOTE: 这一句应该在 PlugInstall 之后才有用

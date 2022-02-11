@@ -118,6 +118,7 @@ EOF
     function zvm_after_lazy_keybindings() {
         # 这个按键绑定在 zvm 上不work
         # bindkey -M viins '\e.' insert-last-word
+        # - 一般的shell中的就是 ESC + .
         zvm_bindkey viins '^S^L' insert-last-word
 
         # 1ambda/zsh-snippets
@@ -125,7 +126,7 @@ EOF
         # bindkey '^S^A' zsh-snippets-widget-list    # CTRL-S CTRL-A (list)
         zvm_bindkey viins '^S^S' zsh-snippets-widget-expand  # CTRL-S CTRL-S (expand)
         zvm_bindkey viins '^S^A' zsh-snippets-widget-list    # CTRL-S CTRL-A (list)
-        #
+
         ## useful command
         # zsp add xxx "XXX"
         # zsp delete xxx
@@ -233,7 +234,9 @@ function tfts() {
 # wan
 alias wan="~/miniconda3/bin/wan"
 ## this assume wan is installed by `install_wan`
+
 export PYTHONPATH=~/apps/wan/:$PYTHONPATH
+# make it possible to make wan available in all conda environment
 
 # ## Outlines: ranger
 # ranger的安装依赖  deploy_apps/install_fav_py_pack.sh
@@ -241,6 +244,9 @@ alias .r=". ranger"
 # 其他
 # -快捷键篇
 #   - r: 可以open_with调用当前文件，1是less/pager
+#       - 这个的好处是有时候vim比较慢，用其他工具就不会那么卡
+# - 坑篇
+#   - 如果 发现 dd pp 无法剪切文件(但是能复制文件)， 可能是权限 (这里的ranger是不会报错的)
 
 
 # # Outlines: 准备删掉的

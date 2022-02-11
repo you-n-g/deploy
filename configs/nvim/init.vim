@@ -19,8 +19,10 @@ Plug 'nathanaelkane/vim-indent-guides'
 Plug 'ryanoasis/vim-devicons'
 Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
 Plug 'mhinz/vim-startify'
-Plug 'vim-ctrlspace/vim-ctrlspace'
-Plug 'liuchengxu/vim-which-key'
+" Plug 'vim-ctrlspace/vim-ctrlspace'
+" Plug 'liuchengxu/vim-which-key'  这个插件有问题， 和context冲突,
+" 如果第一次按没有触发， 第二次再按空着就会出错
+Plug 'folke/which-key.nvim'  " 这个修复了 vim-which-key 的问题
 
 " Plug 'vim-vdebug/vdebug'   " 等待确认这个插件没有问题,
 " 希望这个插件可以代替vscode
@@ -46,7 +48,8 @@ Plug 'jiangmiao/auto-pairs'
 Plug 'kshenoy/vim-signature'
 Plug 'airblade/vim-gitgutter'
 
-Plug 'wellle/context.vim'
+" Plug 'wellle/context.vim'  "  被tree  sitter 替代了
+
 Plug 'machakann/vim-sandwich'
 
 Plug 'ludovicchabant/vim-gutentags'  " 自动生成更新ctags
@@ -67,7 +70,6 @@ Plug 'easymotion/vim-easymotion'
 " Plug 'sslivkoff/vim-scroll-barnacle'
 " - 后来发现这个可以解决这个问题: https://github.com/wfxr/minimap.vim
 Plug 'psliwka/vim-smoothie'
-" Plug 'liuchengxu/vista.vim'  "  目前还没发现有啥用， 早点删了吧
 Plug 'pevhall/simple_highlighting'
 Plug 'AndrewRadev/sideways.vim'
 Plug 'szw/vim-maximizer'
@@ -79,7 +81,8 @@ Plug 'numirias/semshi', {'do': ':UpdateRemotePlugins'}
 
 " Treesitter 里面有很多插件似乎很棒
 Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
-Plug 'romgrk/nvim-treesitter-context'
+Plug 'romgrk/nvim-treesitter-context'  " treesitter dependent
+Plug 'p00f/nvim-ts-rainbow'  " treesitter dependent
 
 Plug 'tpope/vim-fugitive'
 
@@ -91,9 +94,20 @@ Plug 'SirVer/ultisnips'
 Plug 'honza/vim-snippets'
 
 " Plug 'junegunn/vim-peekaboo'  " 看剪切板非常方便:  但是常常会造成我的电脑卡死。。。 不知为何
-Plug 'tversteeg/registers.nvim', { 'branch': 'main' }   " 第二个看register的插件
+" Plug 'tversteeg/registers.nvim', { 'branch': 'main' }   " 第二个看register的插件,  但是这个和 which_key 功能一样， 所以先不用了
 
 Plug 'voldikss/vim-translator'
+
+
+Plug 'akinsho/toggleterm.nvim'
+" - 试用的困难请在 yx_conf 中查找
+
+
+" Plug 'untitled-ai/jupyter_ascending.vim'
+" 这种模式我非常喜欢，但是现在还有不足的地方
+" - 它运行cell的时候感觉位置不对, 等待这个错误的解决
+"   https://github.com/untitled-ai/jupyter_ascending.vim/issues/8
+
 
 " just for help tags
 Plug 'nvim-lua/popup.nvim'
@@ -101,7 +115,11 @@ Plug 'nvim-lua/plenary.nvim'
 Plug 'nvim-telescope/telescope.nvim'
 
 Plug 'neovim/nvim-lspconfig'
-Plug 'nvim-treesitter/playground'
+Plug 'nvim-treesitter/playground' " treesitter dependent
+
+" Dev lua
+" Plug 'tjdevries/nlua.nvim'  "  this seems  require builtin lsp
+Plug 'bfredl/nvim-luadev'
 call plug#end()
 
 " cspell:enable
@@ -316,6 +334,37 @@ augroup JavaOutlines
 augroup END
 
 
+augroup ShOutlines
+    au!
+    " Below is for line hightlight
+    if $TERM =~ "256"
+        autocmd FileType sh hi ShOutlines1 cterm=bold ctermbg=017 ctermfg=White
+        autocmd FileType sh hi ShOutlines2 cterm=bold ctermbg=019 ctermfg=White
+    else
+        autocmd FileType sh hi ShOutlines1 cterm=bold ctermbg=darkblue ctermfg=White
+        autocmd FileType sh hi ShOutlines2 cterm=bold ctermbg=blue ctermfg=White
+    endif
+
+    autocmd FileType sh sign define shO1 linehl=ShOutlines1
+    autocmd FileType sh sign define shO2 linehl=ShOutlines2
+
+    function! HighlightShOL()
+      execute "sign unplace * group=shotl1 file=".expand("%")
+      execute "sign unplace * group=shotl2 file=".expand("%")
+
+      for l:lnum in range(line("w0"), line("w$"))
+        if getline(l:lnum) =~ "^\\s*# *Outlines:"
+          execute "sign place ".l:lnum." line=".l:lnum." name=shO1 group=shotl1 file=".expand("%")
+        elseif getline(l:lnum) =~ "^\\s*## *Outlines:"
+          execute "sign place ".l:lnum." line=".l:lnum." name=shO2 group=shotl2 file=".expand("%")
+        endif
+      endfor
+    endfunction
+
+    autocmd! CursorMoved *.sh call HighlightShOL()
+augroup END
+
+
 " 快速替换
 " Highlight 是为了让用户看清楚现在哪些词会被替换
 nnoremap <expr> <plug>HighlightReplaceW '/\<'.expand('<cword>').'\><CR>``:%s/\<'.expand('<cword>').'\>/'.expand('<cword>').'/g<left><left>'
@@ -370,34 +419,10 @@ augroup END
 "
 
 " Plug 'liuchengxu/vim-which-key'
+" & WhichKey
 " I should before any key define based on vim-which-key
 
 set timeoutlen=500 " By default timeoutlen is 1000 ms
-call which_key#register('<Space>', "g:which_key_map")
-nnoremap <silent> <leader>      :<c-u>WhichKey '<Space>'<CR>
-vnoremap <silent> <leader>      :<c-u>WhichKeyVisual '<Space>'<CR>
-" nnoremap <silent> <localleader> :<c-u>WhichKey  ','<CR>
-" vnoremap <silent> <localleader> :<c-u>WhichKeyVisual ','<CR>
-let g:which_key_map =  {}
-" 我理解这里的所有的map命令 CMD 最后都会变成 :CMD<CR>
-
-" 我一直在尝试解决 vim-which-key 和 context 插件的冲突
-" let g:which_key_use_floating_win = 1
-" let g:which_key_floating_relative_win = 1
-" let g:which_key_run_map_on_popup = 1
-
-let g:which_key_map['t'] = {"name": 'Toggle'}
-
-" spell related
-let g:which_key_map.t.s = [":set spell!", 'Spell Toggle']
-" [s ]s: previous(next) spell error
-" zg: 标记为正确词汇
-" zw: 标记为错误词汇
-" zuX: 把 x 从词汇表中删除
-" 词汇表小写代表修改 spellfile, 大写代表 internal-wordlist
-" internal-wordlist 代表存在内存中，下次重新打开vim  或者设置 encoding都会导致它消失
-
-let g:which_key_map.t.p = [":exec '!sed -n  '.line('w0').','.line('w$').'p %'" , 'Plain text']
 
 
 "
@@ -420,13 +445,15 @@ let g:ctrlp_cmd = ''
 " map t<space> <Plug>VimwikiToggleListItem
 let g:vimwiki_hl_headers = 1
 " let g:vimwiki_conceallevel = 0
+" 据说可以管理vimwiki的backlinks
+" https://github.com/michal-h21/vim-zettel
+
 
 
 "
 " Nerdtree http://www.vim.org/scripts/script.php?script_id=1658
 "
 nnoremap <silent> <F7> :NERDTreeToggle<CR>
-let g:which_key_map.t.n = ["NERDTreeToggle", 'NERDTreeToggle']
 let NERDTreeIgnore=['\.pyc$', '\.orig$', '\.pyo$']
 
 
@@ -435,7 +462,6 @@ let NERDTreeIgnore=['\.pyc$', '\.orig$', '\.pyo$']
 "
 " nnoremap <silent> <F8> :TlistToggle<CR>
 nnoremap <silent> <F8> :TagbarToggle<CR>
-let g:which_key_map.t.l = ["TagbarToggle", 'TagbarToggle']
 let g:tagbar_sort = 0
 " highlight TagbarHighlight ctermfg=17 ctermbg=190 guifg=#00005f guibg=#dfff00
 highlight link TagbarHighlight Cursor
@@ -493,7 +519,36 @@ au FileType go nmap <Leader>gd <Plug>(go-doc)
 " ":i.j" means the ith window, jth pane
 " C-c, C-c  --- the same as slime
 " C-c, v    --- mnemonic: "variables"
-let g:slime_target = "tmux"
+
+" let g:slime_target = "tmux"
+" " These lines must be deleted if we use "neovim" slime_target
+" " always send text to the pane in the current tmux tab without asking
+" let g:slime_default_config = {
+"             \ 'socket_name': get(split($TMUX, ','), 0),
+"             \ 'target_pane': '{top-right}' }
+" let g:slime_dont_ask_default = 1
+
+let g:slime_target = "neovim"
+
+" pro:
+" - 这里如果能换成 neovim 的话， 会更方便 (navigate更方便,
+"   而且颜色高亮等等功能还可以临时加)
+" - 而且 速度比 tmux 快很多!!!!
+" - 可以用vim直接看结果，能方便地在不同的文件中跳转
+" con:
+" - neovim有时候不稳定， 会导致 terminal也一起出错;
+"   建议要稳定性的话，就走路线
+"   可能先把其他关掉，留下这个terminal比较合适
+" TODO:
+" - 这里如果能自动选择 terminal的话就比较爽了
+"   - 只有一个terminal时， 会自动选择
+"   - echo &channel
+" 发现的高效的习惯
+" - 这玩意不能像 tmux 那样swap时还保留 布局的窗口大小 ,
+"   它保留的是本身的窗口大小; 所以 ctrl + 6 来切换
+"   terminal和code也是一个不错的选择
+"
+"
 " 这个一定要和ipython一起用，否则可能出现换行出问题
 let g:slime_python_ipython = 1
 
@@ -513,13 +568,14 @@ nnoremap <c-c><c-p> :SlimeSend0 "\x1bk\x0d"<CR>
 " let g:slime_target = "neovim"  " 这个也支持哦
 
 
+if get(g:, "slime_target", "") == "neovim"
+  augroup auto_channel
+    autocmd!
+    " autocmd TermEnter * let g:slime_last_channel = &channel
+    autocmd BufEnter * lua require"slime".reset_slime()
+  augroup END
+end
 
-" These lines must be deleted if we use "neovim" slime_target
-" always send text to the pane in the current tmux tab without asking
-let g:slime_default_config = {
-            \ 'socket_name': get(split($TMUX, ','), 0),
-            \ 'target_pane': '{top-right}' }
-let g:slime_dont_ask_default = 1
 
 " DEBUG & FAQ
 " 如果发现发送过去的内容不是选中的内容，可以看看你是不是开了 vi-mode
@@ -537,46 +593,29 @@ let g:slime_dont_ask_default = 1
 "------------------------------------------------------------------------------
 " Keyboard mappings. <Leader> is \ (backslash) by default
 
-let g:which_key_map['p'] = {
-    \ 'name' : 'IPython Cell',
-    \'r' : ['IPythonCellRun', 'Run Script'],
-    \'R' : ['IPythonCellRunTime', 'Run script with time'],
-    \'e' : ['IPythonCellExecuteCellVerbose', 'Execute Cell'],
-    \'E' : ['IPythonCellExecuteCellVerboseJump', 'Execute Cell Jump'],
-    \'l' : ['IPythonCellClear', 'Clear'],
-    \'x' : ['IPythonCellClose', 'Close'],
-    \'c' : [':SlimeSend', 'Send line or selected'],
-    \'p' : ['IPythonCellPrevCommand', 'Previous Command'],
-    \'Q' : ['IPythonCellRestart', 'restart ipython'],
-    \'t' : [':SlimeSend1 %load_ext autotime', 'load autotime'],
-    \'q' : [':SlimeSend1 exit', 'exit'],
-    \'k' : ['IPythonCellPrevCell', 'Prev Cell'],
-    \'j' : ['IPythonCellNextCell', 'Next Cell'],
-    \'d' : {
-        \ 'name' : 'debug related',
-        \'d' : [':SlimeSend1 %debug', 'debug mode'],
-    \ },
-    \'s' : {
-        \ 'name' : 'Send for sh',
-        \'i' : [':SlimeSend1 ipython --matplotlib', 'start ipython with matplotlib'],
-        \ }
-    \ }
-" Failed settings
-" \'s' : [':SlimeSend1 ipython --matplotlib', 'start ipython with matplotlib'],
-" \'b' : ['SlimeSend0 "b ".expand("%:p").":".line("$")', 'Send file break point'],
-" \'e' : ['placehoder', 'Create an embeded env']
-
 " shell related
 nnoremap <leader>psr :SlimeSend0 "python ".expand("%:p")."\n"<CR>
 nnoremap <leader>psR :SlimeSend0 "python ".expand("%")."\n"<CR>
-nnoremap <leader>psf :SlimeSend0 "python ".expand("%:p")." ".luaeval('require("run_func").get_current_function_name()')."\n"<CR>
+
+nnoremap <leader>pSr :SlimeSend0 "python ".expand("%:p")<CR>
+nnoremap <leader>pSR :SlimeSend0 "python ".expand("%")<CR>
+
+" 这里有点缺陷，在Python的 docstring的位置不能正确输出结果
+" nnoremap <leader>psf :SlimeSend0 "python ".expand("%:p")." ".luaeval('require("run_func").get_current_function_name()')."\n"<CR>
+" nnoremap <leader>psF :SlimeSend0 "python ".expand("%")." ".luaeval('require("run_func").get_current_function_name()')."\n"<CR>
+
+" nnoremap <leader>pSf :SlimeSend0 "python ".expand("%:p")." ".luaeval('require("run_func").get_current_function_name()')<CR>
+" nnoremap <leader>pSF :SlimeSend0 "python ".expand("%")." ".luaeval('require("run_func").get_current_function_name()')<CR>
+
 nnoremap <leader>pss :SlimeSend0 "bash ".expand("%:p")."\n"<CR>
+
 nnoremap <leader>psd :SlimeSend0 "pypdb ".expand("%:p")."\n"<CR>
 nnoremap <leader>psD :SlimeSend0 "pypdb ".expand("%")."\n"<CR>
 nnoremap <leader>psp :SlimeSend0 "pyprof ".expand("%:p")."\n"<CR>
 nnoremap <leader>pskp :SlimeSend0 "kernprof -l ".expand("%:p")."\n"<CR>
 nnoremap <leader>pskc :SlimeSend0 "python -m line_profiler ".expand("%:t").".lprof\n"<CR>
-nnoremap <leader>pst :SlimeSend0 "nosetests --nocapture --ipdb --ipdb-failures ".expand("%:p")."\n"<CR>
+" nnoremap <leader>pst :SlimeSend0 "nosetests --nocapture --ipdb --ipdb-failures ".expand("%:p")."\n"<CR>
+nnoremap <leader>pst :SlimeSend0 "pytest -s --pdb --disable-warnings ".expand("%:p")."::".luaeval('require("run_func").get_current_function_name(true)')."\n"<CR>
 
 nnoremap <leader>pdb :SlimeSend0 "b ".expand("%:p").":".line(".")."\n"<CR>
 nnoremap <leader>pde :SlimeSend1 from IPython import embed; embed()<CR>
@@ -616,15 +655,22 @@ let g:indent_guides_start_level = 2
 
 
 " 'vim-ctrlspace/vim-ctrlspace'
-set nocompatible
-set hidden
-set encoding=utf-8
-hi link CtrlSpaceNormal   PMenu
-hi link CtrlSpaceSelected PMenuSel
-hi link CtrlSpaceSearch   Search
-hi link CtrlSpaceStatus   StatusLine
-" visual mode is not useful for me at all
-nnoremap <silent>Q :CtrlSpace<CR>
+" 本来走的下面的逻辑
+" set nocompatible
+" set hidden
+" set encoding=utf-8
+" hi link CtrlSpaceNormal   PMenu
+" hi link CtrlSpaceSelected PMenuSel
+" hi link CtrlSpaceSearch   Search
+" hi link CtrlSpaceStatus   StatusLine
+" " visual mode is not useful for me at all
+" nnoremap <silent>Q :CtrlSpace<CR>
+" nnoremap <silent>Q :Telescope buffers<CR>
+
+lua << EOF
+vim.api.nvim_set_keymap('n', 'Q', ":lua require('telescope/buffer').my_buffers()<cr>", {noremap = true})
+EOF
+
 " set showtabline=0  " tabline的开关和 vim-airline 的setting得一起修改的
 " 好用的:
 " - l可以快速列出所有的tab级别的内容
@@ -637,6 +683,9 @@ nnoremap <silent>Q :CtrlSpace<CR>
 " - 想disable 文件搜索，但是一直没有成功
 "   - let g:CtrlSpaceIgnoredFiles = '*'
 "   - let g:CtrlSpaceGlobCommand = 'echo "disabled"'
+" - 会影响sesesion的 load 和 save
+"   - https://github.com/vim-ctrlspace/vim-ctrlspace/issues/293
+"   - https://github.com/vim-ctrlspace/vim-ctrlspace/issues/294
 
 
 
@@ -696,11 +745,6 @@ let g:startify_lists = [
 
 
 " jupyter-vim
-let g:which_key_map['j'] = {
-    \ 'name' : 'jupyter-vim',
-    \'e' : ['JupyterSendCell', 'Jupyter Send Cell'],
-    \'d' : ['JupyterDisconnect', 'Jupyter Disconnect'],
-    \ }
 let g:jupyter_mapkeys=0
 nmap <leader>jc  :<C-u>JupyterSendCount<CR>
 vmap <leader>jc  :<C-u>'<,'>JupyterSendRange<CR>
@@ -757,11 +801,6 @@ nmap <silent> <leader>h] <Plug>(GitGutterNextHunk)
 " END   'airblade/vim-gitgutter' ------------------------------------------------------
 
 " BEGIN 'tpope/vim-fugitive' ------------------------------------------------------
-" nmap <silent> <leader>hl :G log --graph --oneline --decorate --all<CR>
-let g:which_key_map['h']  = {"name": "Git Related"}
-let g:which_key_map['h']['l'] = [':G log --graph --oneline --decorate --all', 'commit tree']
-let g:which_key_map['h']['h'] = [':0Glog', 'The commit file of current history']
-
 
 
 function! GoParentDir()
@@ -790,7 +829,7 @@ augroup END
 " # 其他有用的
 " ## 我还没搞明白它的两种运行机制
 " 一种出现quickfix  (Glog)
-" ## 在naviage mode下面[疑似]
+" ## 在navigate mode下面[疑似]
 " 我感觉 navigate 逻辑是这么走的： 从 commit trace -> commmit内容 -> 这个commit内部的文件原文
 " - 这些东西都可以在文件中直接打开
 "   - tree: commit
@@ -799,6 +838,7 @@ augroup END
 " - 下面的命令都可以在这个文件中看到
 " p : preview 看看里面是个啥;
 " dp: 根据当前光标看看 diff 啥的(到底改了哪里), 可以直接看文件的， 也可以直接看stage的
+" = : 在当前 toggle diff;  可以快速地浏览很多文件， 非常好用！！！！
 "
 " ## Tips
 " g?: 可以快速找到mapping的文档
@@ -808,17 +848,6 @@ augroup END
 
 " END   'tpope/vim-fugitive' ------------------------------------------------------
 
-" BEGIN 'wellle/context.vim' ------------------------------------------------------
-let g:context_enabled = 0  " 等待BUG的fix
-
-" 和neovim一起这样用会有bug
-" https://github.com/wellle/context.vim/issues/23
-let g:context_nvim_no_redraw = 1
-
-" 和 vimspector 一起用会出现之前的context留下残影的问题
-" :ContextToggle  可以解决这个问题(似乎也没有解决...)
-let g:which_key_map.t.c = ["ContextToggle", 'ContextToggle']
-" END   'wellle/context.vim' ------------------------------------------------------
 
 
 " BEGIN  'machakann/vim-sandwich' -----------------------------------------
@@ -835,21 +864,6 @@ let g:which_key_map.t.c = ["ContextToggle", 'ContextToggle']
 
 
 " BEGIN  'puremourning/vimspector' -----------------------------------------
-let g:which_key_map['v'] = {
-    \ 'name' : 'vimspector',
-    \'c' : ['vimspector#Continue()', 'continue'],
-    \'C' : ['vimspector#ClearBreakpoints()', 'clear all breakpoints'],
-    \'S' : ['vimspector#Stop()', 'stop'],
-    \'p' : ['vimspector#Pause()', 'pause'],
-    \'b' : ['vimspector#ToggleBreakpoint()', 'breakpoint toggle'],
-    \'o' : ['vimspector#StepOver()', 'step over'],
-    \'i' : ['vimspector#StepInto()', 'step into'],
-    \'O' : ['vimspector#StepOut()', 'step out'],
-    \'R' : ['VimspectorReset', 'reset'],
-    \'r' : ['vimspector#RunToCursor()', 'run to cursor'],
-    \'u' : ['vimspector#UpFrame()', 'Move up call stack'],
-    \'d' : ['vimspector#DownFrame()', 'Move down call stack'],
-    \ }
 nnoremap <leader>vB  :call vimspector#ToggleBreakpoint({'condition':''})<left><left><left>
 
 " Python DEBUG
@@ -910,7 +924,7 @@ endfor
 "
 " 反vimer直觉的
 " 复制粘贴
-" - 有时候normal模式下x删除多行，再<c-v>粘贴会没用; extend模式d删除，然后在<c-v>粘贴我这边能work
+" - 有时候normal模式下x剪切，再<c-v>粘贴会没用; extend模式d删除，然后在<c-v>粘贴我这边能work
 " - <c-v> 才是那个每行都有差异的粘贴， p会粘贴一样的东西
 " v选择编辑的操作会出错，得用extend模式代替v
 " s不是删除然后立马插入，而是进入到一个selecting模式
@@ -968,37 +982,6 @@ inoremap <expr> <c-x><c-k> fzf#vim#complete('cat ~/.english-words/words_alpha.tx
 imap <c-x><c-l> <plug>(fzf-complete-line)
 
 
-
-let g:which_key_map['f'] = {
-    \ 'name' : 'fzf',
-    \'g' : ['Rg', 'Rg'],
-    \'G' : ['Rgc', 'Rg without filename'],
-    \'l' : ['BLines', 'Lines in the current buffer'],
-    \'L' : ['Lines', 'Lines in loaded buffer'],
-    \'m' : [':Telescope marks', 'Marks'],
-    \'b' : [':Telescope buffers', 'Buffers'],
-    \'M' : ['Maps', 'Mappings'],
-    \'o' : [':Lines Outlines', 'Outlines'],
-    \'h' : [':Telescope help_tags', 'help tags'],
-    \'d' : {
-        \"name": "deploy and cheatsheets",
-            \'g' : [':execute '''.'lua require("telescope.builtin").live_grep({search_dirs={"~/deploy/", "~/cheatsheets/code_to_copy/"}})'.'''', 'deploy and cheatsheet(live_grep)'],
-            \'f' : [':execute '''.'lua require("telescope.builtin").find_files({search_dirs={"~/deploy/", "~/cheatsheets/code_to_copy/"}})'.'''', 'deploy and cheatsheet(find_files)']
-        \ },
-        \'p' : {
-            \"name": "plugins",
-            \'g' : ['RgPlug', 'plugins(live_grep)'],
-            \'f' : [':execute '''.'lua require("telescope.builtin").find_files({search_dirs={"~/.vim/plugged"}})'.'''', 'plugins(find_files)']
-        \}
-    \ }
-" 这里可以通过tab选多个，回车后变成quick fix
-
-" 发现 telescope 还是太慢了， fzf比较快
-" \'g' : [':execute '''.'lua require("telescope.builtin").live_grep({search_dirs={"~/.vim/plugged"}})'.'''', 'plugins(live_grep)'],
-" \'dg' : [':execute '''.'lua require("telescope.builtin").live_grep({search_dirs={"~/deploy/", "~/cheatsheets/code_to_copy/"}})'.'''', 'deploy and cheatsheet(live_grep)'],
-" \'df' : [':execute '''.'lua require("telescope.builtin").find_files({search_dirs={"~/deploy/", "~/cheatsheets/code_to_copy/"}})'.'''', 'deploy and cheatsheet(find_files)']
-
-
 " 有用的技巧
 " Search syntax: https://github.com/junegunn/fzf#search-syntax
 " '(exact-match) ^(prefix-exact-match) $(suffix-exact-match) !(inverse-exact-match)  有特殊意义
@@ -1024,7 +1007,7 @@ let g:doge_doc_standard_python = 'numpy'
 
 " BEGIN 'APZelos/blamer.nvim' -----------------------------------------
 " It is useful when reviewing code
-let g:which_key_map.t.b = ["BlamerToggle", 'BlamerToggle']
+nnoremap <silent> <Leader>tb :BlamerToggle<CR>
 let g:blamer_delay = 500
 " END   'APZelos/blamer.nvim' -----------------------------------------
 
@@ -1057,17 +1040,16 @@ nmap <Leader>w <Plug>(easymotion-overwin-w)
 " highlight ScrollBlockBottom gui=reverse cterm=reverse
 " END   'sslivkoff/vim-scroll-barnacle' -----------------------------------------
 
-
-" BEGIN 'liuchengxu/vista.vim' -----------------------------------------
-let g:which_key_map.t.v = [":Vista!!", 'Vista Toggle']
-let g:vista_sidebar_position="vertical topleft"
-let g:which_key_map.f.t = [":Vista finder", 'Vista finder']
-left g:vista_default_executive='coc'
-" END   'liuchengxu/vista.vim' -----------------------------------------
-
 " BEGIN 'pevhall/simple_highlighting' -----------------------------------------
 nmap <Leader>H <Plug>HighlightWordUnderCursor
 vmap <Leader>H <Plug>HighlightWordUnderCursor
+
+" 有用的命令
+" Ha 3 @
+" - *HighlightAddMultiple*
+" Hwb
+" - *HighlightCommandsBuffer*  注意，这里要求用户现在已经开了一个buffer
+
 " END   'pevhall/simple_highlighting' -----------------------------------------
 
 " BEGIN 'AndrewRadev/sideways.vim' -----------------------------------------
@@ -1076,7 +1058,7 @@ nnoremap <c-l> :SidewaysRight<cr>
 " END   'AndrewRadev/sideways.vim' -----------------------------------------
 
 " BEGIN 'szw/vim-maximizer' -----------------------------------------
-let g:which_key_map.t.M = ["MaximizerToggle", 'MaximizerToggle']
+let g:maximizer_default_mapping_key = '<F5>'
 " END   'szw/vim-maximizer' -----------------------------------------
 
 " BEGIN 'camspiers/lens.vim' -----------------------------------------
@@ -1120,27 +1102,14 @@ nmap <silent> <Leader>Dx <Plug>TranslateX
 " END   'voldikss/vim-translator' -----------------------------------------
 
 
+" BEGIN 'dhruvasagar/vim-table-mode' --------------------------------------
+" 好用的功能
+" - :TableSort   # 后面还有一堆参数可以研究一下
+" END   'dhruvasagar/vim-table-mode' --------------------------------------
+
+
 " BEGIN 'nvim-treesitter/nvim-treesitter' ---------------------------------
-lua <<EOF
-require'nvim-treesitter.configs'.setup {
-  ensure_installed = "maintained", -- one of "all", "maintained" (parsers with maintainers), or a list of languages
-  ignore_install = {  }, -- List of parsers to ignore installing
-  highlight = {
-    enable = true,              -- false will disable the whole extension
-    disable = { },  -- list of language that will be disabled
-    -- Setting this to true will run `:h syntax` and tree-sitter at the same time.
-    -- Set this to `true` if you depend on 'syntax' being enabled (like for indentation).
-    -- Using this option may slow down your editor, and you may see some duplicate highlights.
-    -- Instead of true it can also be a list of languages
-    additional_vim_regex_highlighting = false,
-  },
-  indent = {
-      enable = true
-  }
-}
-EOF
-
-
+" The lua part is in yx_conf.lua
 set foldmethod=expr
 set foldexpr=nvim_treesitter#foldexpr()
 set foldlevel=99
@@ -1162,7 +1131,7 @@ require("yx_conf")
 EOF
 
 
-" Nvim usage cheetsheet
+" Nvim usage cheatsheet
 
 " 目录
 " - 设计理念
@@ -1178,7 +1147,7 @@ EOF
 " - TODO
 
 
-" ========== 设计理念 ==========
+" ========== 设计理念/内嵌机制 ==========
 " buffer, window, tab的设计理念
 " A buffer is the in-memory text of a file
 " A window is a viewport on a buffer.
@@ -1190,6 +1159,13 @@ EOF
 " - 前缀代表它在什么模式下生效
 " - 它可以映射成一段直接输入，也能映射成一个将会被解析成字符串的表达式
 "   - :help <expr>  " 如果想让map映射到一个可解释的字符串
+" - 按键不一定会按你想的那样； 比如 <C-1> 不会映射到特定的按钮
+"   - 参见 https://vi.stackexchange.com/a/19359
+
+" autocmd
+" autoloading
+" command function
+
 
 " ============ 快捷键 ============
 " `@:` : 执行上一个命令; 通过mapping调用的命令不会进入这个, q: 中的命令才会
@@ -1237,11 +1213,26 @@ EOF
 " FZF Redo: https://github.com/junegunn/fzf.vim/pull/941
 " https://github.com/rhysd/conflict-marker.vim
 " https://github.com/romgrk/winteract.vim
+" https://github.com/akinsho/toggleterm.nvim
+" - 开关terminal更方便
+" - terminal的名字更容易理解
+" 解决Buffer delete的问题: delete buffer会连带着它相应的 layout 都关掉(比如tab, split等等)，当只有最后一个layout窗口时，它才会保留并只删除buffer
+" - https://www.reddit.com/r/vim/comments/jtpluq/close_buffer_but_not_the_window/
+" - https://github.com/qpkorr/vim-bufkill
+" - https://github.com/moll/vim-bbye
+" - 因为手动解决方法好用: ctrl+^ :bd#， 所以一直没有想着用插件;
+"   但是它有如下缺陷: 如果 alternative buffer
+"   也有一个对应的layout(在另外的tab或者split)，那么这个layout会被删掉
+" https://alpha2phi.medium.com/jupyter-notebook-vim-neovim-c2d67d56d563#ba87
 
 
 " ========== script ==========
-" vim script cheatsheet https://devhints.io/vimscript
+" vim script cheatsheet
+" - https://devhints.io/vimscript
+" - https://github.com/johngrib/vimscript-cheatsheet
 " help script
+
+" 内置config在scripts中引用: 类似于 `echo &filetype` 等价于 `set filetype`
 
 " str =~ "<正则表达式，注意\要写成 \\>"
 
@@ -1268,5 +1259,5 @@ EOF
 " :changes 可视化
 " https://github.com/axlebedev/footprints
 
-" other cheetsheet
+" other cheatsheet
 " deploy_apps/install_neovim.sh

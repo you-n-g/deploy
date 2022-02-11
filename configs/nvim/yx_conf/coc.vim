@@ -95,9 +95,10 @@ nmap <leader>cac  <Plug>(coc-codeaction)
 nmap <leader>cqf  <Plug>(coc-fix-current)
 
 " Use <tab> for select selections ranges, needs server support, like: coc-tsserver, coc-python
-nmap <silent> <TAB> <Plug>(coc-range-select)
-xmap <silent> <TAB> <Plug>(coc-range-select)
-xmap <silent> <S-TAB> <Plug>(coc-range-select-backword)
+" nmap <silent> <TAB> <Plug>(coc-range-select)
+" xmap <silent> <TAB> <Plug>(coc-range-select)
+" xmap <silent> <S-TAB> <Plug>(coc-range-select-backword)
+" These features are replaced by tree sitter
 
 " Use `:Format` to format current buffer
 command! -nargs=0 Format :call CocAction('format')
@@ -143,20 +144,6 @@ nnoremap <silent> <Leader>gc :exe 'CocList -I --input='.expand('<cword>').' grep
 nnoremap <silent> <Leader>gr :exe 'CocList -I grep --ignore-case'<CR>
 
 
-" TODO: 上面的一堆命令终究将纳入到下面的 which_key_map 中
-let g:which_key_map['l'] = {
-    \ 'name' : 'coc-list',
-    \'o' : [':CocList -I --auto-preview --ignore-case --input=outlines lines', 'Outlines'],
-    \'i' : [':CocList -I --auto-preview --ignore-case lines', 'Search in this file'],
-    \'c' : [':CocList commands', 'commands'],
-    \'u' : [':CocList mru', 'mru(current dir)'],
-    \ }
-
-
-let g:which_key_map['c'] = {
-    \ 'name' : 'coc.vim',
-    \'F' : ['Format', 'Format all'],
-    \ }
 
 " scroll the popup
 " 一开始是用了这个
@@ -194,10 +181,10 @@ let g:coc_global_extensions = [
  \ "coc-java",
  \ "coc-java-debug",
  \ "coc-marketplace",
- \ "coc-spell-checker",
- \ "coc-sumneko-lua"
+ \ "coc-spell-checker"
  \ ]
 "  \ "coc-zi"
+" \ "coc-sumneko-lua"   " 有时候这个没有用， coc-lua才有用
 " 个人经验 <space>c  setLinter ，把pylama 设置成错误提示的工具方便
 
 
@@ -228,6 +215,10 @@ let g:coc_explorer_global_presets = {
 \   'floating': {
 \      'position': 'floating',
 \   },
+\   'tab': {
+\     'position': 'tab',
+\     'quit-on-open': v:true,
+\   },
 \   'floatingLeftside': {
 \      'position': 'floating',
 \      'floating-position': 'left-center',
@@ -244,13 +235,6 @@ let g:coc_explorer_global_presets = {
 \ }
 
 " Use preset argument to open it
-let g:which_key_map['e'] = {
-    \ 'name' : 'coc-list',
-    \'f' : [':CocCommand explorer --sources=buffer+,file+ --preset floatingRightside', 'Float Explorer'],
-    \'c' : [':CocCommand explorer --sources=buffer+,file+', 'Side Explorer'],
-    \'e' : [':CocCommand explorer --sources=buffer+,file+ --preset floating', 'Full Explorer'],
-    \ }
-
 
 function! s:explorer_cur_dir()
   let node_info = CocAction('runCommand', 'explorer.getNodeInfo', 0)
@@ -259,8 +243,10 @@ endfunction
 
 function! s:exec_cur_dir()
   let dir = s:explorer_cur_dir()
-  " close coc-explorer
-  execute 'CocCommand explorer --sources=buffer+,file+ --preset floating'
+  " close coc-explorer  这一句和你怎么打开 coc-explorer 有关系，
+  " 怎么开的就怎么关
+  " execute 'CocCommand explorer --sources=buffer+,file+ --preset floating'
+  execute 'CocCommand explorer --sources=buffer+,file+'
   " call telescope
   execute 'lua require("telescope.builtin").live_grep({search_dirs={"'.l:dir.'"}})'
 endfunction
@@ -298,8 +284,6 @@ let g:coc_snippet_prev = '<c-k>'
 
 " Use <C-j> for both expand and jump (make expand higher priority.)
 imap <C-j> <Plug>(coc-snippets-expand-jump)
-
-let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
 
 
 " coc-list ------------------------------
@@ -365,6 +349,11 @@ let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
 
 
 " DEBUG相关
+" 通用解法
+" - 先看log: https://github.com/neoclide/coc.nvim/wiki/Debug-language-server#using-output-channel
+" - CocInfo: 看Coc的log
+" - CocOpenLog:  这个会显示和 CocInfo一样的内容，会在buffer 里面更新
+"
 " 当出现下面情况都先确认环境有没有弄错
 " - 解析pylama解析包失败时(找不到包, 比如import时提示无法解析)
 " - 做代码跳转时，提示版本太老
@@ -407,6 +396,7 @@ let g:which_key_map.c.s = ['<Plug>(coc-convert-snippet)', 'Convert to Snippets']
 
 
 " 还不能解决的问题
+" doHover 和 goToDefintion 在编辑代码出现语法错误时，就会出错 https://github.com/neoclide/coc.nvim/issues/2024
 
 
 

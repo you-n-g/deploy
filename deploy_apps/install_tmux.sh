@@ -9,7 +9,9 @@ export PATH="$HOME/anaconda3/bin:$HOME/miniconda3/bin:$PATH"   # for enable cond
 if which conda ;
 then
     conda install -c conda-forge -y tmux
-    TMUX_EXE=$CONDA_PREFIX/bin/tmux
+    # TMUX_EXE=$CONDA_PREFIX/bin/tmux
+    TMUX_EXE=~/miniconda3/bin/tmux
+    # 这里硬编码了， 但是也没有更好的，一直找不到环境变量
 else
     TMUX_EXE=`which tmux`
 fi
@@ -32,8 +34,8 @@ fi
 # 需要下面的假设成立
 # - ~/bin/ 被加到了PATH中，这个依赖 rcfile.sh
 # 如果不加这个会导致
-# - 在老的系统中找不到正确版本的tmux，导致 vim-slime 之类的命令失效
-ln -s $CONDA_PREFIX/bin/tmux ~/bin/tmux
+# - 在老的系统中找不到正确版本的tmux，导致 vim-slime, ranger 之类的软件失效(失效表现为遇到tmux相关的的步骤就卡住)
+ln -s $TMUX_EXE ~/bin/tmux
 
 
 sh ~/deploy/deploy_apps/deploy_tpm.sh
