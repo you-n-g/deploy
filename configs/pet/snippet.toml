@@ -157,7 +157,6 @@
   description = "python minimal install after create conda env"
   command = "pip install ipdb ipython neovim fire yapf pylint"
   output = ""
-  # pylint yapf are for neovim plugins
 
 [[snippets]]
   description = "conda remove"
@@ -182,4 +181,9 @@
 [[snippets]]
   description = "install my env"
   command = "sudo apt-get install -y git curl &&  git clone https://github.com/you-n-g/deploy && cd deploy &&  ./deploy.sh  # make sure you can sudo without password"
+  output = ""
+
+[[snippets]]
+  description = "docker run, interactive, and remove example"
+  command = "docker run -it --rm <img=kaggle/python:latest> /bin/bash"
   output = ""

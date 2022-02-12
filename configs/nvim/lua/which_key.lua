@@ -85,6 +85,8 @@ wk.register({
     e = {'<cmd>CocCommand explorer --toggle --sources=buffer+,file+ --position right<cr>', 'Side Explorer'},
     -- 默认用 split 有如下好处
     -- 1) f 和 F 可以用了 2) 用float有时候会突然冒出行号，打乱样式
+    -- 2) 下面两个其实也挺好用
+    --    il (list info) ic (preview content)
     f = {'<cmd>CocCommand explorer --sources=buffer+,file+ --preset floating<cr>', 'Full Explorer'},
   },
 

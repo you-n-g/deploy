@@ -4,6 +4,7 @@ cd ~/cheatsheets/code_to_copy/
 tmux new-session -s code_repo -n code -d
 cd ~/deploy/
 tmux new-window -n deployment -t code_repo:1
+#  NOTE: 如果对顺序不关心, 上面完全可以简化成 `tmux new-window -n deployment -t code_repo`
 
 
 # make sure you copy the .ssh/config already

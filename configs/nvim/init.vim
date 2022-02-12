@@ -410,7 +410,9 @@ autocmd FileType python autocmd BufWritePre <buffer> if &modified | %s/\s\+$//e 
 
 augroup highlight_yank
     autocmd!
-    au TextYankPost * silent! lua vim.highlight.on_yank{higroup="IncSearch", timeout=700}
+    " 我把这个 highlight 的时间缩短的原因是:
+    " 有时候highlight没结束，做操作时会导致neovim崩
+    au TextYankPost * silent! lua vim.highlight.on_yank{higroup="IncSearch", timeout=200}
 augroup END
 
 "

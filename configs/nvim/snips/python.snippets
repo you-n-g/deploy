@@ -289,3 +289,18 @@ endsnippet
 snippet pyli "pylint ignore" w
 # pylint: disable=E1101
 endsnippet
+
+snippet joblibtpl "joblib template" b
+from joblib import Parallel, delayed
+
+keys = []
+res = []
+for i in range(10):
+	keys.append(i)
+	# please place multiprocessing related work outside \`delayed\` in case of nested multiprocessing
+	# It would be best to only leave the computing tensive work in subprocess
+	res.append(delayed(sum)([i]))
+res = Parallel(n_jobs=-1, verbose=10)(res)
+
+field_res = dict(zip(keys, res))
+endsnippet
