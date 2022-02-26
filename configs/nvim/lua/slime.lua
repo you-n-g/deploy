@@ -1,4 +1,5 @@
-
+--  TODO: 现在在下面的情况下还有BUG
+--  - 在调用了 float window之后 (比如fzf)，可能这个 last_channel 会变化 (我怀疑 fzf 开了一个terminal来显示内容， 导致 slime_last_channel被修改)
 
 
 local M = {}

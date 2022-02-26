@@ -304,3 +304,10 @@ res = Parallel(n_jobs=-1, verbose=10)(res)
 
 field_res = dict(zip(keys, res))
 endsnippet
+
+snippet memprof "memory profiler" b
+from memory_profiler import profile
+# pip install memory_profiler
+# python -m memory_profiler <script>
+@profile
+endsnippet

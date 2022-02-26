@@ -931,6 +931,7 @@ endfor
 " v选择编辑的操作会出错，得用extend模式代替v
 " s不是删除然后立马插入，而是进入到一个selecting模式
 " 选取了多行后 \\c 可以创建多个normal模式的光标，\\a可以创建多个extend模式的光标
+" - <C-up>  <C-down> 之类的功能也能达到类似的效果，目前和和kitty的transparency的功能冲突了
 "
 " 有用的功能: https://github.com/mg979/vim-visual-multi/blob/master/doc/vm-tutorial
 " - 在<c-n>时， \\w 可以切换是否要boundary,  \\c 可以切换是否要 case-sensitive
