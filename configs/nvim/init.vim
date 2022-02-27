@@ -128,7 +128,6 @@ call plug#end()
 
 
 " Neovim有的缺陷:
-" - encoding似乎只能设置utf8, 对其他encoding支持没有那么好
 
 
 set ai "auto indent
@@ -160,6 +159,11 @@ set mouse=a  " enable mouse, shift is required if you want to click like before
 " http://superuser.com/questions/598270/getting-rid-of-characters-when-doing-gf-in-vim
 set isfname-==
 
+set fileencodings=utf8,gbk
+" This is a list of character encodings considered when **starting to edit** an existing file.
+" 注意 encoding/enc 是用于设置 RPC communication 的编码，不太一样
+
+
 " examples to ignore
 " ignore a directory on top level
 " let g:NERDTreeIgnore += ['^models$']
@@ -190,6 +194,7 @@ au BufReadPost *
 " highlight current line
 set cursorline
 set cursorcolumn
+
 
 " 这个得在前面， 不然会对后面的定义有影响, 配合 vim-which-key
 let g:mapleader = "\<Space>"

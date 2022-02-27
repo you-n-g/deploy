@@ -16,6 +16,7 @@ git pull
 # ln -s ~/deploy/configs/nvim/ ~/.config/
 
 ~/bin/vim -c "PlugInstall"  -c qa
+# - 这个感觉还是不会好好装, 不会等到 PlugInstall 完
 
 tmux source ~/.tmux.conf
 
