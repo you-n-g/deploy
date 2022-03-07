@@ -15,8 +15,8 @@ git pull
 # mv ~/.config/nvim ~/.config/nvim.back
 # ln -s ~/deploy/configs/nvim/ ~/.config/
 
-~/bin/vim -c "PlugInstall"  -c qa
-# - 这个感觉还是不会好好装, 不会等到 PlugInstall 完
+~/bin/vim -c "PlugInstall"  -c 'sleep 10' -c qa
+# - 这个感觉还是不会好好装, 不会等到 PlugInstall 完;  `sleep 10` 勉强修复一下这个问题
 
 tmux source ~/.tmux.conf
 

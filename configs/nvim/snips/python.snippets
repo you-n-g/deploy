@@ -1,26 +1,26 @@
 # A valid snippet should starts with:
 #
-#		snippet trigger_word [ "description" [ options ] ]
+#        snippet trigger_word [ "description" [ options ] ]
 #
 # and end with:
 #
-#		endsnippet
+#        endsnippet
 #
 # Snippet options:
 #
-#		b - Beginning of line.
-#		i - In-word expansion.
-#		w - Word boundary.
-#		r - Regular expression
-#		e - Custom context snippet
-#		A - Snippet will be triggered automatically, when condition matches.
+#        b - Beginning of line.
+#        i - In-word expansion.
+#        w - Word boundary.
+#        r - Regular expression
+#        e - Custom context snippet
+#        A - Snippet will be triggered automatically, when condition matches.
 #
 # Basic example:
 #
-#		snippet emitter "emitter properties" b
-#		private readonly ${1} = new Emitter<$2>()
-#		public readonly ${1/^_(.*)/$1/}: Event<$2> = this.$1.event
-#		endsnippet
+#        snippet emitter "emitter properties" b
+#        private readonly ${1} = new Emitter<$2>()
+#        public readonly ${1/^_(.*)/$1/}: Event<$2> = this.$1.event
+#        endsnippet
 #
 # Online reference: https://github.com/SirVer/ultisnips/blob/master/doc/UltiSnips.txt
 
@@ -88,14 +88,14 @@ endsnippet
 
 snippet fontsize "Change font size" b
 def change_fs(font_size):
-	font_size = font_size
-	plt.rc('font', size=font_size)         # controls default text sizes
-	plt.rc('axes', titlesize=font_size)    # fontsize of the axes title
-	plt.rc('axes', labelsize=font_size)    # fontsize of the x and y labels
-	plt.rc('xtick', labelsize=font_size)   # fontsize of the tick labels
-	plt.rc('ytick', labelsize=font_size)   # fontsize of the tick labels
-	plt.rc('legend', fontsize=font_size)   # legend fontsize
-	plt.rc('figure', titlesize=font_size)  # fontsize of the figure title
+    font_size = font_size
+    plt.rc('font', size=font_size)         # controls default text sizes
+    plt.rc('axes', titlesize=font_size)    # fontsize of the axes title
+    plt.rc('axes', labelsize=font_size)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=font_size)   # fontsize of the tick labels
+    plt.rc('ytick', labelsize=font_size)   # fontsize of the tick labels
+    plt.rc('legend', fontsize=font_size)   # legend fontsize
+    plt.rc('figure', titlesize=font_size)  # fontsize of the figure title
 endsnippet
 
 snippet ntf "Notify me" b
@@ -105,7 +105,7 @@ endsnippet
 snippet read_yaml "read yaml" b
 import yaml
 with open(${1:conf_path}) as f:
-	conf = yaml.load(f, Loader=yaml.FullLoader)
+    conf = yaml.load(f, Loader=yaml.FullLoader)
 endsnippet
 
 snippet subrun "subprocess.run" b
@@ -136,9 +136,9 @@ endsnippet
 snippet vir "Virtual Base class" b
 from abc import ABC, abstractmethod
 class ${1:A}(ABC):
-	@abstractmethod
-	def ${2:f}(self):
-		pass
+    @abstractmethod
+    def ${2:f}(self):
+        pass
 endsnippet
 
 snippet pdemi "Pandas Example Multi-Index" b
@@ -146,8 +146,8 @@ import pandas as pd
 import numpy as np
 
 arrays = [
-	np.array(['bar', 'bar', 'baz', 'baz', 'foo', 'foo', 'qux', 'qux']),
-	np.array(['one', 'two', 'one', 'two', 'one', 'two', 'one', 'two'])
+    np.array(['bar', 'bar', 'baz', 'baz', 'foo', 'foo', 'qux', 'qux']),
+    np.array(['one', 'two', 'one', 'two', 'one', 'two', 'one', 'two'])
 ]
 df = pd.DataFrame(np.random.randn(8, 4), index=arrays)
 endsnippet
@@ -183,7 +183,7 @@ endsnippet
 snippet fir "fire & main" b
 import fire
 if __name__ == "__main__":
-	fire.Fire(${1:XXX})
+    fire.Fire(${1:XXX})
 endsnippet
 
 snippet ree "re example" b
@@ -194,12 +194,12 @@ endsnippet
 snippet setup "simple setup.py" b
 from setuptools import setup, find_packages
 setup(
-	name='${1:XXX}',
-	version='0.0.1',
-	packages=find_packages(),
-	install_requires=[
-		'loguru>=0.5.1',
-	],
+    name='${1:XXX}',
+    version='0.0.1',
+    packages=find_packages(),
+    install_requires=[
+        'loguru>=0.5.1',
+    ],
 )
 endsnippet
 
@@ -216,7 +216,7 @@ endsnippet
 snippet tracep "call trace print" b
 import traceback
 for line in traceback.format_stack():
-	print(line)
+    print(line)
 endsnippet
 
 snippet qlibex "Qlib example" b
@@ -234,7 +234,7 @@ from multiprocessing import Pool
 
 
 def worker(x):
-	return x * x
+    return x * x
 
 
 if __name__ == "__main__":
@@ -264,13 +264,13 @@ snippet tc "type checking" b
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-	pass
+    pass
 endsnippet
 
 snippet ipdbconfi "confirm" b
 if globals().get("YX_CONFIRM_${1:XXX}") is None:
-	__import__('ipdb').set_trace()
-	# globals()["YX_CONFIRM_${1:XXX}"] = True
+    __import__('ipdb').set_trace()
+    # globals()["YX_CONFIRM_${1:XXX}"] = True
 endsnippet
 
 snippet testtpl "test template" b
@@ -278,12 +278,22 @@ import unittest
 
 
 class TimeUtils(unittest.TestCase):
-    def test_index_data(self):
+
+    def setUp(self):
         pass
+
+    def tearDown(self):
+        pass
+
+	def to_str(self, obj):
+		return "".join(str(obj).split())
+
+    def test_index_data(self):
+        self.assertEqual(self.to_str(data.tail()), self.to_str(res))
 
 
 if __name__ == "__main__":
-	unittest.main()
+    unittest.main()
 endsnippet
 
 snippet pyli "pylint ignore" w
@@ -296,10 +306,10 @@ from joblib import Parallel, delayed
 keys = []
 res = []
 for i in range(10):
-	keys.append(i)
-	# please place multiprocessing related work outside \`delayed\` in case of nested multiprocessing
-	# It would be best to only leave the computing tensive work in subprocess
-	res.append(delayed(sum)([i]))
+    keys.append(i)
+    # please place multiprocessing related work outside \`delayed\` in case of nested multiprocessing
+    # It would be best to only leave the computing tensive work in subprocess
+    res.append(delayed(sum)([i]))
 res = Parallel(n_jobs=-1, verbose=10)(res)
 
 field_res = dict(zip(keys, res))
