@@ -579,7 +579,7 @@ if get(g:, "slime_target", "") == "neovim"
   augroup auto_channel
     autocmd!
     " autocmd TermEnter * let g:slime_last_channel = &channel
-    autocmd BufEnter * lua require"slime".reset_slime()
+    autocmd BufEnter,WinEnter,TermOpen  * lua require"slime".reset_slime()
   augroup END
 end
 
