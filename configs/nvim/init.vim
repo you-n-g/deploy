@@ -128,7 +128,6 @@ call plug#end()
 
 
 " Neovim有的缺陷:
-" - encoding似乎只能设置utf8, 对其他encoding支持没有那么好
 
 
 set ai "auto indent
@@ -160,6 +159,11 @@ set mouse=a  " enable mouse, shift is required if you want to click like before
 " http://superuser.com/questions/598270/getting-rid-of-characters-when-doing-gf-in-vim
 set isfname-==
 
+set fileencodings=utf8,gbk
+" This is a list of character encodings considered when **starting to edit** an existing file.
+" 注意 encoding/enc 是用于设置 RPC communication 的编码，不太一样
+
+
 " examples to ignore
 " ignore a directory on top level
 " let g:NERDTreeIgnore += ['^models$']
@@ -190,6 +194,7 @@ au BufReadPost *
 " highlight current line
 set cursorline
 set cursorcolumn
+
 
 " 这个得在前面， 不然会对后面的定义有影响, 配合 vim-which-key
 let g:mapleader = "\<Space>"
@@ -410,7 +415,9 @@ autocmd FileType python autocmd BufWritePre <buffer> if &modified | %s/\s\+$//e 
 
 augroup highlight_yank
     autocmd!
-    au TextYankPost * silent! lua vim.highlight.on_yank{higroup="IncSearch", timeout=700}
+    " 我把这个 highlight 的时间缩短的原因是:
+    " 有时候highlight没结束，做操作时会导致neovim崩
+    au TextYankPost * silent! lua vim.highlight.on_yank{higroup="IncSearch", timeout=200}
 augroup END
 
 "
@@ -572,7 +579,7 @@ if get(g:, "slime_target", "") == "neovim"
   augroup auto_channel
     autocmd!
     " autocmd TermEnter * let g:slime_last_channel = &channel
-    autocmd BufEnter * lua require"slime".reset_slime()
+    autocmd BufEnter,WinEnter,TermOpen  * lua require"slime".reset_slime()
   augroup END
 end
 
@@ -929,6 +936,7 @@ endfor
 " v选择编辑的操作会出错，得用extend模式代替v
 " s不是删除然后立马插入，而是进入到一个selecting模式
 " 选取了多行后 \\c 可以创建多个normal模式的光标，\\a可以创建多个extend模式的光标
+" - <C-up>  <C-down> 之类的功能也能达到类似的效果，目前和和kitty的transparency的功能冲突了
 "
 " 有用的功能: https://github.com/mg979/vim-visual-multi/blob/master/doc/vm-tutorial
 " - 在<c-n>时， \\w 可以切换是否要boundary,  \\c 可以切换是否要 case-sensitive

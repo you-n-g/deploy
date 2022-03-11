@@ -57,8 +57,10 @@ wk.register({
            name = 'Send for sh',
            i = {'<cmd>SlimeSend1 ipython --matplotlib<cr>', 'start ipython with matplotlib'},
 
-          f = {'<cmd>:SlimeSend0 "python ".expand("%:p")." ".luaeval(\'require("run_func").get_current_function_name()\')."\n"<CR>',  "send abs path"},
-          F = {'<cmd>:SlimeSend0 "python ".expand("%")." ".luaeval(\'require("run_func").get_current_function_name()\')."\n"<CR>',  "send relative path"},
+          f = {'<cmd>:SlimeSend0 "python ".expand("%:p")." " . luaeval(\'require("run_func").get_current_function_name()\') . "\\n"<CR>',  "send abs path"},
+          F = {'<cmd>:SlimeSend0 "python ".expand("%")." ".luaeval(\'require("run_func").get_current_function_name()\')."\\n"<CR>',  "send relative path"},
+          T = {'<cmd>SlimeSend0 "python -m doctest -v -f " . expand("%:p") . "\\n"<CR>', "send script to doc test"}, 
+          -- NOTE: 这里的回车必转义(必须用 "\\n"， 而不是 "\n")
       },
         -- Failed settings
         -- \'s' : [':SlimeSend1 ipython --matplotlib', 'start ipython with matplotlib'],
@@ -85,6 +87,8 @@ wk.register({
     e = {'<cmd>CocCommand explorer --toggle --sources=buffer+,file+ --position right<cr>', 'Side Explorer'},
     -- 默认用 split 有如下好处
     -- 1) f 和 F 可以用了 2) 用float有时候会突然冒出行号，打乱样式
+    -- 2) 下面两个其实也挺好用
+    --    il (list info) ic (preview content)
     f = {'<cmd>CocCommand explorer --sources=buffer+,file+ --preset floating<cr>', 'Full Explorer'},
   },
 
@@ -126,6 +130,7 @@ wk.register({
     g = {'<cmd>Rg<cr>', 'Rg'},
     G = {'<cmd>Rgc<cr>', 'Rg without filename'},
     l = {'<cmd>BLines<cr>', 'Lines in the current buffer'},
+    -- TODO: 希望能把空行去掉 ( !^# 这种操作的时候才不会显示太多空行)
     L = {'<cmd>Lines<cr>', 'Lines in loaded buffer'},
     m = {'<cmd>Telescope marks<cr>', 'Marks'},
     b = {'<cmd>Telescope buffers<cr>', 'Buffers'},

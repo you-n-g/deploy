@@ -13,8 +13,10 @@ pip install papermill ipdb nbresuse jupytext pdbpp
 
 conda install -y xlwt
 
-# 这些都是针对个人用户的， 别人安装了没有用
 conda install -c conda-forge -y jupyter_contrib_nbextensions
+# -  `jupyter nbconvert --to script` 这种命令需要它
+
+# 这些都是针对个人用户的， 别人安装了没有用
 jupyter contrib nbextension install --user
 
 for plg in toc2/main select_keymap/main execute_time/ExecuteTime scratchpad/main notify/notify codefolding/main collapsible_headings/main snippets/main
