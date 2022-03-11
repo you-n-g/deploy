@@ -74,8 +74,8 @@ cd $REPO_PATH
 chmod a+x ./deploy_apps/*
 
 ./deploy_apps/deploy_nodejs.sh   # this is for other packages
-./deploy_apps/install_zsh.sh
 ./deploy_apps/deploy_miniconda.sh
+./deploy_apps/install_zsh.sh    # zsh加的 `configs/shell/rcfile.sh` 的性能得在 conda 之后
 ./deploy_apps/install_tmux.sh   # 现在打算放在miniconda之后了 # 确保按安装新代码
 ./deploy_apps/install_neovim.sh
 ./deploy_apps/install_fzf.sh

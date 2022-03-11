@@ -334,35 +334,35 @@ augroup JavaOutlines
 augroup END
 
 
-augroup ShOutlines
-    au!
-    " Below is for line hightlight
-    if $TERM =~ "256"
-        autocmd FileType sh hi ShOutlines1 cterm=bold ctermbg=017 ctermfg=White
-        autocmd FileType sh hi ShOutlines2 cterm=bold ctermbg=019 ctermfg=White
-    else
-        autocmd FileType sh hi ShOutlines1 cterm=bold ctermbg=darkblue ctermfg=White
-        autocmd FileType sh hi ShOutlines2 cterm=bold ctermbg=blue ctermfg=White
-    endif
-
-    autocmd FileType sh sign define shO1 linehl=ShOutlines1
-    autocmd FileType sh sign define shO2 linehl=ShOutlines2
-
-    function! HighlightShOL()
-      execute "sign unplace * group=shotl1 file=".expand("%")
-      execute "sign unplace * group=shotl2 file=".expand("%")
-
-      for l:lnum in range(line("w0"), line("w$"))
-        if getline(l:lnum) =~ "^\\s*# *Outlines:"
-          execute "sign place ".l:lnum." line=".l:lnum." name=shO1 group=shotl1 file=".expand("%")
-        elseif getline(l:lnum) =~ "^\\s*## *Outlines:"
-          execute "sign place ".l:lnum." line=".l:lnum." name=shO2 group=shotl2 file=".expand("%")
-        endif
-      endfor
-    endfunction
-
-    autocmd! CursorMoved *.sh call HighlightShOL()
-augroup END
+" augroup ShOutlines 这一段不需要，因为融入在python里面了
+"     au!
+"     " Below is for line hightlight
+"     if $TERM =~ "256"
+"         autocmd FileType sh hi ShOutlines1 cterm=bold ctermbg=017 ctermfg=White
+"         autocmd FileType sh hi ShOutlines2 cterm=bold ctermbg=019 ctermfg=White
+"     else
+"         autocmd FileType sh hi ShOutlines1 cterm=bold ctermbg=darkblue ctermfg=White
+"         autocmd FileType sh hi ShOutlines2 cterm=bold ctermbg=blue ctermfg=White
+"     endif
+"
+"     autocmd FileType sh sign define shO1 linehl=ShOutlines1
+"     autocmd FileType sh sign define shO2 linehl=ShOutlines2
+"
+"     function! HighlightShOL()
+"       execute "sign unplace * group=shotl1 file=".expand("%")
+"       execute "sign unplace * group=shotl2 file=".expand("%")
+"
+"       for l:lnum in range(line("w0"), line("w$"))
+"         if getline(l:lnum) =~ "^\\s*# *Outlines:"
+"           execute "sign place ".l:lnum." line=".l:lnum." name=shO1 group=shotl1 file=".expand("%")
+"         elseif getline(l:lnum) =~ "^\\s*## *Outlines:"
+"           execute "sign place ".l:lnum." line=".l:lnum." name=shO2 group=shotl2 file=".expand("%")
+"         endif
+"       endfor
+"     endfunction
+"
+"     autocmd! CursorMoved *.sh call HighlightShOL()
+" augroup END
 
 
 " 快速替换

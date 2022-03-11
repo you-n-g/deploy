@@ -79,7 +79,7 @@ class CP:
 
             subprocess.run("git clone https://github.com/microsoft/qlib.git", shell=True, cwd=lib_path)
 
-            subprocess.run(f"cd qlib && {self._act()} &&  python setup.py develop", shell=True, cwd=lib_path)
+            subprocess.run(f"cd qlib && {self._act()} &&  pip install -e .", shell=True, cwd=lib_path)
 
         (pp / "scripts").mkdir(exist_ok=True)
 
@@ -95,7 +95,7 @@ setup(
 )"""
         with open("setup.py", "w") as f:
             f.write(content)
-        cmd = "python setup.py develop"
+        cmd = "pip install -e ."
         if install:
             cmd = f"{self._act()} ; {cmd}"
         subprocess.run(cmd, shell=True)

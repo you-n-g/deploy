@@ -248,9 +248,36 @@ alias .r=". ranger"
 # - 坑篇
 #   - 如果 发现 dd pp 无法剪切文件(但是能复制文件)， 可能是权限 (这里的ranger是不会报错的)
 
+# Outlines: conda
+
+# Support tmux inherit the conda env
+
+# this is not necessary, tmux will set the environment automatically
+# env_expr=$(tmux show-environment conda_env 2> /dev/null)
+# if [ $? -eq 0 -a "$env_expr" != "-conda_env" ]; then
+#     eval "export $env_expr"
+# fi
+
+if [ -n "$conda_env" -a "$conda_env" != "base" ]; then
+    conda activate $conda_env
+fi
+
+function yxca() {
+    conda activate $1
+    export conda_env=$1
+    tmux setenv conda_env $1
+}
+
+function yxcd() {
+    conda deactivate
+    unset conda_env
+    tmux setenv -r conda_env
+}
+
 
 # # Outlines: 准备删掉的
 
 # ## Outlines: nnn
 
 export NNN_OPENER=~/apps/nnn/plugins/nuke
+
