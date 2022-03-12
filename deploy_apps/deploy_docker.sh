@@ -30,8 +30,12 @@ sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
 sudo systemctl restart docker
 
 # 之后就可以这样跑GPU的镜像了 (需要本地的cuda版本满足镜像的要求)
-# docker run --gpus all --rm -it gcr.io/kaggle-gpu-images/python /bin/bash
+# sudo docker run --gpus all --rm -it gcr.io/kaggle-gpu-images/python /bin/bash
 # - 默认的 kaggle/python:latest 是CPU版本的
+# - 如果跳过了上面的步骤，启动docker的时候会出现， `unknown flag: --gpu`
+
+# 启动  docker之后，有的东西可能会需要临时编译， 会出现下面的错误
+# - TensorFlow was not built with CUDA kernel binaries compatible with compute capability 5.2. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
 
 # Reference
 # - https://blog.csdn.net/weixin_43975924/article/details/104046790

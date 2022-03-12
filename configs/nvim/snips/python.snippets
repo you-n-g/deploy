@@ -311,3 +311,8 @@ from memory_profiler import profile
 # python -m memory_profiler <script>
 @profile
 endsnippet
+
+snippet gpu "Config GPU" b
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="0,1"
+endsnippet
