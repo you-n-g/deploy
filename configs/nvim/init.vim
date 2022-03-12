@@ -128,7 +128,6 @@ call plug#end()
 
 
 " Neovim有的缺陷:
-" - encoding似乎只能设置utf8, 对其他encoding支持没有那么好
 
 
 set ai "auto indent
@@ -160,6 +159,11 @@ set mouse=a  " enable mouse, shift is required if you want to click like before
 " http://superuser.com/questions/598270/getting-rid-of-characters-when-doing-gf-in-vim
 set isfname-==
 
+set fileencodings=utf8,gbk
+" This is a list of character encodings considered when **starting to edit** an existing file.
+" 注意 encoding/enc 是用于设置 RPC communication 的编码，不太一样
+
+
 " examples to ignore
 " ignore a directory on top level
 " let g:NERDTreeIgnore += ['^models$']
@@ -190,6 +194,7 @@ au BufReadPost *
 " highlight current line
 set cursorline
 set cursorcolumn
+
 
 " 这个得在前面， 不然会对后面的定义有影响, 配合 vim-which-key
 let g:mapleader = "\<Space>"
@@ -334,35 +339,35 @@ augroup JavaOutlines
 augroup END
 
 
-augroup ShOutlines
-    au!
-    " Below is for line hightlight
-    if $TERM =~ "256"
-        autocmd FileType sh hi ShOutlines1 cterm=bold ctermbg=017 ctermfg=White
-        autocmd FileType sh hi ShOutlines2 cterm=bold ctermbg=019 ctermfg=White
-    else
-        autocmd FileType sh hi ShOutlines1 cterm=bold ctermbg=darkblue ctermfg=White
-        autocmd FileType sh hi ShOutlines2 cterm=bold ctermbg=blue ctermfg=White
-    endif
-
-    autocmd FileType sh sign define shO1 linehl=ShOutlines1
-    autocmd FileType sh sign define shO2 linehl=ShOutlines2
-
-    function! HighlightShOL()
-      execute "sign unplace * group=shotl1 file=".expand("%")
-      execute "sign unplace * group=shotl2 file=".expand("%")
-
-      for l:lnum in range(line("w0"), line("w$"))
-        if getline(l:lnum) =~ "^\\s*# *Outlines:"
-          execute "sign place ".l:lnum." line=".l:lnum." name=shO1 group=shotl1 file=".expand("%")
-        elseif getline(l:lnum) =~ "^\\s*## *Outlines:"
-          execute "sign place ".l:lnum." line=".l:lnum." name=shO2 group=shotl2 file=".expand("%")
-        endif
-      endfor
-    endfunction
-
-    autocmd! CursorMoved *.sh call HighlightShOL()
-augroup END
+" augroup ShOutlines 这一段不需要，因为融入在python里面了
+"     au!
+"     " Below is for line hightlight
+"     if $TERM =~ "256"
+"         autocmd FileType sh hi ShOutlines1 cterm=bold ctermbg=017 ctermfg=White
+"         autocmd FileType sh hi ShOutlines2 cterm=bold ctermbg=019 ctermfg=White
+"     else
+"         autocmd FileType sh hi ShOutlines1 cterm=bold ctermbg=darkblue ctermfg=White
+"         autocmd FileType sh hi ShOutlines2 cterm=bold ctermbg=blue ctermfg=White
+"     endif
+"
+"     autocmd FileType sh sign define shO1 linehl=ShOutlines1
+"     autocmd FileType sh sign define shO2 linehl=ShOutlines2
+"
+"     function! HighlightShOL()
+"       execute "sign unplace * group=shotl1 file=".expand("%")
+"       execute "sign unplace * group=shotl2 file=".expand("%")
+"
+"       for l:lnum in range(line("w0"), line("w$"))
+"         if getline(l:lnum) =~ "^\\s*# *Outlines:"
+"           execute "sign place ".l:lnum." line=".l:lnum." name=shO1 group=shotl1 file=".expand("%")
+"         elseif getline(l:lnum) =~ "^\\s*## *Outlines:"
+"           execute "sign place ".l:lnum." line=".l:lnum." name=shO2 group=shotl2 file=".expand("%")
+"         endif
+"       endfor
+"     endfunction
+"
+"     autocmd! CursorMoved *.sh call HighlightShOL()
+" augroup END
 
 
 " 快速替换
@@ -574,7 +579,7 @@ if get(g:, "slime_target", "") == "neovim"
   augroup auto_channel
     autocmd!
     " autocmd TermEnter * let g:slime_last_channel = &channel
-    autocmd BufEnter * lua require"slime".reset_slime()
+    autocmd BufEnter,WinEnter,TermOpen  * lua require"slime".reset_slime()
   augroup END
 end
 
