@@ -3,10 +3,10 @@ name: code
 root: ~/
 
 windows:
-  - code_repo: cd ~/cheatsheets/code_to_copy/
+  - code_repo: cd ~/cheatsheets/
   - deployment: cd ~/deploy/
   - commit:
         layout: even-horizontal
         panes:
-            - cd ~/cheatsheets/code_to_copy/
+            - cd ~/cheatsheets/
             - cd ~/deploy/

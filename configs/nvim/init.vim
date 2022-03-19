@@ -1067,6 +1067,7 @@ nnoremap <c-l> :SidewaysRight<cr>
 
 " BEGIN 'szw/vim-maximizer' -----------------------------------------
 let g:maximizer_default_mapping_key = '<F5>'
+tnoremap <silent><F5> <c-\><c-n>:MaximizerToggle<CR>
 " END   'szw/vim-maximizer' -----------------------------------------
 
 " BEGIN 'camspiers/lens.vim' -----------------------------------------

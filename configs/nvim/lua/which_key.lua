@@ -179,3 +179,7 @@ wk.register({
      s = {'<Plug>(coc-convert-snippet)', 'Convert to Snippets'},
   }
 }, { prefix = "<leader>", mode = "v"})
+
+-- TODO: terminal mode
+-- wk.register({
+-- }, { prefix = "<leader>", mode = "t"})
