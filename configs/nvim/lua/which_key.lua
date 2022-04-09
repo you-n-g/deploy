@@ -60,6 +60,7 @@ wk.register({
           f = {'<cmd>:SlimeSend0 "python ".expand("%:p")." " . luaeval(\'require("run_func").get_current_function_name()\') . "\\n"<CR>',  "send abs path"},
           F = {'<cmd>:SlimeSend0 "python ".expand("%")." ".luaeval(\'require("run_func").get_current_function_name()\')."\\n"<CR>',  "send relative path"},
           T = {'<cmd>SlimeSend0 "python -m doctest -v -f " . expand("%:p") . "\\n"<CR>', "send script to doc test"}, 
+          s = {'<cmd>SlimeSend0 "bash " . expand("%:p") . "\\n"<CR>', "send script to shell"}, 
           -- NOTE: 这里的回车必转义(必须用 "\\n"， 而不是 "\n")
       },
         -- Failed settings
@@ -70,6 +71,7 @@ wk.register({
           name = "Send for sh(without <cr>)",
           f = {'<cmd>SlimeSend0 "python ".expand("%:p")." ".luaeval(\'require("run_func").get_current_function_name()\')<CR>',  "send abs path without <cr>"},
           F = {'<cmd>SlimeSend0 "python ".expand("%")." ".luaeval(\'require("run_func").get_current_function_name()\')<CR>',  "send relative path without <cr>"},
+          s = {'<cmd>SlimeSend0 "bash " . expand("%:p") <CR>', "send script to shell"}, 
       },
       },
   j = {

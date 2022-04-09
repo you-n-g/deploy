@@ -614,7 +614,7 @@ nnoremap <leader>pSR :SlimeSend0 "python ".expand("%")<CR>
 " nnoremap <leader>pSf :SlimeSend0 "python ".expand("%:p")." ".luaeval('require("run_func").get_current_function_name()')<CR>
 " nnoremap <leader>pSF :SlimeSend0 "python ".expand("%")." ".luaeval('require("run_func").get_current_function_name()')<CR>
 
-nnoremap <leader>pss :SlimeSend0 "bash ".expand("%:p")."\n"<CR>
+" nnoremap <leader>pss :SlimeSend0 "bash ".expand("%:p")."\n"<CR>
 
 nnoremap <leader>psd :SlimeSend0 "pypdb ".expand("%:p")."\n"<CR>
 nnoremap <leader>psD :SlimeSend0 "pypdb ".expand("%")."\n"<CR>

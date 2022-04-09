@@ -155,7 +155,7 @@
 
 [[snippets]]
   description = "python minimal install after create conda env"
-  command = "pip install ipdb ipython neovim fire yapf pylint"
+  command = "pip install ipdb ipython neovim fire yapf pylint black"
   output = ""
 
 [[snippets]]
@@ -196,4 +196,9 @@
 [[snippets]]
   description = "set visible gpu/cuda device"
   command = "export CUDA_VISIBLE_DEVICES=1,2"
+  output = ""
+
+[[snippets]]
+  description = "add qlib remote repo"
+  command = "git remote add <user> https://github.com/<user>/qlib && git fetch <user> <branch=main>  && git checkout <user>/<branch=main>"
   output = ""
