@@ -326,3 +326,17 @@ snippet gpu "Config GPU" b
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]="0,1"
 endsnippet
+
+snippet cachepath "use dirty cache path" b
+if pred_cache_path is None:
+	pred_dict = get_predict()
+else:
+	p = Path(pred_cache_path)
+	if p.exists():
+		with p.open("rb") as f:
+			pred_dict = pickle.load(p)
+	else:
+		pred_dict = get_predict()
+		with p.open("wb") as f:
+			pickle.dump(pred_dict, f)
+endsnippet
