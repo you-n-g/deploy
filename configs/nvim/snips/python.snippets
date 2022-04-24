@@ -337,3 +337,17 @@ for k, t in dnn_model.named_parameters():
 	print(f"layer:{k}, std:{t.std().item()}, mean:{t.mean().item()}")
 	print(f"layer:{k}, grad.std:{t.grad.std().item()}, grad.mean:{t.grad.mean().item()}")
 endsnippet
+
+snippet cachepath "use dirty cache path" b
+if pred_cache_path is None:
+	pred_dict = get_predict()
+else:
+	p = Path(pred_cache_path)
+	if p.exists():
+		with p.open("rb") as f:
+			pred_dict = pickle.load(p)
+	else:
+		pred_dict = get_predict()
+		with p.open("wb") as f:
+			pickle.dump(pred_dict, f)
+endsnippet
