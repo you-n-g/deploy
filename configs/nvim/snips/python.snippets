@@ -145,11 +145,16 @@ snippet pdemi "Pandas Example Multi-Index" b
 import pandas as pd
 import numpy as np
 
-arrays = [
-    np.array(['bar', 'bar', 'baz', 'baz', 'foo', 'foo', 'qux', 'qux']),
-    np.array(['one', 'two', 'one', 'two', 'one', 'two', 'one', 'two'])
+index = [
+	np.array(['bar', 'bar', 'baz', 'baz', 'foo', 'foo', 'qux', 'qux']),
+	np.array(['one', 'two', 'one', 'two', 'one', 'two', 'one', 'two'])
 ]
-df = pd.DataFrame(np.random.randn(8, 4), index=arrays)
+
+cols = [
+	np.repeat(np.array(["g1", "g2"]), 2),
+	np.arange(4),
+]
+df = pd.DataFrame(np.random.randn(8, 4), index=index, columns=cols)
 endsnippet
 
 snippet dfcmp "Compare dataframe" b
@@ -325,4 +330,10 @@ endsnippet
 snippet gpu "Config GPU" b
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]="0,1"
+endsnippet
+
+snippet pw "print weights&gradient" b
+for k, t in dnn_model.named_parameters():
+	print(f"layer:{k}, std:{t.std().item()}, mean:{t.mean().item()}")
+	print(f"layer:{k}, grad.std:{t.grad.std().item()}, grad.mean:{t.grad.mean().item()}")
 endsnippet
