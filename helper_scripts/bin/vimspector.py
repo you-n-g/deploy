@@ -46,12 +46,14 @@ JAVA_TPL_V = {
 
 
 class VimSpector:
-    def pygen(self, script):
+    def pygen(self, script, jmc=True):
         tpl = copy.deepcopy(PY_TPL)
         cfg = tpl["configurations"][NAME]["configuration"]
         cfg["cwd"] = str(Path(".").absolute())
         cfg["python"] = str(Path(sys.executable).absolute())
         cfg["program"] = str(Path(script).absolute())
+
+        cfg["justMyCode"] = jmc
 
         with open(".vimspector.json", "w") as f:
             json.dump(tpl, f)

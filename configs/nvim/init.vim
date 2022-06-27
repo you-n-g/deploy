@@ -66,6 +66,7 @@ Plug 'kkoomen/vim-doge', { 'do': { -> doge#install() } }
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 Plug 'APZelos/blamer.nvim'
+" https://github.com/phaazon/hop.nvim 是不是可以替代 easymotion
 Plug 'easymotion/vim-easymotion'
 " Plug 'sslivkoff/vim-scroll-barnacle'
 " - 后来发现这个可以解决这个问题: https://github.com/wfxr/minimap.vim
@@ -959,7 +960,7 @@ endfor
 let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.8 } }
 
 
-" not include the name of the file
+" not include the name of the file  ( `c`  is short for only content)
 " https://github.com/junegunn/fzf.vim/issues/346
 " command! -bang -nargs=* Agc call fzf#vim#ag(<q-args>, {'options': '--delimiter : --nth 4..'}, <bang>0)
 " 其实这里也说了preview怎么一起用

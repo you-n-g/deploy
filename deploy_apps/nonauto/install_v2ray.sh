@@ -93,3 +93,10 @@ echo 'Install finished. Please run ./v2ray'
 #         },
 #     ]
 # }
+
+
+# 如果想实现反向代理，可以参考的文件
+# bridge: china azure 的 sudo docker run -d --name v2ray_rproxy_amc -v /home/xiaoyang/etc/v2ray:/etc/v2ray -p 8778:8778 -p 8779:8779 v2ray/official  v2ray -config=/etc/v2ray/config_amc.json
+# internal: s19的 /data1/xiaoyang/home/etc/v2ray/config.json
+# 外层: 我自己的 config.json 中和 amc_rev 相关的
+
