@@ -70,6 +70,10 @@ class Clone:
     """
     参见 all 的文档
     clone.py all online_V05 online_V06  /home/xiaoyang/repos/online3rd_projects/V05 /home/xiaoyang/repos/online3rd_projects/V06
+
+    考虑到的问题
+    - 自动拷贝配置文件: config.yaml； 包含主项目和子项目
+    - 自动安装子项目；
     """
     def clone_git(self, source, target, force=False):
         if target.exists():
@@ -119,9 +123,9 @@ class Clone:
                                 index_col="name")
         python_path = f"{conda_env.loc[t_env].item()}/bin/python"
 
-        subprocess.run(f'{python_path} setup.py develop', shell=True, cwd=target)
+        subprocess.run(f'{python_path} -m pip install -e .', shell=True, cwd=target)
         for fpath in target.glob("libs/*/setup.py"):
-            subprocess.run(f'{python_path} setup.py develop', shell=True, cwd=fpath.parent)
+            subprocess.run(f'{python_path} -m pip install -e .', shell=True, cwd=fpath.parent)
 
     def clone_project(self, source: str, target: str, force=False):
         """
@@ -152,14 +156,6 @@ class Clone:
 
     def all(self, s_env: str, t_env: str, source: str, target: str, force: bool=False):
         """
-        -clone这个参数后面的不仅可以是环境的名字，也可以是环境的路径。
-        所以，用这种方法我们就可以实现跨用户匹配，命令的具体格式为：
-        conda create -n  your_env_name --clone ~/path
-
-        具体到clone.py这个脚本，克隆环境的代码为
-        subprocess.run(f'conda create --name {t_env} --clone {s_env}', shell=True)
-        我们只需要把s_env这个参数改为conda环境的路径即可，故命令为：
-        python ./clone.py all /home/xiaoyang/miniconda3/envs/online_V02/ your_env_name /home/xiaoyang/repos/online3rd_projects/V02 /home/shared_user/v-jiangwu/conda_project/ --force
 
         在非server01的服务器上跑server01的项目，由于磁盘挂载在server本地，故其他机器是链接到磁盘上的。在import项目代码中的模块时，需要使用scripts/deploy/reinstall.sh
         在非server01的机器上运行脚本，将磁盘上的相应模块挂载在server01的模块在本地重新安装即可。
@@ -168,6 +164,14 @@ class Clone:
         ----------
         s_env : str
             source environment, 可以是conda 名称也可以是路径地址
+
+            得益于 conda  `--clone` 这个参数后面的不仅可以是环境的名字，也可以是环境的路径。
+            - 例如: conda create -n your_env_name --clone ~/path
+
+            所以，用这种方法我们就可以实现跨用户克隆环境，命令的具体格式为：
+
+            我们只需要把s_env这个参数改为conda环境的路径即可，故命令为：
+            python ./clone.py all /home/xiaoyang/miniconda3/envs/online_V02/ your_env_name /home/xiaoyang/repos/online3rd_projects/V02 /home/shared_user/v-jiangwu/conda_project/ --force
         t_env : str
             目标环境
         source : str
