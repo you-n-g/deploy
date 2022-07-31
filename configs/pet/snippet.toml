@@ -202,3 +202,8 @@
   description = "add qlib remote repo"
   command = "git remote add <user> https://github.com/<user>/qlib && git fetch <user> <branch=main>  && git checkout <user>/<branch=main>"
   output = ""
+
+[[snippets]]
+  description = "git ignore change of specific file (Ref https://stackoverflow.com/a/1753078)"
+  command = "git update-index --assume-unchanged <file list>" 
+  output = ""
