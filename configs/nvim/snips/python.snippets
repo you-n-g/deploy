@@ -366,3 +366,7 @@ else:
 # END   ---------------------------------------
 
 endsnippet
+
+snippet datetimehost "get string for datetime host" b
+f'{__import__("socket").gethostname()}_{__import__("datetime").datetime.now().strftime("%m-%d-%Y_%H-%M-%S")}'
+endsnippet
