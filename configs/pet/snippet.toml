@@ -200,5 +200,5 @@
 
 [[snippets]]
   description = "add qlib remote repo"
-  command = "git remote add <user> https://github.com/<user>/qlib && git fetch <user> <branch=main>  && git checkout <user>/<branch=main>"
+  command = "git remote add <user> https://github.com/<user>/qlib ; git fetch <user> <branch=main>  && git checkout <user>/<branch=main>"
   output = ""
