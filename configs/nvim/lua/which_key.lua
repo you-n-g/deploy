@@ -131,6 +131,7 @@ wk.register({
     name = 'fzf & telescope',
     g = {'<cmd>Rg<cr>', 'Rg'},
     G = {'<cmd>Rgc<cr>', 'Rg without filename'},
+    -- s = {'<cmd>Rg @/<cr>', 'Rg'},   这里想要直接按文件搜索 之前buffer内搜索的内容
     l = {'<cmd>BLines<cr>', 'Lines in the current buffer'},
     -- TODO: 希望能把空行去掉 ( !^# 这种操作的时候才不会显示太多空行)
     L = {'<cmd>Lines<cr>', 'Lines in loaded buffer'},

@@ -95,7 +95,7 @@
 
 [[snippets]]
   description = "clone my style project"
-  command = "python ./clone.py all online_V05 online_V06  /home/xiaoyang/repos/online3rd_projects/V05 /home/xiaoyang/repos/online3rd_projects/V06"
+  command = "clone.py all <source env=online_V05> <target env=online_V06>  <source project path=/home/xiaoyang/repos/online3rd_projects/V05> <target project path=/home/xiaoyang/repos/online3rd_projects/V06>"
   output = ""
 
 [[snippets]]
@@ -201,4 +201,9 @@
 [[snippets]]
   description = "add qlib remote repo"
   command = "git remote add <user> https://github.com/<user>/qlib ; git fetch <user> <branch=main>  && git checkout <user>/<branch=main>"
+  output = ""
+
+[[snippets]]
+  description = "git ignore change of specific file (Ref https://stackoverflow.com/a/1753078)"
+  command = "git update-index --assume-unchanged <file list>" 
   output = ""

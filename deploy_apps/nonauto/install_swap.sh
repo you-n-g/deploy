@@ -12,6 +12,7 @@ fi
 SWAP_SIZE=100G
 SWAP_PATH=/mnt/swapfile
 SKIP_WRITE_FSTAB=false
+AUTO_YES=false
 
 while getopts ":s:p:k" opt; do
     case $opt in
@@ -23,6 +24,9 @@ while getopts ":s:p:k" opt; do
         ;;
         k)
         SKIP_WRITE_FSTAB=true
+        ;;
+        y)
+        AUTO_YES=true
         ;;
         \?)
         echo "Invalid option: -$OPTARG" >&2
@@ -39,18 +43,21 @@ echo "swap size: $SWAP_SIZE"
 echo "swap path: $SWAP_PATH"
 echo "skip write fstab: $SKIP_WRITE_FSTAB"
 
-while read -p "Continue (y/n)?" choice ; do
-    case "$choice" in
-      y|Y )
-          break
-          ;;
-      n|N )
-          echo "Exited"
-          exit 1
-          ;;
-      * ) echo "invalid";;
-    esac
-done
+
+if [ $AUTO_YES = false ] then
+    while read -p "Continue (y/n)?" choice ; do
+        case "$choice" in
+          y|Y )
+              break
+              ;;
+          n|N )
+              echo "Exited"
+              exit 1
+              ;;
+          * ) echo "invalid";;
+        esac
+    done
+fi
 
 sudo fallocate -l $SWAP_SIZE $SWAP_PATH
 

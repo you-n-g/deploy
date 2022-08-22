@@ -80,6 +80,7 @@ endsnippet
 snippet dirn "get current dirname" b
 from pathlib import Path
 DIRNAME = Path(__file__).absolute().resolve().parent
+# DIRNAME = Path("`!v expand('%')`").absolute().resolve().parent
 endsnippet
 
 snippet emb "Embed for debuging" b
@@ -146,13 +147,13 @@ import pandas as pd
 import numpy as np
 
 index = [
-	np.array(['bar', 'bar', 'baz', 'baz', 'foo', 'foo', 'qux', 'qux']),
-	np.array(['one', 'two', 'one', 'two', 'one', 'two', 'one', 'two'])
+    np.array(['bar', 'bar', 'baz', 'baz', 'foo', 'foo', 'qux', 'qux']),
+    np.array(['one', 'two', 'one', 'two', 'one', 'two', 'one', 'two'])
 ]
 
 cols = [
-	np.repeat(np.array(["g1", "g2"]), 2),
-	np.arange(4),
+    np.repeat(np.array(["g1", "g2"]), 2),
+    np.arange(4),
 ]
 df = pd.DataFrame(np.random.randn(8, 4), index=index, columns=cols)
 endsnippet
@@ -290,8 +291,8 @@ class TimeUtils(unittest.TestCase):
     def tearDown(self):
         pass
 
-	def to_str(self, obj):
-		return "".join(str(obj).split())
+    def to_str(self, obj):
+        return "".join(str(obj).split())
 
     def test_index_data(self):
         self.assertEqual(self.to_str(data.tail()), self.to_str(res))
@@ -334,20 +335,38 @@ endsnippet
 
 snippet pw "print weights&gradient" b
 for k, t in dnn_model.named_parameters():
-	print(f"layer:{k}, std:{t.std().item()}, mean:{t.mean().item()}")
-	print(f"layer:{k}, grad.std:{t.grad.std().item()}, grad.mean:{t.grad.mean().item()}")
+    print(f"layer:{k}, std:{t.std().item()}, mean:{t.mean().item()}")
+    print(f"layer:{k}, grad.std:{t.grad.std().item()}, grad.mean:{t.grad.mean().item()}")
 endsnippet
 
 snippet cachepath "use dirty cache path" b
 if pred_cache_path is None:
-	pred_dict = get_predict()
+    pred_dict = get_predict()
 else:
-	p = Path(pred_cache_path)
-	if p.exists():
-		with p.open("rb") as f:
-			pred_dict = pickle.load(p)
-	else:
-		pred_dict = get_predict()
-		with p.open("wb") as f:
-			pickle.dump(pred_dict, f)
+    p = Path(pred_cache_path)
+    if p.exists():
+        with p.open("rb") as f:
+            pred_dict = pickle.load(p)
+    else:
+        pred_dict = get_predict()
+        with p.open("wb") as f:
+            pickle.dump(pred_dict, f)
+endsnippet
+
+snippet env "feature control by env" b
+# BEGIN ---------------------------------------
+import os
+key = "env_key"
+if key in os.environ:
+    value = os.environ[key]
+    print(f"Feature based on os.environ['{key}'] is enabled.")
+    ...
+else:
+    print(f"Skip the feature based on os.environ['{key}']")
+# END   ---------------------------------------
+
+endsnippet
+
+snippet datetimehost "get string for datetime host" b
+f'{__import__("socket").gethostname()}_{__import__("datetime").datetime.now().strftime("%m-%d-%Y_%H-%M-%S")}'
 endsnippet
