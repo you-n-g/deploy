@@ -84,6 +84,7 @@ class CP:
         (pp / "scripts").mkdir(exist_ok=True)
 
     def setup(self, install=False):
+        """Create a setup file and install it(if install==True)"""
         assert self.name is not None
         content = f"""from setuptools import setup, find_packages
 # 不知道为什么这个包在slave里面 一直要重新安装一下
@@ -95,10 +96,11 @@ setup(
 )"""
         with open("setup.py", "w") as f:
             f.write(content)
-        cmd = "pip install -e ."
+
         if install:
+            cmd = "pip install -e ."
             cmd = f"{self._act()} ; {cmd}"
-        subprocess.run(cmd, shell=True)
+            subprocess.run(cmd, shell=True)
 
     def all(self, inst_qlib=False):
         """
@@ -107,7 +109,7 @@ setup(
         """
         self.env()
         self.create(inst_qlib=inst_qlib)
-        self.setup()
+        self.setup(install=True)
 
 
 if __name__ == "__main__":

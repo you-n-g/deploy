@@ -18,9 +18,13 @@ local wk = require("which-key")
 
 
 wk.register({
+  b = {
+    name = "Buffer related",
+    d = { "<cmd>Bd<cr>", 'Buffer delete' },
+  },
   t = {
     name = "Toggle",
-    s = { "<cmd>set spell!", 'Spell Toggle' },
+    s = { "<cmd>set spell!<cr>", 'Spell Toggle' },
     -- [s ]s: previous(next) spell error
     -- zg: 标记为正确词汇
     -- zw: 标记为错误词汇
@@ -35,7 +39,8 @@ wk.register({
     c = {"<cmd>Telescope my_config<cr>", 'My Config'},
   },
   p = {
-       name = 'IPython Cell',
+      name = 'IPython Cell & REPL',
+      --
       r = {'<cmd>IPythonCellRun<cr>', 'Run Script'},
       R = {'<cmd>IPythonCellRunTime<cr>', 'Run script with time'},
       e = {'<cmd>IPythonCellExecuteCellVerbose<cr>', 'Execute Cell'},
@@ -59,8 +64,9 @@ wk.register({
 
           f = {'<cmd>:SlimeSend0 "python ".expand("%:p")." " . luaeval(\'require("run_func").get_current_function_name()\') . "\\n"<CR>',  "send abs path"},
           F = {'<cmd>:SlimeSend0 "python ".expand("%")." ".luaeval(\'require("run_func").get_current_function_name()\')."\\n"<CR>',  "send relative path"},
-          T = {'<cmd>SlimeSend0 "python -m doctest -v -f " . expand("%:p") . "\\n"<CR>', "send script to doc test"}, 
+          -- T = {'<cmd>SlimeSend0 "python -m doctest -v -f " . expand("%:p") . "\\n"<CR>', "send script to doc test"}, 
           s = {'<cmd>SlimeSend0 "bash " . expand("%:p") . "\\n"<CR>', "send script to shell"}, 
+          S = {'<cmd>SlimeSend0 "bash " . expand("%") . "\\n"<CR>', "send script to shell"}, 
           -- NOTE: 这里的回车必转义(必须用 "\\n"， 而不是 "\n")
       },
         -- Failed settings
@@ -72,6 +78,7 @@ wk.register({
           f = {'<cmd>SlimeSend0 "python ".expand("%:p")." ".luaeval(\'require("run_func").get_current_function_name()\')<CR>',  "send abs path without <cr>"},
           F = {'<cmd>SlimeSend0 "python ".expand("%")." ".luaeval(\'require("run_func").get_current_function_name()\')<CR>',  "send relative path without <cr>"},
           s = {'<cmd>SlimeSend0 "bash " . expand("%:p") <CR>', "send script to shell"}, 
+          S = {'<cmd>SlimeSend0 "bash " . expand("%") <CR>', "send script to shell"}, 
       },
       },
   j = {

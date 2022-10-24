@@ -6,6 +6,12 @@ pip install py-spy
 
 # NOTE: sudo is required for py-spy
 
+# TODO:
+# show values via plotext with streaming...
+# - rich may be helpful (console live)
+#    - https://github.com/Textualize/rich/discussions/1002 ,  感觉和 termplotlib 一起用成本会比较低
+# - Termplot may be helpful
+
 
 # 一个经典用法
 

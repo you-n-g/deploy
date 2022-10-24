@@ -109,6 +109,12 @@ Plug 'akinsho/toggleterm.nvim'
 " - 它运行cell的时候感觉位置不对, 等待这个错误的解决
 "   https://github.com/untitled-ai/jupyter_ascending.vim/issues/8
 
+" This Plugin only controls the starting and ending of the container. It does
+" not embed neovim into the container...
+" Plug 'jamestthompson3/nvim-remote-containers'
+
+
+Plug 'moll/vim-bbye'
 
 " just for help tags
 Plug 'nvim-lua/popup.nvim'
@@ -617,14 +623,16 @@ nnoremap <leader>pSR :SlimeSend0 "python ".expand("%")<CR>
 
 " nnoremap <leader>pss :SlimeSend0 "bash ".expand("%:p")."\n"<CR>
 
-nnoremap <leader>psd :SlimeSend0 "pypdb ".expand("%:p")."\n"<CR>
-nnoremap <leader>psD :SlimeSend0 "pypdb ".expand("%")."\n"<CR>
+nnoremap <leader>psd :SlimeSend0 "python -m ipdb -c c ".expand("%:p")."\n"<CR>
+nnoremap <leader>psD :SlimeSend0 "python -m ipdb -c c ".expand("%")."\n"<CR>
 nnoremap <leader>psp :SlimeSend0 "pyprof ".expand("%:p")."\n"<CR>
 nnoremap <leader>pskp :SlimeSend0 "kernprof -l ".expand("%:p")."\n"<CR>
 nnoremap <leader>pskc :SlimeSend0 "python -m line_profiler ".expand("%:t").".lprof\n"<CR>
 " nnoremap <leader>pst :SlimeSend0 "nosetests --nocapture --ipdb --ipdb-failures ".expand("%:p")."\n"<CR>
 nnoremap <leader>pst :SlimeSend0 "pytest -s --pdb --disable-warnings ".expand("%:p")."::".luaeval('require("run_func").get_current_function_name(true)')."\n"<CR>
-
+nnoremap <leader>psT :SlimeSend0 "pytest -s --pdb --disable-warnings --doctest-modules ".expand("%:p")."::".expand("%:t:r").".".luaeval('require("run_func").get_current_function_name(true)')."\n"<CR>
+" I don't know why there must be module name before function name when
+" calling pytest (i.e. `gen_task.gen_yaml` instead of `gen_yaml`)
 nnoremap <leader>pdb :SlimeSend0 "b ".expand("%:p").":".line(".")."\n"<CR>
 nnoremap <leader>pde :SlimeSend1 from IPython import embed; embed()<CR>
 
