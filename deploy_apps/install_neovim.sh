@@ -44,7 +44,11 @@ nvim --headless -c 'autocmd User PackerComplete quitall' -c 'PackerSync'
 
 
 # this relys on the anaconda
-pip install neovim jupytext
+pip install neovim jupytext black-macchiato
+# - black-macchiato is for partial formatting
+if [ ! -e ~/.config/black ]; then
+    ln -s ~/deploy/configs/black/pyproject.toml ~/.config/black
+fi
 
 
 # :CocConfig 可以改变settings

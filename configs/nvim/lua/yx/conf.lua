@@ -7,4 +7,3 @@
 -- - vim eval: help eval, 可以通过 vim.fn.XXX 调用
 -- - vim.cmd("new") 可以执行一片命令, vim.api.nvim_command() 用于执行一行命令
 -- vim.api.nvim_set_keymap('i', '<Tab>', 'v:lua.smart_tab()', {expr = true, noremap = true})
-

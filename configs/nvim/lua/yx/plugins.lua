@@ -91,6 +91,7 @@ local M = require('packer').startup(function(use)
 
     -- use "lukas-reineke/lsp-format.nvim"
 
+    use 'smbl64/vim-black-macchiato'
 
     -- Automatically set up your configuration after cloning packer.nvim
     -- Put this at the end after all plugins

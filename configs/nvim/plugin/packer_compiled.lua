@@ -108,6 +108,11 @@ _G.packer_plugins = {
     loaded = true,
     path = "/sdc/home/xiaoyang/.local/share/nvim/site/pack/packer/start/tokyonight.nvim",
     url = "https://github.com/folke/tokyonight.nvim"
+  },
+  ["vim-black-macchiato"] = {
+    loaded = true,
+    path = "/sdc/home/xiaoyang/.local/share/nvim/site/pack/packer/start/vim-black-macchiato",
+    url = "https://github.com/smbl64/vim-black-macchiato"
   }
 }
 

@@ -23,7 +23,7 @@ EOF
 
 " TODO:
 " code formatting不太好用
-" - autopep8 这个老插件可能能解决这个问题
+" [X] autopep8 这个老插件可能能解决这个问题;  最后用 black-macchiato 解决的
 " snippet 相关
 " [  ] convert to snippet 不够方便
 " [  ] pypdb 不管用了

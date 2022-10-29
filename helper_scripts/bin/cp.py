@@ -21,16 +21,16 @@ from io import StringIO
 
 class CP:
     """
-        (C)reate (P)roject
+    (C)reate (P)roject
 
-        运行命令之前需要确保:
-        - **这里需要用户已经在特定目录下**
+    运行命令之前需要确保:
+    - **这里需要用户已经在特定目录下**
 
-        其他的各种检查已经把能做的都做了
+    其他的各种检查已经把能做的都做了
 
-        在NFS集群上大概会花 5min; 在本地磁盘的一台新机器上只会花1min
+    在NFS集群上大概会花 5min; 在本地磁盘的一台新机器上只会花1min
 
-        直接运行 `cp.py` 可以看到比 `cp.py -h` 更完整的信息
+    直接运行 `cp.py` 可以看到比 `cp.py -h` 更完整的信息
     """
 
     BASE_ENV = "base"
@@ -77,9 +77,17 @@ class CP:
             if (lib_path / "qlib").exists() and force_qlib:
                 subprocess.run("rm -rf qlib", shell=True, cwd=lib_path)
 
-            subprocess.run("git clone https://github.com/microsoft/qlib.git", shell=True, cwd=lib_path)
+            subprocess.run(
+                "git clone https://github.com/microsoft/qlib.git",
+                shell=True,
+                cwd=lib_path,
+            )
 
-            subprocess.run(f"cd qlib && {self._act()} &&  pip install -e .", shell=True, cwd=lib_path)
+            subprocess.run(
+                f"cd qlib && {self._act()} &&  pip install -e .",
+                shell=True,
+                cwd=lib_path,
+            )
 
         (pp / "scripts").mkdir(exist_ok=True)
 
