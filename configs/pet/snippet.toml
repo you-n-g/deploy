@@ -205,5 +205,20 @@
 
 [[snippets]]
   description = "git ignore change of specific file (Ref https://stackoverflow.com/a/1753078)"
-  command = "git update-index --assume-unchanged <file list>" 
+  command = "git update-index --assume-unchanged <file list>"
+  output = ""
+
+[[snippets]]
+  description = "neovim without any config:w"
+  command = "vim -u NONE -U NONE -N -i NONE"
+  output = ""
+
+[[snippets]]
+  description = "start with only lua config"
+  command = "vim -u ~/deploy/configs/nvim/init_debug_lua.vim -U NONE -N -i NONE"
+  output = ""
+
+[[snippets]]
+  description = "fast attach docker"
+  command = "docker exec -it `docker ps -l --format '{{.Names}}'` bash"
   output = ""

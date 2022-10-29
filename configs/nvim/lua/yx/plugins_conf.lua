@@ -1,19 +1,15 @@
--- lua cheatsheets
--- - https://github.com/nanotee/nvim-lua-guide
--- - https://devhints.io/lua
--- APIs (列几个使用频率较高的)
--- - nvim api: help api,  可以通过 vim.api.XXX 调用
--- - vim.fn.XXX 直接调用vimscripts 的functions
--- - vim eval: help eval, 可以通过 vim.fn.XXX 调用
--- - vim.cmd("new") 可以执行一片命令, vim.api.nvim_command() 用于执行一行命令
--- vim.api.nvim_set_keymap('i', '<Tab>', 'v:lua.smart_tab()', {expr = true, noremap = true})
-
 --
 -- TODO:
 -- 快速切换出buffer: https://codereview.stackexchange.com/questions/268130/get-list-of-buffers-from-current-neovim-instance
 
--- require'lspconfig'.pyright.setup{}
 
+-- Modular config
+require("yx/plugs/lsp_conf")
+require("yx/plugs/which_key_conf")
+
+
+
+-- fragmental config
 require'nvim-treesitter.configs'.setup {
   ensure_installed = {"python", "java", "lua"}, -- one of "all", "maintained" (parsers with maintainers), or a list of languages
   ignore_install = {  }, -- List of parsers to ignore installing
@@ -57,7 +53,7 @@ require "nvim-treesitter.configs".setup {
 --     vim.api.nvim_command("set <M-"..tostring(i)..">=\\e1")
 -- end
 
-for k, mode in pairs({'i','v','n', 't'}) do
+for _, mode in pairs({'i','v','n', 't'}) do
     for i = 1,4 do
         -- vim.api.nvim_set_keymap(mode, "<c-"..tostring(i)..">", "<cmd>ToggleTerm "..tostring(i).."<cr>", {expr = true, noremap = true})
         vim.api.nvim_set_keymap(mode, "<F"..tostring(i)..">", "<cmd>ToggleTerm "..tostring(i).."<cr>", {expr = false, noremap = true})
@@ -72,7 +68,7 @@ require'nvim-treesitter.configs'.setup {
   incremental_selection = {
     enable = true,
     keymaps = {
-      init_selection = "<tab><tab>", -- I want <tab>. But it will conflict with vim-visual-multi
+      init_selection = "<s-tab>", -- I want <tab>. But it will conflict with vim-visual-multi
                                      -- To be compatible wtih which-key, please use '\t' in triggers_blacklist
                                      -- https://github.com/folke/which-key.nvim/issues/185
       node_incremental = "<tab>",
@@ -92,10 +88,6 @@ require'nvim-treesitter.configs'.setup {
     -- termcolors = {} -- table of colour name strings
   }
 }
-
-require("run_func")
-
-require("which_key")
 
 
 
@@ -161,3 +153,66 @@ require("toggleterm").setup{
 }
 
 
+require("symbols-outline").setup({highlight_hovered_item = true})
+
+-- disable netrw at the very start of your init.lua (strongly advised)
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+
+-- empty setup using defaults
+require("nvim-tree").setup()
+
+
+require("luasnip.loaders.from_vscode").lazy_load({ paths = { "./luasnip_snippets" } })
+
+
+-- require('onedark').setup {
+--     style = 'darker'
+-- }
+--
+-- require('onedark').load()
+vim.cmd[[colorscheme tokyonight]]
+-- vim.o.background = "dark" -- or "light" for light mode
+-- require("gruvbox").setup({contrast = "hard"})
+-- vim.cmd([[colorscheme gruvbox]])
+
+vim.opt.termguicolors = true
+require("bufferline").setup{}
+
+
+-- require('lualine').setup()
+require('lualine').setup({
+    options = {
+        -- theme = 'vscode',
+        -- theme = 'onedark',
+        theme = 'tokyonight',
+    },
+})
+
+
+
+-- vim.o.background = 'dark'
+-- local c = require('vscode.colors')
+-- require('vscode').setup({})
+-- require('vscode').setup({
+--     -- Enable transparent background
+--     transparent = true,
+--
+--     -- Enable italic comment
+--     italic_comments = true,
+--
+--     -- Disable nvim-tree background color
+--     disable_nvimtree_bg = true,
+--
+--     -- Override colors (see ./lua/vscode/colors.lua)
+--     color_overrides = {
+--         vscLineNumber = '#FFFFFF',
+--     },
+--
+--     -- Override highlight groups (see ./lua/vscode/theme.lua)
+--     group_overrides = {
+--         -- this supports the same val table as vim.api.nvim_set_hl
+--         -- use colors from this colorscheme by requiring vscode.colors!
+--         Cursor = { fg=c.vscDarkBlue, bg=c.vscLightGreen, bold=true },
+--     }
+-- })

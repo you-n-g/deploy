@@ -35,6 +35,12 @@ git clone https://github.com/junegunn/vim-plug ~/apps/vim-plug
 ln -s ~/apps/vim-plug/plug.vim  ~/.local/share/nvim/site/autoload/plug.vim 
 
 
+# 很多lua包用packer安装更方便
+# 不太需要下面的 
+# git clone --depth 1 https://github.com/wbthomason/packer.nvim\
+#  ~/.local/share/nvim/site/pack/packer/start/packer.nvim
+nvim --headless -c 'autocmd User PackerComplete quitall' -c 'PackerSync'
+# - TODO: 这里 应该还达不到自动安装插件的效果
 
 
 # this relys on the anaconda
@@ -83,7 +89,19 @@ NP=~/apps/nodejs
 export PATH="$NP/bin/:$PATH"
 $NP/bin/npm install -g neovim
 
+# https://github.com/neovim/nvim-lspconfig/blob/a035031fd6f6bcb5b433fe0f32d755ba7485406d/doc/server_configurations.md
 $NP/bin/npm i -g pyright # for nvim-lspconfig
+$NP/bin/npm i -g bash-language-server # for nvim-lspconfig
+# Lua language server
+mkdir -p ~/apps/lua-ls/
+cd ~/apps/lua-ls/
+wget https://github.com/sumneko/lua-language-server/releases/download/3.5.6/lua-language-server-3.5.6-linux-x64.tar.gz
+tar xf lua-language-server-3.5.6-linux-x64.tar.gz
+ln -s ~/apps/lua-ls/bin/lua-language-server ~/bin/
+# efm language server
+sh $DIR_PATH/install_go.sh
+go install github.com/mattn/efm-langserver@latest
+
 
 
 bash $DIR_PATH/install_rg.sh

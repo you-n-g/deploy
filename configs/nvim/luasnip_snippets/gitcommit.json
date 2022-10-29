@@ -1,0 +1,7 @@
+{
+  "up": {
+    "prefix": "up",
+    "description": "Update scripts and config",
+    "body": "Update scripts and config"
+  }
+}

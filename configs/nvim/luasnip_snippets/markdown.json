@@ -1,0 +1,24 @@
+{
+  "ffc": {
+    "prefix": "ffc",
+    "description": "feel free to contact",
+    "body": "Feel free to contact us if you have any problems."
+  },
+  "th1": {
+    "prefix": "th1",
+    "description": "Thanks efforts",
+    "body": "Thanks for your great efforts for ${1:Doing}!"
+  },
+  "tpl": {
+    "prefix": "tpl",
+    "description": "Template",
+    "body": [
+      "Hi, ",
+      "",
+      "Thanks!",
+      "",
+      "Best wishes,",
+      "Xiao YANG"
+    ]
+  }
+}

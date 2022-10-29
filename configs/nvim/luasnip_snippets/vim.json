@@ -1,0 +1,7 @@
+{
+  "git": {
+    "prefix": "git",
+    "description": "git guttter",
+    "body": "let g:gitgutter_diff_base = '${1:<commit_SHA>}'"
+  }
+}

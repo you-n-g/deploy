@@ -1,0 +1,39 @@
+{
+  "print": {
+    "prefix": "print",
+    "description": "Java Println",
+    "body": "System.out.println(\"$1\");"
+  },
+  "ol": {
+    "prefix": "ol",
+    "description": "outlines",
+    "body": "// # Outlines:"
+  },
+  "example": {
+    "prefix": "example",
+    "description": "Java exmaples",
+    "body": [
+      "public class A {",
+      "\tpublic Boolean b = null;",
+      "\tA() {",
+      "\t\tb = null;",
+      "\t\\}",
+      "\tpublic static void main(String[] args) {",
+      "\t\tA a = new A();",
+      "\t\tif  (a.b != null)",
+      "\t\t\tSystem.out.println(\"This is good\");",
+      "\t\\}",
+      "\\}"
+    ]
+  },
+  "assert": {
+    "prefix": "assert",
+    "description": "Assert By If",
+    "body": [
+      "if (${1:XXX}) {",
+      "\tSystem.out.println(\"${2:XXX} is not right\");",
+      "\tSystem.exit(-1);",
+      "\\}"
+    ]
+  }
+}

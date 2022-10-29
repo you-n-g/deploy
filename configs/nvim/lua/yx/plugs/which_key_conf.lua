@@ -33,8 +33,8 @@ wk.register({
     -- 词汇表小写代表修改 spellfile, 大写代表 internal-wordlist
     -- internal-wordlist 代表存在内存中，下次重新打开vim  或者设置 encoding都会导致它消失
     p = { "<cmd>exec '!sed -n  '.line('w0').','.line('w$').'p %'<cr>", 'Plain text'  },
-    n = { "<cmd>NERDTreeToggle<cr>", 'NERDTreeToggle'},
-    l = {"<cmd>TagbarToggle<cr>", 'TagbarToggle'},
+    n = { "<cmd>NvimTreeFindFileToggle<cr>", 'NvimTreeFindFileToggle'},
+    l = {"<cmd>SymbolsOutline<cr>", 'TagbarToggle'},
     M = {"<cmd>MaximizerToggle<cr>", 'MaximizerToggle(<F5> is faster)'},
     c = {"<cmd>Telescope my_config<cr>", 'My Config'},
   },
@@ -62,8 +62,8 @@ wk.register({
            name = 'Send for sh',
            i = {'<cmd>SlimeSend1 ipython --matplotlib<cr>', 'start ipython with matplotlib'},
 
-          f = {'<cmd>:SlimeSend0 "python ".expand("%:p")." " . luaeval(\'require("run_func").get_current_function_name()\') . "\\n"<CR>',  "send abs path"},
-          F = {'<cmd>:SlimeSend0 "python ".expand("%")." ".luaeval(\'require("run_func").get_current_function_name()\')."\\n"<CR>',  "send relative path"},
+          f = {'<cmd>:SlimeSend0 "python ".expand("%:p")." " . luaeval(\'require("yx/plugs/run_func").get_current_function_name()\') . "\\n"<CR>',  "send abs path"},
+          F = {'<cmd>:SlimeSend0 "python ".expand("%")." ".luaeval(\'require("yx/plugs/run_func").get_current_function_name()\')."\\n"<CR>',  "send relative path"},
           -- T = {'<cmd>SlimeSend0 "python -m doctest -v -f " . expand("%:p") . "\\n"<CR>', "send script to doc test"}, 
           s = {'<cmd>SlimeSend0 "bash " . expand("%:p") . "\\n"<CR>', "send script to shell"}, 
           S = {'<cmd>SlimeSend0 "bash " . expand("%") . "\\n"<CR>', "send script to shell"}, 
@@ -75,8 +75,8 @@ wk.register({
         -- \'e' : ['placehoder', 'Create an embeded env']
       S = {
           name = "Send for sh(without <cr>)",
-          f = {'<cmd>SlimeSend0 "python ".expand("%:p")." ".luaeval(\'require("run_func").get_current_function_name()\')<CR>',  "send abs path without <cr>"},
-          F = {'<cmd>SlimeSend0 "python ".expand("%")." ".luaeval(\'require("run_func").get_current_function_name()\')<CR>',  "send relative path without <cr>"},
+          f = {'<cmd>SlimeSend0 "python ".expand("%:p")." ".luaeval(\'require("yx/plugs/run_func").get_current_function_name()\')<CR>',  "send abs path without <cr>"},
+          F = {'<cmd>SlimeSend0 "python ".expand("%")." ".luaeval(\'require("yx/plugs/run_func").get_current_function_name()\')<CR>',  "send relative path without <cr>"},
           s = {'<cmd>SlimeSend0 "bash " . expand("%:p") <CR>', "send script to shell"}, 
           S = {'<cmd>SlimeSend0 "bash " . expand("%") <CR>', "send script to shell"}, 
       },
@@ -87,33 +87,35 @@ wk.register({
       d = {'<cmd>JupyterDisconnect<cr>', 'Jupyter Disconnect'},
   },
 
-  e = {
-     name = 'coc-explorer',
-    r = {'<cmd>CocCommand explorer --sources=buffer+,file+ --preset floatingRightside<cr>', 'Float Explorer'},
-    -- e = {'<cmd>CocCommand explorer --sources=buffer+,file+ --position tab:0<cr>', 'Tab Explorer'},
-    t = {'<cmd>CocCommand explorer --sources=buffer+,file+ --preset tab<cr>', 'Tab Explorer'},
-    -- Tab的优点是显示大， 缺点是不会在原来的window 中打开，容易把windows弄乱
-    e = {'<cmd>CocCommand explorer --toggle --sources=buffer+,file+ --position right<cr>', 'Side Explorer'},
-    -- 默认用 split 有如下好处
-    -- 1) f 和 F 可以用了 2) 用float有时候会突然冒出行号，打乱样式
-    -- 2) 下面两个其实也挺好用
-    --    il (list info) ic (preview content)
-    f = {'<cmd>CocCommand explorer --sources=buffer+,file+ --preset floating<cr>', 'Full Explorer'},
-  },
+  -- coc-related extensions are replaced by nvim-lsp-based ones
+  -- e = {
+  --    name = 'coc-explorer',
+  --   r = {'<cmd>CocCommand explorer --sources=buffer+,file+ --preset floatingRightside<cr>', 'Float Explorer'},
+  --   -- e = {'<cmd>CocCommand explorer --sources=buffer+,file+ --position tab:0<cr>', 'Tab Explorer'},
+  --   t = {'<cmd>CocCommand explorer --sources=buffer+,file+ --preset tab<cr>', 'Tab Explorer'},
+  --   -- Tab的优点是显示大， 缺点是不会在原来的window 中打开，容易把windows弄乱
+  --   e = {'<cmd>CocCommand explorer --toggle --sources=buffer+,file+ --position right<cr>', 'Side Explorer'},
+  --   -- 默认用 split 有如下好处
+  --   -- 1) f 和 F 可以用了 2) 用float有时候会突然冒出行号，打乱样式
+  --   -- 2) 下面两个其实也挺好用
+  --   --    il (list info) ic (preview content)
+  --   f = {'<cmd>CocCommand explorer --sources=buffer+,file+ --preset floating<cr>', 'Full Explorer'},
+  -- },
 
-  c = {
-     name = 'coc.vim',
-     s = {'<Plug>(coc-convert-snippet)', 'Convert to Snippets'},
-     F = {'<cmd>Format<cr>', 'Format all'},
-  },
+  -- c = {
+  --    name = 'coc.vim',
+  --    s = {'<Plug>(coc-convert-snippet)', 'Convert to Snippets'},
+  --    F = {'<cmd>Format<cr>', 'Format all'},
+  -- },
 
-  l = {
-     name = 'coc-list',
-    o = {'<cmd>CocList -I --auto-preview --ignore-case --input=outlines lines<cr>', 'Outlines'},
-    i = {'<cmd>CocList -I --auto-preview --ignore-case lines<cr>', 'Search in this file'},
-    c = {'<cmd>CocList commands<cr>', 'commands'},
-    u = {'<cmd>CocList mru<cr>', 'mru(current dir)'},
-  },
+  -- l = {
+  --    name = 'coc-list',
+  --   o = {'<cmd>CocList -I --auto-preview --ignore-case --input=outlines lines<cr>', 'Outlines'},
+  --   i = {'<cmd>CocList -I --auto-preview --ignore-case lines<cr>', 'Search in this file'},
+  --   c = {'<cmd>CocList commands<cr>', 'commands'},
+  --   u = {'<cmd>CocList mru<cr>', 'mru(current dir)'},
+  -- },
+
   L = {
      name = 'lua',
      i = {"<cmd>Luadev<cr>", "lunch"},
@@ -136,6 +138,7 @@ wk.register({
   },
   f = {
     name = 'fzf & telescope',
+    f = {'<cmd>Telescope<cr>', 'Telescope'},
     g = {'<cmd>Rg<cr>', 'Rg'},
     G = {'<cmd>Rgc<cr>', 'Rg without filename'},
     -- s = {'<cmd>Rg @/<cr>', 'Rg'},   这里想要直接按文件搜索 之前buffer内搜索的内容
