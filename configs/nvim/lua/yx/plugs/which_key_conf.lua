@@ -115,6 +115,10 @@ wk.register({
   --   c = {'<cmd>CocList commands<cr>', 'commands'},
   --   u = {'<cmd>CocList mru<cr>', 'mru(current dir)'},
   -- },
+    l = {
+        name = "lsp-related",
+        s = {"<cmd>lua require('luasnip.loaders').edit_snippet_files()<cr>", "edit snippet"},
+    },
 
   L = {
      name = 'lua',

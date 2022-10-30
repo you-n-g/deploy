@@ -164,6 +164,15 @@ require("nvim-tree").setup()
 
 
 require("luasnip.loaders.from_vscode").lazy_load({ paths = { "./luasnip_snippets" } })
+-- 这里有很多可以参考的 snippets
+-- https://github.com/rafamadriz/friendly-snippets/blob/main/snippets/python/
+-- 这里有这种；类型对应的文档
+-- https://github.com/L3MON4D3/LuaSnip/blob/master/doc/luasnip.txt#L1794
+require("luasnip.loaders.from_lua").load({paths = "./luasnip_snippets"})
+
+-- For changing choices in choiceNodes (not strictly necessary for a basic setup).
+vim.cmd[[imap <silent><expr> <C-E> luasnip#choice_active() ? '<Plug>luasnip-next-choice' : '<C-E>']]
+vim.cmd[[smap <silent><expr> <C-E> luasnip#choice_active() ? '<Plug>luasnip-next-choice' : '<C-E>']]
 
 
 -- require('onedark').setup {

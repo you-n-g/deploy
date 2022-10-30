@@ -121,6 +121,7 @@ require 'lspconfig'.sumneko_lua.setup {
 
 -- luasnip setup
 local luasnip = require 'luasnip'
+luasnip.config.set_config({enable_autosnippets = true})
 
 -- nvim-cmp setup
 local cmp = require 'cmp'
