@@ -34,7 +34,7 @@ wk.register({
     -- internal-wordlist 代表存在内存中，下次重新打开vim  或者设置 encoding都会导致它消失
     p = { "<cmd>exec '!sed -n  '.line('w0').','.line('w$').'p %'<cr>", 'Plain text'  },
     n = { "<cmd>NvimTreeFindFileToggle<cr>", 'NvimTreeFindFileToggle'},
-    l = {"<cmd>SymbolsOutline<cr>", 'TagbarToggle'},
+    l = {"<cmd>SymbolsOutline<cr>", 'SymbolsOutline'},
     M = {"<cmd>MaximizerToggle<cr>", 'MaximizerToggle(<F5> is faster)'},
     c = {"<cmd>Telescope my_config<cr>", 'My Config'},
   },

@@ -43,6 +43,12 @@
 					"vim"
 				],
 				"path": "./vim.json"
+			},
+			{
+				"language": [
+					"json"
+				],
+				"path": "./json.json"
 			}
 		]
 	}

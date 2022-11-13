@@ -172,8 +172,10 @@ augroup syntax_todo_etc
     autocmd!
     " autocmd Syntax * syntax match Todo /\v(TODO|NOTE|FIXME|OPTIMIZE|XXX)/ containedin=.*Comment
     " autocmd Syntax * syntax match jdoc /\v(\@author|\@param|\@return|\@see)/ containedin=.*Comment
-    autocmd FileType * match Todo /\v (TODO|NOTE|FIXME|OPTIMIZE|XXX):/
+    " autocmd FileType * match Todo /\v (TODO|NOTE|FIXME|OPTIMIZE|XXX):/
+    autocmd FileType * match Todo /\(\(\s\)\@<=\|^\)\(TODO\|NOTE\|FIXME\|OPTIMIZE\|XXX\):/
     " (#|"|--)
+    " 用原生的零宽断言: \(\(\s\)\@<=\|^\)HAHA:
 augroup END
 " FIXME: 这里用 match有点牵强， 肯定存在更优的解的
 

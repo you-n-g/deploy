@@ -25,8 +25,8 @@ EOF
 " code formatting不太好用
 " [X] autopep8 这个老插件可能能解决这个问题;  最后用 black-macchiato 解决的
 " snippet 相关
-" [  ] convert to snippet 不够方便
-" [  ] pypdb 不管用了
+" [ ] convert to snippet 不够方便
+" [X] pypdb 不管用了
 " 在terminal 里面 gf， 把它打开到 最大的那个 windows中
 
 

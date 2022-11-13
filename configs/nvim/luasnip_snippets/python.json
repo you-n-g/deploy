@@ -434,6 +434,13 @@
   "datetimehost": {
     "prefix": "datetimehost",
     "description": "get string for datetime host",
-    "body": "f'{__import__(\"socket\").gethostname()\\}_{__import__(\"datetime\").datetime.now().strftime(\"%m-%d-%Y_%H-%M-%S\")\\}'"
+    "body": "f'{__import__(\"socket\").gethostname()\\}_{__import__(\"datetime\").datetime.now().strftime(\"%Y-%m-%d_%H:%M:%S\")\\}'"
+  },
+  "ignore": {
+    "prefix": "ignore",
+    "description": "desc ignore",
+    "body": [
+      "# type: ignore"
+    ] 
   }
 }

@@ -11,6 +11,9 @@ pip install py-spy
 # - rich may be helpful (console live)
 #    - https://github.com/Textualize/rich/discussions/1002 ,  感觉和 termplotlib 一起用成本会比较低
 # - Termplot may be helpful
+- pip install rich
+- pip install termplotlib
+- sudo apt-get install gnuplot
 
 
 # 一个经典用法
@@ -24,6 +27,7 @@ kill $MONI_PID
 """
 from datetime import datetime
 import re
+import os
 import fire
 import time
 import psutil
@@ -115,14 +119,18 @@ class Monitor:
         print((df["free"] / 2 ** 20).describe())  # the unit is GB
         return df
 
-    def ana_pm(self, fname=MP_FN):
+    def ana_pm(self, fname=MP_FN, print_desc=True, to_datetime=True):
         """Analysis python memory
         The unit is MB
         """
         data = pd.read_csv(fname, sep=" ", index_col=2, names=["col", "memory", "time"], skiprows=1)
         data = data[~data.index.isna()]  # 我遇到过算出index有NA的
-        data.index = data["memory"].index.to_series().apply(datetime.fromtimestamp)
-        print(data["memory"].astype("float").describe())
+        if to_datetime:
+            data.index = data["memory"].index.to_series().apply(datetime.fromtimestamp)
+        else:
+            data.index = data["memory"].index.to_series().diff().fillna(0).cumsum()
+        if print_desc:
+            print(data["memory"].astype("float").describe())
         return data
 
     def ana_pd(self, fname=PD_FN):
@@ -139,6 +147,45 @@ class Monitor:
             else:
                 content[-1].append(l)
         return pd.Series(map(lambda x: "".join(x), content), index=map(lambda ts: datetime.fromtimestamp(ts), tss))
+
+    def m(self):
+        # run monitor
+        # in case of user have no rich
+        from rich.layout import Layout
+        from rich import print
+        from rich.panel import Panel
+        import termplotlib as tpl
+        import numpy
+        from rich.live import Live
+
+
+        def get_info():
+            data = self.ana_pm(print_desc=False, to_datetime=False)
+            # x = numpy.linspace(0, 2 * numpy.pi, 10)
+            # y = numpy.sin(x)
+            #
+            # fig = tpl.figure()
+            # fig.plot(x, y, label="data", width=100, height=15)
+
+            fig = tpl.figure()
+            ma, mi =  data["memory"].max(), data["memory"].min()
+            ra = ma - mi
+            kwargs = {}
+            if ra > 0:
+                kwargs = {"ylim": (mi - ra * 0.1, ma + ra * 0.1)}
+            size = os.get_terminal_size()
+            # fig.plot(y=data["memory"], x=data.index, label="Mem(MB)", width=size[0] - 20, height=size[1] - 10, **kwargs)
+            fig.plot(y=data["memory"], x=data.index, label="Mem(MB)", width=size[0] - 5, height=size[1], **kwargs)
+            return fig.get_string(), data["memory"].iloc[-1]
+
+        def get_panel():
+            fig, latest = get_info()
+            return Panel(fig, title=f'memory plot, latest={latest} MB')
+
+        with Live(get_panel(), refresh_per_second=1, screen=True) as live:
+            while True:
+                live.update(get_panel())
+                time.sleep(1)
 
 
 if __name__ == "__main__":

@@ -222,3 +222,13 @@
   description = "fast attach docker"
   command = "docker exec -it `docker ps -l --format '{{.Names}}'` bash"
   output = ""
+
+[[snippets]]
+  description = "git commit & skip precommit"
+  command = "git commit --no-verify  -v"
+  output = ""
+
+[[snippets]]
+  description = "Clear PageCache only"
+  command = "sudo su  -c \"sync; echo 1 > /proc/sys/vm/drop_caches\""
+  output = ""
