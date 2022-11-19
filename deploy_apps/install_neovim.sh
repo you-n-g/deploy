@@ -75,13 +75,12 @@ mkdir ~/.config/coc/
 ln -s ~/deploy/configs/nvim/snips  ~/.config/coc/ultisnips
 
 
-if ! grep "escape-time" ~/.tmux.conf ; then
-    cat >> ~/.tmux.conf <<EOF
+# 本来在这里， 不知道有没有影响
+cat <<EOF
 # for neovim
 set-option -sg escape-time 10
 set-option -sa terminal-overrides ',screen-256color:RBG'
 EOF
-fi
 
 # deploy nodejs
 # curl -sL install-node.now.sh/lts | sudo bash -s --  -y

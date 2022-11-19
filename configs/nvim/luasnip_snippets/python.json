@@ -442,5 +442,40 @@
     "body": [
       "# type: ignore"
     ] 
+  },
+  "mlp": {
+    "prefix": "mlp",
+    "description": "desc mlp",
+    "body": [
+      "layers = []",
+      "",
+      "def get_seq(dim, drop, prev_dim):",
+      "    layers = []",
+      "    l1 = nn.Linear(prev_dim, dim)",
+      "    nn.init.kaiming_normal_(l1.weight)",
+      "    layers.extend([",
+      "        l1,",
+      "        nn.BatchNorm1d(dim),",
+      "        nn.LeakyReLU(0.1),",
+      "    ])",
+      "    if drop > 0:",
+      "        layers.append(nn.Dropout(drop))",
+      "    return nn.Sequential(*layers)",
+      "",
+      "prev_dim = input_dim",
+      "for dim, drop in [",
+      "    (64, 0),",
+      "    (128, 0),",
+      "    (256, 0),",
+      "    (512, 0),",
+      "    (256, dropout),",
+      "    (128, 0),",
+      "    (8, dropout),",
+      "]:",
+      "    layers.extend(get_seq(dim, drop, prev_dim))",
+      "    prev_dim = dim",
+      "layers.append(nn.Linear(prev_dim, 1))",
+      "self.layers = nn.Sequential(*layers)"
+    ] 
   }
 }

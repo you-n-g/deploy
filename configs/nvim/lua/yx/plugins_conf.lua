@@ -164,11 +164,13 @@ require("nvim-tree").setup()
 
 
 require("luasnip.loaders.from_vscode").lazy_load({ paths = { "./luasnip_snippets" } })
+-- require("luasnip.loaders.from_vscode").lazy_load({ paths = { "~/deploy/configs/nvim/luasnip_snippets" } })
 -- 这里有很多可以参考的 snippets
 -- https://github.com/rafamadriz/friendly-snippets/blob/main/snippets/python/
 -- 这里有这种；类型对应的文档
 -- https://github.com/L3MON4D3/LuaSnip/blob/master/doc/luasnip.txt#L1794
 require("luasnip.loaders.from_lua").load({paths = "./luasnip_snippets"})
+-- TODO:  只有当前vim编辑snippets时， 才能自动reload snippets
 
 -- For changing choices in choiceNodes (not strictly necessary for a basic setup).
 vim.cmd[[imap <silent><expr> <C-E> luasnip#choice_active() ? '<Plug>luasnip-next-choice' : '<C-E>']]
@@ -180,7 +182,8 @@ vim.cmd[[smap <silent><expr> <C-E> luasnip#choice_active() ? '<Plug>luasnip-next
 -- }
 --
 -- require('onedark').load()
-vim.cmd[[colorscheme tokyonight]]
+-- vim.cmd[[colorscheme tokyonight]]
+vim.cmd[[colorscheme tokyonight-night]]
 -- vim.o.background = "dark" -- or "light" for light mode
 -- require("gruvbox").setup({contrast = "hard"})
 -- vim.cmd([[colorscheme gruvbox]])
