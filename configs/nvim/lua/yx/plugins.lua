@@ -11,6 +11,7 @@ vim.cmd([[
 ]])
 
 
+-- NOTE:  the repository path locates in ~/.local/share/nvim/site/pack/packer/start
 local ensure_packer = function()
     local fn = vim.fn
     local install_path = fn.stdpath('data') .. '/site/pack/packer/start/packer.nvim'
@@ -77,7 +78,7 @@ local M = require('packer').startup(function(use)
     -- }
 
     -- NOTE: theme related
-    use { 'akinsho/bufferline.nvim', tag = "v3.*", requires = 'kyazdani42/nvim-web-devicons' }
+    use {'akinsho/bufferline.nvim', tag = "v3.*", requires = 'nvim-tree/nvim-web-devicons'}
     use {
         'nvim-lualine/lualine.nvim',
         requires = { 'kyazdani42/nvim-web-devicons', opt = true }
@@ -92,6 +93,11 @@ local M = require('packer').startup(function(use)
     -- use "lukas-reineke/lsp-format.nvim"
 
     use 'smbl64/vim-black-macchiato'
+    -- This may be better for all language
+    -- https://github.com/MunifTanjim/prettier.nvim
+    
+    -- use('jose-elias-alvarez/null-ls.nvim')
+    -- use('MunifTanjim/prettier.nvim')
 
     -- Automatically set up your configuration after cloning packer.nvim
     -- Put this at the end after all plugins

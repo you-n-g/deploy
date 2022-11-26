@@ -67,6 +67,15 @@
       "return"
     ]
   },
+  "dirn": {
+    "prefix": "dirn",
+    "description": "desc dirn",
+    "body": [
+        "from pathlib import Path",
+        "DIRNAME = Path(__file__).absolute().resolve().parent",
+        "# DIRNAME = Path(\"`!v expand('%')`\").absolute().resolve().parent # FIXME!!"
+    ] 
+  },
   "emb": {
     "prefix": "emb",
     "description": "Embed for debuging",
@@ -173,6 +182,13 @@
       "compare = datacompy.Compare(df_new, df_old, on_index=True, rel_tol=1e-5, df1_name=\"new\", df2_name=\"old\")",
       "print(compare.report())"
     ]
+  },
+  "pwd": {
+    "prefix": "pwd",
+    "description": "desc pwd",
+    "body": [
+      "python `!v expand('%')` # FIXME!!!"
+    ] 
   },
   "dw": {
     "prefix": "dw",

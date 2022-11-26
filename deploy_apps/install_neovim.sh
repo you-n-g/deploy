@@ -105,7 +105,10 @@ ln -s ~/apps/lua-ls/bin/lua-language-server ~/bin/
 sh $DIR_PATH/install_go.sh
 go install github.com/mattn/efm-langserver@latest
 
-
+# 下面两个安装了 似乎也不会在 bin 中出现prettier， 只有 prettierd 才能在bin中出现
+# npm install --global yarn
+# yarn add --dev --exact prettier
+$NP/bin/npm install -g @fsouza/prettierd
 
 bash $DIR_PATH/install_rg.sh
 

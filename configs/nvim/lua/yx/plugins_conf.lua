@@ -206,3 +206,8 @@ require('lualine').setup({
 vim.cmd[[autocmd FileType python xmap <buffer> = <plug>(BlackMacchiatoSelection)]]
 vim.cmd[[autocmd FileType python nmap <buffer> = <plug>(BlackMacchiatoCurrentLine)]]
 -- vim.cmd[[autocmd FileType python nmap <buffer> <Leader>F :BlackMacchiato<cr>]]
+
+
+-- prettier/vim-prettier
+vim.cmd[[nmap <Leader>F :PrettierAsync<cr>]]
+vim.cmd[[xmap <Leader>F :PrettierPartial<cr>]]

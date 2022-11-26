@@ -1,6 +1,8 @@
 #!/bin/sh
 
 # this is mainly for ios
+# windows 不知道为啥一直用不了
+# 记得先用  `nc -ul 4500` + `nc -u <server> 4500` 测试一下连通性
 
 cat > .env
 VPN_IPSEC_PSK=AAA

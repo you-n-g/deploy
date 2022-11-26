@@ -1,3 +1,6 @@
+" NOTE:
+" 未来尽量统一使用lua的 config
+
 set ai "auto indent
 set expandtab
 set tabstop=4
@@ -168,15 +171,16 @@ augroup END
 " 但是好像没有用, 感觉内部有一个奇怪的 priofity， 导致替换不了
 " syntax match Todo "\v.*" containedin=.*Comment
 " syntax match Todo "\v.*" containedin=.*Comment contained conceal
-augroup syntax_todo_etc
-    autocmd!
-    " autocmd Syntax * syntax match Todo /\v(TODO|NOTE|FIXME|OPTIMIZE|XXX)/ containedin=.*Comment
-    " autocmd Syntax * syntax match jdoc /\v(\@author|\@param|\@return|\@see)/ containedin=.*Comment
-    " autocmd FileType * match Todo /\v (TODO|NOTE|FIXME|OPTIMIZE|XXX):/
-    autocmd FileType * match Todo /\(\(\s\)\@<=\|^\)\(TODO\|NOTE\|FIXME\|OPTIMIZE\|XXX\):/
-    " (#|"|--)
-    " 用原生的零宽断言: \(\(\s\)\@<=\|^\)HAHA:
-augroup END
+" augroup syntax_todo_etc
+"     autocmd!
+"     " autocmd Syntax * syntax match Todo /\v(TODO|NOTE|FIXME|OPTIMIZE|XXX)/ containedin=.*Comment
+"     " autocmd Syntax * syntax match jdoc /\v(\@author|\@param|\@return|\@see)/ containedin=.*Comment
+"     " autocmd FileType * match Todo /\v (TODO|NOTE|FIXME|OPTIMIZE|XXX):/
+"     autocmd FileType * match Todo /\(\(\s\)\@<=\|^\)\(TODO\|NOTE\|FIXME\|OPTIMIZE\|XXX\):/
+"     " (#|"|--)
+"     " 用原生的零宽断言: \(\(\s\)\@<=\|^\)HAHA:
+" augroup END
+" 后来修复了tmux颜色显示的问题后，这个问题也一起被修复了;
 " FIXME: 这里用 match有点牵强， 肯定存在更优的解的
 
 

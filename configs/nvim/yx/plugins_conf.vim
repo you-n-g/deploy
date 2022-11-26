@@ -1,3 +1,6 @@
+" NOTE:
+" 未来尽量统一使用lua的 config
+
 " runtime yx/plugs/coc_conf.vim
 
 "
@@ -139,6 +142,7 @@ nnoremap <leader>pde :SlimeSend1 from IPython import embed; embed()<CR>
 let g:indent_guides_enable_on_vim_startup = 1
 let g:indent_guides_guide_size = 1
 let g:indent_guides_start_level = 2
+let g:indent_guides_exclude_filetypes = ['help', 'nerdtree', 'toggleterm']
 " END   for vim-indent-guides ----------------------------------------------------------
 
 
@@ -303,6 +307,9 @@ augroup END
 
 " BEGIN  'puremourning/vimspector' -----------------------------------------
 nnoremap <leader>vB  :call vimspector#ToggleBreakpoint({'condition':''})<left><left><left>
+nnoremap <F6> :call vimspector#StepOver()<cr>
+nnoremap <F7> :call vimspector#StepInto()<cr>
+nnoremap <F17> :call vimspector#StepOut()<cr>
 
 " Python DEBUG
 " :VimspectorInstall debugpy
@@ -337,6 +344,9 @@ call submode#enter_with('window', 'n', '', '<C-w>')
 " Note: <C-[> also behaves as <ESC>
 call submode#leave_with('window', 'n', '', '<ESC>')
 
+" `g` and `f` should not be included becausa  we want to able to goto file in a new
+" for key in ['a','b','c','d','e', 'h','i','j','k','l','m',
+" \           'n','o','p','q','r','s','t','u','v','w','x','y','z']
 " Go through every letter
 for key in ['a','b','c','d','e','f','g','h','i','j','k','l','m',
 \           'n','o','p','q','r','s','t','u','v','w','x','y','z']

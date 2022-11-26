@@ -76,6 +76,8 @@ Plug 'voldikss/vim-translator'
 Plug 'akinsho/toggleterm.nvim'
 " - 试用的困难请在 yx 中查找
 
+Plug 'prettier/vim-prettier', { 'do': 'yarn install --frozen-lockfile --production' }
+
 
 " Plug 'untitled-ai/jupyter_ascending.vim'
 " 这种模式我非常喜欢，但是现在还有不足的地方
