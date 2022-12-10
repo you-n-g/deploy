@@ -183,13 +183,6 @@
       "print(compare.report())"
     ]
   },
-  "pwd": {
-    "prefix": "pwd",
-    "description": "desc pwd",
-    "body": [
-      "python `!v expand('%')` # FIXME!!!"
-    ] 
-  },
   "dw": {
     "prefix": "dw",
     "description": "Deprecation Warning",

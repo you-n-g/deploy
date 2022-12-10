@@ -24,7 +24,8 @@ wk.register({
     },
     t = {
         name = "Toggle",
-        s = { "<cmd>set spell!<cr>", 'Spell Toggle' },
+        -- s = { "<cmd>set spell!<cr>", 'Spell Toggle' },
+        s = { "<cmd>Startify<cr>", 'Startify' },
         -- [s ]s: previous(next) spell error
         -- zg: 标记为正确词汇
         -- zw: 标记为错误词汇
@@ -38,8 +39,31 @@ wk.register({
         M = { "<cmd>MaximizerToggle<cr>", 'MaximizerToggle(<F5> is faster)' },
         c = { "<cmd>Telescope my_config<cr>", 'My Config' },
     },
+    s = {
+        name = "RERL(send)",
+        s = {
+            name = "Shell",
+            S = { '<cmd>SlimeSend0 "bash " . expand("%:p") . "\\n"<CR>', "send script to shell" },
+            s = { '<cmd>SlimeSend0 "bash " . expand("%") . "\\n"<CR>', "send script to shell" },
+            -- NOTE: 这里的回车必转义(必须用 "\\n"， 而不是 "\n")
+            F = { '<cmd>:SlimeSend0 "bash ".expand("%:p")." " . luaeval(\'require("yx/plugs/run_func").get_current_function_name()\') . "\\n"<CR>',
+                "send func(abs path)" },
+            f = { '<cmd>:SlimeSend0 "bash ".expand("%")." ".luaeval(\'require("yx/plugs/run_func").get_current_function_name()\')."\\n"<CR>',
+                "send func(relative path)" },
+        },
+        S = {
+            name = "Shell(without <CR>)",
+            S = { '<cmd>SlimeSend0 "bash " . expand("%:p") <CR>', "send script to shell" },
+            s = { '<cmd>SlimeSend0 "bash " . expand("%") <CR>', "send script to shell" },
+
+            F = { '<cmd>SlimeSend0 "bash ".expand("%:p")." ".luaeval(\'require("yx/plugs/run_func").get_current_function_name()\')<CR>',
+                "send func(abs path,without <cr>)" },
+            f = { '<cmd>SlimeSend0 "bash ".expand("%")." ".luaeval(\'require("yx/plugs/run_func").get_current_function_name()\')<CR>',
+                "send func(relative path, without <cr>)" },
+        }
+    },
     p = {
-        name = 'IPython Cell & REPL',
+        name = ' REPL & IPython Cell',  -- TODO move to repr;
         --
         r = { '<cmd>IPythonCellRun<cr>', 'Run Script' },
         R = { '<cmd>IPythonCellRunTime<cr>', 'Run script with time' },
@@ -62,14 +86,11 @@ wk.register({
             name = 'Send for sh',
             i = { '<cmd>SlimeSend1 ipython --matplotlib<cr>', 'start ipython with matplotlib' },
 
-            f = { '<cmd>:SlimeSend0 "python ".expand("%:p")." " . luaeval(\'require("yx/plugs/run_func").get_current_function_name()\') . "\\n"<CR>',
-                "send abs path" },
-            F = { '<cmd>:SlimeSend0 "python ".expand("%")." ".luaeval(\'require("yx/plugs/run_func").get_current_function_name()\')."\\n"<CR>',
-                "send relative path" },
+            F = { '<cmd>:SlimeSend0 "python ".expand("%:p")." " . luaeval(\'require("yx/plugs/run_func").get_current_function_name()\') . "\\n"<CR>',
+                "send func(abs path)" },
+            f = { '<cmd>:SlimeSend0 "python ".expand("%")." ".luaeval(\'require("yx/plugs/run_func").get_current_function_name()\')."\\n"<CR>',
+                "send func(relative path)" },
             -- T = {'<cmd>SlimeSend0 "python -m doctest -v -f " . expand("%:p") . "\\n"<CR>', "send script to doc test"},
-            s = { '<cmd>SlimeSend0 "bash " . expand("%:p") . "\\n"<CR>', "send script to shell" },
-            S = { '<cmd>SlimeSend0 "bash " . expand("%") . "\\n"<CR>', "send script to shell" },
-            -- NOTE: 这里的回车必转义(必须用 "\\n"， 而不是 "\n")
         },
         -- Failed settings
         -- \'s' : [':SlimeSend1 ipython --matplotlib', 'start ipython with matplotlib'],
@@ -77,12 +98,10 @@ wk.register({
         -- \'e' : ['placehoder', 'Create an embeded env']
         S = {
             name = "Send for sh(without <cr>)",
-            f = { '<cmd>SlimeSend0 "python ".expand("%:p")." ".luaeval(\'require("yx/plugs/run_func").get_current_function_name()\')<CR>',
-                "send abs path without <cr>" },
-            F = { '<cmd>SlimeSend0 "python ".expand("%")." ".luaeval(\'require("yx/plugs/run_func").get_current_function_name()\')<CR>',
-                "send relative path without <cr>" },
-            s = { '<cmd>SlimeSend0 "bash " . expand("%:p") <CR>', "send script to shell" },
-            S = { '<cmd>SlimeSend0 "bash " . expand("%") <CR>', "send script to shell" },
+            F = { '<cmd>SlimeSend0 "python ".expand("%:p")." ".luaeval(\'require("yx/plugs/run_func").get_current_function_name()\')<CR>',
+                "send func(abs path,without <cr>)" },
+            f = { '<cmd>SlimeSend0 "python ".expand("%")." ".luaeval(\'require("yx/plugs/run_func").get_current_function_name()\')<CR>',
+                "send func(relative path, without <cr>)" },
         },
     },
     j = {
@@ -131,7 +150,7 @@ wk.register({
     },
     v = {
         name = 'vimspector',
-        c = { '<cmd>call vimspector#Continue()<cr>', 'continue' },
+        c = { '<cmd>!ls .vimspector.json || vimspector.py pygen %<cr><cmd>call vimspector#Continue()<cr>', 'continue' },
         C = { '<cmd>call vimspector#ClearBreakpoints()<cr>', 'clear all breakpoints' },
         S = { '<cmd>call vimspector#Stop()<cr>', 'stop' },
         p = { '<cmd>call vimspector#Pause()<cr>', 'pause' },
@@ -143,6 +162,7 @@ wk.register({
         r = { '<cmd>call vimspector#RunToCursor()<cr>', 'run to cursor' },
         u = { '<cmd>call vimspector#UpFrame()<cr>', 'Move up call stack' },
         d = { '<cmd>call vimspector#DownFrame()<cr>', 'Move down call stack' },
+        g = { '<cmd>!ls .vimspector.json || vimspector.py pygen %<cr>', 'generate `.vimspector.json` if it does not exists' },
     },
     f = {
         name = 'fzf & telescope',
@@ -157,6 +177,8 @@ wk.register({
         b = { '<cmd>Telescope buffers<cr>', 'Buffers' },
         M = { '<cmd>Maps<cr>', 'Mappings' },
         o = { '<cmd>Lines Outlines<cr>', 'Outlines' },
+        -- 可以考虑用 telescope 来做，有preview更方便
+        -- https://github.com/nvim-telescope/telescope.nvim/issues/2251indices
         h = { '<cmd>Telescope help_tags<cr>', 'help tags' },
         d = {
             name = "deploy and cheatsheets",

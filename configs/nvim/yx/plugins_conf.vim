@@ -105,11 +105,11 @@ end
 " Keyboard mappings. <Leader> is \ (backslash) by default
 
 " shell related
-nnoremap <leader>psr :SlimeSend0 "python ".expand("%:p")."\n"<CR>
-nnoremap <leader>psR :SlimeSend0 "python ".expand("%")."\n"<CR>
+nnoremap <leader>psR :SlimeSend0 "python ".expand("%:p")."\n"<CR>
+nnoremap <leader>psr :SlimeSend0 "python ".expand("%")."\n"<CR>
 
-nnoremap <leader>pSr :SlimeSend0 "python ".expand("%:p")<CR>
-nnoremap <leader>pSR :SlimeSend0 "python ".expand("%")<CR>
+nnoremap <leader>pSR :SlimeSend0 "python ".expand("%:p")<CR>
+nnoremap <leader>pSr :SlimeSend0 "python ".expand("%")<CR>
 
 " 这里有点缺陷，在Python的 docstring的位置不能正确输出结果
 " nnoremap <leader>psf :SlimeSend0 "python ".expand("%:p")." ".luaeval('require("yx/plugs/run_func").get_current_function_name()')."\n"<CR>
@@ -120,8 +120,8 @@ nnoremap <leader>pSR :SlimeSend0 "python ".expand("%")<CR>
 
 " nnoremap <leader>pss :SlimeSend0 "bash ".expand("%:p")."\n"<CR>
 
-nnoremap <leader>psd :SlimeSend0 "python -m ipdb -c c ".expand("%:p")."\n"<CR>
-nnoremap <leader>psD :SlimeSend0 "python -m ipdb -c c ".expand("%")."\n"<CR>
+nnoremap <leader>psD :SlimeSend0 "python -m ipdb -c c ".expand("%:p")."\n"<CR>
+nnoremap <leader>psd :SlimeSend0 "python -m ipdb -c c ".expand("%")."\n"<CR>
 nnoremap <leader>psp :SlimeSend0 "pyprof ".expand("%:p")."\n"<CR>
 nnoremap <leader>pskp :SlimeSend0 "kernprof -l ".expand("%:p")."\n"<CR>
 nnoremap <leader>pskc :SlimeSend0 "python -m line_profiler ".expand("%:t").".lprof\n"<CR>
@@ -142,7 +142,7 @@ nnoremap <leader>pde :SlimeSend1 from IPython import embed; embed()<CR>
 let g:indent_guides_enable_on_vim_startup = 1
 let g:indent_guides_guide_size = 1
 let g:indent_guides_start_level = 2
-let g:indent_guides_exclude_filetypes = ['help', 'nerdtree', 'toggleterm']
+let g:indent_guides_exclude_filetypes = ['help', 'nerdtree', 'toggleterm', 'NvimTree']
 " END   for vim-indent-guides ----------------------------------------------------------
 
 

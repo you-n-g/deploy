@@ -47,6 +47,10 @@ JAVA_TPL_V = {
 
 class VimSpector:
     def pygen(self, script, jmc=True):
+        """
+        NOTE:
+        - 如果有多个 `.vimspector.json`，它会优先取 % 文件当下的
+        """
         tpl = copy.deepcopy(PY_TPL)
         cfg = tpl["configurations"][NAME]["configuration"]
         cfg["cwd"] = str(Path(".").absolute())

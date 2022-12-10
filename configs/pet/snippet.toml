@@ -232,3 +232,8 @@
   description = "Clear PageCache only"
   command = "sudo su  -c \"sync; echo 1 > /proc/sys/vm/drop_caches\""
   output = ""
+
+[[snippets]]
+  description = "sudo reserve most env variables"
+  command = "sudo -E env \"PATH=$PATH\""
+  output = ""

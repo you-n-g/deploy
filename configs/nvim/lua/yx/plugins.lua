@@ -95,9 +95,13 @@ local M = require('packer').startup(function(use)
     use 'smbl64/vim-black-macchiato'
     -- This may be better for all language
     -- https://github.com/MunifTanjim/prettier.nvim
-    
+
     -- use('jose-elias-alvarez/null-ls.nvim')
     -- use('MunifTanjim/prettier.nvim')
+
+    -- TODO: The coding workflow can be improved futther with following potential useful plugins
+    -- English spelling:
+    -- - https://www.reddit.com/r/neovim/comments/w3rgnw/english_grammar_checker_plugin_in_neovim/
 
     -- Automatically set up your configuration after cloning packer.nvim
     -- Put this at the end after all plugins
