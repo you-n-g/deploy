@@ -24,6 +24,9 @@ PY_TPL = {
                 "debugOptions": [],
                 "program": "<path to main python file>",
                 "args": [],  # the arguments you start the program
+                "justMyCode#json": "${justMyCode:true}",
+                # Because the varible can only accept string.
+                # So we will convert it to string and then convert it to json to make its type boolean
             },
         }
     }
@@ -46,7 +49,7 @@ JAVA_TPL_V = {
 
 
 class VimSpector:
-    def pygen(self, script, jmc=True):
+    def pygen(self, script, jmc=None):
         """
         NOTE:
         - 如果有多个 `.vimspector.json`，它会优先取 % 文件当下的
@@ -57,7 +60,9 @@ class VimSpector:
         cfg["python"] = str(Path(sys.executable).absolute())
         cfg["program"] = str(Path(script).absolute())
 
-        cfg["justMyCode"] = jmc
+        if jmc is not None:
+            cfg["justMyCode"] = jmc
+            del cfg["justMyCode#json"]
 
         with open(".vimspector.json", "w") as f:
             json.dump(tpl, f)
