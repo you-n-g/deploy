@@ -177,6 +177,7 @@ vim.cmd[[imap <silent><expr> <C-E> luasnip#choice_active() ? '<Plug>luasnip-next
 vim.cmd[[smap <silent><expr> <C-E> luasnip#choice_active() ? '<Plug>luasnip-next-choice' : '<C-E>']]
 
 
+-- BEGIN: colorscheme ------------------------------------------
 -- require('onedark').setup {
 --     style = 'darker'
 -- }
@@ -200,6 +201,7 @@ require('lualine').setup({
         theme = 'tokyonight',
     },
 })
+-- END:   colorscheme ------------------------------------------
 
 
 -- 'smbl64/vim-black-macchiato'
@@ -211,3 +213,13 @@ vim.cmd[[autocmd FileType python nmap <buffer> = <plug>(BlackMacchiatoCurrentLin
 -- prettier/vim-prettier
 vim.cmd[[nmap <Leader>F :PrettierAsync<cr>]]
 vim.cmd[[xmap <Leader>F :PrettierPartial<cr>]]
+
+
+-- BEGIN: telescope  ------------------------------------------
+vim.api.nvim_set_keymap('n', 'Q', ":lua require('telescope/buffer').my_buffers()<cr>", {noremap = true})
+-- Mappings https://github.com/nvim-telescope/telescope.nvim#mappings
+-- 下面的两个是最有用的
+-- <C-/>: Show mappings for picker actions (insert mode)
+-- ?	: Show mappings for picker actions (normal mode)
+-- <c-q>: 上面还漏了一个， 这个可以用quick fix 打开， 批量修复非常方便
+-- END:   telescope  ------------------------------------------

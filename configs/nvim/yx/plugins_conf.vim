@@ -548,15 +548,3 @@ set foldmethod=expr
 set foldexpr=nvim_treesitter#foldexpr()
 set foldlevel=99
 " END   'nvim-treesitter/nvim-treesitter' ---------------------------------
-
-
-
-" BEGIN 'telescope related' -----------------------------------------
-lua << EOF
-vim.api.nvim_set_keymap('n', 'Q', ":lua require('telescope/buffer').my_buffers()<cr>", {noremap = true})
-EOF
-" Mappings https://github.com/nvim-telescope/telescope.nvim#mappings
-" <c-q>: 上面还漏了一个， 这个可以用quick fix 打开， 批量修复非常方便
-" END   'telescope related' -----------------------------------------
-
-

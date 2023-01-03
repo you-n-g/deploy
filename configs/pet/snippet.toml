@@ -237,3 +237,8 @@
   description = "sudo reserve most env variables"
   command = "sudo -E env \"PATH=$PATH\""
   output = ""
+
+[[snippets]]
+  description = "fast install torch"
+  command = "pip install light-the-torch && ltt install torch"
+  output = ""

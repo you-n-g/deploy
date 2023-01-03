@@ -28,6 +28,7 @@ EOF
 " [ ] convert to snippet 不够方便；可以考虑自己写一个
 " [X] pypdb 不管用了
 " 在terminal 里面 gf， 把它打开到 最大的那个 windows中
+" [ ] 在Quick Fix中绑定快捷键T到 Telescope quickfix (顺便加一个lua的snippet)
 
 
 
