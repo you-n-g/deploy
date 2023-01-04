@@ -310,6 +310,7 @@ nnoremap <leader>vB  :call vimspector#ToggleBreakpoint({'condition':''})<left><l
 nnoremap <F6> :call vimspector#StepOver()<cr>
 nnoremap <F7> :call vimspector#StepInto()<cr>
 nnoremap <F17> :call vimspector#StepOut()<cr>
+" shift + <F7>
 
 " Python DEBUG
 " :VimspectorInstall debugpy
@@ -503,8 +504,8 @@ nnoremap <c-l> :SidewaysRight<cr>
 " END   'AndrewRadev/sideways.vim' -----------------------------------------
 
 " BEGIN 'szw/vim-maximizer' -----------------------------------------
-let g:maximizer_default_mapping_key = '<F5>'
-tnoremap <silent><F5> <c-\><c-n>:MaximizerToggle<CR>
+" let g:maximizer_default_mapping_key = '<F5>'
+" tnoremap <silent><F5> <c-\><c-n>:MaximizerToggle<CR>
 " END   'szw/vim-maximizer' -----------------------------------------
 
 

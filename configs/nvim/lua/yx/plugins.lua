@@ -96,6 +96,8 @@ local M = require('packer').startup(function(use)
     -- This may be better for all language
     -- https://github.com/MunifTanjim/prettier.nvim
 
+    use { "beauwilliams/focus.nvim", config = function() require("focus").setup() end }
+
     -- use('jose-elias-alvarez/null-ls.nvim')
     -- use('MunifTanjim/prettier.nvim')
 

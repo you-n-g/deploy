@@ -223,3 +223,12 @@ vim.api.nvim_set_keymap('n', 'Q', ":lua require('telescope/buffer').my_buffers()
 -- ?	: Show mappings for picker actions (normal mode)
 -- <c-q>: 上面还漏了一个， 这个可以用quick fix 打开， 批量修复非常方便
 -- END:   telescope  ------------------------------------------
+
+
+
+-- BEGIN: beauwilliams/focus.nvim ------------------------------------------
+vim.api.nvim_set_keymap('n', '<F15>', ":FocusToggle<cr>", {noremap = true})
+vim.api.nvim_set_keymap('t', '<F15>', [[<c-\><c-n>:FocusToggle<cr>]], {noremap = true})
+vim.api.nvim_set_keymap('n', '<F5>', ":FocusMaximise<cr>", {noremap = true})
+vim.api.nvim_set_keymap('t', '<F5>', [[<c-\><c-n>:FocusMaximise<cr>]], {noremap = true})
+-- END:   beauwilliams/focus.nvim ------------------------------------------
