@@ -204,8 +204,11 @@ wk.register({
         name = "Git Related",
         l = { '<cmd>G log --graph --oneline --decorate --all<cr>', 'commit tree' },
         h = { '<cmd>0Glog<cr>', 'The commit file of current history' }
-    }
-
+    },
+    e = {
+        name = "edit commands",
+        g = {[[<cmd>s/\vhttps:\/\/github\.com\/(.+)/git@github.com:\1.git/<cr>]], "change https to git"}
+    },
 }, { prefix = "<leader>" })
 
 wk.register({

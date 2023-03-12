@@ -15,6 +15,8 @@
 -- 这个版本还有如下问题
 -- - 遇到comments，就直接变成<node source了>
 local ts_utils = require'nvim-treesitter.ts_utils'
+-- local query = require'vim.treesitter.query'
+-- get_node_text 说是新版的得从这里拿，但是这里没找到怎么拿
 local M = {}
 
 function M.get_current_function_name(find_cls, sep)
@@ -38,7 +40,15 @@ function M.get_current_function_name(find_cls, sep)
 
     if not expr then return "" end
 
-    local func_name = (ts_utils.get_node_text(expr:child(1)))[1]
+    -- TODO: 我觉得这里应该有更方便的获得 node function name的方法
+    local name_index = 1
+    -- print(expr:child(name_index):type())
+    if expr:child(name_index):type() == "(" then
+        -- this is for some bash scripts without `function` decoration. So the first word should be function name
+        name_index = 0
+    end
+    -- query.get_node_text
+    local func_name = (ts_utils.get_node_text(expr:child(name_index)))[1]
     if not find_cls then return func_name end
 
     -- find class name

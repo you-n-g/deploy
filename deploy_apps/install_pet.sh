@@ -29,3 +29,8 @@ ln -s ~/deploy/configs/pet/snippet.toml ~/.config/pet/snippet.toml
 # 但是最后似乎还是没有用， 感觉是第一次启动pet时清空的
 $PET_PATH/pet list    # 那就启动一次试试
 cd ~/deploy/configs/pet/ && git checkout snippet.toml
+
+
+
+# NOTE: known issues
+# - 现在往变量窗口里面填写长句子，会导多出来很多额外的空格
