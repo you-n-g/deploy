@@ -36,7 +36,7 @@ plt.rcParams['font.sans-serif'] = 'SimHei'
 plt.rcParams['axes.unicode_minus'] = False
 from tqdm.cli import tqdm
 # tqdm.pandas()  # for progress_apply
-from IPython import get_ipython
+from IPython.core.getipython import get_ipython
 IPY = get_ipython()
 IPY.run_line_magic("matplotlib", "inline")
 IPY.run_line_magic("load_ext", "autoreload")
@@ -175,7 +175,7 @@ warnings.warn("${1:XXX} is deprecated; use ${2:XXX}.", DeprecationWarning)
 endsnippet
 
 snippet at "autotime" b
-from IPython import get_ipython
+from IPython.core.getipython import get_ipython
 IPY = get_ipython()
 IPY.run_line_magic("load_ext", "autotime")
 endsnippet
@@ -365,4 +365,8 @@ else:
     print(f"Skip the feature based on os.environ['{key}']")
 # END   ---------------------------------------
 
+endsnippet
+
+snippet datetimehost "get string for datetime host" b
+f'{__import__("socket").gethostname()}_{__import__("datetime").datetime.now().strftime("%m-%d-%Y_%H-%M-%S")}'
 endsnippet

@@ -61,9 +61,6 @@ fi
 # # 但是不加似乎也没问题, 可能pure安装根本不靠他
 
 
-# For 1ambda/zsh-snippets
-ln -s ~/deploy/configs/shell/zsh_snippets ~/.zsh_snippets
-
 
 cd $DIR_PATH
 . ../helper_scripts/config_rc.sh

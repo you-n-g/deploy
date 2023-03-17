@@ -1,0 +1,55 @@
+{
+	"name": "example-snippets",
+	"contributes": {
+		"snippets": [
+			{
+				"language": [
+					"all"
+				],
+				"path": "./all.json"
+			},
+			{
+				"language": [
+					"gitcommit"
+				],
+				"path": "./gitcommit.json"
+			},
+			{
+				"language": [
+					"java"
+				],
+				"path": "./java.json"
+			},
+			{
+				"language": [
+					"markdown"
+				],
+				"path": "./markdown.json"
+			},
+			{
+				"language": [
+					"python"
+				],
+				"path": "./python.json"
+			},
+			{
+				"language": [
+					"sh"
+				],
+				"path": "./sh.json"
+			},
+			{
+				"language": [
+					"vim"
+				],
+				"path": "./vim.json"
+			},
+			{
+				"language": [
+					"json"
+				],
+				"path": "./json.json"
+			}
+		]
+	}
+}

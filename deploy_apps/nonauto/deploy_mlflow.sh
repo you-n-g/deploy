@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# 逻辑结构：  mlflow{Client}(需要同时提供 数据的认证&AzureBlob的认证)  -> Nginx{Server}(负责mlflow基础数据的认证) ->  mlflow-server{server}(管理基础数据)
+#                                                                   -> 通过AzureBlob(比如 Connnection String) 存储、访问数据
+
 # Follow the guidance below
 # https://medium.com/swlh/how-to-setup-mlflow-on-azure-5ba67c178e7d
 

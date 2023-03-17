@@ -200,10 +200,45 @@
 
 [[snippets]]
   description = "add qlib remote repo"
-  command = "git remote add <user> https://github.com/<user>/qlib && git fetch <user> <branch=main>  && git checkout <user>/<branch=main>"
+  command = "git remote add <user> https://github.com/<user>/qlib ; git fetch <user> <branch=main>  && git checkout <user>/<branch=main>"
   output = ""
 
 [[snippets]]
   description = "git ignore change of specific file (Ref https://stackoverflow.com/a/1753078)"
-  command = "git update-index --assume-unchanged <file list>" 
+  command = "git update-index --assume-unchanged <file list>"
+  output = ""
+
+[[snippets]]
+  description = "neovim without any config:w"
+  command = "vim -u NONE -U NONE -N -i NONE"
+  output = ""
+
+[[snippets]]
+  description = "start with only lua config"
+  command = "vim -u ~/deploy/configs/nvim/init_debug_lua.vim -U NONE -N -i NONE"
+  output = ""
+
+[[snippets]]
+  description = "fast attach docker"
+  command = "docker exec -it `docker ps -l --format '{{.Names}}'` bash"
+  output = ""
+
+[[snippets]]
+  description = "git commit & skip precommit"
+  command = "git commit --no-verify  -v"
+  output = ""
+
+[[snippets]]
+  description = "Clear PageCache only"
+  command = "sudo su  -c \"sync; echo 1 > /proc/sys/vm/drop_caches\""
+  output = ""
+
+[[snippets]]
+  description = "sudo reserve most env variables"
+  command = "sudo -E env \"PATH=$PATH\""
+  output = ""
+
+[[snippets]]
+  description = "fast install torch"
+  command = "pip install light-the-torch && ltt install torch"
   output = ""

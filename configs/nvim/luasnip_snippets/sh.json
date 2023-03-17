@@ -1,0 +1,94 @@
+{
+  "root": {
+    "prefix": "root",
+    "description": "Who am I!",
+    "body": [
+      "if [ `whoami` != root ]; then",
+      "\techo Please run this script as root or using sudo",
+      "\texit",
+      "fi"
+    ]
+  },
+  "getopts": {
+    "prefix": "getopts",
+    "description": "Get Opts",
+    "body": [
+      "# https://stackoverflow.com/a/34531699",
+      "while getopts \":a:\" opt; do",
+      "    case \\$opt in",
+      "        a)",
+      "        echo \"-a was triggered, Parameter: \\$OPTARG\" >&2",
+      "        ;;",
+      "        \\?)",
+      "        echo \"Invalid option: -\\$OPTARG\" >&2",
+      "        exit 1",
+      "        ;;",
+      "        :)",
+      "        echo \"Option -\\$OPTARG requires an argument.\" >&2",
+      "        exit 1",
+      "        ;;",
+      "    esac",
+      "done"
+    ]
+  },
+  "confirm": {
+    "prefix": "confirm",
+    "description": "Confirm (y/n)",
+    "body": [
+      "while read -p \"Continue (y/n)?\" CONFIRM_CONTINUE ; do",
+      "\tcase \"\\$CONFIRM_CONTINUE\" in",
+      "\ty|Y )",
+      "\t\tbreak",
+      "\t\t;;",
+      "\tn|N )",
+      "\t\techo \"Exited\"",
+      "\t\texit 1",
+      "\t\t;;",
+      "\t* ) echo \"Invalid\";;",
+      "\tesac",
+      "done"
+    ]
+  },
+  "dir": {
+    "prefix": "dir",
+    "description": "Description",
+    "body": [
+      "if [ \"\\$0\" = \"-bash\" ] || [ \"\\$0\" = \"-zsh\" ]  ||  [ \"\\$0\" = \"zsh\" ]; then",
+      "\tDIR=\"\\$(pwd)\"",
+      "else",
+      "\tDIR=\"\\$( cd \"\\$(dirname \"\\$(readlink -f \"\\$0\")\")\" || exit ; pwd -P )\"",
+      "fi"
+    ]
+  },
+  "set": {
+    "prefix": "set",
+    "description": "set script",
+    "body": [
+      "set -x  # show command",
+      "set -e  # Error on exception"
+    ]
+  },
+  "ol": {
+    "prefix": "ol",
+    "description": "Outlines",
+    "body": "# # Outlines: ${1:header}"
+  },
+  "ol2": {
+    "prefix": "ol2",
+    "description": "Outlines",
+    "body": "# ## Outlines: ${1:header}"
+  },
+  "pypdb": {
+    "prefix": "pypdb",
+    "description": "add pdb module and continue",
+    "body": "python -m ipdb -c c ",
+    "luasnip": {
+      "autotrigger": true
+    }
+  },
+  "cudav": {
+    "prefix": "cudav",
+    "description": "Cuda Visible Device",
+    "body": "CUDA_VISIBLE_DEVICES=1,2,3"
+  }
+}

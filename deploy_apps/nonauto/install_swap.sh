@@ -44,7 +44,7 @@ echo "swap path: $SWAP_PATH"
 echo "skip write fstab: $SKIP_WRITE_FSTAB"
 
 
-if [ $AUTO_YES = false ] then
+if [ $AUTO_YES = false ] ; then
     while read -p "Continue (y/n)?" choice ; do
         case "$choice" in
           y|Y )

@@ -98,5 +98,8 @@ do
 	echo "echo COMMAND $year"
 done | parallel --load 60 -j 60 --workdir \$PWD
 # load 为了防止单进程本身可以利用多核
+endsnippet
 
+snippet cudav "Cuda Visible Device" b
+CUDA_VISIBLE_DEVICES=1,2
 endsnippet

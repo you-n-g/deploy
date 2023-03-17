@@ -34,6 +34,12 @@ sudo systemctl restart docker
 # - 默认的 kaggle/python:latest 是CPU版本的
 # - 如果跳过了上面的步骤，启动docker的时候会出现， `unknown flag: --gpu`
 
+# 如果出现了这个错误
+# - docker: Error response from daemon: could not select device driver "" with capabilities: [[gpu]].
+# 则这么安装 docker会有帮助
+# - sudo apt-get install nvidia-container-runtime
+
+
 # 启动  docker之后，有的东西可能会需要临时编译， 会出现下面的错误
 # - TensorFlow was not built with CUDA kernel binaries compatible with compute capability 5.2. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
 

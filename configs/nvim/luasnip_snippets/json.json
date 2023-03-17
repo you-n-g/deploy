@@ -1,0 +1,16 @@
+{
+  "new": {
+    "prefix": "new",
+    "description": "desc Import",
+    "body": [
+        "\"${1:prefix}\": {",
+        "  \"prefix\": \"${1}\",",
+        "  \"description\": \"desc ${1}\",",
+        "  \"body\": [",
+        "    \"line1\",",
+        "    \"lin2\"",
+        "  ] ",
+        "},"
+    ]
+  }
+}

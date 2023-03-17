@@ -1,0 +1,481 @@
+{
+  "import": {
+    "prefix": "import",
+    "description": "Normal Import",
+    "body": [
+      "import numpy as np",
+      "import pandas as pd",
+      "import matplotlib.pyplot as plt",
+      "import seaborn as sns",
+      "sns.set(color_codes=True)",
+      "plt.rcParams['font.sans-serif'] = 'SimHei'",
+      "plt.rcParams['axes.unicode_minus'] = False",
+      "from tqdm.cli import tqdm",
+      "# tqdm.pandas()  # for progress_apply",
+      "from IPython.core.getipython import get_ipython",
+      "IPY = get_ipython()",
+      "IPY.run_line_magic(\"matplotlib\", \"inline\")",
+      "IPY.run_line_magic(\"load_ext\", \"autoreload\")",
+      "# IPY.run_line_magic(\"autoreload\", 1)",
+      "IPY.run_line_magic(\"load_ext\", \"autotime\")"
+    ]
+  },
+  "path": {
+    "prefix": "path",
+    "description": "import path",
+    "body": [
+      "import sys",
+      "sys.path.append('~/repos/${1:data_selection}')"
+    ]
+  },
+  "ol": {
+    "prefix": "ol",
+    "description": "Outlines",
+    "body": [
+      "# %% [markdown]",
+      "# # Outlines: ${1:header}"
+    ]
+  },
+  "ol2": {
+    "prefix": "ol2",
+    "description": "Outlines",
+    "body": [
+      "# %% [markdown]",
+      "# ## Outlines: ${1:header}"
+    ]
+  },
+  "IPY": {
+    "prefix": "IPY",
+    "description": "run magic",
+    "body": "IPY.run_line_magic(\"${1:magic command}\")"
+  },
+  "groupbyic": {
+    "prefix": "groupbyic",
+    "description": "calc pred label df ic",
+    "body": "groupby(\"datetime\").apply(lambda df: df['${1:score}'].corr(df['${2:label}'], method='${3:spearman}'))"
+  },
+  "raisenip": {
+    "prefix": "raisenip",
+    "description": "Not Implemented",
+    "body": "raise NotImplementedError(f\"This type of input is not supported\")"
+  },
+  "TODOPI": {
+    "prefix": "TODOPI",
+    "description": "Implemented TODO",
+    "body": [
+      "# TODO: Please implement me!!!!",
+      "return"
+    ]
+  },
+  "emb": {
+    "prefix": "emb",
+    "description": "Embed for debuging",
+    "body": "from IPython import embed; embed()"
+  },
+  "fontsize": {
+    "prefix": "fontsize",
+    "description": "Change font size",
+    "body": [
+      "def change_fs(font_size):",
+      "    font_size = font_size",
+      "    plt.rc('font', size=font_size)         # controls default text sizes",
+      "    plt.rc('axes', titlesize=font_size)    # fontsize of the axes title",
+      "    plt.rc('axes', labelsize=font_size)    # fontsize of the x and y labels",
+      "    plt.rc('xtick', labelsize=font_size)   # fontsize of the tick labels",
+      "    plt.rc('ytick', labelsize=font_size)   # fontsize of the tick labels",
+      "    plt.rc('legend', fontsize=font_size)   # legend fontsize",
+      "    plt.rc('figure', titlesize=font_size)  # fontsize of the figure title"
+    ]
+  },
+  "ntf": {
+    "prefix": "ntf",
+    "description": "Notify me",
+    "body": "from wan import ntf; ntf('${1:Done}')"
+  },
+  "read_yaml": {
+    "prefix": "read_yaml",
+    "description": "read yaml",
+    "body": [
+      "import yaml",
+      "with open(${1:conf_path}) as f:",
+      "    conf = yaml.load(f, Loader=yaml.FullLoader)"
+    ]
+  },
+  "subrun": {
+    "prefix": "subrun",
+    "description": "subprocess.run",
+    "body": "subprocess.run('${1:command}', shell=True)"
+  },
+  "loglocal": {
+    "prefix": "loglocal",
+    "description": "Description",
+    "body": "logger.info({k: v for k, v in locals().items() if k not in {'self'\\}\\})"
+  },
+  "joblib": {
+    "prefix": "joblib",
+    "description": "import joblib",
+    "body": "from joblib import Parallel, delayed"
+  },
+  "paral": {
+    "prefix": "paral",
+    "description": "use paralllel",
+    "body": "Parallel(n_jobs=-1, verbose=10)"
+  },
+  "msheader": {
+    "prefix": "msheader",
+    "description": "Microsoft Header",
+    "body": [
+      "# Copyright (c) Microsoft Corporation.",
+      "# Licensed under the MIT License."
+    ]
+  },
+  "raisemnip": {
+    "prefix": "raisemnip",
+    "description": "raise method not implemented",
+    "body": "raise NotImplementedError(f\"Please implement the `${1:func}` method\")"
+  },
+  "vir": {
+    "prefix": "vir",
+    "description": "Virtual Base class",
+    "body": [
+      "from abc import ABC, abstractmethod",
+      "class ${1:A}(ABC):",
+      "    @abstractmethod",
+      "    def ${2:f}(self):",
+      "        pass"
+    ]
+  },
+  "pdemi": {
+    "prefix": "pdemi",
+    "description": "Pandas Example Multi-Index",
+    "body": [
+      "import pandas as pd",
+      "import numpy as np",
+      "",
+      "index = [",
+      "    np.array(['bar', 'bar', 'baz', 'baz', 'foo', 'foo', 'qux', 'qux']),",
+      "    np.array(['one', 'two', 'one', 'two', 'one', 'two', 'one', 'two'])",
+      "]",
+      "",
+      "cols = [",
+      "    np.repeat(np.array([\"g1\", \"g2\"]), 2),",
+      "    np.arange(4),",
+      "]",
+      "df = pd.DataFrame(np.random.randn(8, 4), index=index, columns=cols)"
+    ]
+  },
+  "dfcmp": {
+    "prefix": "dfcmp",
+    "description": "Compare dataframe",
+    "body": [
+      "# pip install datacompy",
+      "import datacompy",
+      "compare = datacompy.Compare(df_new, df_old, on_index=True, rel_tol=1e-5, df1_name=\"new\", df2_name=\"old\")",
+      "print(compare.report())"
+    ]
+  },
+  "dw": {
+    "prefix": "dw",
+    "description": "Deprecation Warning",
+    "body": [
+      "import warnings",
+      "warnings.warn(\"${1:XXX} is deprecated; use ${2:XXX}.\", DeprecationWarning)"
+    ]
+  },
+  "at": {
+    "prefix": "at",
+    "description": "autotime",
+    "body": [
+      "from IPython.core.getipython import get_ipython",
+      "IPY = get_ipython()",
+      "IPY.run_line_magic(\"load_ext\", \"autotime\")"
+    ]
+  },
+  "pysn": {
+    "prefix": "pysn",
+    "description": "pysnooper",
+    "body": [
+      "# pip install pysnooper",
+      "import pysnooper",
+      "@pysnooper.snoop(depth=2)"
+    ]
+  },
+  "fir": {
+    "prefix": "fir",
+    "description": "fire & main",
+    "body": [
+      "import fire",
+      "if __name__ == \"__main__\":",
+      "    fire.Fire(${1:XXX})"
+    ]
+  },
+  "ree": {
+    "prefix": "ree",
+    "description": "re example",
+    "body": [
+      "m = re.match(r\"(?P<first_name>\\w+) (?P<last_name>\\w+)\", \"Malcolm Reynolds\")",
+      "print(m.groupdict())"
+    ]
+  },
+  "setup": {
+    "prefix": "setup",
+    "description": "simple setup.py",
+    "body": [
+      "from setuptools import setup, find_packages",
+      "setup(",
+      "    name='${1:XXX}',",
+      "    version='0.0.1',",
+      "    packages=find_packages(),",
+      "    install_requires=[",
+      "        'loguru>=0.5.1',",
+      "    ],",
+      ")"
+    ]
+  },
+  "rei": {
+    "prefix": "rei",
+    "description": "next iter re",
+    "body": "next(iter(re.findall(r'^([^_\\]+_)?z(\\d*)(_r)?\\$', ${1:XXX})))"
+  },
+  "cb": {
+    "prefix": "cb",
+    "description": "docstring code blocks",
+    "body": [
+      ".. code-block:: python",
+      "",
+      "    "
+    ]
+  },
+  "tracep": {
+    "prefix": "tracep",
+    "description": "call trace print",
+    "body": [
+      "import traceback",
+      "for line in traceback.format_stack():",
+      "    print(line)"
+    ]
+  },
+  "qlibex": {
+    "prefix": "qlibex",
+    "description": "Qlib example",
+    "body": [
+      "from qlib import init",
+      "init()",
+      "",
+      "from qlib.data import D",
+      "exp_l = [\"\\$vwap + \\$close\", \"\\$vwap\", \"\\$close\"]",
+      "data = D.features(D.instruments(\"csi300\"), exp_l)",
+      "data.head()"
+    ]
+  },
+  "mult": {
+    "prefix": "mult",
+    "description": "Multi Processing Example",
+    "body": [
+      "from multiprocessing import Pool",
+      "",
+      "",
+      "def worker(x):",
+      "    return x * x",
+      "",
+      "",
+      "if __name__ == \"__main__\":",
+      "    pool = Pool(5)",
+      "    res = []",
+      "    for kwargs in [{'x': 1\\}, {'x': 2\\}, {'x': 3\\}]:",
+      "        res.append(pool.apply_async(worker, [], kwargs))",
+      "",
+      "    # get result and prevent the main process from exiting",
+      "    for r in res:",
+      "        try:",
+      "            print('task ended:', r.get())",
+      "            # 子进程如果出现异常，会在r.get()这里reraise异常. 导致父进程挂掉，子进程无法继续执行",
+      "            # TODO: 如果在另外一个进程里core dumped，会在r.get()这一步卡住",
+      "        except Exception as e:",
+      "            print(u\"Type=%s, Args=%s\" % (type(e), e.args))",
+      "    pool.close()",
+      "    # TODO: If I put it before r.get(). The print info above will never output the data.",
+      "    # 在并行地分配任务的代码结束后调用它，这样pool在完成所有任务后就会自动关闭了",
+      "    # Indicate that no more data will be put on this queue by the current process.",
+      "",
+      "    pool.join()",
+      "    # one must call close or terminate() before call join. 不然主进程会等子进程结束，子进程会等主进程分配任务"
+    ]
+  },
+  "tc": {
+    "prefix": "tc",
+    "description": "type checking",
+    "body": [
+      "from __future__ import annotations",
+      "from typing import TYPE_CHECKING",
+      "if TYPE_CHECKING:",
+      "    pass"
+    ]
+  },
+  "ipdbconfi": {
+    "prefix": "ipdbconfi",
+    "description": "confirm",
+    "body": [
+      "if globals().get(\"YX_CONFIRM_${1:XXX}\") is None:",
+      "    __import__('ipdb').set_trace()",
+      "    # globals()[\"YX_CONFIRM_${1:XXX}\"] = True"
+    ]
+  },
+  "testtpl": {
+    "prefix": "testtpl",
+    "description": "test template",
+    "body": [
+      "import unittest",
+      "",
+      "",
+      "class TimeUtils(unittest.TestCase):",
+      "",
+      "    def setUp(self):",
+      "        pass",
+      "",
+      "    def tearDown(self):",
+      "        pass",
+      "",
+      "    def to_str(self, obj):",
+      "        return \"\".join(str(obj).split())",
+      "",
+      "    def test_index_data(self):",
+      "        self.assertEqual(self.to_str(data.tail()), self.to_str(res))",
+      "",
+      "",
+      "if __name__ == \"__main__\":",
+      "    unittest.main()"
+    ]
+  },
+  "pyli": {
+    "prefix": "pyli",
+    "description": "pylint ignore",
+    "body": "# pylint: disable=E1101"
+  },
+  "joblibtpl": {
+    "prefix": "joblibtpl",
+    "description": "joblib template",
+    "body": [
+      "from joblib import Parallel, delayed",
+      "",
+      "keys = []",
+      "res = []",
+      "for i in range(10):",
+      "    keys.append(i)",
+      "    # please place multiprocessing related work outside `delayed` in case of nested multiprocessing",
+      "    # It would be best to only leave the computing tensive work in subprocess",
+      "    res.append(delayed(sum)([i]))",
+      "res = Parallel(n_jobs=-1, verbose=10)(res)",
+      "",
+      "field_res = dict(zip(keys, res))"
+    ]
+  },
+  "memprof": {
+    "prefix": "memprof",
+    "description": "memory profiler",
+    "body": [
+      "from memory_profiler import profile",
+      "# pip install memory_profiler",
+      "# python -m memory_profiler <script>",
+      "@profile"
+    ]
+  },
+  "gpu": {
+    "prefix": "gpu",
+    "description": "Config GPU",
+    "body": [
+      "import os",
+      "os.environ[\"CUDA_VISIBLE_DEVICES\"]=\"0,1\""
+    ]
+  },
+  "pw": {
+    "prefix": "pw",
+    "description": "print weights&gradient",
+    "body": [
+      "for k, t in dnn_model.named_parameters():",
+      "    print(f\"layer:{k\\}, std:{t.std().item()\\}, mean:{t.mean().item()\\}\")",
+      "    print(f\"layer:{k\\}, grad.std:{t.grad.std().item()\\}, grad.mean:{t.grad.mean().item()\\}\")"
+    ]
+  },
+  "cachepath": {
+    "prefix": "cachepath",
+    "description": "use dirty cache path",
+    "body": [
+      "if pred_cache_path is None:",
+      "    pred_dict = get_predict()",
+      "else:",
+      "    p = Path(pred_cache_path)",
+      "    if p.exists():",
+      "        with p.open(\"rb\") as f:",
+      "            pred_dict = pickle.load(p)",
+      "    else:",
+      "        pred_dict = get_predict()",
+      "        with p.open(\"wb\") as f:",
+      "            pickle.dump(pred_dict, f)"
+    ]
+  },
+  "env": {
+    "prefix": "env",
+    "description": "feature control by env",
+    "body": [
+      "# BEGIN ---------------------------------------",
+      "import os",
+      "key = \"env_key\"",
+      "if key in os.environ:",
+      "    value = os.environ[key]",
+      "    print(f\"Feature based on os.environ['{key\\}'] is enabled.\")",
+      "    ...",
+      "else:",
+      "    print(f\"Skip the feature based on os.environ['{key\\}']\")",
+      "# END   ---------------------------------------",
+      ""
+    ]
+  },
+  "datetimehost": {
+    "prefix": "datetimehost",
+    "description": "get string for datetime host",
+    "body": "f'{__import__(\"socket\").gethostname()\\}_{__import__(\"datetime\").datetime.now().strftime(\"%Y-%m-%d_%H:%M:%S\")\\}'"
+  },
+  "ignore": {
+    "prefix": "ignore",
+    "description": "desc ignore",
+    "body": [
+      "# type: ignore"
+    ] 
+  },
+  "mlp": {
+    "prefix": "mlp",
+    "description": "desc mlp",
+    "body": [
+      "layers = []",
+      "",
+      "def get_seq(dim, drop, prev_dim):",
+      "    layers = []",
+      "    l1 = nn.Linear(prev_dim, dim)",
+      "    nn.init.kaiming_normal_(l1.weight)",
+      "    layers.extend([",
+      "        l1,",
+      "        nn.BatchNorm1d(dim),",
+      "        nn.LeakyReLU(0.1),",
+      "    ])",
+      "    if drop > 0:",
+      "        layers.append(nn.Dropout(drop))",
+      "    return nn.Sequential(*layers)",
+      "",
+      "prev_dim = input_dim",
+      "for dim, drop in [",
+      "    (64, 0),",
+      "    (128, 0),",
+      "    (256, 0),",
+      "    (512, 0),",
+      "    (256, dropout),",
+      "    (128, 0),",
+      "    (8, dropout),",
+      "]:",
+      "    layers.extend(get_seq(dim, drop, prev_dim))",
+      "    prev_dim = dim",
+      "layers.append(nn.Linear(prev_dim, 1))",
+      "self.layers = nn.Sequential(*layers)"
+    ] 
+  }
+}

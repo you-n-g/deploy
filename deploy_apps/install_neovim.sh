@@ -35,10 +35,20 @@ git clone https://github.com/junegunn/vim-plug ~/apps/vim-plug
 ln -s ~/apps/vim-plug/plug.vim  ~/.local/share/nvim/site/autoload/plug.vim 
 
 
+# 很多lua包用packer安装更方便
+# 不太需要下面的 
+# git clone --depth 1 https://github.com/wbthomason/packer.nvim\
+#  ~/.local/share/nvim/site/pack/packer/start/packer.nvim
+nvim --headless -c 'autocmd User PackerComplete quitall' -c 'PackerSync'
+# - TODO: 这里 应该还达不到自动安装插件的效果
 
 
 # this relys on the anaconda
-pip install neovim jupytext
+pip install neovim jupytext black-macchiato
+# - black-macchiato is for partial formatting
+if [ ! -e ~/.config/black ]; then
+    ln -s ~/deploy/configs/black/pyproject.toml ~/.config/black
+fi
 
 
 # :CocConfig 可以改变settings
@@ -65,13 +75,12 @@ mkdir ~/.config/coc/
 ln -s ~/deploy/configs/nvim/snips  ~/.config/coc/ultisnips
 
 
-if ! grep "escape-time" ~/.tmux.conf ; then
-    cat >> ~/.tmux.conf <<EOF
+# 本来在这里， 不知道有没有影响
+cat <<EOF
 # for neovim
 set-option -sg escape-time 10
 set-option -sa terminal-overrides ',screen-256color:RBG'
 EOF
-fi
 
 # deploy nodejs
 # curl -sL install-node.now.sh/lts | sudo bash -s --  -y
@@ -83,8 +92,23 @@ NP=~/apps/nodejs
 export PATH="$NP/bin/:$PATH"
 $NP/bin/npm install -g neovim
 
+# https://github.com/neovim/nvim-lspconfig/blob/a035031fd6f6bcb5b433fe0f32d755ba7485406d/doc/server_configurations.md
 $NP/bin/npm i -g pyright # for nvim-lspconfig
+$NP/bin/npm i -g bash-language-server # for nvim-lspconfig
+# Lua language server
+mkdir -p ~/apps/lua-ls/
+cd ~/apps/lua-ls/
+wget https://github.com/sumneko/lua-language-server/releases/download/3.5.6/lua-language-server-3.5.6-linux-x64.tar.gz
+tar xf lua-language-server-3.5.6-linux-x64.tar.gz
+ln -s ~/apps/lua-ls/bin/lua-language-server ~/bin/
+# efm language server
+sh $DIR_PATH/install_go.sh
+go install github.com/mattn/efm-langserver@latest
 
+# 下面两个安装了 似乎也不会在 bin 中出现prettier， 只有 prettierd 才能在bin中出现
+# npm install --global yarn
+# yarn add --dev --exact prettier
+$NP/bin/npm install -g @fsouza/prettierd
 
 bash $DIR_PATH/install_rg.sh
 

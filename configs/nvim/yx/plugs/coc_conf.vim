@@ -1,4 +1,5 @@
-
+echom "Loading CocConfig. coc.nvim is replaced by native lsp and deprecated."
+" But we try to move to lspconfig now... So we expect not to see message above
 " BEGIN for coc ----------------------------------------------------------
 " if hidden is not set, TextEdit might fail.
 set hidden

@@ -37,10 +37,6 @@ EOF
     # 1) 可以让一些暂时不支持高亮的代码 log 等等信息高亮
     # 2) 充当不能筛选内容的grep的作用
 
-    # 如果这个有问题，可以试着重新安装 zsh,  看看.zsh_snippets有没有做link(zsp list)
-    # 这个后面要被 pet  +  tmux-pet 替掉了
-    antigen bundle 1ambda/zsh-snippets
-
     # 有用的功能
     # C-x C-e 被 vv 替代掉了
     antigen bundle jeffreytse/zsh-vi-mode
@@ -103,7 +99,6 @@ EOF
     # spaceship-prompt 可以直接显示时间
     # export PROMPT="[%D{%H:%M:%S}] $PROMPT"
 
-    alias zsp="zsh_snippets"
 
     ZVM_VI_SURROUND_BINDKEY="s-prefix"
 
@@ -113,6 +108,8 @@ EOF
     function zvm_after_init() {
         [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
         enable-fzf-tab
+        # 有时候光有 zvm_after_lazy_keybindings 似乎也不work
+        zvm_bindkey viins '^S^L' insert-last-word
     }
 
     function zvm_after_lazy_keybindings() {
@@ -120,16 +117,6 @@ EOF
         # bindkey -M viins '\e.' insert-last-word
         # - 一般的shell中的就是 ESC + .
         zvm_bindkey viins '^S^L' insert-last-word
-
-        # 1ambda/zsh-snippets
-        # bindkey '^S^S' zsh-snippets-widget-expand  # CTRL-S CTRL-S (expand)
-        # bindkey '^S^A' zsh-snippets-widget-list    # CTRL-S CTRL-A (list)
-        zvm_bindkey viins '^S^S' zsh-snippets-widget-expand  # CTRL-S CTRL-S (expand)
-        zvm_bindkey viins '^S^A' zsh-snippets-widget-list    # CTRL-S CTRL-A (list)
-
-        ## useful command
-        # zsp add xxx "XXX"
-        # zsp delete xxx
     }
 fi
 
