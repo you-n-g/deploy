@@ -67,15 +67,6 @@
       "return"
     ]
   },
-  "dirn": {
-    "prefix": "dirn",
-    "description": "desc dirn",
-    "body": [
-        "from pathlib import Path",
-        "DIRNAME = Path(__file__).absolute().resolve().parent",
-        "# DIRNAME = Path(\"`!v expand('%')`\").absolute().resolve().parent # FIXME!!"
-    ] 
-  },
   "emb": {
     "prefix": "emb",
     "description": "Embed for debuging",

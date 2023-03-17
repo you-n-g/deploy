@@ -213,6 +213,7 @@ inoremap <C-^> <C-o><C-^>
 " 个人喜欢的快速移动
 " - 在insert mode下快速到行尾
 inoremap <C-e> <C-o>$
+" TODO: 不知道为什么这个在vim 里面不生效了
 
 
 " 禁止vim存储特定名字的文件(防止按错)

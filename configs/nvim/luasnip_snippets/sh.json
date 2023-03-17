@@ -53,10 +53,10 @@
     "prefix": "dir",
     "description": "Description",
     "body": [
-      "if [ \\$0 = \"-bash\" -o \\$0 = \"-zsh\" -o \\$0 = \"zsh\"  ]; then",
-      "\tDIR=`pwd`",
+      "if [ \"\\$0\" = \"-bash\" ] || [ \"\\$0\" = \"-zsh\" ]  ||  [ \"\\$0\" = \"zsh\" ]; then",
+      "\tDIR=\"\\$(pwd)\"",
       "else",
-      "\tDIR=\"\\$( cd \"\\$(dirname \\$(readlink -f \"\\$0\"))\" ; pwd -P )\"",
+      "\tDIR=\"\\$( cd \"\\$(dirname \"\\$(readlink -f \"\\$0\")\")\" || exit ; pwd -P )\"",
       "fi"
     ]
   },
@@ -89,6 +89,6 @@
   "cudav": {
     "prefix": "cudav",
     "description": "Cuda Visible Device",
-    "body": "CUDA_VISIBLE_DEVICES=1,2"
+    "body": "CUDA_VISIBLE_DEVICES=1,2,3"
   }
 }

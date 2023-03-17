@@ -18,5 +18,12 @@ local c = ls.choice_node
 -- local postfix = require("luasnip.extras.postfix").postfix
 
 return {
-    s("pwd", f(function(args) return "python " .. vim.fn.expand("%") .. " " .. require("yx/plugs/run_func").get_current_function_name() end, {}))
+    s("pwd", f(function(args) return "python " .. vim.fn.expand("%") .. " " .. require("yx/plugs/run_func").get_current_function_name() end, {})),
+    s("dirn", {
+        t("from pathlib import Path"),
+        t({"", "DIRNAME = Path(__file__).absolute().resolve().parent", ""}),
+        f(function(args) return '# DIRNAME = Path("' .. vim.fn.expand("%") .. '").absolute().resolve().parent' end, {})
+    }),
+    -- 不能在函数里面直接插入 \n 换行符，而是需要在  t 中插入 "" 字符串才能换行
+    -- s("dirn", f(function(args) return 'from pathlib import Path\nDIRNAME = Path(__file__).absolute().resolve().parent\n# DIRNAME = Path("' .. vim.fn.expand("%") .. '").absolute().resolve().parent' end, {})),
 }
