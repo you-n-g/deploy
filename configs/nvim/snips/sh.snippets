@@ -89,3 +89,14 @@ endsnippet
 snippet pypdb "add pdb module and continue" bA
 python -m ipdb -c c 
 endsnippet
+
+snippet paral "parallel template" b
+# 有时候默认也有一个parallel，直接用是不行的， 得再装一下  apt-get install parallel
+# parallel --citation
+for year in \`seq 10\`
+do
+	echo "echo COMMAND $year"
+done | parallel --load 60 -j 60 --workdir \$PWD
+# load 为了防止单进程本身可以利用多核
+
+endsnippet
