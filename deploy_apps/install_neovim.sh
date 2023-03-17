@@ -98,8 +98,13 @@ $NP/bin/npm i -g bash-language-server # for nvim-lspconfig
 # Lua language server
 mkdir -p ~/apps/lua-ls/
 cd ~/apps/lua-ls/
-wget https://github.com/sumneko/lua-language-server/releases/download/3.5.6/lua-language-server-3.5.6-linux-x64.tar.gz
-tar xf lua-language-server-3.5.6-linux-x64.tar.gz
+
+# It is released here https://github.com/luals/lua-language-server/wiki/Getting-Started#command-line
+# wget https://github.com/sumneko/lua-language-server/releases/download/3.5.6/lua-language-server-3.5.6-linux-x64.tar.gz
+# tar xf lua-language-server-3.5.6-linux-x64.tar.gz
+wget https://github.com/LuaLS/lua-language-server/releases/download/3.6.17/lua-language-server-3.6.17-linux-x64.tar.gz
+tar xf lua-language-server-3.6.17-linux-x64.tar.gz
+
 ln -s ~/apps/lua-ls/bin/lua-language-server ~/bin/
 # efm language server
 sh $DIR_PATH/install_go.sh

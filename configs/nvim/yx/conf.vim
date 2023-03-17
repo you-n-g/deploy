@@ -213,7 +213,11 @@ inoremap <C-^> <C-o><C-^>
 " 个人喜欢的快速移动
 " - 在insert mode下快速到行尾
 inoremap <C-e> <C-o>$
-" TODO: 不知道为什么这个在vim 里面不生效了
+" FIXME: 不知道为什么这个在vim 里面不生效了
+" - 在tmux之外不行
+" - 在不加载vim的config下，手动只配置 `inoremap <C-e> <C-o>$` 就可以了；
+"   说明是vim配置的问题
+" 目前的快速替代方案是用 autohotkey/ahk 和左边的ctrl替代 ctrl-e
 
 
 " 禁止vim存储特定名字的文件(防止按错)

@@ -92,7 +92,10 @@ require('lspconfig')['bashls'].setup {
     capabilities = capabilities,
 }
 
-require 'lspconfig'.sumneko_lua.setup {
+-- sumneko_lua is deprecated, use lua_ls instead. See :h deprecated
+-- This function will be removed in lspconfig version 0.2.0
+-- require 'lspconfig'.sumneko_lua.setup {
+require 'lspconfig'.lua_ls.setup {
     settings = {
         Lua = {
             runtime = {
