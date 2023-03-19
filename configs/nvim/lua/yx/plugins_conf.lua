@@ -171,6 +171,8 @@ require("luasnip.loaders.from_vscode").lazy_load({ paths = { "./luasnip_snippets
 -- https://github.com/L3MON4D3/LuaSnip/blob/master/doc/luasnip.txt#L1794
 require("luasnip.loaders.from_lua").load({paths = "./luasnip_snippets"})
 -- TODO:  只有当前vim编辑snippets时， 才能自动reload snippets
+require("luasnip.loaders.from_snipmate").load({paths = "./luasnip_snippets"})
+-- 用snipmate的原因是只有它是最容易添加新的snipmate的
 
 -- For changing choices in choiceNodes (not strictly necessary for a basic setup).
 vim.cmd[[imap <silent><expr> <C-E> luasnip#choice_active() ? '<Plug>luasnip-next-choice' : '<C-E>']]

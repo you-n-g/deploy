@@ -1,0 +1,13 @@
+# The content in `<vimstring>` will be evaluated by vim.api.nvim_exec("echo " .. vimstring, true)`
+
+# sh is not supported due to [[]]
+# if sh is not supported, it can be replaced as a simpler expression
+# if [[ "\$0" = *"bash" ]] || [[ "\$0" = *"zsh" ]]; then
+snippet dir "get the directory folder for cur scripts "
+	BASE_NAME="\$(basename -- \${0})"
+	if [ \$BASE_NAME  = "-bash" ] || [ \$BASE_NAME = "bash" ] ||  [ \$BASE_NAME  = "-zsh" ] || [ \$BASE_NAME = "zsh" ] || [ \$BASE_NAME  = "-sh" ] || [ \$BASE_NAME = "sh" ]; then
+		# the first if is to supporting REPL
+		DIR="\$(pwd)/`expand("%:h")`/"
+	else
+		DIR="\$( cd "\$(dirname "\$(readlink -f "\$0")")" || exit ; pwd -P )"
+	fi

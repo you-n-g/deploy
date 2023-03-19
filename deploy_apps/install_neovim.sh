@@ -95,6 +95,11 @@ $NP/bin/npm install -g neovim
 # https://github.com/neovim/nvim-lspconfig/blob/a035031fd6f6bcb5b433fe0f32d755ba7485406d/doc/server_configurations.md
 $NP/bin/npm i -g pyright # for nvim-lspconfig
 $NP/bin/npm i -g bash-language-server # for nvim-lspconfig
+# SyntaxError: Unexpected token '.' 代表 nodejs 版本太低
+# - 这里看到错误 https://github.com/bash-lsp/bash-language-server/issues/428
+# - 这里看到怎么升级版本: https://stackoverflow.com/questions/10075990/upgrading-node-js-to-latest-version
+# - 最后参见 deploy_apps/deploy_nodejs.sh ，安装了指定的版本 (因为安装太高的版本会需要依赖 glibc 2.28)
+
 # Lua language server
 mkdir -p ~/apps/lua-ls/
 cd ~/apps/lua-ls/

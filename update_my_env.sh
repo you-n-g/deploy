@@ -35,3 +35,4 @@ echo " - Maybe you still have to run tmux's 'prefix + I' under zsh to install pl
 
 # 其他可能需要手动操作的步骤
 # - 更新latest版本的neovim
+# - 去安装一些neovim的 language server;

@@ -1,6 +1,8 @@
 -- Please refer to https://github.com/neovim/nvim-lspconfig/blob/a035031fd6f6bcb5b433fe0f32d755ba7485406d/doc/server_configurations.md  for more LS
 
 -- From https://github.com/neovim/nvim-lspconfig#suggested-configuration
+-- A list of supported language servers
+-- - https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md
 
 -- Mappings.
 -- See `:help vim.diagnostic.*` for documentation on any of the below functions

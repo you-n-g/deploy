@@ -49,17 +49,6 @@
       "done"
     ]
   },
-  "dir": {
-    "prefix": "dir",
-    "description": "Description",
-    "body": [
-      "if [ \"\\$0\" = \"-bash\" ] || [ \"\\$0\" = \"-zsh\" ]  ||  [ \"\\$0\" = \"zsh\" ]; then",
-      "\tDIR=\"\\$(pwd)\"",
-      "else",
-      "\tDIR=\"\\$( cd \"\\$(dirname \"\\$(readlink -f \"\\$0\")\")\" || exit ; pwd -P )\"",
-      "fi"
-    ]
-  },
   "set": {
     "prefix": "set",
     "description": "set script",
