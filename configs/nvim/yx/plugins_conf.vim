@@ -127,9 +127,22 @@ nnoremap <leader>pskp :SlimeSend0 "kernprof -l ".expand("%:p")."\n"<CR>
 nnoremap <leader>pskc :SlimeSend0 "python -m line_profiler ".expand("%:t").".lprof\n"<CR>
 " nnoremap <leader>pst :SlimeSend0 "nosetests --nocapture --ipdb --ipdb-failures ".expand("%:p")."\n"<CR>
 nnoremap <leader>pst :SlimeSend0 "pytest -s --pdb --disable-warnings ".expand("%:p")."::".luaeval('require("yx/plugs/run_func").get_current_function_name(true)')."\n"<CR>
-nnoremap <leader>psT :SlimeSend0 "pytest -s --pdb --disable-warnings --doctest-modules ".expand("%:p")."::".expand("%:t:r").".".luaeval('require("yx/plugs/run_func").get_current_function_name(true)')."\n"<CR>
+lua << EOF
+function get_pytest_doctest_module()
+    -- often used command let b:ptdm="abc"
+    -- - let b:ptdm="abc"
+    -- - unlet b:ptdm
+    local ok, ptdm = pcall(vim.api.nvim_buf_get_var, 0, "ptdm")
+    if ok then
+        return ptdm
+    end
+    return vim.fn.expand("%:t:r")
+end
+EOF
+nnoremap <silent>  <leader>psT :SlimeSend0 "pytest -s --pdb --disable-warnings --doctest-modules ".expand("%:p")."::".luaeval("get_pytest_doctest_module()").".".luaeval('require("yx/plugs/run_func").get_current_function_name(true)')."\n"<CR>
 " I don't know why there must be module name before function name when
 " calling pytest (i.e. `gen_task.gen_yaml` instead of `gen_yaml`)
+" TODO: when the module path contains mulitple levels(e.g. qlib.utils.data), this will not work.
 nnoremap <leader>pdb :SlimeSend0 "b ".expand("%:p").":".line(".")."\n"<CR>
 nnoremap <leader>pde :SlimeSend1 from IPython import embed; embed()<CR>
 

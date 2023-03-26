@@ -1,3 +1,5 @@
+-- NOTE:
+-- 感觉这里的key设置都是noremap的
 require("which-key").setup {
     -- your configuration comes here
     -- or leave it empty to use the default settings
@@ -91,6 +93,10 @@ wk.register({
             f = { '<cmd>:SlimeSend0 "python ".expand("%")." ".luaeval(\'require("yx/plugs/run_func").get_current_function_name()\')."\\n"<CR>',
                 "send func(relative path)" },
             -- T = {'<cmd>SlimeSend0 "python -m doctest -v -f " . expand("%:p") . "\\n"<CR>', "send script to doc test"},
+            d = "ipdb",
+            D = "ipdb(abs path)",
+            t = "pytest func",
+            T = "pytest doc func",
         },
         -- Failed settings
         -- \'s' : [':SlimeSend1 ipython --matplotlib', 'start ipython with matplotlib'],
@@ -141,6 +147,9 @@ wk.register({
     l = {
         name = "lsp-related",
         s = { "<cmd>lua require('luasnip.loaders').edit_snippet_files()<cr>", "edit snippet" },
+        e = "diagnostic.open_float",
+        l = "diagnostic quick fix",
+        a = "code action",
     },
 
     L = {
@@ -226,6 +235,11 @@ wk.register({
     c = {
         name = 'coc.vim',
         s = { '<Plug>(coc-convert-snippet)', 'Convert to Snippets' },
+    },
+    l = {
+        name = "lsp-related(visual)",
+        -- a = { "y ls1<cr>2<cr><esc>Go<cr><esc>0<esc>isnippet key \"Desc<esc>p", "convert to snippet" },
+        c = { "y<cmd>lua require('luasnip.loaders').edit_snippet_files()<cr>1<cr>2<cr><esc>Go<cr><esc>0<esc>isnippet key \"Desc\"<esc>p", "convert to snippet" },
     },
     -- F = { "<Plug>(prettier-format)", "code format" }
 }, { prefix = "<leader>", mode = "v" })

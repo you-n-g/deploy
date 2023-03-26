@@ -46,6 +46,9 @@ Plug 'kana/vim-submode'
 Plug 'mg979/vim-visual-multi'
 
 Plug 'kkoomen/vim-doge', { 'do': { -> doge#install() } }
+" I'm facing the following "Python parser failed" Error
+" https://github.com/kkoomen/vim-doge/issues/319
+
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 Plug 'APZelos/blamer.nvim'
