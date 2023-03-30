@@ -10,7 +10,11 @@ NP=~/apps/nodejs
 
 mkdir -p $NP
 
-curl -sL install-node.now.sh/lts | bash -s --  -y -P $NP
+# curl -sL install-node.now.sh/lts | bash -s --  -y -P $NP
+# - 如果直接安装 latest版本可能会出现 Getting GLIBC_2.28 not found的错误
+#   - https://stackoverflow.com/a/72937118
+curl -sL install-node.now.sh/v16.15.1 | bash -s --  -y -P $NP
+# install-node.now.sh 这个命令直接跑可以更新node的版本， 看起来像是会直接覆盖
 
 
 mkdir -p ~/bin/

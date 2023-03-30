@@ -1,6 +1,8 @@
 -- Please refer to https://github.com/neovim/nvim-lspconfig/blob/a035031fd6f6bcb5b433fe0f32d755ba7485406d/doc/server_configurations.md  for more LS
 
 -- From https://github.com/neovim/nvim-lspconfig#suggested-configuration
+-- A list of supported language servers
+-- - https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md
 
 -- Mappings.
 -- See `:help vim.diagnostic.*` for documentation on any of the below functions
@@ -8,7 +10,7 @@ local opts = { noremap = true, silent = true }
 vim.keymap.set('n', '<space>le', vim.diagnostic.open_float, opts)  -- (l)ist (e)rror
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, opts)
 vim.keymap.set('n', ']d', vim.diagnostic.goto_next, opts)
-vim.keymap.set('n', '<space>q', vim.diagnostic.setloclist, opts)
+vim.keymap.set('n', '<space>lq', vim.diagnostic.setloclist, opts)
 
 -- Use an on_attach function to only map the following keys
 -- after the language server attaches to the current buffer
@@ -31,7 +33,7 @@ local on_attach = function(client, bufnr)
     end, bufopts)
     vim.keymap.set('n', '<space>D', vim.lsp.buf.type_definition, bufopts)
     vim.keymap.set('n', '<space>rn', vim.lsp.buf.rename, bufopts)
-    vim.keymap.set('n', '<space>ca', vim.lsp.buf.code_action, bufopts)
+    vim.keymap.set('n', '<space>la', vim.lsp.buf.code_action, bufopts)
     vim.keymap.set('n', 'gr', vim.lsp.buf.references, bufopts)
     -- vim.keymap.set('n', '<space>F', function() vim.lsp.buf.format { async = true } end, bufopts)
     vim.keymap.set('n', '<space>F', function() vim.lsp.buf.formatting() end, bufopts)
@@ -92,7 +94,10 @@ require('lspconfig')['bashls'].setup {
     capabilities = capabilities,
 }
 
-require 'lspconfig'.sumneko_lua.setup {
+-- sumneko_lua is deprecated, use lua_ls instead. See :h deprecated
+-- This function will be removed in lspconfig version 0.2.0
+-- require 'lspconfig'.sumneko_lua.setup {
+require 'lspconfig'.lua_ls.setup {
     settings = {
         Lua = {
             runtime = {
@@ -106,6 +111,7 @@ require 'lspconfig'.sumneko_lua.setup {
             workspace = {
                 -- Make the server aware of Neovim runtime files
                 library = vim.api.nvim_get_runtime_file("", true),
+                checkThirdParty = false,  --  preventing https://github.com/LuaLS/lua-language-server/issues/679  by https://github.com/LuaLS/lua-language-server/issues/783
             },
             -- Do not send telemetry data containing a randomized but unique identifier
             telemetry = {
@@ -162,6 +168,8 @@ cmp.setup {
     sources = {
         { name = 'nvim_lsp' },
         { name = 'luasnip' },
+        { name = 'path' },  -- This seems not working...
+        { name = 'buffer' },  --  this seems work
     },
 }
 

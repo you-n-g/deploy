@@ -16,6 +16,10 @@ conda install -y xlwt
 conda install -c conda-forge -y jupyter_contrib_nbextensions
 # -  `jupyter nbconvert --to script` 这种命令需要它
 
+conda install -c conda-forge pyarrow
+# - this is for supporting parquet (data format decoupled with code and env)
+
+
 # 这些都是针对个人用户的， 别人安装了没有用
 jupyter contrib nbextension install --user
 

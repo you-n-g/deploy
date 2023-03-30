@@ -163,6 +163,8 @@ vim.g.loaded_netrwPlugin = 1
 require("nvim-tree").setup()
 
 
+
+-- BEGIN: luasnip  ------------------------------------------
 require("luasnip.loaders.from_vscode").lazy_load({ paths = { "./luasnip_snippets" } })
 -- require("luasnip.loaders.from_vscode").lazy_load({ paths = { "~/deploy/configs/nvim/luasnip_snippets" } })
 -- 这里有很多可以参考的 snippets
@@ -171,10 +173,21 @@ require("luasnip.loaders.from_vscode").lazy_load({ paths = { "./luasnip_snippets
 -- https://github.com/L3MON4D3/LuaSnip/blob/master/doc/luasnip.txt#L1794
 require("luasnip.loaders.from_lua").load({paths = "./luasnip_snippets"})
 -- TODO:  只有当前vim编辑snippets时， 才能自动reload snippets
+--
+require("luasnip.loaders.from_snipmate").load({paths = "./luasnip_snippets"})
+-- 用snipmate的原因是只有它是最容易添加新的snipmate的
+-- 可以多参考 https://github.com/honza/vim-snippets/blob/master/snippets/  这里的例子
+-- 它可以设置运行的变量  The content in `<vimstring>` will be evaluated by vim.api.nvim_exec("echo " .. vimstring, true)`
+-- snipmate中tab和空格混用会导致莫名其妙的错误
 
 -- For changing choices in choiceNodes (not strictly necessary for a basic setup).
 vim.cmd[[imap <silent><expr> <C-E> luasnip#choice_active() ? '<Plug>luasnip-next-choice' : '<C-E>']]
 vim.cmd[[smap <silent><expr> <C-E> luasnip#choice_active() ? '<Plug>luasnip-next-choice' : '<C-E>']]
+--
+-- NOTE:
+-- Luasnip现在是支持 edit on the fly的，但是如果编辑过程中让 luasnip出错了，那么之后就无法 edit on the fly了；所以记得确认格式没有问题再保存
+-- BEGIN: luasnip  ------------------------------------------
+
 
 
 -- BEGIN: colorscheme ------------------------------------------

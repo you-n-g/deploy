@@ -423,7 +423,7 @@
       "key = \"env_key\"",
       "if key in os.environ:",
       "    value = os.environ[key]",
-      "    print(f\"Feature based on os.environ['{key\\}'] is enabled.\")",
+      "    print(f\"Feature based on os.environ['{key\\}'] = {value} is enabled.\")",
       "    ...",
       "else:",
       "    print(f\"Skip the feature based on os.environ['{key\\}']\")",

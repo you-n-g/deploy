@@ -8,9 +8,18 @@ from pathlib import Path
 
 
 class DV:
+    def __init__(self, dry_run=False) -> None:
+        self.dry_run = dry_run
+
+    def _run(self, cmd):
+        if self.dry_run:
+            print(cmd)
+        else:
+            subprocess.run(cmd, shell=True)
+
     def prepare(self):
-        subprocess.run("sudo apt-get install -y docker", shell=True)
-        subprocess.run("sudo docker pull v2ray/official", shell=True)
+        self._run("sudo apt-get install -y docker")
+        self._run("sudo docker pull v2ray/official")
 
     def run(self, conf_path):
         conf_path = Path(conf_path)
@@ -27,10 +36,10 @@ class DV:
             f"sudo docker run -d --name v2ray -v {conf_path.parent.resolve()}:/etc/v2ray"
             f" {port_cmd} v2ray/official v2ray -config=/etc/v2ray/{conf_path.name}"
         )
-        subprocess.run(cmd, shell=True)
+        self._run(cmd)
 
     def clean(self):
-        subprocess.run("sudo docker rm v2ray", shell=True)
+        self._run("sudo docker rm v2ray")
 
 
 if __name__ == "__main__":
