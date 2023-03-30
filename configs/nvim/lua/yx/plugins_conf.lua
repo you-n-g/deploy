@@ -232,3 +232,16 @@ vim.api.nvim_set_keymap('t', '<F15>', [[<c-\><c-n>:FocusToggle<cr>]], {noremap =
 vim.api.nvim_set_keymap('n', '<F5>', ":FocusMaximise<cr>", {noremap = true})
 vim.api.nvim_set_keymap('t', '<F5>', [[<c-\><c-n>:FocusMaximise<cr>]], {noremap = true})
 -- END:   beauwilliams/focus.nvim ------------------------------------------
+
+
+
+-- BEGIN: copilot.vim ------------------------------------------
+vim.g.copilot_no_tab_map = true
+vim.api.nvim_set_keymap("i", "<C-l>", 'copilot#Accept("<CR>")', { silent = true, expr = true })
+vim.api.nvim_set_keymap("i", "<C-j>", '<Plug>(copilot-next)', { silent = true, expr = false, noremap = false})
+vim.api.nvim_set_keymap("i", "<C-k>", '<Plug>(copilot-previous)', { silent = true, expr = false, noremap = false})
+-- this seems not working
+vim.api.nvim_set_keymap("i", "<C-;>", '<Plug>(copilot-suggest)', { silent = true, expr = false, noremap = false})
+-- 下面的建议来自这里
+-- https://www.reddit.com/r/neovim/comments/sk70rk/comment/hvjlohe/?utm_source=share&utm_medium=web2x&context=3
+-- END:   copilot.vim ------------------------------------------
