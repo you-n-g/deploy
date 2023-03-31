@@ -164,6 +164,14 @@ cmp.setup {
                 fallback()
             end
         end, { 'i', 's' }),
+        -- closing the auto complete (this will make it more compatible with copilot )
+        ['<C-q>'] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+                cmp.close()
+            else
+                fallback()
+            end
+        end, { 'i', 's' }),
     }),
     sources = {
         { name = 'nvim_lsp' },

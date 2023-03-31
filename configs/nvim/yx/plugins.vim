@@ -83,10 +83,13 @@ Plug 'akinsho/toggleterm.nvim'
 Plug 'prettier/vim-prettier', { 'do': 'yarn install --frozen-lockfile --production' }
 
 
-" Plug 'untitled-ai/jupyter_ascending.vim'
+Plug 'untitled-ai/jupyter_ascending.vim'
 " 这种模式我非常喜欢，但是现在还有不足的地方
 " - 它运行cell的时候感觉位置不对, 等待这个错误的解决
 "   https://github.com/untitled-ai/jupyter_ascending.vim/issues/8
+" - 后来又试了一次，卡在新问题上了
+"   https://github.com/untitled-ai/jupyter_ascending/issues/44
+" - 最后终于解决,见 deploy_apps/install_fav_py_pack.sh
 
 " This Plugin only controls the starting and ending of the container. It does
 " not embed neovim into the container...
