@@ -126,6 +126,13 @@ bash $DIR_PATH/install_rg.sh
 # support words: for dictionary compeletion
 git clone https://github.com/dwyl/english-words.git ~/.english-words
 
+# install copilot
+git clone https://github.com/github/copilot.vim ~/.config/nvim/pack/github/start/copilot.vim
+# We should follow next steps
+# 1. https://github.com/enterprises/microsoft
+# 2. `:Copilot setup`
+# 3. `:Copilot enable`
+
 
 # docs about neovim
 ## other useful features of neovim

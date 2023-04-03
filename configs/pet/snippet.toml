@@ -242,3 +242,13 @@
   description = "fast install torch"
   command = "pip install light-the-torch && ltt install torch"
   output = ""
+
+[[snippets]]
+  description = "Jupyter no password"
+  command = " --NotebookApp.token='' --NotebookApp.password=''"
+  output = ""
+
+[[snippets]]
+  description = "jupyter ascending prefix"
+  command = "JUPYTER_ASCENDING_EXECUTE_PORT=9000"
+  output = ""

@@ -43,8 +43,8 @@ pip install ranger-fm # 试了一下， 感觉ranger比nnn好用
 # snippets for juypter
 DIR_P=$(jupyter --data-dir)/nbextensions/snippets/
 FILE_P=$DIR_P/snippets.json
-rm $FILE_P
-ln -s ~/deploy/configs/jupyter/snippets.json $FILE_P
+rm "$FILE_P"
+ln -s ~/deploy/configs/jupyter/snippets.json "$FILE_P"
 
 if [[ ! -e ~/.pdbrc.py  ]]; then
     ln -s ~/deploy/configs/python/pdbrc.py ~/.pdbrc.py
@@ -60,3 +60,18 @@ sh deploy_apps/set_jupyter_pwd.sh
 
 # 一般常用的软件
 pip install nose ipdbplugin
+
+# jupyter_ascending.vim
+pip install jupyter_ascending
+
+jupyter nbextension install --py --sys-prefix jupyter_ascending
+jupyter nbextension     enable jupyter_ascending --sys-prefix --py
+jupyter serverextension enable jupyter_ascending --sys-prefix --py
+# below is for checking if the extension is installed
+# jupyter nbextension list
+# jupyter serverextension list
+# After installing the command above and vim plugin, you should also install notice following things:
+# - you must specify the port before starting **both** vim and jupyter, e.g. `JUPYTER_ASCENDING_EXECUTE_PORT=9000`; 
+# - Make sure both of them can be accessed by 127.0.0.1, ottherwise you should also set the IP by `JUPYTER_ASCENDING_EXECUTE_HOST=xxxxxxx`
+# - Make sure the vim end can access without credentials ` --NotebookApp.token='' --NotebookApp.password=''`
+#   - (by copilot)otherwise you should also set the credentials by `JUPYTER_ASCENDING_EXECUTE_TOKEN=xxxxxxx`

@@ -112,6 +112,7 @@ wk.register({
         },
     },
     j = {
+        -- TODO: replace it with jupyter_ascending
         name = 'jupyter-vim',
         e = { '<cmd>JupyterSendCell<cr>', 'Jupyter Send Cell' },
         d = { '<cmd>JupyterDisconnect<cr>', 'Jupyter Disconnect' },
