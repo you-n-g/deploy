@@ -207,24 +207,27 @@ let g:startify_lists = [
 
 
 
-" jupyter-vim
-let g:jupyter_mapkeys=0
-nmap <leader>jc  :<C-u>JupyterSendCount<CR>
-vmap <leader>jc  :<C-u>'<,'>JupyterSendRange<CR>
-" 注意只有disconnect之后才能再次connect
-nmap <leader>js  :<C-u>JupyterConnect 
-nmap <leader>jr  :<C-u>JupyterSendCode 
-nmap <leader>jn  <esc>}o<CR># %%<esc>o
-nmap <leader>jw  :<C-u>JupyterSendCode expand("<cword>")<CR>
-nmap <leader>jl  :<C-u>JupyterSendCode "clear"<CR>
-nmap <leader>jp  :<C-u>JupyterSendCode @"<CR>
-
-nmap <Plug>RunCellAndJump <leader>je/# %%<CR>:noh<CR>
-\:silent! call repeat#set("\<Plug>RunCellAndJump", v:count)<CR>
-nmap <leader>jE <Plug>RunCellAndJump
+" BEGIN 'jupyter-vim' ----------------------------------------------------------
+"
+" let g:jupyter_mapkeys=0
+" nmap <leader>jc  :<C-u>JupyterSendCount<CR>
+" vmap <leader>jc  :<C-u>'<,'>JupyterSendRange<CR>
+" " 注意只有disconnect之后才能再次connect
+" nmap <leader>js  :<C-u>JupyterConnect 
+" nmap <leader>jr  :<C-u>JupyterSendCode 
+" nmap <leader>jn  <esc>}o<CR># %%<esc>o
+" nmap <leader>jw  :<C-u>JupyterSendCode expand("<cword>")<CR>
+" nmap <leader>jl  :<C-u>JupyterSendCode "clear"<CR>
+" nmap <leader>jp  :<C-u>JupyterSendCode @"<CR>
+"
+" nmap <Plug>RunCellAndJump <leader>je/# %%<CR>:noh<CR>
+" \:silent! call repeat#set("\<Plug>RunCellAndJump", v:count)<CR>
+" nmap <leader>jE <Plug>RunCellAndJump
+"
 " 依赖vim-repeat 才能
 " config come from http://vimcasts.org/episodes/creating-repeatable-mappings-with-repeat-vim/
 
+" END   'jupyter-vim' ----------------------------------------------------------
 
 
 

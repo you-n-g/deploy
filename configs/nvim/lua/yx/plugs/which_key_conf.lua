@@ -112,10 +112,13 @@ wk.register({
         },
     },
     j = {
-        -- TODO: replace it with jupyter_ascending
-        name = 'jupyter-vim',
-        e = { '<cmd>JupyterSendCell<cr>', 'Jupyter Send Cell' },
-        d = { '<cmd>JupyterDisconnect<cr>', 'Jupyter Disconnect' },
+        name = 'jupyter&vim(jupyter_ascending)',
+        -- e = { '<cmd>JupyterSendCell<cr>', 'Jupyter Send Cell' },
+        -- d = { '<cmd>JupyterDisconnect<cr>', 'Jupyter Disconnect' },
+        e = { '<Plug>JupyterExecute', 'Jupyter Execute Cell' },
+        a = { '<Plug>JupyterExecuteAll', 'Jupyter Run All' },
+        r = { '<Plug>JupyterRestart', 'Jupyter Restart' },  -- It seems that the vim plugin does not support this
+        n = { '<esc>}o<CR># %%<esc>o', 'Create next cell' },  -- It seems that the vim plugin does not support this
     },
 
     -- coc-related extensions are replaced by nvim-lsp-based ones

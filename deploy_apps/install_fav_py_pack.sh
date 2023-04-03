@@ -75,3 +75,7 @@ jupyter serverextension enable jupyter_ascending --sys-prefix --py
 # - Make sure both of them can be accessed by 127.0.0.1, ottherwise you should also set the IP by `JUPYTER_ASCENDING_EXECUTE_HOST=xxxxxxx`
 # - Make sure the vim end can access without credentials ` --NotebookApp.token='' --NotebookApp.password=''`
 #   - (by copilot)otherwise you should also set the credentials by `JUPYTER_ASCENDING_EXECUTE_TOKEN=xxxxxxx`
+# - The name suffix `.sync` is nessary ;  :help g:jupyter_ascending_match_pattern
+# DEBUG:
+# - `/tmp/jupyter_ascending/log.log` is typically the log file for debugging of jupyter_ascending
+# - Base on my experience, you must restart the kernel after you install the plugin, otherwise it will not work
