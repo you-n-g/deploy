@@ -41,6 +41,7 @@ wk.register({
         M = { "<cmd>MaximizerToggle<cr>", 'MaximizerToggle(<F5> is faster)' },
         c = { "<cmd>Telescope my_config<cr>", 'My Config' },
     },
+    -- TODO: hope to make it to automatically detecting languge(tree-sitter may be very helpful) ...
     s = {
         name = "RERL(send)",
         s = {
