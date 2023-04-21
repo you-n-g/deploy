@@ -23,7 +23,7 @@ Plug 'folke/which-key.nvim'  " 这个修复了 vim-which-key 的问题
 Plug 'jpalardy/vim-slime' " , { 'for': 'python' } 加上这个之后会导致只对python有用
 Plug 'hanschen/vim-ipython-cell', { 'for': 'python' }
 
-Plug 'jupyter-vim/jupyter-vim'
+" Plug 'jupyter-vim/jupyter-vim'
 Plug 'goerz/jupytext.vim' " `pip install jupytext` is required
 " let g:jupytext_enable = 0  " to disable jupytext. I tried, but it does not work
 " 这个能使用需要你能对你阅读的目录有写权限（因为jupytext会往目录下新写一个文件）

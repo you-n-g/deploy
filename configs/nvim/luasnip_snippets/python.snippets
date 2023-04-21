@@ -4,3 +4,8 @@
 snippet ifmain
 	if __name__ == "__main__":
 		${0:main()}
+
+snippet withp "with pickle load"
+	import pickle
+	with Path(hpath).open("rb") as f:
+		data = pickle.load(f)

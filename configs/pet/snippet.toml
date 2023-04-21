@@ -250,5 +250,5 @@
 
 [[snippets]]
   description = "jupyter ascending prefix"
-  command = "JUPYTER_ASCENDING_EXECUTE_PORT=9000"
+  command = "export JUPYTER_ASCENDING_EXECUTE_PORT=9000"
   output = ""

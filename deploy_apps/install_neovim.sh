@@ -125,7 +125,7 @@ git clone https://github.com/dwyl/english-words.git ~/.english-words
 git clone https://github.com/github/copilot.vim ~/.config/nvim/pack/github/start/copilot.vim
 # We should follow next steps
 # 1. https://github.com/enterprises/microsoft
-# 2. `:Copilot setup`
+# 2. `:Copilot setup`, and then open https://github.com/login/device for authentication
 # 3. `:Copilot enable`
 
 # docs about neovim

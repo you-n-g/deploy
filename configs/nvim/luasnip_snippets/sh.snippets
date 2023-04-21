@@ -23,3 +23,9 @@ snippet EOF "EOF(usually for comments)"
 	cat << EOF
 	${1:Comments}
 	EOF
+
+snippet ifve "if a variable is empty"
+    if [ -z \$1 ] || [ -z \$2 ]; then
+        echo "Empty arguments"
+        exit 0
+    fi

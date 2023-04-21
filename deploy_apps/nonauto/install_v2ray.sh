@@ -7,11 +7,20 @@ mkdir -p $APP_PATH
 
 cd $APP_PATH
 
+sudo apt-get install unzip
 wget https://github.com/v2ray/v2ray-core/releases/download/v4.27.0/v2ray-linux-64.zip
-
 unzip  v2ray-linux-64.zip
 
-UUID=`python -c 'import uuid; print(uuid.uuid4())'`
+if which python > /dev/null; then
+    PY=`which python`
+elif which python3 > /dev/null; then
+    PY=`which python3`
+else
+    echo "No python found"
+    exit 1
+fi
+UUID=`$PY -c 'import uuid; print(uuid.uuid4())'`
+
 PROXY_PORT=5432
 
 
@@ -79,7 +88,7 @@ cat > config_client.json <<EOF
 }
 EOF
 
-echo 'Install finished. Please run ./v2ray'
+echo 'Install finished. Please run "cd ~/apps/v2ray && ./v2ray"'
 
 # 如果 client想启动一个程序连多个 v2ray
 # 需要在每组 inbounds 和 outbounds 的最外层dict 都加上  "tag": "in-wall",
