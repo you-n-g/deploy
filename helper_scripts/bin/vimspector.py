@@ -1,4 +1,12 @@
 #!/usr/bin/env python
+"""
+相比于ipdb/pdb的主要优势是：
+- justMyCode 选项，可以过滤掉第三方库的调试信息
+
+注意下面的障碍是可以越过的
+- 像 package有entry point的， 可以直接在 "program" 里面写入entrypoint的路径（注意这里需要绝对路径，不会自动看你的$PATH变量）
+- 因此他是一个完全更好的替代品，以后可以不用改代码来调用pdb了
+"""
 import json
 import copy
 from pathlib import Path
