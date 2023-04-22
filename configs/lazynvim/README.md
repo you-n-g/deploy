@@ -12,3 +12,6 @@
   - 打开相关代码`<leader>db`设置断点 
   - continue run `<leader>dc`
 - 操作第一个instance，触发第二个instance设定的断点
+
+# 还希望要的功能
+[ ] - fast wrap (类似 https://github.com/jiangmiao/auto-pairs), 但是 "echasnovski/mini.pairs" 没有提供类似的功能

@@ -1,6 +1,6 @@
 -- simple plugins are added here
-
 return {
+
   {
     "rafcamlet/nvim-luapad",
     keys = {
@@ -20,6 +20,21 @@ return {
         -- "<cmd>Luapad<cr>",
         mode = "n",
         desc = "Luapad",
+      },
+      {
+        "<leader>Lr",
+        function()
+          require("luapad").toggle({
+            context = {
+              return_4 = function()
+                return 4
+              end,
+            },
+          })
+        end,
+        -- "<cmd>LuaRun<cr>",
+        mode = "n",
+        desc = "Toggle Current buffer to Luapad",
       },
     },
     -- TODO: attach to current buffer

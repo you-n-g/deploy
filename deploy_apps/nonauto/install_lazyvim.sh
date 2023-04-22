@@ -6,7 +6,6 @@ DIR="$(
 )"
 
 install_first_time() {
-
 	# NOTE: This only needs to be run once
 	# required
 	mv ~/.config/nvim ~/.config/nvim.bak
@@ -24,6 +23,20 @@ install_first_time() {
 	# TODO: manually commit the changes to your repo
 }
 
+install_lazyvim() {
+	# Backup lazyvim
+	# - required
+	mv ~/.config/nvim ~/.config/nvim.bak
+	# - optional but recommended
+	mv ~/.local/share/nvim ~/.local/share/nvim.bak
+	mv ~/.local/state/nvim ~/.local/state/nvim.bak
+	mv ~/.cache/nvim ~/.cache/nvim.bak
+
+	# link the lazyvim config
+	ln -s "$TARGET" ~/.config/nvim
+	TARGET="$DIR/../../configs/lazynvim"
+}
+
 install_lazygit() {
 	APP_DIR="$HOME/app/lazygit"
 	mkdir -p $APP_DIR
@@ -36,13 +49,16 @@ install_lazygit() {
 
 install_neovim() {
 	# TODO: copy from install_neovim script
+	echo TODO
 }
 
 merge_previous_config() {
 	# TODO: link previous snippets
+	echo TODO
 }
 
 # default install_first_time otherwise the argument
-CMD=${1:-install_first_time}
+# CMD=${1:-install_first_time}
+# $CMD
 
-$CMD
+$1

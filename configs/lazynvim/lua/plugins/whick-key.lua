@@ -4,6 +4,7 @@ return {
     opts = {
       defaults = {
         ["<leader>L"] = { name = "+LuaJit" },
+        ["<leader>r"] = { name = "+REPL" },
       },
     },
   },
