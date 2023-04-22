@@ -1,0 +1,48 @@
+#!/bin/bash
+
+DIR="$(
+	cd "$(dirname "$(readlink -f "$0")")" || exit
+	pwd -P
+)"
+
+install_first_time() {
+
+	# NOTE: This only needs to be run once
+	# required
+	mv ~/.config/nvim ~/.config/nvim.bak
+
+	# optional but recommended
+	mv ~/.local/share/nvim ~/.local/share/nvim.bak
+	mv ~/.local/state/nvim ~/.local/state/nvim.bak
+	mv ~/.cache/nvim ~/.cache/nvim.bak
+
+	TARGET="$DIR/../../configs/lazynvim"
+	git clone https://github.com/LazyVim/starter "$TARGET"
+	ln -s "$TARGET" ~/.config/nvim
+
+	rm -rf $TARGET/.git
+	# TODO: manually commit the changes to your repo
+}
+
+install_lazygit() {
+	APP_DIR="$HOME/app/lazygit"
+	mkdir -p $APP_DIR
+	cd $APP_DIR
+	LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+	curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+	tar xf lazygit.tar.gz lazygit
+	ln -s $APP_DIR/lazygit ~/bin/
+}
+
+install_neovim() {
+	# TODO: copy from install_neovim script
+}
+
+merge_previous_config() {
+	# TODO: link previous snippets
+}
+
+# default install_first_time otherwise the argument
+CMD=${1:-install_first_time}
+
+$CMD

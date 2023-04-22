@@ -159,8 +159,9 @@ wk.register({
 
     L = {
         name = 'lua',
-        i = { "<cmd>Luadev<cr>", "lunch" },
+        i = { "<cmd>Luadev<cr>", "lunch luadev" },
         -- c = {"<Plug>(Luadev-RunLine)", "run line"}
+        p = { "<cmd>Luapad<cr>", "lunch luapad" },
     },
     v = {
         name = 'vimspector',

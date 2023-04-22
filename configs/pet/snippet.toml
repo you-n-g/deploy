@@ -252,3 +252,8 @@
   description = "jupyter ascending prefix"
   command = "export JUPYTER_ASCENDING_EXECUTE_PORT=9000"
   output = ""
+
+[[snippets]]
+  description = "cd into lazy vim"
+  command = "cd ~/.local/share/nvim/lazy/LazyVim"
+  output = ""

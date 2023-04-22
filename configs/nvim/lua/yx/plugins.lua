@@ -100,6 +100,9 @@ local M = require('packer').startup(function(use)
 
     -- use('jose-elias-alvarez/null-ls.nvim')
     -- use('MunifTanjim/prettier.nvim')
+    
+    use 'rafcamlet/nvim-luapad'
+    -- use 'mfussenegger/nvim-dap'
 
     -- TODO: The coding workflow can be improved futther with following potential useful plugins
     -- English spelling:
