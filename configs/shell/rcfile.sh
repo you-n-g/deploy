@@ -146,6 +146,9 @@ function proxy_up() {
     export SOCKS_SERVER=127.0.0.1:8964
     # NOTICE: the ip range my not works on some softwares !!!!!
     export no_proxy=localhost,127.0.0.1,127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.sock
+    # To make it works for all softwares, proxychains is recommended
+    # - socks4 should be used for `ssh -D` proxy.
+    #    - I don't know why it doesn't work for tsocks when using specific software like thriftpy2(in jkdatasdk)
 }
 
 function proxy_down() {

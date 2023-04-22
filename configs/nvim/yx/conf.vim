@@ -32,6 +32,8 @@ set isfname-==
 
 set fileencodings=utf8,gbk
 " This is a list of character encodings considered when **starting to edit** an existing file.
+" - 即开始编辑一个文件时，vim会尝试用这个列表中的编码去解码文件；如果解码失败，就会尝试下一个编码
+" - 解码成功后， vim会把fileencoding设置为解码成功的编码(注意不是fileencodings)
 " 注意 encoding/enc 是用于设置 RPC communication 的编码，不太一样
 
 

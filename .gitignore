@@ -1,3 +1,4 @@
 *.swp
 tags
 packer_compiled.lua
+configs/nvim/pack/github/start/copilot.vim/
