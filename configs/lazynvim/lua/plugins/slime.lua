@@ -1,4 +1,5 @@
 function reset_slime()
+  -- this part is designed coupled with toggleterm
   if vim.api.nvim_get_var("slime_target") == "neovim" then
     if vim.o.filetype == "toggleterm" then
       vim.api.nvim_set_var("slime_last_toggleterm_channel", vim.o.channel)
