@@ -72,6 +72,7 @@ jupyter serverextension enable jupyter_ascending --sys-prefix --py
 # jupyter serverextension list
 # After installing the command above and vim plugin, you should also install notice following things:
 # - you must specify the port before starting **both** vim and jupyter, e.g. `JUPYTER_ASCENDING_EXECUTE_PORT=9000`; 
+#    - 这个端口要和jupyter的端口一致!!!
 # - Make sure both of them can be accessed by 127.0.0.1, therwise you should also set the IP by `JUPYTER_ASCENDING_EXECUTE_HOST=xxxxxxx`
 # - Make sure the vim end can access without credentials ` --NotebookApp.token='' --NotebookApp.password=''`
 #   - (by copilot)otherwise you should also set the credentials by `JUPYTER_ASCENDING_EXECUTE_TOKEN=xxxxxxx`
@@ -79,3 +80,5 @@ jupyter serverextension enable jupyter_ascending --sys-prefix --py
 # DEBUG:
 # - `/tmp/jupyter_ascending/log.log` is typically the log file for debugging of jupyter_ascending
 # - Base on my experience, you must restart the kernel after you install the plugin, otherwise it will not work
+# Others:
+# - autosave is controlled by magic function in jupyter like `%autosave 0`

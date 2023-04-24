@@ -257,3 +257,8 @@
   description = "cd into lazy vim"
   command = "cd ~/.local/share/nvim/lazy/LazyVim"
   output = ""
+
+[[snippets]]
+  description = "ascending suite (jupyter and vim)"
+  command = "JUPYTER_ASCENDING_EXECUTE_PORT=9011 jupyter notebook --no-browser --port 9011 --ip 0.0.0.0  --NotebookApp.token='' --NotebookApp.password='' # JUPYTER_ASCENDING_EXECUTE_PORT=9011 vim"
+  output = ""

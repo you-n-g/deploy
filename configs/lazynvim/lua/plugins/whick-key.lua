@@ -5,6 +5,8 @@ return {
       defaults = {
         ["<leader>L"] = { name = "+LuaJit" },
         ["<leader>r"] = { name = "+REPL" },
+        ["<leader>re"] = { name = "+REPL(edit)" },
+        ["<leader>rL"] = { name = "+REPL(launch)" },
       },
     },
   },

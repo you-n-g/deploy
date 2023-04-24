@@ -132,3 +132,5 @@ end, { desc = "Run script" })
 vim.keymap.set("n", "<leader>rf", function()
   REPLFactory():run_func()
 end, { desc = "Run function" })
+
+vim.keymap.set("n", "<leader>rLp", [[<cmd>SlimeSend0 "ipython\n"<cr>]],  { desc = "Python" } )

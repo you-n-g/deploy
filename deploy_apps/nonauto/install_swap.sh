@@ -14,7 +14,7 @@ SWAP_PATH=/mnt/swapfile
 SKIP_WRITE_FSTAB=false
 AUTO_YES=false
 
-while getopts ":s:p:k" opt; do
+while getopts ":s:p:ky" opt; do
     case $opt in
         s)
         SWAP_SIZE=$OPTARG

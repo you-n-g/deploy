@@ -21,6 +21,11 @@ install_first_time() {
 
 	rm -rf $TARGET/.git
 	# TODO: manually commit the changes to your repo
+
+	TARGET="$DIR/../../configs/lazynvim"
+	cd $TARGET
+	ln -s ../nvim/luasnip_snippets .
+	# TODO: manually commit the symlink to your repo
 }
 
 install_lazyvim() {
