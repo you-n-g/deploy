@@ -262,3 +262,8 @@
   description = "ascending suite (jupyter and vim)"
   command = "_JPORT=9011 ; JUPYTER_ASCENDING_EXECUTE_PORT=$_JPORT jupyter notebook --no-browser --port $_JPORT --ip 0.0.0.0  --NotebookApp.token='' --NotebookApp.password='' # JUPYTER_ASCENDING_EXECUTE_PORT=$_JPORT vim"
   output = ""
+
+[[snippets]]
+  description = "create a project from Python project template based on copier"
+  command = "copier gh:huxuan/serious-scaffold-python <project_path>"
+  output = ""

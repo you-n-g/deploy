@@ -55,6 +55,8 @@ install_lazygit() {
 install_neovim() {
 	# TODO: copy from install_neovim script
 	echo TODO
+  # pip install ruff-lsp # ruff-lsp only give warnings and does not provide docs. So it can't replace pyright.
+  pip install debugpy  # this will used by nvim-dap
 }
 
 merge_previous_config() {

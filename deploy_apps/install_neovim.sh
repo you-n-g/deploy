@@ -121,7 +121,7 @@ bash $DIR_PATH/install_rg.sh
 git clone https://github.com/dwyl/english-words.git ~/.english-words
 
 # install copilot
-# TODO add it in install list instead of mannually
+# TODO: add it in install list instead of mannually
 git clone https://github.com/github/copilot.vim ~/.config/nvim/pack/github/start/copilot.vim
 # We should follow next steps
 # 1. https://github.com/enterprises/microsoft

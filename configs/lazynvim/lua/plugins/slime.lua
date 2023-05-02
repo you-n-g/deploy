@@ -30,6 +30,9 @@ nnoremap <c-c><c-d> :SlimeSend0 "\x04"<CR>
 " `esc` `k`  `carriage return`
 nnoremap <c-c><c-p> :SlimeSend0 "\x1bk\x0d"<CR>
 
+" send <cr> to current repl
+nnoremap <c-c><cr> :SlimeSend0 "\x0d"<CR>
+
 if get(g:, "slime_target", "") == "neovim"
   augroup auto_channel
     autocmd!

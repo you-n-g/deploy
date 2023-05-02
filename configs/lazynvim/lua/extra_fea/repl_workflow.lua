@@ -127,7 +127,7 @@ local function REPLFactory()
 end
 
 vim.keymap.set("n", "<leader>rs", function()
-  REPLFactory():run_func()
+  REPLFactory():run_script()
 end, { desc = "Run script" })
 vim.keymap.set("n", "<leader>rf", function()
   REPLFactory():run_func()

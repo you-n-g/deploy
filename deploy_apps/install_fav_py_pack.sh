@@ -16,7 +16,7 @@ conda install -y xlwt
 conda install -c conda-forge -y jupyter_contrib_nbextensions
 # -  `jupyter nbconvert --to script` 这种命令需要它
 
-conda install -c conda-forge pyarrow
+conda install -c conda-forge -y pyarrow
 # - this is for supporting parquet (data format decoupled with code and env)
 
 
@@ -32,7 +32,8 @@ done
 
 
 # for developing environment
-pip install autopep8 better_exceptions neovim ipython-autotime yapf fire pylint
+pip install autopep8 better_exceptions neovim ipython-autotime yapf fire pylint debugpy
+# ruff-lsp #  ruff-lsp only give warnings and does not provide docs. So it can't replace pyright.
 
 pip install ranger-fm # 试了一下， 感觉ranger比nnn好用
 

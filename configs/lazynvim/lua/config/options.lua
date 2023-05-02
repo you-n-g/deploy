@@ -4,3 +4,9 @@
 
 local opt = vim.opt
 opt.wrap = true -- enable line wrap
+opt.fencs = "ucs-bom,utf-8,euc-cn,cp936,gb18030,latin1" -- to support gbk chinese
+
+-- TODO: All these does not work. I think it is related to both Mobaxterm & neovim
+-- opt.gcr = "a:NoiceHiddenCursor,"
+-- opt.gcr = "n-v-c:block,i-ci-ve:ver25,r-cr:hor20,o:hor50,a:blinkwait700-blinkoff400-blinkon250-Cursor/lCursor,sm:block-blinkwait175-blinkoff150-blinkon175"
+-- opt.gcr = "n-v-c-sm:block,ci-ve:ver25,r-cr-o:hor20,i:block-blinkwait700-blinkoff400-blinkon250-Cursor/lCursor"
