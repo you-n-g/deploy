@@ -3,8 +3,10 @@
 -- - 如何对插件做一个合理的分类?
 --   - editor,coding(这两者的区别是什么，是和编程语言的语义相关吗？)
 --   - ui(有的功能虽然表现出来了UI，但是还有很多别的功能)
+
 return {
   {
+    -- It can't attach to a specific buffer and run code in another one
     "rafcamlet/nvim-luapad",
     keys = {
       {
@@ -27,13 +29,7 @@ return {
       {
         "<leader>Lr",
         function()
-          require("luapad").toggle({
-            context = {
-              return_4 = function()
-                return 4
-              end,
-            },
-          })
+          require("luapad").toggle()
         end,
         -- "<cmd>LuaRun<cr>",
         mode = "n",
@@ -95,37 +91,37 @@ return {
     -- TIPS:
     -- https://github.com/microsoft/pyright/blob/main/docs/configuration.md
     -- 如果觉得pyright启动很慢，把他的子目录都去掉 (你觉得显示的 diagnostics 不需要覆盖的目录都去掉)
-    -- pyrightconfig.json: 
+    -- pyrightconfig.json:
     -- { "exclude": [ "**/__pycache__", "data/", "libs/", "intermediate/", "scripts/" ] }
   },
   {
-  'mg979/vim-visual-multi'
-  -- BEGIN 'mg979/vim-visual-multi' -----------------------------------------
-  -- 不记得了就多复习 vim -Nu ~/.vim/plugged/vim-visual-multi/tutorialrc
-  --
-  -- 反vimer直觉的
-  -- 复制粘贴
-  -- - 有时候normal模式下x剪切，再<c-v>粘贴会没用; extend模式d删除，然后在<c-v>粘贴我这边能work
-  -- - <c-v> 才是那个每行都有差异的粘贴， p会粘贴一样的东西
-  -- v选择编辑的操作会出错，得用extend模式代替v
-  -- s不是删除然后立马插入，而是进入到一个selecting模式
-  -- 选取了多行后 \\c 可以创建多个normal模式的光标，\\a可以创建多个extend模式的光标
-  -- - <C-up>  <C-down> 之类的功能也能达到类似的效果，目前和和kitty的transparency的功能冲突了
-  --
-  -- 有用的功能: https://github.com/mg979/vim-visual-multi/blob/master/doc/vm-tutorial
-  -- - 在<c-n>时， \\w 可以切换是否要boundary,  \\c 可以切换是否要 case-sensitive
-  -- - 在visual mode 选择cursor时，m是一个标记操作符， mG 代表从当前标记到结尾
-  --
-  -- 优势
-  -- - 和用macro记录改一波再应用到别的位置作对比，
-  --   用我可以同时看到改这些是怎么变化的
-  -- - 快速替换一些word和标点
-  -- - 将一堆赋值替换成 tuple
-  --
-  -- BUG
-  -- - 后来好像 <C-v> <C-up>等等ctrl开头的功能好像不管用了。。。后面发现是tmux的问题
-  --
-  -- END   'mg979/vim-visual-multi' -----------------------------------------
+    "mg979/vim-visual-multi",
+    -- BEGIN 'mg979/vim-visual-multi' -----------------------------------------
+    -- 不记得了就多复习 vim -Nu ~/.vim/plugged/vim-visual-multi/tutorialrc
+    --
+    -- 反vimer直觉的
+    -- 复制粘贴
+    -- - 有时候normal模式下x剪切，再<c-v>粘贴会没用; extend模式d删除，然后在<c-v>粘贴我这边能work
+    -- - <c-v> 才是那个每行都有差异的粘贴， p会粘贴一样的东西
+    -- v选择编辑的操作会出错，得用extend模式代替v
+    -- s不是删除然后立马插入，而是进入到一个selecting模式
+    -- 选取了多行后 \\c 可以创建多个normal模式的光标，\\a可以创建多个extend模式的光标
+    -- - <C-up>  <C-down> 之类的功能也能达到类似的效果，目前和和kitty的transparency的功能冲突了
+    --
+    -- 有用的功能: https://github.com/mg979/vim-visual-multi/blob/master/doc/vm-tutorial
+    -- - 在<c-n>时， \\w 可以切换是否要boundary,  \\c 可以切换是否要 case-sensitive
+    -- - 在visual mode 选择cursor时，m是一个标记操作符， mG 代表从当前标记到结尾
+    --
+    -- 优势
+    -- - 和用macro记录改一波再应用到别的位置作对比，
+    --   用我可以同时看到改这些是怎么变化的
+    -- - 快速替换一些word和标点
+    -- - 将一堆赋值替换成 tuple
+    --
+    -- BUG
+    -- - 后来好像 <C-v> <C-up>等等ctrl开头的功能好像不管用了。。。后面发现是tmux的问题
+    --
+    -- END   'mg979/vim-visual-multi' -----------------------------------------
   },
   {
     -- 这个功能的preview功能似乎还是有bug
@@ -134,4 +130,15 @@ return {
     keys = { { "<leader>cs", "<cmd>SymbolsOutline<cr>", desc = "Symbols Outline" } },
     config = true,
   },
+  -- {
+  --   -- 因为是lazy加载的，所以开始没有打开任何文件时用会报错
+  --   "lukas-reineke/indent-blankline.nvim",
+  --   config = function(_, opts)
+  --     require("indent_blankline").setup(opts)
+  --     print(vim.g.indent_blankline_buftype_exclude)
+  --     local t = vim.g.indent_blankline_buftype_exclude
+  --     table.insert(t, "qf")
+  --     vim.g.indent_blankline_buftype_exclude = t
+  --   end,
+  -- },
 }

@@ -17,6 +17,10 @@ return {
   {
     "mfussenegger/nvim-dap",
     dependencies = {
+      -- NOTE:
+      -- Python Debuger is much slower than normal running
+      -- - It may be caused by joblib
+      -- So insert ipdb breakpoints is a better choice when performance affect much
       "mfussenegger/nvim-dap-python",
       keys = {
         {
@@ -29,12 +33,13 @@ return {
                   type = "python",
                   request = "launch",
                   cwd = vim.fn.getcwd(),
+                  -- '${workspaceFolder}' looks good too.
                   python = get_python_path(),
                   stopOnEntry = true,
                   -- console = "externalTerminal",
                   debugOptions = {},
                   program = vim.fn.expand("%:p"),
-                -- TODO: select args in neovim
+                  -- TODO: select args in neovim
                   args = {},
                 },
               },
@@ -42,12 +47,14 @@ return {
             config["configurations"][1]["justMyCode#json"] = "${justMyCode:true}"
             -- dump `config` to a json file
             local json = vim.fn.json_encode(config)
-            -- create .vscode dir if not exists
-            vim.fn.mkdir(".vscode", "p")
+            vim.fn.mkdir(".vscode", "p") -- create .vscode dir if not exists
+
             local ok, file = pcall(io.open, ".vscode/launch.json", "w")
-            if ok then
+            if ok and file ~= nil then
               file:write(json)
+              file:close()
               print("Generated .vscode/launch.json")
+              vim.cmd("edit .vscode/launch.json")
             else
               print("Error writing to file: " .. file)
             end

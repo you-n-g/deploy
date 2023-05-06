@@ -7,6 +7,7 @@ return {
         ["<leader>r"] = { name = "+REPL" },
         ["<leader>re"] = { name = "+REPL(edit)" },
         ["<leader>rL"] = { name = "+REPL(launch)" },
+        ["<leader><tab>"] = { name = "+tabs & windows" },
       },
     },
   },
