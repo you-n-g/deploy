@@ -141,4 +141,7 @@ return {
   --     vim.g.indent_blankline_buftype_exclude = t
   --   end,
   -- },
+  {
+    "dhruvasagar/vim-table-mode",
+  },
 }
