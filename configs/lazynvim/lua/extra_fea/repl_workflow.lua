@@ -166,15 +166,7 @@ local PythonREPL = class("PythonREPL", BaseREPL)
 PythonREPL.interpreter = "python"
 
 function PythonREPL:launch_interpreter()
-  print("In python repl")
-
   require'toggleterm'.exec("ipython", tonumber(vim.g.toggleterm_last_id), 12)
-
-  -- if vim.fn.has("win32") == 1 then
-  --   vim.cmd "IPython"
-  -- else
-  --   require'toggleterm'.exec("ipython", vim.g.toggleterm_last_id, 12)
-  -- end
 end
 
 local BashREPL = class("BashREPL", BaseREPL)
@@ -201,48 +193,5 @@ end, { desc = "Run function" })
 vim.keymap.set("n", "<leader>rL", function()
   REPLFactory():launch_interpreter()
 end,  { desc = "Launch interpreter" } )
-
-
--- FIXME:
--- A function that are curreently design for windows
--- it is expected to work well with rebelot/terminal.nvim.
--- But this does not well in windows still..
-M.python = function()
-    local ipython = require("terminal").terminal:new({
-      layout = { open_cmd = "botright vertical new" },
-      cmd = { "ipython" },
-      autoclose = true,
-    })
-
-    vim.api.nvim_create_user_command("IPython", function()
-        local bufnr = vim.api.nvim_get_current_buf()
-        ipython:toggle(nil, true)
-
-        -- send selected content
-        vim.keymap.set(
-            "x",
-            "<c-c><c-c>",
-            function()
-                vim.api.nvim_feedkeys('"+y', 'n', false)
-                ipython:send("%paste")
-                ipython:send("1")
-                ipython:send("\n")
-                ipython:send("2")
-                ipython:send("\x0d")
-                ipython:send("3")
-                ipython:send("\x0a")
-                ipython:send("4")
-                ipython:send("\r")
-            end,
-            { buffer = bufnr }
-        )
-
-        -- send current word
-        vim.keymap.set("n", "<c-w>w", function()
-            ipython:send(vim.fn.expand("<cexpr>") .. "?")
-            ipython:send("\x0d")
-        end, { buffer = bufnr })
-    end, {})
-end
 
 return M
