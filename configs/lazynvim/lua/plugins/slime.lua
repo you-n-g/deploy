@@ -16,31 +16,18 @@ return {
   {
     "jpalardy/vim-slime",
     config = function()
-      vim.cmd([[
+      vim.g.slime_target = "neovim"
 
-let g:slime_target = "neovim"
-let g:slime_python_ipython = 1
-
-" clear previous command
-nnoremap <c-c><c-u> :SlimeSend0 "\x15"<CR>
-nnoremap <c-c><c-i> :SlimeSend0 "\x03"<CR>
-" Interupted command
-" ^D	EOT	004	04	End of Transmission
-nnoremap <c-c><c-d> :SlimeSend0 "\x04"<CR>
-" `esc` `k`  `carriage return`
-nnoremap <c-c><c-p> :SlimeSend0 "\x1bk\x0d"<CR>
-
-" send <cr> to current repl
-nnoremap <c-c><cr> :SlimeSend0 "\x0d"<CR>
-
-if get(g:, "slime_target", "") == "neovim"
-  augroup auto_channel
-    autocmd!
-    " autocmd TermEnter * let g:slime_last_channel = &channel
-    autocmd BufEnter,WinEnter,TermOpen  * lua reset_slime()
-  augroup END
-end
-    ]])
+      vim.api.nvim_set_keymap("n", "<c-c><c-u>", [[<cmd>SlimeSend0 "\x15"<CR>]], { noremap = true })
+      vim.api.nvim_set_keymap("n", "<c-c><c-i>", [[<cmd>SlimeSend0 "\x03"<CR>]], { noremap = true })
+      vim.api.nvim_set_keymap("n", "<c-c><c-d>", [[<cmd>SlimeSend0 "\x04"<CR>]], { noremap = true })
+      vim.api.nvim_set_keymap("n", "<c-c><c-p>", [[<cmd>SlimeSend0 "\x1bk\x0d"<CR>]], { noremap = true })
+      vim.api.nvim_set_keymap("n", "<c-c><cr>", [[<cmd>SlimeSend0 "\x0d"<CR>]], { noremap = true })
+      vim.api.nvim_exec([[
+augroup auto_slime_channel
+  autocmd!
+  autocmd BufEnter,WinEnter,TermOpen  * lua reset_slime()
+augroup END]], false)
     end,
   },
 }

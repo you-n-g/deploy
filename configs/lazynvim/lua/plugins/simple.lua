@@ -3,6 +3,10 @@
 -- - 如何对插件做一个合理的分类?
 --   - editor,coding(这两者的区别是什么，是和编程语言的语义相关吗？)
 --   - ui(有的功能虽然表现出来了UI，但是还有很多别的功能)
+-- TODO:
+-- https://github.com/archibate/nvim-gpt + EdgeGPT
+-- hot chatgpt plugins: https://github.com/jackMort/ChatGPT.nvim
+-- Comparision related repos: https://github.com/search?q=gpt%20nvim&type=repositories
 
 return {
   {

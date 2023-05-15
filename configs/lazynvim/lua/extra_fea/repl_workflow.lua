@@ -1,4 +1,5 @@
 -- it is based on toggleterm.nvim and vim-slime.
+local M = {}
 
 -- util function
 local function class(className, super)
@@ -21,6 +22,49 @@ local function class(className, super)
     return instance
   end
   return clazz
+end
+
+
+-- get current buffer name
+function update_toggleterm_last_id()
+  local name = vim.api.nvim_buf_get_name(0)
+  -- if name ends with pattern "#\d", then set \d to variable i
+  if string.match(name, "#%d$") then
+    vim.g.toggleterm_last_id = string.match(name, "#(%d)$")
+  end
+end
+
+vim.api.nvim_exec([[
+augroup auto_toggleterm_channel
+  autocmd!
+  autocmd BufEnter,WinEnter,TermOpen  * lua update_toggleterm_last_id()
+augroup END]], false)
+
+local function sendContent()
+
+  -- if filetype is python
+  if vim.bo.filetype == 'python' then
+    -- FIXME: this still does not work.  Windows will raise error if you send line break
+    vim.api.nvim_feedkeys('"+y', 'n', false)
+    vim.api.nvim_feedkeys([[:SlimeSend0 "%paste"]] .. "\n", 'n', false)
+    vim.api.nvim_feedkeys([[:SlimeSend0 "\x0d"]] .. "\n", 'n', false)
+    return nil
+  end
+
+  local mode = vim.api.nvim_get_mode().mode
+  if mode == "n" then
+    vim.cmd(string.format([[ToggleTermSendCurrentLine %s]], vim.g.toggleterm_last_id or ""))
+  elseif mode == "V" or mode == "v" then
+    -- run command ToggleTermSendVisualSelection in visual mode
+    vim.api.nvim_feedkeys(string.format(":ToggleTermSendVisualSelection %s\n", vim.g.toggleterm_last_id or ""), 'n', true)
+  end
+end
+
+if vim.fn.has("win32") == 1 then
+  -- TODO: windows will not send the prefix blanks... It is weird..
+  -- https://github.com/akinsho/toggleterm.nvim/issues/243
+  vim.keymap.set({"n", "x", "v"}, "<c-c><c-c>", sendContent, { noremap = true, desc = "send content"})
+  -- otherwise vim-slime will be used
 end
 
 -- 下面的代码是基于下面的讨论
@@ -96,7 +140,7 @@ function BaseREPL:run_func()
     return
   end
   local cmd = self.interpreter .. " " .. vim.fn.expand("%") .. " " .. get_current_function_name()
-  vim.cmd(string.format("SlimeSend0 '%s'", cmd))
+  require'toggleterm'.exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
 end
 
 function BaseREPL:run_script()
@@ -105,13 +149,33 @@ function BaseREPL:run_script()
     return
   end
   local cmd = self.interpreter .. " " .. vim.fn.expand("%")
-  vim.cmd(string.format("SlimeSend0 '%s'", cmd))
+  require'toggleterm'.exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+end
+
+function BaseREPL:launch_interpreter()
+  if self.interpreter == nil then
+    print("No interpreter is set")
+    return
+  end
+  print("No interpreter supported...")
 end
 
 -- for all kinds of language
 
 local PythonREPL = class("PythonREPL", BaseREPL)
 PythonREPL.interpreter = "python"
+
+function PythonREPL:launch_interpreter()
+  print("In python repl")
+
+  require'toggleterm'.exec("ipython", tonumber(vim.g.toggleterm_last_id), 12)
+
+  -- if vim.fn.has("win32") == 1 then
+  --   vim.cmd "IPython"
+  -- else
+  --   require'toggleterm'.exec("ipython", vim.g.toggleterm_last_id, 12)
+  -- end
+end
 
 local BashREPL = class("BashREPL", BaseREPL)
 BashREPL.interpreter = "bash"
@@ -129,8 +193,56 @@ end
 vim.keymap.set("n", "<leader>rs", function()
   REPLFactory():run_script()
 end, { desc = "Run script" })
+
 vim.keymap.set("n", "<leader>rf", function()
   REPLFactory():run_func()
 end, { desc = "Run function" })
 
-vim.keymap.set("n", "<leader>rLp", [[<cmd>SlimeSend0 "ipython\n"<cr>]],  { desc = "Python" } )
+vim.keymap.set("n", "<leader>rL", function()
+  REPLFactory():launch_interpreter()
+end,  { desc = "Launch interpreter" } )
+
+
+-- FIXME:
+-- A function that are curreently design for windows
+-- it is expected to work well with rebelot/terminal.nvim.
+-- But this does not well in windows still..
+M.python = function()
+    local ipython = require("terminal").terminal:new({
+      layout = { open_cmd = "botright vertical new" },
+      cmd = { "ipython" },
+      autoclose = true,
+    })
+
+    vim.api.nvim_create_user_command("IPython", function()
+        local bufnr = vim.api.nvim_get_current_buf()
+        ipython:toggle(nil, true)
+
+        -- send selected content
+        vim.keymap.set(
+            "x",
+            "<c-c><c-c>",
+            function()
+                vim.api.nvim_feedkeys('"+y', 'n', false)
+                ipython:send("%paste")
+                ipython:send("1")
+                ipython:send("\n")
+                ipython:send("2")
+                ipython:send("\x0d")
+                ipython:send("3")
+                ipython:send("\x0a")
+                ipython:send("4")
+                ipython:send("\r")
+            end,
+            { buffer = bufnr }
+        )
+
+        -- send current word
+        vim.keymap.set("n", "<c-w>w", function()
+            ipython:send(vim.fn.expand("<cexpr>") .. "?")
+            ipython:send("\x0d")
+        end, { buffer = bufnr })
+    end, {})
+end
+
+return M

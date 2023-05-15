@@ -66,8 +66,8 @@ return {
   {
     "rcarriga/nvim-notify",
     -- opts = opts,
-    config = function()
-      require("notify").setup(opts)
-    end,
+    -- config = function()
+    --   require("notify").setup(opts)
+    -- end,
   },
 }
