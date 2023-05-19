@@ -38,8 +38,8 @@ install_lazyvim() {
 	mv ~/.cache/nvim ~/.cache/nvim.bak
 
 	# link the lazyvim config
-	ln -s "$TARGET" ~/.config/nvim
 	TARGET="$DIR/../../configs/lazynvim"
+	ln -s "$TARGET" ~/.config/nvim
 }
 
 install_lazygit() {
@@ -73,6 +73,13 @@ update_neovim_app() {
 merge_previous_config() {
 	# TODO: link previous snippets
 	echo TODO
+}
+
+deploy() {
+  # TODO:
+  echo TODO
+  install_lazyvim
+  install_lazygit
 }
 
 # default install_first_time otherwise the argument
