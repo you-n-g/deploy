@@ -17,6 +17,7 @@ return {
     "jpalardy/vim-slime",
     config = function()
       vim.g.slime_target = "neovim"
+      vim.g.slime_python_ipython = 1
 
       vim.api.nvim_set_keymap("n", "<c-c><c-u>", [[<cmd>SlimeSend0 "\x15"<CR>]], { noremap = true })
       vim.api.nvim_set_keymap("n", "<c-c><c-i>", [[<cmd>SlimeSend0 "\x03"<CR>]], { noremap = true })
