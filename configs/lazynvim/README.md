@@ -15,3 +15,12 @@
 
 # 还希望要的功能
 [ ] - fast wrap (类似 https://github.com/jiangmiao/auto-pairs), 但是 "echasnovski/mini.pairs" 没有提供类似的功能
+
+
+
+# Introduction
+The neovim configuration is based on LazyVim and may be useful for Python users. In addition to the raw LazyVim, the following features and plugins have been added.
+
+
+- [Python-LSP](lua/plugins/nvim-lspconfig.lua)
+  - Pyright, Full formatting and range formatting,

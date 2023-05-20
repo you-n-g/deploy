@@ -57,6 +57,7 @@ install_neovim() {
 	echo TODO
   # pip install ruff-lsp # ruff-lsp only give warnings and does not provide docs. So it can't replace pyright.
   pip install debugpy  # this will used by nvim-dap
+  # TODO: install debugpy via mason
 }
 
 update_neovim_app() {

@@ -1,12 +1,34 @@
 #!/bin/sh
 set -x
+set -e
 
-if [ -e ~/apps/nodejs/bin/npm ]
+NP=~/apps/nodejs
+
+# https://stackoverflow.com/a/34531699
+while getopts ":r" opt; do
+    case $opt in
+        r)
+        echo "Removing the nodejs and reinstall."
+        rm -r $NP
+        ;;
+        \?)
+        echo "Invalid option: -$OPTARG" >&2
+        exit 1
+        ;;
+        :)
+        echo "Option -$OPTARG requires an argument." >&2
+        exit 1
+        ;;
+    esac
+done
+
+
+if [ -e $NP/bin/npm ]
 then
     exit 0
 fi
 
-NP=~/apps/nodejs
+
 
 mkdir -p $NP
 

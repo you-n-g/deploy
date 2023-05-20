@@ -68,37 +68,6 @@ return {
     },
   },
   {
-    "neovim/nvim-lspconfig",
-    -- opts = { servers = {ruff_lsp = {}} },  -- ruff_lsp will not git docs
-    keys = {
-      {
-        --- 解决了 pyright 慢的问题后，这里显得不是很有必要
-        "<leader>cD",
-        function()
-          -- 因为 pyright 太慢了，所以这里搞了一个deatch的功能
-          local bufnr = vim.api.nvim_get_current_buf()
-          -- local clients = vim.lsp.buf_get_clients(bufnr)
-          local clients = vim.lsp.get_active_clients()
-          for client_id, cli in pairs(clients) do
-            -- vim.lsp.buf_detach_client(bufnr, client_id)
-            if cli.name == "pyright" then
-              vim.lsp.buf_detach_client(bufnr, client_id)
-            end
-          end
-        end,
-        desc = "Detach the LSP from cur buffer",
-      },
-    },
-    opts = { servers = { pyright = {} } },
-    -- mason will automatically load the lsp server
-
-    -- TIPS:
-    -- https://github.com/microsoft/pyright/blob/main/docs/configuration.md
-    -- 如果觉得pyright启动很慢，把他的子目录都去掉 (你觉得显示的 diagnostics 不需要覆盖的目录都去掉)
-    -- pyrightconfig.json:
-    -- { "exclude": [ "**/__pycache__", "data/", "libs/", "intermediate/", "scripts/" ] }
-  },
-  {
     "mg979/vim-visual-multi",
     -- BEGIN 'mg979/vim-visual-multi' -----------------------------------------
     -- 不记得了就多复习 vim -Nu ~/.vim/plugged/vim-visual-multi/tutorialrc

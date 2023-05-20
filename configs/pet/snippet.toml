@@ -267,3 +267,8 @@
   description = "create a project from Python project template based on copier"
   command = "copier gh:huxuan/serious-scaffold-python <project_path>"
   output = ""
+
+[[snippets]]
+  description = "Prompt"
+  command = "fix grammars & typos"
+  output = ""

@@ -3,7 +3,11 @@ return {
     "jackMort/ChatGPT.nvim",
     event = "VeryLazy",
     config = function()
-      require("chatgpt").setup()
+      local opts = {}
+      if vim.fn.has("win32") ~= 1 then
+        opts["api_key_cmd"] = "gpg --decrypt ~/deploy/keys/gpt.gpg 2>/dev/null"
+      end
+      require("chatgpt").setup(opts)
       -- config whick key with ["<leader><tab>"] = { name = "+tabs & windows" },
       require("which-key").register({
         ["<leader>"] = {

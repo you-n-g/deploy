@@ -32,4 +32,14 @@ vim.keymap.set("n", "<leader><tab>b", function()
     col = math.floor(0.1 * vim.o.columns),
     border = "single",
   })
-end, { expr = false, noremap = true, desc="Open cur buffer in float window" })
+end, { expr = false, noremap = true, desc = "Open cur buffer in float window" })
+
+vim.api.nvim_set_keymap(
+  "n",
+  "<leader>sA",
+  -- `only_sort_text=true` will only search text without filename
+  -- https://github.com/nvim-telescope/telescope.nvim/issues/564
+  -- [[:Telescope grep_string only_sort_text=true<cr>]],
+  [[:lua require'telescope.builtin'.grep_string{ shorten_path = true, word_match = "-w", only_sort_text = false, search = '' }<cr>]],
+  { expr = false, noremap = true, desc = "Search All!" }
+)
