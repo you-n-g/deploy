@@ -1,9 +1,19 @@
+-- TODO:
+-- - Will the selected message be sent when we start chatting?
 return {
   {
     "jackMort/ChatGPT.nvim",
     event = "VeryLazy",
     config = function()
-      local opts = {}
+      local opts = {
+        -- set it to shift+enter
+        -- table get or set values
+        edit_with_instructions = {
+          keymaps = {
+            use_output_as_input = "<c-a>", -- sw(a)p. <c-i> is expand as tab in my terminal
+          },
+        },
+      }
       if vim.fn.has("win32") ~= 1 then
         opts["api_key_cmd"] = "gpg --decrypt ~/deploy/keys/gpt.gpg 2>/dev/null"
       end

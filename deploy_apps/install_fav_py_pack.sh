@@ -1,4 +1,20 @@
 #!/bin/bash
+
+
+# # Outlines: user-wise instead of environment-wise dependencies
+
+python -m pip install --user pipx
+python -m pipx ensurepath
+pip install --user neovim pynvim
+for p in pipenv pre-commit ranger-fm; do
+    # pipx will install things in user space
+    pipx install $p
+done
+
+
+# # Outlines: environment-wise dependencies
+# TODO: extract following system-wide dependencies to the above section.
+
 # install some essential scripts
 # conda install -y tensorflow-gpu keras-gpu
 conda install -y pandas matplotlib ipywidgets scikit-learn seaborn ipyparallel # some software we should reinstall if we recreate a new environment
@@ -32,10 +48,8 @@ done
 
 
 # for developing environment
-pip install autopep8 better_exceptions neovim ipython-autotime yapf fire pylint debugpy
+pip install autopep8 better_exceptions ipython-autotime yapf fire pylint debugpy
 # ruff-lsp #  ruff-lsp only give warnings and does not provide docs. So it can't replace pyright.
-
-pip install ranger-fm # 试了一下， 感觉ranger比nnn好用
 
 
 # candidates packages

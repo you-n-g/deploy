@@ -11,7 +11,9 @@ git clone https://github.com/you-n-g/wan
 
 cd wan
 
-pip install -e .
+# install for specific user
+# TODO: is can't be installed in all python version
+pip install --user -e .
 
 
 # robot config

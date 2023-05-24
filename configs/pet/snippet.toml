@@ -155,7 +155,7 @@
 
 [[snippets]]
   description = "python minimal install after create conda env"
-  command = "pip install ipdb ipython neovim fire yapf pylint black"
+  command = "pip install --user ipdb ipython neovim fire yapf pylint black"
   output = ""
 
 [[snippets]]
