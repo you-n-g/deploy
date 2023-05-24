@@ -9,7 +9,7 @@ return {
         "<c-d>",
         function()
           if not require("noice.lsp").scroll(4) then
-            return "<c-f>"
+            return "<c-d>"
           end
         end,
         silent = true,
@@ -21,7 +21,7 @@ return {
         "<c-u>",
         function()
           if not require("noice.lsp").scroll(-4) then
-            return "<c-b>"
+            return "<c-u>"
           end
         end,
         silent = true,
@@ -29,23 +29,22 @@ return {
         desc = "Scroll backward",
         mode = { "i", "n", "s" },
       },
-      {
-        --- 解决了 pyright 慢的问题后，这里显得不是很有必要
-        "<leader>cD",
-        function()
-          -- 因为 pyright 太慢了，所以这里搞了一个deatch的功能
-          local bufnr = vim.api.nvim_get_current_buf()
-          -- local clients = vim.lsp.buf_get_clients(bufnr)
-          local clients = vim.lsp.get_active_clients()
-          for client_id, cli in pairs(clients) do
-            -- vim.lsp.buf_detach_client(bufnr, client_id)
-            if cli.name == "pyright" then
-              vim.lsp.buf_detach_client(bufnr, client_id)
-            end
-          end
-        end,
-        desc = "Detach the LSP from cur buffer",
-      },
+      -- { -- 解决了 pyright 慢的问题后，这里显得不是很有必要
+      --   "<leader>cD",
+      --   function()
+      --     -- 因为 pyright 太慢了，所以这里搞了一个deatch的功能
+      --     local bufnr = vim.api.nvim_get_current_buf()
+      --     -- local clients = vim.lsp.buf_get_clients(bufnr)
+      --     local clients = vim.lsp.get_active_clients()
+      --     for client_id, cli in pairs(clients) do
+      --       -- vim.lsp.buf_detach_client(bufnr, client_id)
+      --       if cli.name == "pyright" then
+      --         vim.lsp.buf_detach_client(bufnr, client_id)
+      --       end
+      --     end
+      --   end,
+      --   desc = "Detach the LSP from cur buffer",
+      -- },
     },
     -- pyink is a python formatter based on black
     opts = { autoformat = false, servers = { pyright = {} } },
