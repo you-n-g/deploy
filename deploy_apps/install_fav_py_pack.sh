@@ -8,6 +8,8 @@ for p in pipenv pre-commit ranger-fm yapf black ; do
     # pipx will install things in user space
     pipx install $p
 done
+# NOTE: We suggest not installing the following package, pipx, as it is bound to your current environment.
+# - pytest
 
 
 # # Outlines: environment-wise dependencies
