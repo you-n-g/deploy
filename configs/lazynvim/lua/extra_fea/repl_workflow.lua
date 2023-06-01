@@ -160,6 +160,10 @@ function BaseREPL:launch_interpreter()
   print("No interpreter supported...")
 end
 
+function BaseREPL:test()
+  print("No test supported")
+end
+
 -- for all kinds of language
 
 local PythonREPL = class("PythonREPL", BaseREPL)
@@ -167,6 +171,11 @@ PythonREPL.interpreter = "python"
 
 function PythonREPL:launch_interpreter()
   require'toggleterm'.exec("ipython", tonumber(vim.g.toggleterm_last_id), 12)
+end
+
+function PythonREPL:test()
+  local cmd = "pytest -s --pdb --disable-warnings " .. vim.fn.expand("%:p") .. "::" .. get_current_function_name(true)
+  require'toggleterm'.exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
 end
 
 local BashREPL = class("BashREPL", BaseREPL)
@@ -193,5 +202,10 @@ end, { desc = "Run function" })
 vim.keymap.set("n", "<leader>rL", function()
   REPLFactory():launch_interpreter()
 end,  { desc = "Launch interpreter" } )
+
+vim.keymap.set("n", "<leader>rt", function()
+  REPLFactory():test()
+end,  { desc = "Run Test" } )
+-- TODO: `configs/nvim/yx/plugins_conf.vim` for doc test
 
 return M
