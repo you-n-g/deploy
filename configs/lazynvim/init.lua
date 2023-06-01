@@ -9,7 +9,6 @@ local function load_extra_feature()
 
   for _, plugin in ipairs(features) do
     require(dir_name .. "." .. vim.fn.fnamemodify(plugin, ":t:r"))
-    -- print(dir_name .. "." .. vim.fn.fnamemodify(plugin, ":t:r"))
   end
 end
 

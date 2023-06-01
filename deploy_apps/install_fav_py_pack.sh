@@ -1,12 +1,10 @@
 #!/bin/bash
-
-
 # # Outlines: user-wise instead of environment-wise dependencies
 
 python -m pip install --user pipx
 python -m pipx ensurepath
 pip install --user neovim pynvim
-for p in pipenv pre-commit ranger-fm; do
+for p in pipenv pre-commit ranger-fm yapf black ; do
     # pipx will install things in user space
     pipx install $p
 done
@@ -48,7 +46,7 @@ done
 
 
 # for developing environment
-pip install autopep8 better_exceptions ipython-autotime yapf fire pylint debugpy
+pip install autopep8 better_exceptions ipython-autotime fire pylint debugpy
 # ruff-lsp #  ruff-lsp only give warnings and does not provide docs. So it can't replace pyright.
 
 
