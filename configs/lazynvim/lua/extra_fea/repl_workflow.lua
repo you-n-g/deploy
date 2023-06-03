@@ -24,7 +24,6 @@ local function class(className, super)
   return clazz
 end
 
-
 -- get current buffer name
 function update_toggleterm_last_id()
   local name = vim.api.nvim_buf_get_name(0)
@@ -34,20 +33,22 @@ function update_toggleterm_last_id()
   end
 end
 
-vim.api.nvim_exec([[
+vim.api.nvim_exec(
+  [[
 augroup auto_toggleterm_channel
   autocmd!
   autocmd BufEnter,WinEnter,TermOpen  * lua update_toggleterm_last_id()
-augroup END]], false)
+augroup END]],
+  false
+)
 
 local function sendContent()
-
   -- if filetype is python
-  if vim.bo.filetype == 'python' then
+  if vim.bo.filetype == "python" then
     -- FIXME: this still does not work.  Windows will raise error if you send line break
-    vim.api.nvim_feedkeys('"+y', 'n', false)
-    vim.api.nvim_feedkeys([[:SlimeSend0 "%paste"]] .. "\n", 'n', false)
-    vim.api.nvim_feedkeys([[:SlimeSend0 "\x0d"]] .. "\n", 'n', false)
+    vim.api.nvim_feedkeys('"+y', "n", false)
+    vim.api.nvim_feedkeys([[:SlimeSend0 "%paste"]] .. "\n", "n", false)
+    vim.api.nvim_feedkeys([[:SlimeSend0 "\x0d"]] .. "\n", "n", false)
     return nil
   end
 
@@ -56,14 +57,18 @@ local function sendContent()
     vim.cmd(string.format([[ToggleTermSendCurrentLine %s]], vim.g.toggleterm_last_id or ""))
   elseif mode == "V" or mode == "v" then
     -- run command ToggleTermSendVisualSelection in visual mode
-    vim.api.nvim_feedkeys(string.format(":ToggleTermSendVisualSelection %s\n", vim.g.toggleterm_last_id or ""), 'n', true)
+    vim.api.nvim_feedkeys(
+      string.format(":ToggleTermSendVisualSelection %s\n", vim.g.toggleterm_last_id or ""),
+      "n",
+      true
+    )
   end
 end
 
 if vim.fn.has("win32") == 1 then
   -- TODO: windows will not send the prefix blanks... It is weird..
   -- https://github.com/akinsho/toggleterm.nvim/issues/243
-  vim.keymap.set({"n", "x", "v"}, "<c-c><c-c>", sendContent, { noremap = true, desc = "send content"})
+  vim.keymap.set({ "n", "x", "v" }, "<c-c><c-c>", sendContent, { noremap = true, desc = "send content" })
   -- otherwise vim-slime will be used
 end
 
@@ -130,6 +135,27 @@ local function get_current_function_name(find_cls, sep)
   return cls_name .. sep .. func_name
 end
 
+-- Configs
+local config = {
+  edit_before_send = false,
+}
+
+local function edit_before_send(cmd)
+  if config.edit_before_send then
+    vim.ui.input({ prompt = "Edit before sending", default = cmd }, function(input)
+      require("toggleterm").exec(input, tonumber(vim.g.toggleterm_last_id), 12)
+    end)
+  else
+    require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+  end
+end
+
+vim.keymap.set("n", "<leader>rce", function()
+  --  toggle  config["edit_before_send"] between true and false
+  config["edit_before_send"] = not config["edit_before_send"]
+  P(config["edit_before_send"])
+end, { desc = "edit before send." })
+
 -- Base class and methods
 
 local BaseREPL = class("BaseREPL")
@@ -140,7 +166,7 @@ function BaseREPL:run_func()
     return
   end
   local cmd = self.interpreter .. " " .. vim.fn.expand("%") .. " " .. get_current_function_name()
-  require'toggleterm'.exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+  edit_before_send(cmd)
 end
 
 function BaseREPL:run_script()
@@ -149,7 +175,7 @@ function BaseREPL:run_script()
     return
   end
   local cmd = self.interpreter .. " " .. vim.fn.expand("%")
-  require'toggleterm'.exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+  edit_before_send(cmd)
 end
 
 function BaseREPL:launch_interpreter()
@@ -170,12 +196,13 @@ local PythonREPL = class("PythonREPL", BaseREPL)
 PythonREPL.interpreter = "python"
 
 function PythonREPL:launch_interpreter()
-  require'toggleterm'.exec("ipython", tonumber(vim.g.toggleterm_last_id), 12)
+  edit_before_send("ipython")
 end
 
 function PythonREPL:test()
   local cmd = "pytest -s --pdb --disable-warnings " .. vim.fn.expand("%:p") .. "::" .. get_current_function_name(true)
-  require'toggleterm'.exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+  -- interact with user to edit `cmd`
+  edit_before_send(cmd)
 end
 
 local BashREPL = class("BashREPL", BaseREPL)
@@ -201,11 +228,14 @@ end, { desc = "Run function" })
 
 vim.keymap.set("n", "<leader>rL", function()
   REPLFactory():launch_interpreter()
-end,  { desc = "Launch interpreter" } )
+end, { desc = "Launch interpreter" })
 
 vim.keymap.set("n", "<leader>rt", function()
   REPLFactory():test()
-end,  { desc = "Run Test" } )
+end, { desc = "Run Test" })
 -- TODO: `configs/nvim/yx/plugins_conf.vim` for doc test
+
+-- config
+-- coroutine may be helpful: https://github.com/stevearc/dressing.nvim/discussions/70
 
 return M
