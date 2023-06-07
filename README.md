@@ -13,7 +13,7 @@ User could find the individual config and installation scripts below.
 
 | Tools     | Config/Dotfiles Path                               | Installation script                                                |
 |-----------|----------------------------------------------------|--------------------------------------------------------------------|
-| neovim    | [configs/nvim/](configs/nvim/)                     | [deploy_apps/install_neovim.sh](deploy_apps/install_neovim.sh)     |
+| neovim    | [configs/lazynvim/](configs/lazynvim/)                     | [deploy_apps/nonauto/install_lazyvim.sh](deploy_apps/nonauto/install_lazyvim.sh)     |
 | zsh       | [configs/shell/rcfile.sh](configs/shell/rcfile.sh) | [deploy_apps/install_zsh.sh](deploy_apps/install_zsh.sh)           |
 | tmux      | [configs/tmux/](configs/tmux/)                     | [deploy_apps/install_tmux.sh](deploy_apps/install_tmux.sh)         |
 | miniconda | -                                                  | [deploy_apps/deploy_miniconda.sh](deploy_apps/deploy_miniconda.sh) |

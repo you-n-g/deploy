@@ -4,12 +4,17 @@
 python -m pip install --user pipx
 python -m pipx ensurepath
 pip install --user neovim pynvim
-for p in pipenv pre-commit ranger-fm yapf black ; do
+for p in pipenv pre-commit ranger-fm yapf black copier virtualenv ; do
     # pipx will install things in user space
     pipx install $p
 done
 # NOTE: We suggest not installing the following package, pipx, as it is bound to your current environment.
 # - pytest
+#
+# sometimes it will raise error, following code may solve this problem
+# - pip install pip -U
+# - pip install pipenv -U
+# - pip install virtualenv -U
 
 
 # # Outlines: environment-wise dependencies

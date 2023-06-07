@@ -166,7 +166,7 @@ function BaseREPL:run_func()
     return
   end
   local cmd = self.interpreter .. " " .. vim.fn.expand("%") .. " " .. get_current_function_name()
-  edit_before_send(cmd)
+  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
 end
 
 function BaseREPL:run_script()
@@ -192,6 +192,7 @@ end
 
 -- for all kinds of language
 
+-- - Python
 local PythonREPL = class("PythonREPL", BaseREPL)
 PythonREPL.interpreter = "python"
 
@@ -205,6 +206,19 @@ function PythonREPL:test()
   edit_before_send(cmd)
 end
 
+function PythonREPL:run_func()
+  local cmd = self.interpreter .. " " .. vim.fn.expand("%") .. " "
+  local func_name = get_current_function_name()
+  -- NOTE: this is a hack for typer (the design is bad...)
+  -- if `import typer` is included in the file, the replace the '_' with '-' in `cmd`
+  if vim.fn.search("import typer", "nw") ~= 0 then
+    func_name = string.gsub(func_name, "_", "-")
+  end
+  cmd = cmd .. func_name
+  edit_before_send(cmd)
+end
+
+-- - Bash
 local BashREPL = class("BashREPL", BaseREPL)
 BashREPL.interpreter = "bash"
 
@@ -217,6 +231,8 @@ local function REPLFactory()
   }
   return repl_map[ft].new()
 end
+
+-- General Keymaps
 
 vim.keymap.set("n", "<leader>rs", function()
   REPLFactory():run_script()

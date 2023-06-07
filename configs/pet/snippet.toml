@@ -272,3 +272,18 @@
   description = "Prompt"
   command = "fix grammars & typos"
   output = ""
+
+[[snippets]]
+  description = "Disable precommit like --no-verify (https://github.com/typicode/husky/issues/346) ; but I found both HUSKY_SKIP_HOOKS=1 and export HUSKY=0 don't work"
+  command = "--no-verify"
+  output = ""
+
+[[snippets]]
+  description = "create new Python project from scaffold"
+  command = "git init && git add . && make dev && make pre-commit && git commit -a -m \"Init from serious-scaffold-python.\""
+  output = ""
+
+[[snippets]]
+  description = "add user with only rsa keys"
+  command = "sudo adduser <username> --disabled-password && sudo su <username> -c 'mkdir -p ~/.ssh/ && chmod 700 ~/.ssh/ && touch ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys'"
+  output = ""
