@@ -24,7 +24,6 @@ local function class(className, super)
   return clazz
 end
 
-
 -- get current buffer name
 function update_toggleterm_last_id()
   local name = vim.api.nvim_buf_get_name(0)
@@ -34,20 +33,22 @@ function update_toggleterm_last_id()
   end
 end
 
-vim.api.nvim_exec([[
+vim.api.nvim_exec(
+  [[
 augroup auto_toggleterm_channel
   autocmd!
   autocmd BufEnter,WinEnter,TermOpen  * lua update_toggleterm_last_id()
-augroup END]], false)
+augroup END]],
+  false
+)
 
 local function sendContent()
-
   -- if filetype is python
-  if vim.bo.filetype == 'python' then
+  if vim.bo.filetype == "python" then
     -- FIXME: this still does not work.  Windows will raise error if you send line break
-    vim.api.nvim_feedkeys('"+y', 'n', false)
-    vim.api.nvim_feedkeys([[:SlimeSend0 "%paste"]] .. "\n", 'n', false)
-    vim.api.nvim_feedkeys([[:SlimeSend0 "\x0d"]] .. "\n", 'n', false)
+    vim.api.nvim_feedkeys('"+y', "n", false)
+    vim.api.nvim_feedkeys([[:SlimeSend0 "%paste"]] .. "\n", "n", false)
+    vim.api.nvim_feedkeys([[:SlimeSend0 "\x0d"]] .. "\n", "n", false)
     return nil
   end
 
@@ -56,14 +57,18 @@ local function sendContent()
     vim.cmd(string.format([[ToggleTermSendCurrentLine %s]], vim.g.toggleterm_last_id or ""))
   elseif mode == "V" or mode == "v" then
     -- run command ToggleTermSendVisualSelection in visual mode
-    vim.api.nvim_feedkeys(string.format(":ToggleTermSendVisualSelection %s\n", vim.g.toggleterm_last_id or ""), 'n', true)
+    vim.api.nvim_feedkeys(
+      string.format(":ToggleTermSendVisualSelection %s\n", vim.g.toggleterm_last_id or ""),
+      "n",
+      true
+    )
   end
 end
 
 if vim.fn.has("win32") == 1 then
   -- TODO: windows will not send the prefix blanks... It is weird..
   -- https://github.com/akinsho/toggleterm.nvim/issues/243
-  vim.keymap.set({"n", "x", "v"}, "<c-c><c-c>", sendContent, { noremap = true, desc = "send content"})
+  vim.keymap.set({ "n", "x", "v" }, "<c-c><c-c>", sendContent, { noremap = true, desc = "send content" })
   -- otherwise vim-slime will be used
 end
 
@@ -140,7 +145,7 @@ function BaseREPL:run_func()
     return
   end
   local cmd = self.interpreter .. " " .. vim.fn.expand("%") .. " " .. get_current_function_name()
-  require'toggleterm'.exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
 end
 
 function BaseREPL:run_script()
@@ -149,7 +154,7 @@ function BaseREPL:run_script()
     return
   end
   local cmd = self.interpreter .. " " .. vim.fn.expand("%")
-  require'toggleterm'.exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
 end
 
 function BaseREPL:launch_interpreter()
@@ -166,18 +171,32 @@ end
 
 -- for all kinds of language
 
+-- - Python
 local PythonREPL = class("PythonREPL", BaseREPL)
 PythonREPL.interpreter = "python"
 
 function PythonREPL:launch_interpreter()
-  require'toggleterm'.exec("ipython", tonumber(vim.g.toggleterm_last_id), 12)
+  require("toggleterm").exec("ipython", tonumber(vim.g.toggleterm_last_id), 12)
 end
 
 function PythonREPL:test()
   local cmd = "pytest -s --pdb --disable-warnings " .. vim.fn.expand("%:p") .. "::" .. get_current_function_name(true)
-  require'toggleterm'.exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
 end
 
+function PythonREPL:run_func()
+  local cmd = self.interpreter .. " " .. vim.fn.expand("%") .. " "
+  local func_name = get_current_function_name()
+  -- NOTE: this is a hack for typer (the design is bad...)
+  -- if `import typer` is included in the file, the replace the '_' with '-' in `cmd`
+  if vim.fn.search("import typer", "nw") ~= 0 then
+    func_name = string.gsub(func_name, "_", "-")
+  end
+  cmd = cmd .. func_name
+  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+end
+
+-- - Bash
 local BashREPL = class("BashREPL", BaseREPL)
 BashREPL.interpreter = "bash"
 
@@ -191,6 +210,8 @@ local function REPLFactory()
   return repl_map[ft].new()
 end
 
+-- General Keymaps
+
 vim.keymap.set("n", "<leader>rs", function()
   REPLFactory():run_script()
 end, { desc = "Run script" })
@@ -201,11 +222,11 @@ end, { desc = "Run function" })
 
 vim.keymap.set("n", "<leader>rL", function()
   REPLFactory():launch_interpreter()
-end,  { desc = "Launch interpreter" } )
+end, { desc = "Launch interpreter" })
 
 vim.keymap.set("n", "<leader>rt", function()
   REPLFactory():test()
-end,  { desc = "Run Test" } )
+end, { desc = "Run Test" })
 -- TODO: `configs/nvim/yx/plugins_conf.vim` for doc test
 
 return M
