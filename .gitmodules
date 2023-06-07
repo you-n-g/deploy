@@ -1,0 +1,6 @@
+[submodule "tools.py/gpttools"]
+	path = tools.py/gpttools
+	url = git@github.com:you-n-g/gpttools.git
+[submodule "tools.py/misc"]
+	path = tools.py/misc
+	url = git@github.com:you-n-g/misc.git

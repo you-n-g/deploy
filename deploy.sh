@@ -78,6 +78,9 @@ chmod a+x ./deploy_apps/*
 ./deploy_apps/install_fzf.sh
 ./deploy_apps/install_pet.sh
 ./deploy_apps/install_wan.sh
+./tools/install.sh
+# TODO:
+# ./deploy_apps/nonauto/install_lazyvim.sh
 
 cat <<EOF
 Maybe the following things should be done mannually

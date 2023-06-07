@@ -279,8 +279,8 @@
   output = ""
 
 [[snippets]]
-  description = "create new Python project from scaffold"
-  command = "git init && git add . && make dev && make pre-commit && git commit -a -m \"Init from serious-scaffold-python.\""
+  description = "create new Python project from scaffold (suppose you have already create the github project)"
+  command = "git init && git add . && make dev && make pre-commit && git commit -a -m \"Init from serious-scaffold-python.\" && git remote add origin git@github.com:you-n-g/<project>.git && git branch -M main  && git push -u origin main --no-verify"
   output = ""
 
 [[snippets]]
