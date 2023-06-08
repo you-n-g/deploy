@@ -30,5 +30,5 @@ git clone https://github.com/you-n-g/deploy  # (Alternative) git clone git@githu
 echo  "your_account ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/80-personal
 
 cd deploy
-./deploy.sh
+./deploy.sh # (Alternative if ssh clone instead of ssh) ./deploy.sh -s
 ```

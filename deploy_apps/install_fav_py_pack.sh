@@ -3,6 +3,7 @@
 
 python -m pip install --user pipx
 python -m pipx ensurepath
+export PATH="$PATH:$HOME/.local/bin"
 pip install --user neovim pynvim
 for p in pipenv pre-commit ranger-fm yapf black copier virtualenv ; do
     # pipx will install things in user space

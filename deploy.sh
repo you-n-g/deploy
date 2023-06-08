@@ -10,9 +10,9 @@ REPO_PATH=$(
 cd $REPO_PATH
 
 CHEATSHEET_URI=https://github.com/you-n-g/cheatsheets
-while getopts ":g" opt; do
+while getopts ":s" opt; do
 	case $opt in
-	g)
+	s)
 		CHEATSHEET_URI=git@github.com:you-n-g/cheatsheets.git
 		;;
 	\?)
@@ -74,17 +74,18 @@ chmod a+x ./deploy_apps/*
 ./deploy_apps/deploy_miniconda.sh
 ./deploy_apps/install_zsh.sh  # zsh加的 `configs/shell/rcfile.sh` 的性能得在 conda 之后
 ./deploy_apps/install_tmux.sh # 现在打算放在miniconda之后了 # 确保按安装新代码
-./deploy_apps/install_neovim.sh
+# ./deploy_apps/install_neovim.sh  # it is replaced by neovim now.
 ./deploy_apps/install_fzf.sh
 ./deploy_apps/install_pet.sh
 ./deploy_apps/install_wan.sh
-./tools/install.sh
-# TODO:
-# ./deploy_apps/nonauto/install_lazyvim.sh
+./keys/deploy.sh
+./tools.py/install.sh
+./deploy_apps/nonauto/install_lazyvim.sh deploy
 
 cat <<EOF
 Maybe the following things should be done mannually
 - Install tpm
+- gpg -d ~/deploy/keys/gpt.gpg
 EOF
 
 # FAQ

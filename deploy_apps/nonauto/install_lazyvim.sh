@@ -52,19 +52,14 @@ install_lazygit() {
 	ln -s $APP_DIR/lazygit ~/bin/
 }
 
-install_neovim() {
-	# TODO: copy from install_neovim script
-	echo TODO
-  # pip install ruff-lsp # ruff-lsp only give warnings and does not provide docs. So it can't replace pyright.
-  pip install debugpy  # this will used by nvim-dap
-  # TODO: install debugpy via mason
-}
 
-update_neovim_app() {
+install_or_update_neovim_app() {
+  pip install debugpy  # this will used by nvim-dap
+
   # generate a redable unique string based on datetime
   NAME="nvim-latest-$(date +%Y%m%d%H%M%S)"
-	curl -L -o ~/bin/$NAME https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
-	chmod a+x ~/bin/$NAME
+  curl -L -o ~/bin/$NAME https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
+  chmod a+x ~/bin/$NAME
   for target in vim nvim; do
     unlink ~/bin/$target
     ln -s ~/bin/$NAME ~/bin/$target
@@ -77,8 +72,12 @@ merge_previous_config() {
 }
 
 deploy() {
-  # TODO:
-  echo TODO
+  # https://askubuntu.com/a/1451171
+  sudo apt-get install libfuse2
+  deploy_apps/install_rg.sh
+  # - frequently used by nvim
+
+  install_or_update_neovim_app
   install_lazyvim
   install_lazygit
 }

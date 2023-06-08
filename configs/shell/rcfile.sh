@@ -5,6 +5,11 @@ if [ `basename "$SHELL"` = zsh -o "$0" = '-zsh' ]; then
 z -l | sort -h -r | awk '{ print $2 }' | fzf --preview="echo {} | xargs ls -lat"
 EOF
 )
+    if [ ! -e ~/antigen.zsh ]; then
+        ln -s ~/.antigen.zsh  ~/antigen.zsh
+	# https://github.com/zsh-users/antigen/issues/743
+	# NOTE: this is caused by a bug of antigen
+    fi
     function zf() {
             local dir=$(eval $ZF_CMD)
             cd "$dir"
@@ -23,7 +28,8 @@ EOF
     antigen bundle colored-man-pages
     antigen bundle rupa/z z.sh
     antigen bundle MichaelAquilina/zsh-you-should-use
-    antigen bundle mafredri/zsh-async
+    # antigen bundle mafredri/zsh-async
+    # TODO: this give error now. But I can't remember why I need this plugin..
 
     # 后来发现 pure 似乎不能用 antigen 安装了
     # antigen bundle sindresorhus/pure
@@ -58,7 +64,8 @@ EOF
     export SPACESHIP_TIME_SHOW=true
     # export SPACESHIP_DIR_TRUNC=false
 
-    export SPACESHIP_PROMPT_ORDER=(time user dir host git package node docker venv conda pyenv dotnet exec_time battery vi_mode jobs exit_code char)
+    export SPACESHIP_PROMPT_ORDER=(time user dir host git package node docker venv conda dotnet exec_time battery jobs exit_code char)
+    # TODO: vi_mode  pyenv can't be displayed correctly now..
 
     # shrink path
     # export PROMPT='${ret_status} %{$fg[cyan]%}$(shrink_path -l -t) %{$reset_color%}'
@@ -132,6 +139,7 @@ alias gitlog="git log --all --oneline --graph --decorate"
 alias mux=tmuxinator
 alias mx=tmux
 export PATH="$HOME/deploy/helper_scripts/bin/:$HOME/bin/:$HOME/apps/nodejs/bin/:$PATH"
+export PATH="$PATH:$HOME/.local/bin"  # this is for pipx
 export MANPATH="$HOME/.local/share/man/:$MANPATH"
 export EDITOR=`which vim`
 # sudo -E will keep the environment when run sudo. Many env variables like http_proxy need it.
@@ -181,6 +189,23 @@ export FZF_DEFAULT_COMMAND='fd --type f -L'
 if [ -e $HOME/.rvm/scripts/rvm ]; then
     source $HOME/.rvm/scripts/rvm
 fi
+
+# ## Outlines: color
+# enable color support of ls and also add handy aliases
+if [ -x /usr/bin/dircolors ]; then
+    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+    alias ls='ls --color=auto'
+    alias dir='dir --color=auto'
+    alias vdir='vdir --color=auto'
+    alias grep='grep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias egrep='egrep --color=auto'
+fi
+
+# some more ls aliases
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
 
 
 # # Outlines: envs

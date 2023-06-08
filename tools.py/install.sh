@@ -8,7 +8,7 @@ cd $DIR
 
 grep url $DIR/../.gitmodules  | cut -d'=' -f2 | xargs -I % git clone %
 
-for p in $(find . -type d -maxdepth 1); do
+for p in $(find . -maxdepth 1 -type d); do
   if [ "$p" == "." ]; then
     continue
   fi
