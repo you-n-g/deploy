@@ -16,3 +16,10 @@
 
 -- 拷贝当前buffer的相对路径
 vim.api.nvim_set_keymap('n', 'yp', [[:lua vim.fn.setreg("\"", vim.fn.expand("%")); print(vim.fn.getreg("\""))<cr>]], {expr = false, noremap = true})
+-- TODO: why yP can't be mapped...
+-- vim.api.nvim_set_keymap('n', 'yP', [[:lua vim.fn.setreg("\"", vim.fn.expand("%:p")); print(vim.fn.getreg("\""))<cr>]], {expr = false, noremap = true})
+-- TODO: why it does not work for %:p
+-- vim.api.nvim_set_keymap('n', 'yp', [[:lua vim.fn.setreg("*", vim.fn.expand("%")); print(vim.fn.getreg("*"))<cr>]], {expr = false, noremap = true})
+-- vim.api.nvim_set_keymap('n', 'yP', [[:lua vim.fn.setreg("*", vim.fn.expand("%:p")); print(vim.fn.getreg("*"))<cr>]], {expr = false, noremap = true})
+
+-- set register + to  current file name

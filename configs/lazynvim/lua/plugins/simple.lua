@@ -69,6 +69,11 @@ return {
   },
   {
     "mg979/vim-visual-multi",
+    config = function ()
+      -- this conflicts with resising windows
+      vim.g.VM_maps["Add Cursors Up"] = ""
+      vim.g.VM_maps["Add Cursors Down"] = ""
+    end
     -- BEGIN 'mg979/vim-visual-multi' -----------------------------------------
     -- 不记得了就多复习 vim -Nu ~/.vim/plugged/vim-visual-multi/tutorialrc
     --
@@ -94,6 +99,8 @@ return {
     -- BUG
     -- - 后来好像 <C-v> <C-up>等等ctrl开头的功能好像不管用了。。。后面发现是tmux的问题
     --
+    -- Reference:
+    -- - 快捷键大全 vm-quick-reference
     -- END   'mg979/vim-visual-multi' -----------------------------------------
   },
   {
