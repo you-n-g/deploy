@@ -25,7 +25,7 @@ I would like to install all the environment with a single command(This is experi
 ```
 sudo apt-get install -y git curl
 cd ~
-git clone https://github.com/you-n-g/deploy
+git clone https://github.com/you-n-g/deploy  # (Alternative) git clone git@github.com:you-n-g/deploy.git
 # Not using visudo is very dangerous!!!  visudo is suggested!!!
 echo  "your_account ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/80-personal
 
