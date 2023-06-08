@@ -1,18 +1,20 @@
 #!/bin/bash
-
-git submodule update --init --recursive
-
 DIR="$( cd "$(dirname "$(readlink -f "$0")")" || exit ; pwd -P )"
-
 cd $DIR
 
-for p in $(find . -type d -maxdepth 1); do
+# NOTE: this does not work if we only add `.gitmodules` without commit..
+# git submodule update --init --recursive
+# So we have to finnaly mannually clone and update them.
 
+grep url $DIR/../.gitmodules  | cut -d'=' -f2 | xargs -I % git clone %
+
+for p in $(find . -type d -maxdepth 1); do
   if [ "$p" == "." ]; then
     continue
   fi
 
   cd $DIR/$p
+  git pull
   # make dev  # this will install package in `pipenv` instead of global.
   pipx install -e .
 done
