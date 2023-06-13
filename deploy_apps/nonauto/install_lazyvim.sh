@@ -74,6 +74,10 @@ merge_previous_config() {
 deploy() {
   # https://askubuntu.com/a/1451171
   sudo apt-get install libfuse2
+
+  # nodejs is necessary for language servers
+  deploy_apps/deploy_nodejs.sh
+  
   deploy_apps/install_rg.sh
   # - frequently used by nvim
 
