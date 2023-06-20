@@ -15,7 +15,9 @@ return {
         },
       }
       if vim.fn.has("win32") ~= 1 then
-        opts["api_key_cmd"] = "gpg --decrypt ~/deploy/keys/gpt.gpg 2>/dev/null"
+        -- get the home path of current user
+        local home = vim.fn.expand("$HOME")
+        opts["api_key_cmd"] = "gpg --decrypt " .. home .. "/deploy/keys/gpt.gpg"
       end
       require("chatgpt").setup(opts)
       -- config whick key with ["<leader><tab>"] = { name = "+tabs & windows" },

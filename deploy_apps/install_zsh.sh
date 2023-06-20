@@ -8,6 +8,8 @@ DIR_PATH=`cd "$DIR_PATH"; pwd`
 
 # zsh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)" "" --unattended
+# Please check ~/.oh-my-zsh/ to verify if oh-my-zsh has been successfully installed.
+# Check by verify if `export ZSH="$HOME/.oh-my-zsh"` in your ~/.zshrc
 
 sudo apt-get install -y zsh
 if ! which zsh ; then
