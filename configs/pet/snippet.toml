@@ -19,7 +19,7 @@
   output = ""
 
 [[snippets]]
-  description = "terminalizer record"
+  description = "terminalizer record (fix sharing bug... https://www.terminalizer.com/view/a6b2320b5691 )"
   command = "terminalizer record XXX -d zsh"
   output = ""
 

@@ -9,7 +9,12 @@ DIR_PATH=`cd "$DIR_PATH"; pwd`
 # zsh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)" "" --unattended
 
-sudo chsh -s /bin/zsh $USER
+sudo apt-get install -y zsh
+if ! which zsh ; then
+  echo "zsh is not successfully installed."
+  exit 1
+fi
+sudo chsh -s `which zsh` $USER
 git clone https://github.com/popstas/zsh-command-time.git ~/.oh-my-zsh/custom/plugins/command-time
 
 RC_FILE=~/.zshrc

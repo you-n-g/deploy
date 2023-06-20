@@ -18,9 +18,10 @@ return {
     "mfussenegger/nvim-dap",
     dependencies = {
       -- NOTE:
-      -- Python Debuger is much slower than normal running
-      -- - It may be caused by joblib
-      -- So insert ipdb breakpoints is a better choice when performance affect much
+      -- Bad cases:
+      --   - Python Debuger is much slower than normal running
+      --     - It may be caused by joblib
+      --   - So insert ipdb breakpoints is a better choice when performance affect much
       "mfussenegger/nvim-dap-python",
       keys = {
         {
@@ -41,10 +42,15 @@ return {
                   program = vim.fn.expand("%:p"),
                   -- TODO: select args in neovim
                   args = {},
+                  console = "integratedTerminal", -- This is very important. Otherwise, the stdin will mixed with std in...And the program will get stuck at the stdin.
+                                                  -- https://github.com/mfussenegger/nvim-dap/discussions/430
+                  justMyCode = true,
                 },
               },
             }
-            config["configurations"][1]["justMyCode#json"] = "${justMyCode:true}"
+            -- NOTE: this does not work...
+            -- config["configurations"][1]["justMyCode#json"] = "${justMyCode:true}"
+
             -- dump `config` to a json file
             local json = vim.fn.json_encode(config)
             vim.fn.mkdir(".vscode", "p") -- create .vscode dir if not exists
