@@ -69,11 +69,25 @@ return {
   },
   {
     "mg979/vim-visual-multi",
-    config = function ()
+    config = function()
       -- this conflicts with resising windows
-      vim.g.VM_maps["Add Cursors Up"] = ""
-      vim.g.VM_maps["Add Cursors Down"] = ""
-    end
+      -- vim.g.VM_maps = {}
+      -- local VM_maps = {}
+      -- VM_maps["Add Cursors Up"] = ""
+      -- VM_maps["Add Cursors Down"] = ""
+      -- vim.g.VM_maps = VM_maps
+      vim.cmd [[
+        let g:VM_maps = {}
+        let g:VM_maps["Add Cursors Up"] = ""
+        let g:VM_maps["Add Cursors Down"] = ""
+      ]]
+      -- print(vim.inspect(vim.g.VM_maps))
+      -- this does not work.. When the plugin is activated, it will work again..
+      --
+      -- event = "LazyVimStarted",
+      --
+      -- TODO: ALl of the aove things does not work
+    end,
     -- BEGIN 'mg979/vim-visual-multi' -----------------------------------------
     -- 不记得了就多复习 vim -Nu ~/.vim/plugged/vim-visual-multi/tutorialrc
     --

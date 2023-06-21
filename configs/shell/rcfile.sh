@@ -1,4 +1,6 @@
 # # Outlines: Zsh only
+# NOTE:
+# - This should be included after conda because it leverages some conda-related features.
 
 if [ `basename "$SHELL"` = zsh -o "$0" = '-zsh' ]; then
     ZF_CMD=$(cat<<"EOF"

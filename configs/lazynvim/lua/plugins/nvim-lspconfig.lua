@@ -66,6 +66,23 @@ return {
     end,
   },
   {
+    "williamboman/mason-lspconfig.nvim",
+    -- opts = {
+    --   -- this does not work...
+    --   automatic_installation = { exclude = { "debugpy" } },
+    -- },
+  },
+  {
+    "jay-babu/mason-nvim-dap.nvim",
+    opts = {
+      -- this does not work...
+      -- automatic_installation = false, --{ exclude = { "debugpy" } },
+      -- automatic_installation = false, -- this works
+      automatic_installation = { exclude = { "python" } }, -- this works
+      -- So, it is language specific.
+    },
+  },
+  {
     "jose-elias-alvarez/null-ls.nvim",
     opts = function(_, opts)
       local nls = require("null-ls")

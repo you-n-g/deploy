@@ -138,6 +138,7 @@ end
 -- Configs
 local config = {
   edit_before_send = false,
+  goto_debug_when_fail = false,
 }
 
 local function edit_before_send(cmd)
@@ -155,6 +156,12 @@ vim.keymap.set("n", "<leader>rce", function()
   config["edit_before_send"] = not config["edit_before_send"]
   P(config["edit_before_send"])
 end, { desc = "edit before send." })
+
+vim.keymap.set("n", "<leader>rcd", function()
+  --  toggle  config["edit_before_send"] between true and false
+  config["goto_debug_when_fail"] = not config["goto_debug_when_fail"]
+  P(config["goto_debug_when_fail"])
+end, { desc = "go to debug when exception." })
 
 -- Base class and methods
 
@@ -203,6 +210,11 @@ end
 function PythonREPL:test()
   local cmd = "pytest -s --pdb --disable-warnings " .. vim.fn.expand("%:p") .. "::" .. get_current_function_name(true)
   -- interact with user to edit `cmd`
+  edit_before_send(cmd)
+end
+
+function PythonREPL:run_script()
+  local cmd = "pypdb " .. vim.fn.expand("%")
   edit_before_send(cmd)
 end
 

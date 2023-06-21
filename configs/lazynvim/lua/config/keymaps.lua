@@ -43,3 +43,34 @@ vim.api.nvim_set_keymap(
   [[:lua require'telescope.builtin'.grep_string{ shorten_path = true, word_match = "-w", only_sort_text = false, search = '' }<cr>]],
   { expr = false, noremap = true, desc = "Search All!" }
 )
+
+-- change the window size of current window
+-- The <C-up> and <C-down> are overridden by vim-visual-multi. But I can't disable it... So I have to resize it here.
+local function win_change_width(n)
+  vim.api.nvim_win_set_width(0, vim.api.nvim_win_get_width(0) + n)
+end
+
+local function win_change_height(n)
+  vim.api.nvim_win_set_height(0, vim.api.nvim_win_get_height(0) + n)
+end
+
+for key, f in pairs({
+  -- increase width
+  ["<A-Right>"] = function()
+    win_change_width(2)
+  end,
+  -- decrease width
+  ["<A-Left>"] = function()
+    win_change_width(-2)
+  end,
+  -- increase height
+  ["<A-Up>"] = function()
+    win_change_height(2)
+  end,
+  -- decrease height
+  ["<A-Down>"] = function()
+    win_change_height(-2)
+  end,
+}) do
+  vim.keymap.set("n", key, f, { desc = "Resize" .. key })
+end

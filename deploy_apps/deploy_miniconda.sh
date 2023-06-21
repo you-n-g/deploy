@@ -19,10 +19,11 @@ fi
 
 export PATH="$HOME/anaconda3/bin:$HOME/miniconda3/bin:$PATH"
 
-conda init zsh
-conda init bash
+CONDA="$HOME/miniconda3/bin/conda"
+$CONDA init zsh
+$CONDA init bash
 
-conda update --all -y
+$CONDA update --all -y
 
 
 # some
@@ -31,7 +32,7 @@ sudo apt-get install -y python-dev libmysqlclient-dev
 
 # 因为我的zsh已经有相关的提示了，所以不要conda这个东西了
 # - https://stackoverflow.com/a/39447588/443311
-conda config --set changeps1 False
+$CONDA config --set changeps1 False
 
 cd $DIR
 source ./install_fav_py_pack.sh
