@@ -214,7 +214,13 @@ function PythonREPL:test()
 end
 
 function PythonREPL:run_script()
-  local cmd = "pypdb " .. vim.fn.expand("%")
+  local cmd = ""
+  if config.goto_debug_when_fail then
+    cmd = "pypdb"
+  else
+    cmd = "python"
+  end
+  cmd = cmd .. " " .. vim.fn.expand("%")
   edit_before_send(cmd)
 end
 

@@ -14,6 +14,8 @@ mkdir -p nvtop/build && cd nvtop/build
 
 # 这一点很重要，不然装不起来
 sudo apt-get install -y cmake libncurses5-dev libncursesw5-dev git
+sudo apt-get install -y libudev-dev libsystemd-dev   # 可能新版本的ubuntu需要这个
+sudo apt-get install -y libdrm-dev
 
 cmake ..
 
