@@ -139,6 +139,7 @@ end
 local config = {
   edit_before_send = false,
   goto_debug_when_fail = false,
+  doc_test = false,
 }
 
 local function edit_before_send(cmd)
@@ -162,6 +163,12 @@ vim.keymap.set("n", "<leader>rcd", function()
   config["goto_debug_when_fail"] = not config["goto_debug_when_fail"]
   P(config["goto_debug_when_fail"])
 end, { desc = "go to debug when exception." })
+
+vim.keymap.set("n", "<leader>rct", function()
+  --  toggle  config["edit_before_send"] between true and false
+  config["doc_test"] = not config["doc_test"]
+  P(config["doc_test"])
+end, { desc = "Using doctest for testing." })
 
 -- Base class and methods
 
@@ -207,8 +214,28 @@ function PythonREPL:launch_interpreter()
   edit_before_send("ipython")
 end
 
+function get_pytest_doctest_module()
+    -- python test doctest module:
+    -- - because  --doctest-modules expect  <filepath>::<full_packagename>.<function_name> to specific a function.
+    -- - vim can't automatically get it. So we have to set it mannually often.
+    -- often used command let b:ptdm="abc"
+    -- - let b:ptdm="abc"
+    -- - unlet b:ptdm
+    local ok, ptdm = pcall(vim.api.nvim_buf_get_var, 0, "ptdm")
+    if ok then
+        return ptdm
+    end
+    return vim.fn.expand("%:t:r")
+end
+
 function PythonREPL:test()
-  local cmd = "pytest -s --pdb --disable-warnings " .. vim.fn.expand("%:p") .. "::" .. get_current_function_name(true)
+  -- nnoremap <silent>  <leader>psT :SlimeSend0 "pytest -s --pdb --disable-warnings --doctest-modules ".expand("%:p")."::".luaeval("get_pytest_doctest_module()").".".luaeval('require("yx/plugs/run_func").get_current_function_name(true)')."\n"<CR>
+  local cmd = ""
+  if config.doc_test then
+    cmd = "pytest -s --pdb --disable-warnings --doctest-modules " .. vim.fn.expand("%:p") .. "::" .. get_pytest_doctest_module() .. "." .. get_current_function_name(true)
+  else
+    cmd = "pytest -s --pdb --disable-warnings " .. vim.fn.expand("%:p") .. "::" .. get_current_function_name(true)
+  end
   -- interact with user to edit `cmd`
   edit_before_send(cmd)
 end
