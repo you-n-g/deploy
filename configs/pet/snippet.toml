@@ -15,7 +15,7 @@
 
 [[snippets]]
   description = "black format"
-  command = "python -m black .  -l 120"
+  command = "black .  -l 120"
   output = ""
 
 [[snippets]]

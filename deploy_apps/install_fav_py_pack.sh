@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# Known issues of the script
+# - [ ] it may override `configs/jupyter/snippets.json`
+
 # # Outlines: user-wise instead of environment-wise dependencies
 
 python -m pip install --user pipx

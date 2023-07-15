@@ -14,12 +14,17 @@ for _, key in ipairs({ "<A-j>", "<A-k>" }) do
 end
 
 -- 拷贝当前buffer的相对路径
-vim.api.nvim_set_keymap(
+vim.keymap.set(
   "n",
   "yp",
-  [[:lua vim.fn.setreg("\"", vim.fn.expand("%")); print(vim.fn.getreg("\""))<cr>]],
-  { expr = false, noremap = true }
-)
+  function()
+    for _, reg in ipairs({ "\"", "1", "+" }) do
+      vim.fn.setreg(reg, vim.fn.expand("%"))
+    end
+    print(vim.fn.getreg("\""))
+end, { expr = false, noremap = true, desc = "Copy path to the clipboard" })
+
+
 -- this is usually useful when check the content in small window
 vim.keymap.set("n", "<leader><tab>b", function()
   local bufnr = vim.api.nvim_get_current_buf()
@@ -43,6 +48,7 @@ vim.api.nvim_set_keymap(
   [[:lua require'telescope.builtin'.grep_string{ shorten_path = true, word_match = "-w", only_sort_text = false, search = '' }<cr>]],
   { expr = false, noremap = true, desc = "Search All!" }
 )
+
 
 -- change the window size of current window
 -- The <C-up> and <C-down> are overridden by vim-visual-multi. But I can't disable it... So I have to resize it here.

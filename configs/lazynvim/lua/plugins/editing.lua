@@ -22,4 +22,13 @@ return {
       vim.g.doge_mapping = "<leader>cD"
     end,
   },
+  {
+    "zbirenbaum/copilot.lua",
+    keys = {
+      { "<c-]>", [[<cmd>lua require("copilot.panel").open()<cr>]], mode = { "n", "i" }, desc = "Open Copilot Penel" },
+      { "<leader>]]", [[<cmd>lua require("copilot.panel").jump_next()<cr>]], mode = { "n" }, desc = "Next Suggestion" },
+      { "<leader>][", [[<cmd>lua require("copilot.panel").jump_prev()<cr>]], mode = { "n" }, desc = "Prev Suggestion" },
+      { "<leader>]<cr>", [[<cmd>lua require("copilot.panel").accept()<cr>]], mode = { "n" }, desc = "Accept Suggestion" },
+    },
+  },
 }

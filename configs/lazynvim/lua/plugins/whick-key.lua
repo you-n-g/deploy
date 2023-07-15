@@ -9,6 +9,7 @@ return {
         ["<leader>rc"] = { name = "+REPL(config)" },
         -- ["<leader>rL"] = { name = "+REPL(launch)" },
         ["<leader><tab>"] = { name = "+tabs & windows" },
+        ["<leader>]"] = { name ="+Copilot" },
       },
     },
   },

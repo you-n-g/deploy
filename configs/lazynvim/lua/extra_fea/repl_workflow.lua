@@ -225,7 +225,34 @@ function get_pytest_doctest_module()
     if ok then
         return ptdm
     end
-    return vim.fn.expand("%:t:r")
+    local st = vim.fn.expand("%:r")
+    local t = vim.split(st, "/")
+
+    local module = {}
+    local finished = false
+    for i = #t, 1, -1 do
+      v = t[i]
+      if not finished then
+        -- module = v .. "." .. module
+        table.insert(module, v)
+      end
+      -- FIXME: qlib is hard code!!!!!
+      if v == "qlib" then
+        finished = true
+      end
+    end
+
+    if finished then
+      -- reverse t
+      for i = 1, #module / 2 do
+        local tmp = module[i]
+        module[i] = module[#module - i + 1]
+        module[#module - i + 1] = tmp
+      end
+      return table.concat(module, ".")
+    else
+      return vim.fn.expand("%:t:r")
+    end
 end
 
 function PythonREPL:test()
