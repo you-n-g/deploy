@@ -14,10 +14,10 @@
 - 操作第一个instance，触发第二个instance设定的断点
 
 # 还希望要的功能
-- [x] fast wrap (类似 https://github.com/jiangmiao/auto-pairs), 但是 "echasnovski/mini.pairs" 没有提供类似的功能
+- [X] fast wrap (类似 https://github.com/jiangmiao/auto-pairs), 但是 "echasnovski/mini.pairs" 没有提供类似的功能
 - [ ] strip spaces in selection in vim (to better apply GPT to specific scope)
 - [ ] [Auto-Import can be invoke actively](https://github.com/neovim/nvim-lspconfig/issues/1122), [Another](https://neovim.discourse.group/t/how-can-i-trigger-the-auto-import/636)
-- [ ] Try documentation generation, sometimes doge-gen does not work well.. https://github.com/danymat/neogen
+- [X] Try documentation generation, sometimes doge-gen does not work well.. https://github.com/danymat/neogen
 
 
 

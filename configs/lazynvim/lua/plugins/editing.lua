@@ -13,14 +13,59 @@ return {
       fast_wrap = {},
     },
   },
+  -- {
+  --   "kkoomen/vim-doge",
+  --   build = ":call doge#install()", -- <cr> is not required
+  --   init = function()
+  --     -- This configuration only works if set before startup, rather than after loading plugins.
+  --     vim.g.doge_doc_standard_python = "numpy"
+  --     vim.g.doge_mapping = "<leader>cD"
+  --   end,
+  -- },
   {
-    "kkoomen/vim-doge",
-    build = ":call doge#install()", -- <cr> is not required
-    init = function()
-      -- This configuration only works if set before startup, rather than after loading plugins.
-      vim.g.doge_doc_standard_python = "numpy"
-      vim.g.doge_mapping = "<leader>cD"
-    end,
+    -- NOTE: the support of <tab> is included in the setting of "hrsh7th/nvim-cmp"
+    "danymat/neogen",
+    dependencies = {
+        "nvim-treesitter/nvim-treesitter",
+        {
+          "hrsh7th/nvim-cmp",
+          opts = function(_, opts)
+            -- enhance the <tab> for neogen
+            local cmp = require("cmp")
+            local mapping = {
+              ["<tab>"] = cmp.mapping(function(fallback)
+                local neogen = require("neogen")
+                if neogen.jumpable() then
+                  neogen.jump_next()
+                else
+                  fallback()
+                end
+              end, {
+                "i",
+                "s",
+              }),
+              ["<S-tab>"] = cmp.mapping(function(fallback)
+                local neogen = require("neogen")
+                if neogen.jumpable(true) then
+                  neogen.jump_prev()
+                else
+                  fallback()
+                end
+              end, {
+                "i",
+                "s",
+              }),
+            }
+            opts.mapping = vim.tbl_extend("error", opts.mapping, mapping)
+          end,
+        },
+    },
+    config = true,
+    -- Uncomment next line if you want to follow only stable versions
+    -- version = "*"
+    keys = {
+      { "<leader>cD", [[<cmd>lua require('neogen').generate({ annotation_convention = { python = 'numpydoc' } })<cr>]], desc = "Generating Docs" },
+    },
   },
   {
     "zbirenbaum/copilot.lua",

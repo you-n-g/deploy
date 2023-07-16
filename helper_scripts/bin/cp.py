@@ -91,7 +91,7 @@ class CP:
 
         (pp / "scripts").mkdir(exist_ok=True)
 
-    def setup(self, install=False):
+    def setup(self, install: bool=False):
         """Create a setup file and install it(if install==True)"""
         assert self.name is not None
         content = f"""from setuptools import setup, find_packages

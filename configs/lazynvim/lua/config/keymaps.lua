@@ -13,6 +13,9 @@ for _, key in ipairs({ "<A-j>", "<A-k>" }) do
   vim.keymap.del({ "n", "i", "v" }, key)
 end
 
+-- disable map("n", "<leader>L", Util.changelog, {desc = "LazyVim Changelog"})
+vim.keymap.del({"n"}, "<leader>L")
+
 -- 拷贝当前buffer的相对路径
 vim.keymap.set(
   "n",
