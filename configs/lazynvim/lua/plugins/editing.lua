@@ -10,7 +10,7 @@ return {
     "windwp/nvim-autopairs",
     -- config = true  -- if opts is missing, we have to use config = true to enable `setup`. otherwise, it is not needed
     opts = {
-      fast_wrap = {},
+      fast_wrap = { pattern = [=[[%'%"%>%]%)%}%,%:]]=],},
     },
   },
   -- {
