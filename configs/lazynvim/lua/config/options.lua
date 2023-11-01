@@ -19,3 +19,5 @@ if vim.fn.has("win32") == 1 then
    opt.shellquote='"'
    opt.shellxquote=''
 end
+
+vim.g.autoformat = false
