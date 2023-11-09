@@ -16,3 +16,4 @@ class Paper(scrapy.Item):
     id = scrapy.Field()
     title = scrapy.Field()
     abstract = scrapy.Field()
+    source = scrapy.Field()

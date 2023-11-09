@@ -34,7 +34,8 @@ class PaperSpider(scrapy.Spider):
             data = {
                 "id": e.css("a").attrib['href'],
                 "title": e.css("li > p[class*='title']").css("::text").extract_first().strip(),
-                "abstract": e.css("span[class*='abstract-full']::text").extract_first().strip()
+                "abstract": e.css("span[class*='abstract-full']::text").extract_first().strip(),
+                "source": response.url
             }
             p = Paper(**data)
             yield p
@@ -45,7 +46,8 @@ class PaperSpider(scrapy.Spider):
             data = {
                 "id": c["doi"],
                 "title": c["title"],
-                "abstract": ""
+                "abstract": "",
+                "source": response.url
             }
             p = Paper(**data)
             yield p
@@ -55,7 +57,8 @@ class PaperSpider(scrapy.Spider):
             data = {
                 "id": p[2],
                 "title": p[0],
-                "abstract": ""
+                "abstract": "",
+                "source": response.url
             }
             p = Paper(**data)
             yield p
