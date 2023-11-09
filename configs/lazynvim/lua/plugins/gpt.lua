@@ -47,6 +47,8 @@ return {
         edit_with_instructions = {
           keymaps = {
             use_output_as_input = "<c-a>", -- sw(a)p. <c-i> is expand as tab in my terminal
+            -- yank_last = "<c-e>", -- accept , <c-y> is occupied by accept;  this does not work..
+            -- accept = "<c-e>", -- this will not make yank_last work in <c-y>
           },
         },
       }
