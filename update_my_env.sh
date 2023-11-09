@@ -19,11 +19,12 @@ git pull
 # ~/bin/vim -c "PlugInstall" -c CocUpdate  -c 'sleep 10' -c qa
 # - 这个感觉还是不会好好装, 不会等到 PlugInstall 完;  `sleep 10` 勉强修复一下这个问题
 
+# NOTE: 已经换成 lazy.vim 了
 # NOTE: 如果是把比较老的已有环境更新，还是需要跑一下这个命令的
-~/bin/vim -c "PlugInstall"  -c 'sleep 10' -c qa
+# ~/bin/vim -c "PlugInstall"  -c 'sleep 10' -c qa
 # - PlugUpdate 有时候也需要跑一下才能正常更新
 
-~/bin/vim --headless  -c PackerCompile  -c PackerInstall -c q
+# ~/bin/vim --headless  -c PackerCompile  -c PackerInstall -c q
 
 tmux source ~/.tmux.conf
 
