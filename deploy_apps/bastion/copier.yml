@@ -1,0 +1,8 @@
+nodenumber:
+  type: str
+  help: What is your node number name?
+
+username:
+  type: str
+  default: xiaoyang
+  help: username for DOMAIN.username
