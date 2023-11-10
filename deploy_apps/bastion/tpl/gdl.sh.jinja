@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 #gdl.sh REV:06/05/2023 5:08 PM 
-ALIAS=DOMAIN.{{username}}
+# https://dev.azure.com/msresearch/GCR/_wiki/wikis/GCR.wiki/6651/GCR-Bastion-Auto-Connect-script-with-Bash
+ALIAS={{username}}
 KEYPATH=~/.ssh/id_rsa
 
-while getopts tn: flag; do
-    case "${flag}" in
-        t) tunnel=true ;;
-        n) number=${OPTARG} ;;
-    esac
-done
+# while getopts tn: flag; do
+#     case "${flag}" in
+#         t) tunnel=true ;;
+#         n) number=${OPTARG} ;;
+#     esac
+# done
+# NOTE: we don't want to a flexible script. We don't want to input script any more..
+tunnel=true
+number={{nodenumber}}
 
 EX1=7ccdb8ae-4daf-4f0f-8019-e80665eb00d2
 EX2=46da6261-2167-4e71-8b0d-f4a45215ce61
@@ -26,7 +30,7 @@ if [[ "$tunnel" == true ]];then
     exit 1
    fi
    BASTIONCOMMAND="tunnel"
-   BASTIONPARAMS="--resource-port 22 --port 22"
+   BASTIONPARAMS="--resource-port 22 --port 11122"
 else
    BASTIONCOMMAND="ssh"
    BASTIONPARAMS="--auth-type ssh-key --username $ALIAS --ssh-key $KEYPATH"

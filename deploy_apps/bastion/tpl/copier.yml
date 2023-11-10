@@ -1,8 +1,8 @@
 nodenumber:
   type: str
-  help: What is your node number name?
+  help: What is your node number?
 
 username:
   type: str
-  default: xiaoyang
+  default: FAREAST.xiaoyang
   help: username for DOMAIN.username

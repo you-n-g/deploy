@@ -18,6 +18,11 @@ User could find the individual config and installation scripts below.
 | tmux      | [configs/tmux/](configs/tmux/)                     | [deploy_apps/install_tmux.sh](deploy_apps/install_tmux.sh)         |
 | miniconda | -                                                  | [deploy_apps/deploy_miniconda.sh](deploy_apps/deploy_miniconda.sh) |
 
+# Environment
+It is mainly tested on ubuntu.
+
+Ubuntu 18.04 or below is not supported now.
+- mainly due to  [nodejs](deploy_apps/deploy_nodejs.sh)
 
 # Installation
 I would like to install all the environment with a single command(This is experimental).
