@@ -17,3 +17,10 @@ class Paper(scrapy.Item):
     title = scrapy.Field()
     abstract = scrapy.Field()
     source = scrapy.Field()
+
+class OpenReviewPaper(scrapy.Item):
+    id = scrapy.Field()  # url
+    title = scrapy.Field()
+    abstract = scrapy.Field()
+    keywords = scrapy.Field()
+    rating = scrapy.Field(serializer=list)

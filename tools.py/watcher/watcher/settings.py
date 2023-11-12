@@ -65,6 +65,7 @@ ROBOTSTXT_OBEY = False
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
    'watcher.pipelines.WatcherPipeline': 300,
+   'watcher.pipelines.OpenReviewPipeline': 400,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
