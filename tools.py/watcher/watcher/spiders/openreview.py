@@ -6,21 +6,27 @@ from watcher.items import OpenReviewPaper
 class PaperSpider(scrapy.Spider):
     name = "iclr24"
     # URL_TPL = "https://openreview.net/search?content=keywords&group=ICLR.cc&page=1&source=forum&term={}"
-    URL_TPL = "https://api2.openreview.net/notes/search?content=keywords&group=ICLR.cc&limit=1000&source=forum&term={}&type=terms"
+    DOMAIN = "ICLR.cc"
+    content_venue = "ICLR 2024 Conference Submission"
 
     def start_requests(self):
         for kw in ["Agent", "Agents", "Language+Agent", "tool", "LLM", "large+language+model", "grounding"]:
-            yield scrapy.Request(url=self.URL_TPL.format(kw), callback=self.parse_list)
+            yield scrapy.Request(url=self.get_url(kw), callback=self.parse_list)
 
-    FORUM_URL_TPL = "https://api2.openreview.net/notes?details=replyCount%2Cwritable%2Csignatures%2Cinvitation%2Cpresentation&domain=ICLR.cc%2F2024%2FConference&forum={}&limit=1000&trash=true"
+    def get_forum_url(self, forum):
+        return f"https://api2.openreview.net/notes?details=replyCount%2Cwritable%2Csignatures%2Cinvitation%2Cpresentation&domain={self.DOMAIN}%2F2024%2FConference&forum={forum}&limit=1000&trash=true"
+
+    def get_url(self, term):
+         return f"https://api2.openreview.net/notes/search?content=keywords&group={self.DOMAIN}&limit=1000&source=forum&term={term}&type=terms"
+
     def parse_list(self, response):
         # automatically get next page
         # scrapy shell -s ROBOTSTXT_OBEY=False https://api2.openreview.net/notes/search?content=keywords&group=ICLR.cc&limit=1000&source=forum&term=Agent&type=terms
         res = response.json()
         for note in res["notes"]:
-            request =response.follow(self.FORUM_URL_TPL.format(note["forum"]), callback=self.parse_inner_page) 
-            request.meta['item'] = note
-            if note["content"]["venue"]["value"] == 'ICLR 2024 Conference Submission':
+            if note["content"]["venue"]["value"].startswith(self.content_venue):
+                request =response.follow(self.get_forum_url(note["forum"]), callback=self.parse_inner_page) 
+                request.meta['item'] = note
                 yield request
 
     def parse_inner_page(self, response):
@@ -39,6 +45,25 @@ class PaperSpider(scrapy.Spider):
             'title': item['content']['title']['value'],
             'abstract': item['content']['abstract']['value'],
             'keywords': item['content']['keywords']['value'],
-            'rating': rates
+            'rating': rates,
+            'source': self.name,
         }
         yield OpenReviewPaper(**data)
+
+
+class NIPSSpider(PaperSpider):
+    name = "nips23"
+    content_venue = "NeurIPS 2023"
+    DOMAIN = "NeurIPS.cc"
+    def parse_list(self, response):
+        res = response.json()
+        for note in res["notes"]:
+            if note["content"]["venue"]["value"].startswith(self.content_venue):
+                data = {
+                    'id': note['id'],
+                    'title': note['content']['title']['value'],
+                    'abstract': note['content']['abstract']['value'],
+                    'keywords': note['content']['keywords']['value'],
+                    'source': self.name,
+                }
+                yield OpenReviewPaper(**data)

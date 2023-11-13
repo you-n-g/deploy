@@ -23,4 +23,5 @@ class OpenReviewPaper(scrapy.Item):
     title = scrapy.Field()
     abstract = scrapy.Field()
     keywords = scrapy.Field()
-    rating = scrapy.Field(serializer=list)
+    rating = scrapy.Field(serializer=list, required=False)
+    source = scrapy.Field()
