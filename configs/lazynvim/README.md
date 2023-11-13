@@ -6,7 +6,7 @@
 # 使用Plugins的一些notes
 
 直接DEBUG neovim instance in lua
-- 主要思路来自 https://github.com/jbyuki/one-small-step-for-vimkind
+- 主要思路来自 https://github.com/jbyuki/one-small-step-for-vimkind/blob/main/doc/osv.txt#L44
 - 先开一个instance `<leader>daL` 开启server
 - 再开第二个个instance
   - 打开相关代码`<leader>db`设置断点 

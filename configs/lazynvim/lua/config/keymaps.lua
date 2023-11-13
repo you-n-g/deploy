@@ -83,3 +83,9 @@ for key, f in pairs({
 }) do
   vim.keymap.set("n", key, f, { desc = "Resize" .. key })
 end
+
+-- It fails to trigger auto import...
+-- vim.keymap.set(
+--   "n",
+--   "<leader>ci",
+--   [[exi<c-r>-]], { expr = false, noremap = true, desc = "Trigger Auto Import" })

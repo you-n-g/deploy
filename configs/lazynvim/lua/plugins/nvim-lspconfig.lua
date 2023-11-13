@@ -47,7 +47,7 @@ return {
       -- },
     },
     -- pyink is a python formatter based on black
-    opts = { autoformat = false, servers = { pyright = {} } },
+    -- opts = { autoformat = false, servers = { pyright = {} } },  --  `nvim-lspconfig.opts.autoformat` is deprecated. Please use `vim.g.autoformat` instead
     -- mason will automatically load the lsp server
 
     -- TIPS:
@@ -83,17 +83,29 @@ return {
     },
   },
   {
-    "jose-elias-alvarez/null-ls.nvim",
-    opts = function(_, opts)
-      local nls = require("null-ls")
-      -- If we want to config more details, we can write an funciton return similar things...
-      -- https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/lua/null-ls/builtins/formatting/yapf.lua
-      table.insert(
-        opts["sources"],
-        nls.builtins.formatting.yapf.with({
-          extra_args = { "--style={based_on_style: google, column_limit: 120, indent_width: 4}" },
-        })
-      )
-    end,
+    "stevearc/conform.nvim",
+    -- FIXME: it does not work...
+    opts = {
+      formatters_by_ft = {
+        ["python"] = { "yapf" },
+      },
+    },
   },
+  -- TODO: `conform.nvim` and `nvim-lint` are now the default formatters and linters in LazyVim.
+  -- {
+  --   -- "jose-elias-alvarez/null-ls.nvim", Plugin `jose-elias-alvarez/null-ls.nvim` was renamed to `nvimtools/none-ls.nvim`.
+  -- "nvimtools/none-ls.nvim",
+  -- opts = function(_, opts)
+  --   local nls = require("null-ls")
+  --   -- If we want to config more details, we can write an funciton return similar things...
+  --   -- https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/lua/null-ls/builtins/formatting/yapf.lua
+  --   print(opts["sources"])
+  --   table.insert(
+  --     opts["sources"],
+  --     nls.builtins.formatting.yapf.with({
+  --       extra_args = { "--style={based_on_style: google, column_limit: 120, indent_width: 4}" },
+  --     })
+  --   )
+  -- end,
+  -- },
 }
