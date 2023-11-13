@@ -23,12 +23,21 @@ return {
       vim.api.nvim_set_keymap("n", "<c-c><c-i>", [[<cmd>SlimeSend0 "\x03"<CR>]], { noremap = true })
       vim.api.nvim_set_keymap("n", "<c-c><c-d>", [[<cmd>SlimeSend0 "\x04"<CR>]], { noremap = true })
       vim.api.nvim_set_keymap("n", "<c-c><c-p>", [[<cmd>SlimeSend0 "\x1bk\x0d"<CR>]], { noremap = true })
-      vim.api.nvim_set_keymap("n", "<c-c><cr>", [[<cmd>SlimeSend0 "\x0d"<CR>]], { noremap = true })
-      vim.api.nvim_exec([[
+      -- vim.api.nvim_set_keymap("n", "<c-c><cr>", [[<cmd>SlimeSend0 "\x0d"<CR>]], { noremap = true })
+      vim.keymap.set("n", "<c-c><cr>", function()
+        -- vim.cmd([[TermExec cmd="\%paste"]])
+        -- vim.fn.chansend(vim.g.slime_last_toggleterm_channel, "%paste")
+        -- NOTE:: in windows, the \r will not work if we send other things in the same function
+        vim.fn.chansend(vim.g.slime_last_toggleterm_channel, "\r")
+      end, { noremap = true })
+      vim.api.nvim_exec(
+        [[
 augroup auto_slime_channel
   autocmd!
   autocmd BufEnter,WinEnter,TermOpen  * lua reset_slime()
-augroup END]], false)
+augroup END]],
+        false
+      )
     end,
   },
 }
