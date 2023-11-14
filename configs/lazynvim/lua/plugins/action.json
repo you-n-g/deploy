@@ -1,0 +1,15 @@
+{
+  "grammar_paper": {
+    "type": "chat",
+    "opts": {
+      "template": "Edit this paragraph to improve the flow and coherence. Please use more academic and scientific language. Use a neutral tone. Please keep the markdown and latex format.  The length should be similar to origianl content.\n\nExisting text:\n```{{input}}\n```\n\n```\n",
+      "strategy": "replace",
+      "params": {
+        "model": "gpt-4-32k",
+        "stop": [
+          "```"
+        ]
+      }
+    }
+  }
+}

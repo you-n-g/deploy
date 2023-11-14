@@ -72,6 +72,12 @@ fi
 cd $DIR_PATH
 . ../helper_scripts/config_rc.sh
 
+# extra plugins
+# nice shell history
+# ERROR: permission denied
+# bash <(curl https://raw.githubusercontent.com/atuinsh/atuin/main/install.sh)
+
+
 
 RED="\033[0;31m"
 NC="\033[0m" # No Color
