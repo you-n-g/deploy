@@ -1,0 +1,41 @@
+{
+  "grammar_paper": {
+    "type": "chat",
+    "opts": {
+      "template": "Edit this paragraph to improve the flow and coherence. Please use more academic and scientific language. Use a neutral tone. Please keep the markdown and latex format.  The length should be similar to origianl content.\n\nExisting text:\n```{{input}}\n```\n\nRevised text:\n```\n",
+      "strategy": "edit",
+      "params": {
+        "model": "gpt-4-32k",
+        "stop": [
+          "```"
+        ]
+      }
+    }
+  },
+  "grammar_rewrite": {
+    "type": "chat",
+    "opts": {
+      "template": "Rewrite this paragraph to fix the grammar, improve the flow and coherence.\n\nExisting text:\n```{{input}}\n```\n\nRevised text:\n```\n",
+      "strategy": "edit",
+      "params": {
+        "model": "gpt-4-32k",
+        "stop": [
+          "```"
+        ]
+      }
+    }
+  },
+  "grammar_simple_fix": {
+    "type": "chat",
+    "opts": {
+      "template": "Fix the grammar.\n\nExisting text:\n```{{input}}\n```\n\nRevised text:\n```\n",
+      "strategy": "edit",
+      "params": {
+        "model": "gpt-4-32k",
+        "stop": [
+          "```"
+        ]
+      }
+    }
+  }
+}
