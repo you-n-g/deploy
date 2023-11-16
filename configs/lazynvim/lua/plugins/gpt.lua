@@ -41,6 +41,13 @@ return {
     branch = "patch-2",
     event = "VeryLazy",
     config = function()
+      local action_path
+      if vim.fn.has("win32") ~= 1 then
+        action_path = vim.fn.expand("$HOME") .. "/.config/nvim/lua/plugins/action.json"
+      else
+        action_path = vim.fn.expand("$LOCALAPPDATA") .. "/nvim/lua/plugins/action.json"
+      end
+      -- P(action_path)
       local opts = {
         -- set it to shift+enter
         -- table get or set values
@@ -51,6 +58,7 @@ return {
             -- accept = "<c-e>", -- this will not make yank_last work in <c-y>
           },
         },
+        actions_paths = {action_path},
       }
       if vim.fn.has("win32") ~= 1 then
         local api_base = vim.fn.system("gpg -q --decrypt " .. vim.fn.expand("$HOME") .. "/deploy/keys/gpt4.gpg | sed -n 1p")
