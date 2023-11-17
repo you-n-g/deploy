@@ -38,7 +38,7 @@ return {
   {
     -- "jackMort/ChatGPT.nvim",
     "you-n-g/ChatGPT.nvim",
-    branch = "patch-2",
+    branch = "main",
     event = "VeryLazy",
     config = function()
       local action_path
