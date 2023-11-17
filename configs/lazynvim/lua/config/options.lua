@@ -21,3 +21,6 @@ if vim.fn.has("win32") == 1 then
 end
 
 vim.g.autoformat = false
+
+-- set conceallevel=0 when in tex file
+vim.cmd [[ autocmd FileType tex setlocal conceallevel=0 ]]

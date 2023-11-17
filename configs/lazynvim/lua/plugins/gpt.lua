@@ -91,6 +91,10 @@ return {
       { "<leader>Gr", ":ChatGPTRun ", mode = { "n", "x" }, desc = "GPT Run" },
       { "<leader>Ga", "<cmd>ChatGPTActAs<cr>", mode = { "n", "x" }, desc = "GPT Act As" },
       { "<leader>Ge", "<cmd>ChatGPTEditWithInstructions<cr>", mode = { "n", "x" }, desc = "GPT Instruct Edit" },
+      -- Quick actions
+      { "<leader>jp", "<cmd>ChatGPTRun grammar_paper<cr>", mode = { "n", "x" }, desc = "Fix Grammar(paper)", },
+      { "<leader>js", "<cmd>ChatGPTRun grammar_simple_fix<cr>", mode = { "n", "x" }, desc = "Fix Grammar(simple)", },
+      { "<leader>jr", "<cmd>ChatGPTRun grammar_rewrite<cr>", mode = { "n", "x" }, desc = "Rewrite", },
     },
   },
 }
