@@ -95,6 +95,7 @@ return {
       { "<leader>jp", "<cmd>ChatGPTRun grammar_paper<cr>", mode = { "n", "x" }, desc = "Fix Grammar(paper)", },
       { "<leader>js", "<cmd>ChatGPTRun grammar_simple_fix<cr>", mode = { "n", "x" }, desc = "Fix Grammar(simple)", },
       { "<leader>jr", "<cmd>ChatGPTRun grammar_rewrite<cr>", mode = { "n", "x" }, desc = "Rewrite", },
+      { "<leader>jc", "<cmd>ChatGPTRun continue_writing<cr>", mode = { "n", "x" }, desc = "Continue writing", },
     },
   },
 }

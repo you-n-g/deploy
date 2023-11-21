@@ -37,5 +37,18 @@
         ]
       }
     }
+  },
+  "continue_writing": {
+    "type": "chat",
+    "opts": {
+      "template": "Please continue writing based on existing text. Context(may be empty):\n```{{context}}```\n\nExisting text:\n```{{input}}\n```\n\nText for continue writing:\n```\n",
+      "strategy": "append",
+      "params": {
+        "model": "gpt-4-32k",
+        "stop": [
+          "```"
+        ]
+      }
+    }
   }
 }

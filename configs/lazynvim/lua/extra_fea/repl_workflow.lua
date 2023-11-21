@@ -61,6 +61,13 @@ local function sendContent()
     -- FIXME: the linebreak will work in terminal. but it will not in functions ... Mysterious...
     -- NOTE:: in windows, the \r will not work if we send other things in the same function
     vim.fn.chansend(vim.g.slime_last_toggleterm_channel, "\r")
+
+    -- useing nvim_replace_termcodes does not solve the problem
+    -- local enter_key = vim.api.nvim_replace_termcodes('<cr>', true, true, true)
+    -- vim.fn.chansend(vim.g.slime_last_toggleterm_channel, enter_key)
+    -- send againt still does not work...
+    -- print("send againt..")
+    -- vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<c-c><cr>', true, true, true), 'n', false)
     return nil
   end
 
