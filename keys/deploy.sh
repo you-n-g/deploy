@@ -10,6 +10,11 @@ unlink ~/.gnupg/gpg-agent.conf
 
 ln -s ~/deploy/configs/misc/gpg-agent.conf ~/.gnupg/
 
+# It is very important to make it work; otherwise ChatGPT.nvim will raise error
+chown -R $(whoami) ~/.gnupg/
+chmod 600 ~/.gnupg/*
+chmod 700 ~/.gnupg
+
 # reload gpg
 gpgconf --kill gpg-agent
 gpg-agent --daemon
