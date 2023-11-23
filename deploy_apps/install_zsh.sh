@@ -77,7 +77,8 @@ cd $DIR_PATH
 # ERROR: permission denied
 # bash <(curl https://raw.githubusercontent.com/atuinsh/atuin/main/install.sh)
 
-
+CONDA="$HOME/miniconda3/bin/conda"
+$CONDA init zsh
 
 RED="\033[0;31m"
 NC="\033[0m" # No Color
