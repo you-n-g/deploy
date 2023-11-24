@@ -15,7 +15,7 @@
   "grammar_rewrite": {
     "type": "chat",
     "opts": {
-      "template": "Rewrite this paragraph to fix the grammar, improve the flow and coherence.\n\nExisting text:\n```{{input}}\n```\n\nRevised text:\n```\n",
+      "template": "Context(may be empty):\n```{{context}}```.Rewrite this paragraph to fix the grammar, improve the flow and coherence. Don't change the language of the text(Don't translate it). 保持原来的语言，不要进行翻译。\n\nExisting text:\n```{{input}}\n```\n\nRevised text:\n```\n",
       "strategy": "edit",
       "params": {
         "model": "gpt-4-32k",

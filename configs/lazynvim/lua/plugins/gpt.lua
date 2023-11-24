@@ -3,6 +3,18 @@
 -- NOTE: 
 -- - Minimal shortcuts: https://github.com/jackMort/ChatGPT.nvim#interactive-popup 
 
+-- get all the content above current cursor
+local set_context = function()
+  local line = vim.fn.getline(".")
+  local content = ""
+  for i = 1, vim.fn.line(".") do
+    content = content .. vim.fn.getline(i) .. "\n"
+  end
+  content = content .. line
+  -- set content to register "c"
+  vim.fn.setreg("c", content)
+end
+
 return {
   -- - Perhaps this would be better: https://github.com/Robitx/gp.nvim. It appears simple, yet comprehensive.
   -- - It does not work  well in my terminal finally.
@@ -97,6 +109,8 @@ return {
       { "<leader>jr", "<cmd>ChatGPTRun grammar_rewrite<cr>", mode = { "n", "x" }, desc = "Rewrite", },
       { "<leader>jc", "<cmd>ChatGPTRun continue_writing<cr>", mode = { "n", "x" }, desc = "Continue writing", },
       { "<leader>jt", "<cmd>ChatGPTRun translate<cr>", mode = { "n", "x" }, desc = "Translate", },
+      { "<leader>jL", function () P(require"chatgpt.api".last_params) end, mode = { "n", "x" }, desc = "Last call parameter", },
+      { "<leader>jC", set_context, mode = { "n", "x" }, desc = "set context(up)", },
     },
   },
 }
