@@ -47,7 +47,7 @@ return {
       -- },
     },
     -- pyink is a python formatter based on black
-    -- opts = { autoformat = false, servers = { pyright = {} } },  --  `nvim-lspconfig.opts.autoformat` is deprecated. Please use `vim.g.autoformat` instead
+    opts = {servers = { pyright = {} } },  --  `nvim-lspconfig.opts.autoformat` is deprecated. Please use `vim.g.autoformat` instead
     -- mason will automatically load the lsp server
 
     -- TIPS:

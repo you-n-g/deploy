@@ -51,6 +51,9 @@ EOF
 
     antigen bundle Aloxaf/fzf-tab
 
+    # It does not work due to permission error
+    # antigen bundle atuinsh/atuin@main
+
     antigen apply
 
     # 后面遇到问题是不是用 zplug可以替代
@@ -147,6 +150,8 @@ export EDITOR=`which vim`
 # sudo -E will keep the environment when run sudo. Many env variables like http_proxy need it.
 alias sudo="sudo -E"
 # export BETTER_EXCEPTIONS=1
+
+# export LD_LIBRARY_PATH=/home/xiaoyang/lib/glibc/glibc-2.28-install/lib/:$LD_LIBRARY_PATH
 
 
 function proxy_up() {

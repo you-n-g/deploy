@@ -3,6 +3,18 @@
 -- NOTE: 
 -- - Minimal shortcuts: https://github.com/jackMort/ChatGPT.nvim#interactive-popup 
 
+-- get all the content above current cursor
+local set_context = function()
+  local line = vim.fn.getline(".")
+  local content = ""
+  for i = 1, vim.fn.line(".") do
+    content = content .. vim.fn.getline(i) .. "\n"
+  end
+  content = content .. line
+  -- set content to register "c"
+  vim.fn.setreg("c", content)
+end
+
 return {
   -- - Perhaps this would be better: https://github.com/Robitx/gp.nvim. It appears simple, yet comprehensive.
   -- - It does not work  well in my terminal finally.
@@ -38,9 +50,16 @@ return {
   {
     -- "jackMort/ChatGPT.nvim",
     "you-n-g/ChatGPT.nvim",
-    branch = "patch-2",
+    branch = "main",
     event = "VeryLazy",
     config = function()
+      local action_path
+      if vim.fn.has("win32") ~= 1 then
+        action_path = vim.fn.expand("$HOME") .. "/.config/nvim/lua/plugins/action.json"
+      else
+        action_path = vim.fn.expand("$LOCALAPPDATA") .. "/nvim/lua/plugins/action.json"
+      end
+      -- P(action_path)
       local opts = {
         -- set it to shift+enter
         -- table get or set values
@@ -51,6 +70,7 @@ return {
             -- accept = "<c-e>", -- this will not make yank_last work in <c-y>
           },
         },
+        actions_paths = {action_path},
       }
       if vim.fn.has("win32") ~= 1 then
         local api_base = vim.fn.system("gpg -q --decrypt " .. vim.fn.expand("$HOME") .. "/deploy/keys/gpt4.gpg | sed -n 1p")
@@ -83,6 +103,14 @@ return {
       { "<leader>Gr", ":ChatGPTRun ", mode = { "n", "x" }, desc = "GPT Run" },
       { "<leader>Ga", "<cmd>ChatGPTActAs<cr>", mode = { "n", "x" }, desc = "GPT Act As" },
       { "<leader>Ge", "<cmd>ChatGPTEditWithInstructions<cr>", mode = { "n", "x" }, desc = "GPT Instruct Edit" },
+      -- Quick actions
+      { "<leader>jp", "<cmd>ChatGPTRun grammar_paper<cr>", mode = { "n", "x" }, desc = "Fix Grammar(paper)", },
+      { "<leader>js", "<cmd>ChatGPTRun grammar_simple_fix<cr>", mode = { "n", "x" }, desc = "Fix Grammar(simple)", },
+      { "<leader>jr", "<cmd>ChatGPTRun grammar_rewrite<cr>", mode = { "n", "x" }, desc = "Rewrite", },
+      { "<leader>jc", "<cmd>ChatGPTRun continue_writing<cr>", mode = { "n", "x" }, desc = "Continue writing", },
+      { "<leader>jt", "<cmd>ChatGPTRun translate<cr>", mode = { "n", "x" }, desc = "Translate", },
+      { "<leader>jL", function () P(require"chatgpt.api".last_params) end, mode = { "n", "x" }, desc = "Last call parameter", },
+      { "<leader>jC", set_context, mode = { "n", "x" }, desc = "set context(up)", },
     },
   },
 }
