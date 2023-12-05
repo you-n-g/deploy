@@ -10,7 +10,9 @@ class PaperSpider(scrapy.Spider):
     content_venue = "ICLR 2024 Conference Submission"
 
     def start_requests(self):
-        for kw in ["Agent", "Agents", "Language+Agent", "tool", "LLM", "large+language+model", "grounding"]:
+        # 大小写不敏感
+        # Agent & Agents 不一样 ...
+        for kw in ["Agent", "Agents", "Language+Agent", "Communicative Agents", "tool", "LLM", "large+language+model", "grounding"]:
             yield scrapy.Request(url=self.get_url(kw), callback=self.parse_list)
 
     def get_forum_url(self, forum):
