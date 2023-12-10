@@ -223,6 +223,11 @@ function BaseREPL:test()
   print("No test supported")
 end
 
+function BaseREPL:send_code()
+  -- send key <c-c><c-c> by default
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<c-c><c-c>", true, true, true), "n", false)
+end
+
 -- for all kinds of language
 
 -- - Python
@@ -313,12 +318,65 @@ end
 local BashREPL = class("BashREPL", BaseREPL)
 BashREPL.interpreter = "bash"
 
+-- - Lua
+local LuaREPL = class("LuaREPL", BaseREPL)
+
+local function get_visual_selection()
+  local pos = vim.fn.getpos("v")
+  local begin_pos = { row = pos[2], col = pos[3] }
+  pos = vim.fn.getpos(".")
+  local end_pos = { row = pos[2], col = pos[3] }
+  if ((begin_pos.row < end_pos.row) or ((begin_pos.row == end_pos.row) and (begin_pos.col <= end_pos.col))) then
+    return { start = begin_pos, ["end"] = end_pos }
+  else
+    return { start = end_pos, ["end"] = begin_pos }
+  end
+end
+
+function LuaREPL:send_code()
+    -- TODO:
+    -- - Maybe we should add `return` in load
+    local mode = vim.api.nvim_get_mode().mode
+    if mode == 'n' then
+        -- lua run current line if in normal mode
+        local row = vim.fn.getpos('.')[2]
+        local lines = vim.api.nvim_buf_get_lines(0, row - 1, row, false)
+        print(load("return " ..  lines[1])())
+    elseif mode == 'v' or mode == 'V' or mode == '\\<C-v>' then
+        -- https://www.reddit.com/r/neovim/comments/13mfta8/reliably_get_the_visual_selection_range/
+        -- We must escape visual mode before make  "<" ">"  take effects
+        -- P("before:", vim.api.nvim_get_mode().mode)
+        -- vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<esc>", true, false, true), 'n', false)
+        -- -- Finnaly, I found it will not exit visual mode to make '<'> take effect.
+        -- P("end:", vim.api.nvim_get_mode().mode)
+
+        -- P(vim.api.nvim_buf_get_mark(0, "<"), vim.api.nvim_buf_get_mark(0, ">"))
+        local range_pos = get_visual_selection()
+        -- P(range_pos)
+        local lines = vim.api.nvim_buf_get_lines(0, range_pos["start"]["row"] - 1, range_pos["end"]["row"], false)
+        if #lines > 0 then
+          lines[1] = string.sub(lines[1], range_pos["start"]["col"])
+          if #lines > 1 then
+            lines[#lines] = string.sub(lines[#lines], 1, range_pos["end"]["col"])
+          else
+            lines[1] = string.sub(lines[1], 1, range_pos["end"]["col"] + 1 - range_pos["start"]["col"])
+          end
+        end
+        lines[#lines] = "return " .. lines[#lines]
+        local code = table.concat(lines, '\n')
+        -- print(code)
+        print(load(code)())
+    end
+end
+
+
 local function REPLFactory()
   local ft = vim.bo.filetype
   local repl_map = {
     python = PythonREPL,
     sh = BashREPL,
     bash = BashREPL,
+    lua = LuaREPL
   }
   return repl_map[ft].new()
 end
@@ -341,6 +399,18 @@ vim.keymap.set("n", "<leader>rt", function()
   REPLFactory():test()
 end, { desc = "Run Test" })
 -- TODO: `configs/nvim/yx/plugins_conf.vim` for doc test
+
+vim.keymap.set({"n", "v", "o"}, "<leader>rr", function()
+  -- P(vim.api.nvim_get_mode().mode)
+  -- local start_pos = vim.api.nvim_buf_get_mark(0, '<')
+  -- local end_pos = vim.api.nvim_buf_get_mark(0, '>')
+  -- DEBUGGING:
+  -- print("start:")
+  -- P(start_pos)
+  -- print("end:")
+  -- P(end_pos)
+  REPLFactory():send_code()
+end, { desc = "Send Code to (R)un" })
 
 -- config
 -- coroutine may be helpful: https://github.com/stevearc/dressing.nvim/discussions/70

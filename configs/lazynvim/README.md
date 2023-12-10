@@ -8,6 +8,7 @@
 直接DEBUG neovim instance in lua
 - 主要思路来自 https://github.com/jbyuki/one-small-step-for-vimkind/blob/main/doc/osv.txt#L44
 - 先开一个instance `<leader>daL` 开启server (如果没有的话，就`:lua require"osv".launch({port=8086})`)
+  - 后来改成 <leader>dL
 - 再开第二个个instance
   - 打开相关代码`<leader>db`设置断点 
   - continue run `<leader>dc` (选择attach到 neovim instance 8086)

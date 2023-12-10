@@ -96,6 +96,12 @@ return {
           mode = "n",
           desc = "Generate .vscode/launch.json",
         },
+        {
+          "<leader>dL",
+          "<cmd>lua require'osv'.launch({port=8086})<cr>",
+          mode = "n",
+          desc = "Launch neovim server",
+        },
       },
       config = function()
         -- auto_install_debugpy()

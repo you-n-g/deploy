@@ -278,6 +278,12 @@ if [ -n "$conda_env" -a "$conda_env" != "base" ]; then
     conda activate $conda_env
 fi
 
+
+if [ "$pip_env" = "1" ]; then
+    pipenv shell
+fi
+
+
 function yxca() {
     conda activate $1
     export conda_env=$1
@@ -288,6 +294,16 @@ function yxcd() {
     conda deactivate
     unset conda_env
     tmux setenv -r conda_env
+}
+
+function pipenva() {
+    tmux setenv pip_env 1  # this must come before
+    pipenv shell
+}
+
+function pipenvd() {
+    tmux setenv -r pip_env
+    exit
 }
 
 
