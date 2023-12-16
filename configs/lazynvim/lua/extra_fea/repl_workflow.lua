@@ -335,7 +335,7 @@ end
 
 function LuaREPL:send_code()
     -- TODO:
-    -- - Maybe we should add `return` in load
+    -- - Maybe we should add `return` in load; Currently it just simply add return to the last line. Maybe we should use treesitter intead.
     local mode = vim.api.nvim_get_mode().mode
     if mode == 'n' then
         -- lua run current line if in normal mode
@@ -346,7 +346,7 @@ function LuaREPL:send_code()
         -- https://www.reddit.com/r/neovim/comments/13mfta8/reliably_get_the_visual_selection_range/
         -- We must escape visual mode before make  "<" ">"  take effects
         -- P("before:", vim.api.nvim_get_mode().mode)
-        -- vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<esc>", true, false, true), 'n', false)
+        vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<esc>", true, false, true), 'n', false)
         -- -- Finnaly, I found it will not exit visual mode to make '<'> take effect.
         -- P("end:", vim.api.nvim_get_mode().mode)
 
@@ -354,7 +354,7 @@ function LuaREPL:send_code()
         local range_pos = get_visual_selection()
         -- P(range_pos)
         local lines = vim.api.nvim_buf_get_lines(0, range_pos["start"]["row"] - 1, range_pos["end"]["row"], false)
-        if #lines > 0 then
+        if #lines > 0 and mode == 'v' then
           lines[1] = string.sub(lines[1], range_pos["start"]["col"])
           if #lines > 1 then
             lines[#lines] = string.sub(lines[#lines], 1, range_pos["end"]["col"])
@@ -364,7 +364,7 @@ function LuaREPL:send_code()
         end
         lines[#lines] = "return " .. lines[#lines]
         local code = table.concat(lines, '\n')
-        -- print(code)
+        print(code)  -- TODO: remove it
         print(load(code)())
     end
 end

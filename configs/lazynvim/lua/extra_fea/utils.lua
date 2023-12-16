@@ -5,3 +5,6 @@ function P(...)
     print(vim.inspect(v))
   end
 end
+
+-- TODO: get comprehensive information of current status.
+
