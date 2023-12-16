@@ -369,6 +369,10 @@ function LuaREPL:send_code()
     end
 end
 
+function LuaREPL:run_script()
+  dofile(vim.fn.expand("%"))
+end
+
 
 local function REPLFactory()
   local ft = vim.bo.filetype

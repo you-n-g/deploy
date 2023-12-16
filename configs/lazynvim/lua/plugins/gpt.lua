@@ -15,7 +15,7 @@ local set_context = function()
   vim.fn.setreg("c", content)
 end
 
-return {
+local modules = {
   -- - Perhaps this would be better: https://github.com/Robitx/gp.nvim. It appears simple, yet comprehensive.
   -- - It does not work  well in my terminal finally.
 	--  {
@@ -114,3 +114,18 @@ return {
     },
   },
 }
+
+local extra_m = {
+  dir = "~/repos/simple-gpt.nvim",
+  dependencies = {
+    "MunifTanjim/nui.nvim",
+    "nvim-lua/plenary.nvim",
+    "nvim-telescope/telescope.nvim",
+  },
+}
+
+if vim.fn.isdirectory(vim.fn.expand(extra_m["dir"])) == 1 then
+  table.insert(modules, extra_m)
+end
+
+return modules
