@@ -2,6 +2,14 @@
 DIR="$( cd "$(dirname "$(readlink -f "$0")")" || exit ; pwd -P )"
 cd $DIR
 
+# if pipx does not exist, otherwise activate anaconda and add the PATH
+# - in case of the first installation of pipx
+if ! which pipx ; then
+  . ~/miniconda3/etc/profile.d/conda.sh
+  conda activate base
+  export PATH="$PATH:$HOME/.local/bin"
+fi
+
 # NOTE: this does not work if we only add `.gitmodules` without commit..
 # git submodule update --init --recursive
 # So we have to finnaly mannually clone and update them.

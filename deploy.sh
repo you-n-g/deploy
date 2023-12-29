@@ -85,6 +85,7 @@ cat <<EOF
 Maybe the following things should be done mannually
 - Install tpm
 - gpg -d ~/deploy/keys/gpt.gpg
+- `:Copilot auth` in neovim, see details in `configs/lazynvim/README.md`
 EOF
 
 # FAQ

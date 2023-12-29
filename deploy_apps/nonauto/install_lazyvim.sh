@@ -54,6 +54,11 @@ install_lazygit() {
 
 
 install_or_update_neovim_app() {
+  if ! which pip ; then
+    # 第一次安装可能还没有配置好自动 source .bashrc/.zshrc
+    . ~/miniconda3/etc/profile.d/conda.sh
+    conda activate base
+  fi
   pip install debugpy  # this will used by nvim-dap
 
   # generate a redable unique string based on datetime

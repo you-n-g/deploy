@@ -34,3 +34,4 @@ The neovim configuration is based on LazyVim and may be useful for Python users.
 # We should follow next steps
 # 1. https://github.com/enterprises/microsoft
 # 2. `:Copilot auth`, and then open https://github.com/login/device for authentication
+#   - sometimes it does not work (on my WSL of my borrowed equipment) due to unknown issues.
