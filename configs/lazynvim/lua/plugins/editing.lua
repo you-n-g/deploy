@@ -76,4 +76,24 @@ return {
       { "<leader>]<cr>", [[<cmd>lua require("copilot.panel").accept()<cr>]], mode = { "n" }, desc = "Accept Suggestion" },
     },
   },
+  {
+    "lervag/vimtex",
+    config = function ()
+      vim.g.vimtex_compiler_method = "tectonic"
+      -- It will only works on windows disk
+      -- NOTE: this will result in a wrong Path
+      -- vim.g.vimtex_view_general_viewer = '/mnt/c/Users/xiaoyang/OneDrive/APP/SumatraPDF/SumatraPDF-3.5.2-64.exe'
+      -- vim.g.vimtex_view_general_options = '-reuse-instance @pdf'
+      -- So Please manually open the PDF.
+      vim.g.vimtex_view_general_viewer = ''
+
+      -- NOTE: set default to 100%
+      vim.cmd([[
+  augroup VimTeX
+    autocmd!
+    autocmd BufReadPre *.tex let b:vimtex_main = 'main.tex'
+  augroup END
+]])
+    end,
+  },
 }

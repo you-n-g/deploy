@@ -1,7 +1,9 @@
 -- TODO:
 -- - Will the selected message be sent when we start chatting?
--- NOTE: 
+-- NOTE:
 -- - Minimal shortcuts: https://github.com/jackMort/ChatGPT.nvim#interactive-popup 
+-- FAQ:
+-- - `curl: (3) URL using bad/illegal format or missing URL` -> 密码过期了，gpg -d 去解码。。。
 
 -- get all the content above current cursor
 local set_context = function()
