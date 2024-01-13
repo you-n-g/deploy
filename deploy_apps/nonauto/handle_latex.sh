@@ -28,12 +28,21 @@ function intall_zathura ()
   sudo apt-get install -y zathura zathura-pdf-poppler
 }
 
+function install_latexmk() {
+  # this support continuous compilation
+	sudo apt install texlive-latex-extra -y
+  conda install -y -c conda-forge latexmk  # this require latex
+}
+
 function install_tectonic () {
   # mkdir -p ~/tmp/tectonic
   # cd ~/tmp/tectonic
   # wget https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%400.14.1/tectonic-0.14.1-x86_64-unknown-linux-gnu.tar.gz 
   # tar xf tectonic-0.14.1-x86_64-unknown-linux-gnu.tar.gz 
   conda install -y -c conda-forge tectonic
+  # NOTE:
+  # - tectonic can automatically download required packages. But it does not support continuous compilation.
+  # - But some fonts and styles are missed.
 
   # Windows下可以再配上WSL 直接读数据;
   # NOTE: this will not work if the executable is not in the EXE

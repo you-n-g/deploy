@@ -79,12 +79,15 @@ return {
   {
     "lervag/vimtex",
     config = function ()
-      vim.g.vimtex_compiler_method = "tectonic"
+      -- vim.g.vimtex_compiler_method = "tectonic"
+      -- tectonic does not support continuous compilation
+
       -- It will only works on windows disk
       -- NOTE: this will result in a wrong Path
       -- vim.g.vimtex_view_general_viewer = '/mnt/c/Users/xiaoyang/OneDrive/APP/SumatraPDF/SumatraPDF-3.5.2-64.exe'
       -- vim.g.vimtex_view_general_options = '-reuse-instance @pdf'
       -- So Please manually open the PDF.
+
       vim.g.vimtex_view_general_viewer = ''
 
       -- NOTE: set default to 100%
