@@ -1,3 +1,4 @@
+-- This module provides features to presenting the templates, placeholders.
 if "" == vim.fn.getreg("t") then
   vim.fn.setreg("t", [[Context:```{{c}}```, {{q}}, {{i}}, Please input your answer:```]])
 end
