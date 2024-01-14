@@ -1,14 +1,14 @@
--- require('plenary.reload').reload_module('extra_fea.simplegpt')
+-- require('plenary.reload').reload_module('simplegpt')
 -- print(123123)
 
--- reload extra_fea.simplegpt without plenary
--- package.loaded['extra_fea.simplegpt'] = nil
--- P(require('extra_fea.simplegpt'))
+-- reload simplegpt without plenary
+-- package.loaded['simplegpt'] = nil
+-- P(require('simplegpt'))
 -- lua P(vim.fn.getpos("'<"), vim.fn.getpos("'>"))
 -- lua P(vim.fn.getpos("'<"))
 -- lua P(vim.api.nvim_buf_get_mark(0, '<'), vim.api.nvim_buf_get_mark(0, '>'))
-print("haha")
-print("Good")
+-- print("haha")
+-- print("Good")
 
 --
 -- local Popup = require("nui.popup")
@@ -86,3 +86,10 @@ print("Good")
 -- -- set content
 -- vim.api.nvim_buf_set_lines(popup.bufnr, 0, 1, false, { "Hello World" })
 
+local M = {}
+
+function M.setup()
+  require"simplegpt.mappings".setup()
+end
+
+return M

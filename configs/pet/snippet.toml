@@ -287,3 +287,8 @@
   description = "add user with only rsa keys"
   command = "sudo adduser <username> --disabled-password && sudo su <username> -c 'mkdir -p ~/.ssh/ && chmod 700 ~/.ssh/ && touch ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys'"
   output = ""
+
+[[snippets]]
+  description = "cd onedrive in windows WSL"
+  command = "ONEDRIVE_PATH=$(cmd.exe /c echo %onedriveconsumer% 2> /dev/null | sed -e 's/C:/\\\\mnt\\\\c/g' | sed -e 's/\\\\/\\//g' | tr -d \"\\r\") ; cd $ONEDRIVE_PATH"
+  output = ""

@@ -321,18 +321,6 @@ BashREPL.interpreter = "bash"
 -- - Lua
 local LuaREPL = class("LuaREPL", BaseREPL)
 
-local function get_visual_selection()
-  local pos = vim.fn.getpos("v")
-  local begin_pos = { row = pos[2], col = pos[3] }
-  pos = vim.fn.getpos(".")
-  local end_pos = { row = pos[2], col = pos[3] }
-  if ((begin_pos.row < end_pos.row) or ((begin_pos.row == end_pos.row) and (begin_pos.col <= end_pos.col))) then
-    return { start = begin_pos, ["end"] = end_pos }
-  else
-    return { start = end_pos, ["end"] = begin_pos }
-  end
-end
-
 function LuaREPL:send_code()
     -- TODO:
     -- - Maybe we should add `return` in load; Currently it just simply add return to the last line. Maybe we should use treesitter intead.
@@ -351,7 +339,7 @@ function LuaREPL:send_code()
         -- P("end:", vim.api.nvim_get_mode().mode)
 
         -- P(vim.api.nvim_buf_get_mark(0, "<"), vim.api.nvim_buf_get_mark(0, ">"))
-        local range_pos = get_visual_selection()
+        local range_pos = require"extra_fea.utils".get_visual_selection()
         -- P(range_pos)
         local lines = vim.api.nvim_buf_get_lines(0, range_pos["start"]["row"] - 1, range_pos["end"]["row"], false)
         if #lines > 0 and mode == 'v' then

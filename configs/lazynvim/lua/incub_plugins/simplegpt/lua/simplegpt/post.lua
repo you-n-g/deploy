@@ -2,8 +2,8 @@
 
 local Popup = require("nui.popup")
 local Layout = require("nui.layout")
-local utils = require("extra_fea.simplegpt.utils")
-local dialog = require("extra_fea.simplegpt.dialog")
+local utils = require("simplegpt.utils")
+local dialog = require("simplegpt.dialog")
 
 local QAUI = utils.class("QAUI", dialog.BaseDialog)
 P(QAUI)

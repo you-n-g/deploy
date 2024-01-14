@@ -118,12 +118,13 @@ local modules = {
 }
 
 local extra_m = {
-  dir = "~/repos/simple-gpt.nvim",
+  dir = "~/deploy/configs/lazynvim/lua/incub_plugins/simplegpt/",
   dependencies = {
     "MunifTanjim/nui.nvim",
     "nvim-lua/plenary.nvim",
     "nvim-telescope/telescope.nvim",
   },
+  config=true,
 }
 
 if vim.fn.isdirectory(vim.fn.expand(extra_m["dir"])) == 1 then

@@ -82,13 +82,30 @@ return {
       -- vim.g.vimtex_compiler_method = "tectonic"
       -- tectonic does not support continuous compilation
 
+      local function get_onedrive_path()
+        local handle = io.popen([[cmd.exe /c echo %onedriveconsumer% 2> /dev/null | sed -e 's/C:/\\mnt\\c/g' | sed -e 's/\\/\//g' | tr -d '\r' | tr -d '\n']])
+        if handle == nil then
+          print("Error: result is nil")
+        else
+          local result = handle:read("*a")
+          handle:close()
+          return result
+        end
+      end
+
       -- It will only works on windows disk
       -- NOTE: this will result in a wrong Path
-      -- vim.g.vimtex_view_general_viewer = '/mnt/c/Users/xiaoyang/OneDrive/APP/SumatraPDF/SumatraPDF-3.5.2-64.exe'
+      vim.g.vimtex_view_general_viewer =  get_onedrive_path() .. '/APP/SumatraPDF/SumatraPDF-3.5.2-64.exe'
       -- vim.g.vimtex_view_general_options = '-reuse-instance @pdf'
+      -- vim.g.vimtex_view_general_options = '-reuse-instance /Users/xiaoyang/OneDrive/repos/colm24/main.pdf'
+      -- vim.g.vimtex_view_general_options = '-reuse-instance /mnt/c/Users/xiaoyang/OneDrive/repos/colm24/main.pdf'
+      -- vim.g.vimtex_view_general_options = '/mnt/c/Users/xiaoyang/OneDrive/repos/colm24/main.pdf'
       -- So Please manually open the PDF.
 
-      vim.g.vimtex_view_general_viewer = ''
+      -- vim.g.vimtex_view_general_options = vim.fn.getcwd() .. "/main.pdf"
+      -- -- strip the left "/mnt/c/" part in vim.g.vimtex_view_general_options if exists
+      -- vim.g.vimtex_view_general_options = vim.g.vimtex_view_general_options:gsub("^/mnt/c", "")  -- the prefix / must be kept.
+      vim.g.vimtex_view_general_options = "-reuse-instance main.pdf"
 
       -- NOTE: set default to 100%
       vim.cmd([[

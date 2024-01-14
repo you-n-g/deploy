@@ -1,4 +1,4 @@
-local utils = require("extra_fea.simplegpt.utils")
+local utils = require("simplegpt.utils")
 
 local M = {}
 M.BaseDialog = utils.class("BaseDialog")
@@ -7,7 +7,9 @@ function M.BaseDialog:ctor()
   self.all_pops = {}
 end
 
-function M.BaseDialog:register_keys()
+--- register common keys for dialogs
+---@param exit_callback 
+function M.BaseDialog:register_keys(exit_callback)
   local all_pops = self.all_pops
   -- set keys to escape for all popups
   -- - Quit
@@ -16,6 +18,7 @@ function M.BaseDialog:register_keys()
       -- if vim.fn.mode() == "i" then
       --   vim.api.nvim_command("stopinsert")
       -- end
+      exit_callback()
       vim.cmd("q")
     end, { noremap = true })
   end
