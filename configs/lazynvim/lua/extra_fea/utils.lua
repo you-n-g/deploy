@@ -1,7 +1,11 @@
--- a globl function
+-- global functions
+
+--- It will stop at the first nil
+---@vararg: all kinds of variable yo want to inspect
 function P(...)
   local args = {...}
-  for _, v in ipairs(args) do
+  for i, v in ipairs(args) do
+    print("Arg:", i)
     print(vim.inspect(v))
   end
 end

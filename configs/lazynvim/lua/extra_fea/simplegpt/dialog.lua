@@ -3,6 +3,10 @@ local utils = require("extra_fea.simplegpt.utils")
 local M = {}
 M.BaseDialog = utils.class("BaseDialog")
 
+function M.BaseDialog:ctor()
+  self.all_pops = {}
+end
+
 function M.BaseDialog:register_keys()
   local all_pops = self.all_pops
   -- set keys to escape for all popups
