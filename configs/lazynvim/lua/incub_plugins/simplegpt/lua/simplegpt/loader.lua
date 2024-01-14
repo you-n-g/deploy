@@ -19,7 +19,7 @@ function M.dump_reg()
   end
   local file = io.open(fname, "w")
   if file ~= nil then
-    file:write(vim.fn.json_encode(reg_values))
+    file:write(vim.fn.json_encode(reg_values))  -- {indent = true} does not work...
     file:close()
     print("Registers dumped successfully")
   end

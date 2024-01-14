@@ -18,8 +18,8 @@ function M.BaseDialog:register_keys(exit_callback)
       -- if vim.fn.mode() == "i" then
       --   vim.api.nvim_command("stopinsert")
       -- end
+      vim.cmd("q")  -- callback may open new windows. So we quit the windows before callback
       exit_callback()
-      vim.cmd("q")
     end, { noremap = true })
   end
   -- - cycle windows

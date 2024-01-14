@@ -97,15 +97,11 @@ return {
       -- NOTE: this will result in a wrong Path
       vim.g.vimtex_view_general_viewer =  get_onedrive_path() .. '/APP/SumatraPDF/SumatraPDF-3.5.2-64.exe'
       -- vim.g.vimtex_view_general_options = '-reuse-instance @pdf'
-      -- vim.g.vimtex_view_general_options = '-reuse-instance /Users/xiaoyang/OneDrive/repos/colm24/main.pdf'
-      -- vim.g.vimtex_view_general_options = '-reuse-instance /mnt/c/Users/xiaoyang/OneDrive/repos/colm24/main.pdf'
-      -- vim.g.vimtex_view_general_options = '/mnt/c/Users/xiaoyang/OneDrive/repos/colm24/main.pdf'
-      -- So Please manually open the PDF.
 
       -- vim.g.vimtex_view_general_options = vim.fn.getcwd() .. "/main.pdf"
       -- -- strip the left "/mnt/c/" part in vim.g.vimtex_view_general_options if exists
       -- vim.g.vimtex_view_general_options = vim.g.vimtex_view_general_options:gsub("^/mnt/c", "")  -- the prefix / must be kept.
-      vim.g.vimtex_view_general_options = "-reuse-instance main.pdf"
+      vim.g.vimtex_view_general_options = "-reuse-instance main.pdf"  -- this will be much simpler than above methods
 
       -- NOTE: set default to 100%
       vim.cmd([[
