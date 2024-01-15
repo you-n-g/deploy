@@ -1,13 +1,13 @@
 -- Dump and load questions from disks.
 
--- TODO:  store data here
+-- TODO:  store data here partially
 -- vim.fn.stdpath("data") .. "/config-local",
 
-local tpl_api = require"simplegpt.tpl"
+local tpl_api = require("simplegpt.tpl")
 
 local script_path = (debug.getinfo(1, "S").source:sub(2))
-local script_dir = vim.fn.fnamemodify(script_path, ':h')
-local data_path = script_dir .. '/../../qa_tpls/'
+local script_dir = vim.fn.fnamemodify(script_path, ":h")
+local data_path = script_dir .. "/../../qa_tpls/"
 
 -- Dump the contents of multiple registers to a file
 local M = {}
@@ -21,7 +21,7 @@ function M.dump_reg(fname)
   end
   local file = io.open(data_path .. fname, "w")
   if file ~= nil then
-    file:write(vim.fn.json_encode(reg_values))  -- {indent = true} does not work...
+    file:write(vim.fn.json_encode(reg_values)) -- {indent = true} does not work...
     file:close()
     print("Registers dumped successfully")
   end
@@ -81,8 +81,22 @@ function M.load_reg(fname)
   end
 end
 
+local actions = require("telescope.actions")
+local action_state = require("telescope.actions.state")
+
 function M.tele_load_reg()
-    require('telescope.builtin').find_files({ cwd = data_path, previewer = true })
+  require("telescope.builtin").find_files({
+    cwd = data_path,
+    previewer = true,
+    attach_mappings = function(_, map)
+      map("i", "<CR>", function(prompt_bufnr)
+        local selection = action_state.get_selected_entry(prompt_bufnr)
+        actions.close(prompt_bufnr)
+        M.load_reg(selection.value)
+      end)
+      return true
+    end,
+  })
 end
 
 return M
