@@ -5,19 +5,21 @@
 
 local tpl_api = require"simplegpt.tpl"
 
-local fname = "register_dump.json"
+local script_path = (debug.getinfo(1, "S").source:sub(2))
+local script_dir = vim.fn.fnamemodify(script_path, ':h')
+local data_path = script_dir .. '/../../qa_tpls/'
 
 -- Dump the contents of multiple registers to a file
 local M = {}
 
-function M.dump_reg()
+function M.dump_reg(fname)
   local reg_values = {}
-  local registers = tpl_api.get_placeholders()
+  local registers = tpl_api.get_placeholders("%l")
   table.insert(registers, "t")
   for _, reg in ipairs(registers) do
     reg_values[reg] = vim.fn.getreg(reg)
   end
-  local file = io.open(fname, "w")
+  local file = io.open(data_path .. fname, "w")
   if file ~= nil then
     file:write(vim.fn.json_encode(reg_values))  -- {indent = true} does not work...
     file:close()
@@ -25,9 +27,47 @@ function M.dump_reg()
   end
 end
 
+function M.input_dump_name()
+  local Input = require("nui.input")
+  local event = require("nui.utils.autocmd").event
+
+  local input = Input({
+    position = "50%",
+    size = {
+      width = 40,
+    },
+    border = {
+      style = "single",
+      text = {
+        top = "Filename(ignore `.json` suffix)",
+        top_align = "center",
+      },
+    },
+    win_options = {
+      winhighlight = "Normal:Normal,FloatBorder:Normal",
+    },
+  }, {
+    prompt = "> ",
+    default_value = "new_template",
+    on_submit = function(value)
+      local fname = value .. ".json"
+      M.dump_reg(fname)
+      print("Saved: " .. fname)
+    end,
+  })
+
+  -- mount/open the component
+  input:mount()
+
+  -- unmount component when cursor leaves buffer
+  input:on(event.BufLeave, function()
+    input:unmount()
+  end)
+end
+
 -- Load the contents from a file into multiple registers
-function M.load_reg()
-  local file = io.open(fname, "r")
+function M.load_reg(fname)
+  local file = io.open(data_path .. fname, "r")
   if file ~= nil then
     local contents = file:read("*all")
     file:close()
@@ -39,6 +79,10 @@ function M.load_reg()
       print("Registers loaded successfully")
     end
   end
+end
+
+function M.tele_load_reg()
+    require('telescope.builtin').find_files({ cwd = data_path, previewer = true })
 end
 
 return M

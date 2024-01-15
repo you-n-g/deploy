@@ -2,11 +2,12 @@
 
 
 Supported special registers
-| key      | meaning                |
-| -        | -                      |
-| content  | the whole file content |
-| filetype | the filetype           |
-| visual   | the selected lines     |
+| key             | meaning                                                     |
+| -               | -                                                           |
+| content         | the whole file content                                      |
+| filetype        | the filetype of the file                                    |
+| visual          | the selected lines                                          |
+| context[TODO..] | the nearby context of the selected line(10 lines up & down) |
 
 
 # Limitations

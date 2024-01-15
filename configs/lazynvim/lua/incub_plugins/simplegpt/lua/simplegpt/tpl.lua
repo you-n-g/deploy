@@ -24,16 +24,15 @@ end
 --- This function retrieves all placeholders from a template stored in a vim register "t".
 --- Placeholders are defined as any text enclosed in double curly braces, e.g., "{{placeholder}}".
 --- For example, if the template is "Hello, {{name}}!", the function will return a table containing "name".
---- @return table: A table containing all placeholders found in the template.
-function M.get_placeholders(enable_special)
+---@param key_reg : for matching the placeholder name (e.g. ".-", ".", "%l")
+---@return table : A table containing all placeholders found in the template.
+function M.get_placeholders(key_reg)
   local template = M.get_tpl()
 
-  local reg
-  if enable_special ~= nil then
-    reg = "%{%{(.-)%}%}"
-  else
-    reg = "%{%{(%l)%}%}"
+  if key_reg == nil then
+    key_reg = "."
   end
+  local reg = "%{%{(" .. key_reg .. ")%}%}"
 
   -- find all the placeholders
   local keys = {}
@@ -112,6 +111,7 @@ function M.RegQAUI:build(callback)
 
   local layout = Layout(
     {
+      relative = "editor",
       position = "50%",
       size = {
         width = "90%",
@@ -160,8 +160,4 @@ function M.RegQAUI:get_q()
   return interp(M.get_tpl(), vim.tbl_extend("force", ph_keys, self.special_dict))
 end
 
-
--- local rqa = M.RegQAUI()
--- rqa:build()
--- print(rqa:get_q())
 return M
