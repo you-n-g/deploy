@@ -89,8 +89,15 @@ function M.Popup:call(question)
   api.chat_completions(params, cb, should_stop)
 end
 
--- local pp = M.Popup()
--- pp:build()
--- local question = "Who are you? Please create a poetry with multiple lines"
--- pp:call(question)
+function M.get_response()
+  local rqa = require"simplegpt.tpl".RegQAUI()
+  rqa:build(function (question)
+    local pp = M.Popup()
+    -- set the filetype of pp  to mark down to enable highlight
+    pp:build()
+    -- TODO: copy code with regex
+    vim.api.nvim_buf_set_option(pp.popup.bufnr, 'filetype', 'markdown')
+    pp:call(question)
+  end)
+end
 return M

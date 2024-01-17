@@ -15,9 +15,6 @@ function M.BaseDialog:register_keys(exit_callback)
   -- - Quit
   for _, pop in pairs(all_pops) do
     pop:map("n", { "q", "<C-c>", "<esc>" }, function()
-      -- if vim.fn.mode() == "i" then
-      --   vim.api.nvim_command("stopinsert")
-      -- end
       vim.cmd("q")  -- callback may open new windows. So we quit the windows before callback
       if exit_callback ~= nil then
         exit_callback()
