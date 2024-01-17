@@ -19,7 +19,9 @@ function M.BaseDialog:register_keys(exit_callback)
       --   vim.api.nvim_command("stopinsert")
       -- end
       vim.cmd("q")  -- callback may open new windows. So we quit the windows before callback
-      exit_callback()
+      if exit_callback ~= nil then
+        exit_callback()
+      end
     end, { noremap = true })
   end
   -- - cycle windows
