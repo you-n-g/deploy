@@ -225,6 +225,10 @@ export GOPATH="$HOME/gopath/"
 export PATH="$GOPATH/bin/:$PATH"
 
 
+# If the / is full, some command like pip install may fail. So we change the tmpdir to home directly
+export TMPDIR=~/tmp/
+
+
 # # Outlines: tools
 
 function tfts() {
@@ -264,7 +268,7 @@ alias .r=". ranger"
 # - 坑篇
 #   - 如果 发现 dd pp 无法剪切文件(但是能复制文件)， 可能是权限 (这里的ranger是不会报错的)
 
-# Outlines: conda
+# ## Outlines: conda
 
 # Support tmux inherit the conda env
 

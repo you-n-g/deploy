@@ -84,6 +84,9 @@ for key, f in pairs({
   vim.keymap.set("n", key, f, { desc = "Resize" .. key })
 end
 
+-- TODO: ctrl+^ in insert mode into ctrl+^ in normal mode; To make it possible to switch buffer in insert mode
+vim.keymap.set("i", "<C-^>", "<esc><C-^>a", { noremap = true, desc = "Switch buffer in insert mode" })
+
 -- It fails to trigger auto import...
 -- vim.keymap.set(
 --   "n",

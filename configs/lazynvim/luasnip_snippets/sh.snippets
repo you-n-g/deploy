@@ -6,18 +6,21 @@
 # if sh is not supported, it can be replaced as a simpler expression
 # if [[ "\$0" = *"bash" ]] || [[ "\$0" = *"zsh" ]]; then
 snippet dir "get the directory folder for cur scripts "
-	BASE_NAME="\$(basename -- "\$0")"
-	if [ "\$BASE_NAME"  = "-bash" ] || [ "\$BASE_NAME" = "bash" ] ||  [ "\$BASE_NAME"  = "-zsh" ] || [ "\$BASE_NAME" = "zsh" ] || [ "\$BASE_NAME"  = "-sh" ] || [ "\$BASE_NAME" = "sh" ]; then
-		# the first if is to supporting REPL
-		DIR="`expand("%:p:h")`"
-	else
-		DIR="\$( cd "\$(dirname "\$(readlink -f "\$0")")" || exit ; pwd -P )"
-	fi
+		BASE_NAME="\$(basename -- "\$0")"
+		case "\$BASE_NAME" in
+			-bash|bash|-zsh|zsh|-sh|sh)
+				# the first if is to supporting REPL
+				DIR="`expand("%:p:h")`"
+				;;
+			*)
+				DIR="\$( cd "\$(dirname "\$(readlink -f "\$0")")" || exit ; pwd -P )"
+				;;
+		esac
 
 snippet ife "if file exists"
-	if [ -e ${1:filename} ]; then
-	    rm $1
-	fi
+		if [ -e ${1:filename} ]; then
+				rm $1
+		fi
 
 snippet EOF "EOF(usually for comments)"
 	cat << EOF

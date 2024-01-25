@@ -41,6 +41,7 @@ function M.Popup:build()
   self.popup = popup
   -- vim.tbl_extend("force", self.all_pops)
   table.insert(self.all_pops, popup)
+  self:register_keys()
 end
 
 function M.Popup:call(question)
