@@ -5,6 +5,7 @@ M.BaseDialog = utils.class("BaseDialog")
 
 function M.BaseDialog:ctor()
   self.all_pops = {}
+  -- self.quit_action = "quit"
 end
 
 --- register common keys for dialogs
@@ -15,7 +16,11 @@ function M.BaseDialog:register_keys(exit_callback)
   -- - Quit
   for _, pop in pairs(all_pops) do
     pop:map("n", { "q", "<C-c>", "<esc>" }, function()
+
+      -- if self.quit_action == "quit" then
       vim.cmd("q")  -- callback may open new windows. So we quit the windows before callback
+      -- end
+
       if exit_callback ~= nil then
         exit_callback()
       end

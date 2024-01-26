@@ -1,5 +1,6 @@
 local M = {
   init = false, -- if it is initialized
+  last_pop = nil,
 }
 local api = require("chatgpt.api")
 local Settings = require("chatgpt.settings")
@@ -13,6 +14,8 @@ M.Popup = utils.class("Popup", dialog.BaseDialog)
 function M.Popup:ctor()
   self.super:ctor()
   self.popup = nil
+  self.full_answer = {}
+  self.quit_action = "hide"
 end
 
 function M.Popup:build()
@@ -35,8 +38,10 @@ function M.Popup:build()
   popup:mount()
 
   -- unmount component when cursor leaves buffer
+  -- TODO: I just want to hide the popup for future resuming
   popup:on(event.BufLeave, function()
     popup:unmount()
+    -- popup:hide()
   end)
   self.popup = popup
   -- vim.tbl_extend("force", self.all_pops)
@@ -67,8 +72,12 @@ function M.Popup:call(question)
 
     -- set self.popup's title to "state"
     -- self.popup.border.text = {top = state}
-    self.popup.border:set_text("top", "State: " .. state, "center")
-    self.popup:update_layout()
+
+    if popup.border.winid ~= nil then
+      self.popup.border:set_text("top", "State: " .. state, "center")
+      self.popup:update_layout()
+    end
+
     if state == "START" or state == "CONTINUE" then
       local line_count = vim.api.nvim_buf_line_count(popup.bufnr)
       local last_line = vim.api.nvim_buf_get_lines(popup.bufnr, line_count - 1, line_count, false)[1]
@@ -84,16 +93,26 @@ function M.Popup:call(question)
           vim.api.nvim_buf_set_lines(popup.bufnr, -1, -1, false, { line })
         end
       end
+
+      self.full_answer = vim.api.nvim_buf_get_lines(popup.bufnr, 0, -1, false)
     end
   end
 
   api.chat_completions(params, cb, should_stop)
 end
 
+function M.update_last_pop(pop)
+  if M.last_pop ~= nil then
+    -- M.last_pop:unmount()
+  end
+  M.last_pop = pop
+end
+
 function M.get_response()
   local rqa = require"simplegpt.tpl".RegQAUI()
   rqa:build(function (question)
     local pp = M.Popup()
+    M.update_last_pop(pp)
     -- set the filetype of pp  to mark down to enable highlight
     pp:build()
     -- TODO: copy code with regex
@@ -101,4 +120,17 @@ function M.get_response()
     pp:call(question)
   end)
 end
+
+function M.resume_popup()
+  -- TODO: this is not a elegant way to resume the last popup; research more on popup's hide and show feature(maybe from ChatGPT.nvim).
+  -- I just want to hide it. Instead of creating a new one.
+  if M.last_pop ~= nil then
+    M.last_pop.popup:mount()
+    vim.api.nvim_buf_set_lines(M.last_pop.popup.bufnr, 0, -1, false, M.last_pop.full_answer)
+    vim.api.nvim_buf_set_option(M.last_pop.popup.bufnr, 'filetype', 'markdown')
+    -- M.last_pop.popup:show()  -- TODO: can't resume
+    M.last_pop:register_keys()
+  end
+end
+
 return M
