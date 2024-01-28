@@ -5,7 +5,7 @@ local dialog = require("simplegpt.dialog")
 local utils = require("simplegpt.utils")
 -- TODO:
 local M = {}
-M.RegQAUI = utils.class("RegQAUI", dialog.BaseDialog) -- register-based UI
+M.RegQAUI = utils.class("RegQAUI", dialog.BaseDialog) -- register-based QA UI
 
 function M.RegQAUI:ctor()
   self.super:ctor()
