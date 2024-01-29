@@ -11,8 +11,9 @@ end
 
 local chat = require("simplegpt.send.chat")
 local pop = require("simplegpt.send.popup")
+local diff = require("simplegpt.send.diff")
 -- local pop = {}
 
-M = vim.tbl_extend("keep", M, chat, pop)
+M = vim.tbl_extend("keep", M, chat, pop, diff)
 
 return M

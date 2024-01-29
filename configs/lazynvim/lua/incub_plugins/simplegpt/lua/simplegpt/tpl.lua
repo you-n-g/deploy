@@ -30,7 +30,7 @@ function M.get_placeholders(key_reg)
   local template = M.get_tpl()
 
   if key_reg == nil then
-    key_reg = "."
+    key_reg = ".%-?"  -- {{q-}} means that the q register will not be dumped into the permanent storage; vim will only use the first letter when operating on registers.
   end
   local reg = "%{%{(" .. key_reg .. ")%}%}"
 

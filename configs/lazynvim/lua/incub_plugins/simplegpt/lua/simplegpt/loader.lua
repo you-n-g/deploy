@@ -14,7 +14,7 @@ local M = {}
 
 function M.dump_reg(fname)
   local reg_values = {}
-  local registers = tpl_api.get_placeholders("%l")
+  local registers = tpl_api.get_placeholders("%l") -- only dump the registers with single letter. Placehodlers like {{q-}} will not be dumped
   table.insert(registers, "t")
   for _, reg in ipairs(registers) do
     reg_values[reg] = vim.fn.getreg(reg)

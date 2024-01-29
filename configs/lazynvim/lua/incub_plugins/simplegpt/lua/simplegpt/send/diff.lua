@@ -7,9 +7,13 @@ local Layout = require("nui.layout")
 
 M.DiffPopup = utils.class("Popup", dialog.ChatDialog)
 
+function M.DiffPopup:ctor()
+  self.super:ctor()
+  self.a_popup = nil -- the answer content
+  self.orig_popup = nil -- the origional content
+end
 
 function M.DiffPopup:build()
-
   -- answer prompt
   local a_popup = Popup({
     -- relative = "editor",
@@ -17,10 +21,11 @@ function M.DiffPopup:build()
     focusable = true,
     border = {
       style = "rounded",
-      text = {top = "Response"},
+      text = { top = "Response" },
     },
     -- size = "48%",
   })
+  self.a_popup = a_popup
   self.popup = a_popup
 
   -- question prompt
@@ -30,27 +35,25 @@ function M.DiffPopup:build()
     focusable = true,
     border = {
       style = "rounded",
-      text = {top = "Origin"},
+      text = { top = "Origin" },
     },
     -- size = "48%",
   })
+  self.orig_popup = orig_popup
   local boxes = {}
-  for _, p in ipairs({orig_popup, a_popup}) do
+  for _, p in ipairs({ orig_popup, a_popup }) do
     table.insert(boxes, Layout.Box(p, { ["size"] = "50%" }))
     table.insert(self.all_pops, p)
   end
 
-  local layout = Layout(
-    {
-      relative = "editor",
-      position = "50%",
-      size = {
-        width = "90%",
-        height = "90%",
-      },
+  local layout = Layout({
+    relative = "editor",
+    position = "50%",
+    size = {
+      width = "90%",
+      height = "90%",
     },
-    Layout.Box(boxes, { dir = "row" })
-  )
+  }, Layout.Box(boxes, { dir = "row" }))
   -- mount/open the component
   layout:mount()
 
@@ -60,7 +63,28 @@ function M.DiffPopup:build()
   self:register_keys()
 end
 
--- local dp = M.DiffPopup()
--- dp:build()
+function M.get_diff()
+  local rqa = require("simplegpt.tpl").RegQAUI()
+  local filetype = vim.bo.filetype
+  rqa:build(function(question)
+    local dp = M.DiffPopup()
+    -- M.update_last_pop(dp)
+    -- set the filetype of pp  to mark down to enable highlight
+    dp:build()
+    -- TODO: copy code with regex
+    for _, p in ipairs(dp.all_pops) do
+      vim.api.nvim_buf_set_option(p.bufnr, "filetype", filetype) -- todo set to current filetype
+    end
+    vim.api.nvim_buf_set_lines(dp.orig_popup.bufnr, 0, -1, false, vim.split(rqa.special_dict["visual"], "\n"))  -- set conttn
+    -- -- TODO: put dp.orig_popup.bufnr and dp.a_popup.bufnr into diff mode
+
+    for _, pop in ipairs(dp.all_pops) do
+      vim.api.nvim_set_current_win(pop.winid)
+      vim.api.nvim_command("diffthis")
+    end
+    vim.api.nvim_set_current_win(dp.a_popup.winid)
+    dp:call(question)
+  end)
+end
 
 return M
