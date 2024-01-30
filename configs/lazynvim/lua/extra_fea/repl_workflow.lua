@@ -159,6 +159,7 @@ local config = {
   edit_before_send = false,
   goto_debug_when_fail = false,
   doc_test = false,
+  abs_path = true,  -- should we use absolute path
 }
 
 local function edit_before_send(cmd)
@@ -189,6 +190,12 @@ vim.keymap.set("n", "<leader>rct", function()
   P(config["doc_test"])
 end, { desc = "Using doctest for testing." })
 
+vim.keymap.set("n", "<leader>rca", function()
+  --  toggle  config["edit_before_send"] between true and false
+  config["abs_path])"] = not config["abs_path])"]
+  P(config["abs_path])"])
+end, { desc = "Toggle Absolute Path." })
+
 -- Base class and methods
 
 local BaseREPL = class("BaseREPL")
@@ -198,7 +205,7 @@ function BaseREPL:run_func()
     print("No interpreter is set")
     return
   end
-  local cmd = self.interpreter .. " " .. vim.fn.expand("%") .. " " .. get_current_function_name()
+  local cmd = self.interpreter .. " " .. vim.fn.expand(self:get_path_symbol()) .. " " .. get_current_function_name()
   require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
 end
 
@@ -207,7 +214,7 @@ function BaseREPL:run_script()
     print("No interpreter is set")
     return
   end
-  local cmd = self.interpreter .. " " .. vim.fn.expand("%")
+  local cmd = self.interpreter .. " " .. vim.fn.expand(self:get_path_symbol())
   edit_before_send(cmd)
 end
 
@@ -226,6 +233,15 @@ end
 function BaseREPL:send_code()
   -- send key <c-c><c-c> by default
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<c-c><c-c>", true, true, true), "n", false)
+end
+
+function BaseREPL:get_path_symbol()
+  -- send key <c-c><c-c> by default
+  if config.abs_path then
+    return "%:p"
+  else
+    return "%"
+  end
 end
 
 -- for all kinds of language
@@ -298,12 +314,12 @@ function PythonREPL:run_script()
   else
     cmd = "python"
   end
-  cmd = cmd .. " " .. vim.fn.expand("%")
+  cmd = cmd .. " " .. vim.fn.expand(self:get_path_symbol())
   edit_before_send(cmd)
 end
 
 function PythonREPL:run_func()
-  local cmd = self.interpreter .. " " .. vim.fn.expand("%") .. " "
+  local cmd = self.interpreter .. " " .. vim.fn.expand(self:get_path_symbol()) .. " "
   local func_name = get_current_function_name()
   -- NOTE: this is a hack for typer (the design is bad...)
   -- if `import typer` is included in the file, the replace the '_' with '-' in `cmd`
@@ -358,7 +374,7 @@ function LuaREPL:send_code()
 end
 
 function LuaREPL:run_script()
-  dofile(vim.fn.expand("%"))
+  dofile(vim.fn.expand(self:get_path_symbol()))
 end
 
 

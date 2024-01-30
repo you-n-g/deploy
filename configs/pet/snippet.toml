@@ -292,3 +292,8 @@
   description = "cd onedrive in windows WSL"
   command = "ONEDRIVE_PATH=$(cmd.exe /c echo %onedriveconsumer% 2> /dev/null | sed -e 's/C:/\\\\mnt\\\\c/g' | sed -e 's/\\\\/\\//g' | tr -d \"\\r\") ; cd $ONEDRIVE_PATH"
   output = ""
+
+[[snippets]]
+  description = "Python pretty print"
+  command = "__import__(\"pprint\").pprint("
+  output = ""

@@ -11,16 +11,30 @@ Supported special registers
 
 # TODOs
 
-Features
-- [ ] Resume last answer
-- [ ] Better Preview of the documents
-- [ ] Diff mode
-- [ ] Add shortcuts prompt around the box
-- [ ] Fast copy code
-- [ ] Answering in the background
+- TODOs
+  - Misc
+    - [x] Resume last answer.
+    - [X] Diff mode
+    - [ ] Add shortcuts prompt around the box
+    - [ ] Fast copy code
+    - [ ] Answering in the background
+    - [x] temporary register(without saving to disk)
+    - Shotcuts
+      - [ ] Directly ask error information (load + do!)
+        - [ ] while remain the original information.
+  - UI:
+    - short cuts
+  - Navigation
+    - [ ] fast saving and loading(without entering name)
+    - [ ] Better Preview of the documents
+  - Docs
+    - [ ] Normal vim doc.
+    - [ ] One picture docs.
+  - Opensouce routine
+    - [ ] Vim CI
 
-Bugs
-- [ ] qq will trigger error in answer
+- Bugs
+  - [ ] qq will trigger error in answer
 
 
 # Limitations

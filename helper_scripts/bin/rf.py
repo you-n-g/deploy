@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+Quick review files content.
+"""
 from pathlib import Path
 import pickle
 from pprint import pprint
@@ -62,6 +65,17 @@ class ReadFile:
         with Path(path).open("rb") as f:
             obj = pickle.load(f)
         pprint(obj)
+
+    def v(self, path):
+        """quick view"""
+        for k in [None, "data"]:
+            try:
+                df = pd.read_hdf(path, key=k)
+                print(df.head())
+                print(f"{df.shape=}")
+                return
+            except ValueError:
+                print(f"key={k} not found")
 
     def df_conv(self, file):
         """
