@@ -63,19 +63,17 @@ function M.DiffPopup:build()
   self:register_keys()
 end
 
-function M.get_diff()
-  local rqa = require("simplegpt.tpl").RegQAUI()
-  local filetype = vim.bo.filetype
-  rqa:build(function(question)
+function M.build_q_handler(context)
+  return function(question)
     local dp = M.DiffPopup()
     -- M.update_last_pop(dp)
     -- set the filetype of pp  to mark down to enable highlight
     dp:build()
     -- TODO: copy code with regex
     for _, p in ipairs(dp.all_pops) do
-      vim.api.nvim_buf_set_option(p.bufnr, "filetype", filetype) -- todo set to current filetype
+      vim.api.nvim_buf_set_option(p.bufnr, "filetype", context["filetype"]) -- todo set to current filetype
     end
-    vim.api.nvim_buf_set_lines(dp.orig_popup.bufnr, 0, -1, false, vim.split(rqa.special_dict["visual"], "\n"))  -- set conttn
+    vim.api.nvim_buf_set_lines(dp.orig_popup.bufnr, 0, -1, false, vim.split(context.rqa.special_dict["visual"], "\n"))  -- set conttn
     -- -- TODO: put dp.orig_popup.bufnr and dp.a_popup.bufnr into diff mode
 
     for _, pop in ipairs(dp.all_pops) do
@@ -84,7 +82,8 @@ function M.get_diff()
     end
     vim.api.nvim_set_current_win(dp.a_popup.winid)
     dp:call(question)
-  end)
+  end
 end
+
 
 return M

@@ -9,11 +9,10 @@ if not M.init then
   M.init = true
 end
 
-local chat = require("simplegpt.send.chat")
-local pop = require("simplegpt.send.popup")
-local diff = require("simplegpt.send.diff")
--- local pop = {}
+local modules = {"chat", "popup", "diff"}
 
-M = vim.tbl_extend("keep", M, chat, pop, diff)
+for _, module in pairs(modules) do
+  M = vim.tbl_extend("keep", M, require("simplegpt.target.".. module))
+end
 
 return M

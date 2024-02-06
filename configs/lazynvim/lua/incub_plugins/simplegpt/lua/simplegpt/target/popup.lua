@@ -51,9 +51,8 @@ function M.update_last_pop(pop)
   M.last_pop = pop
 end
 
-function M.get_response()
-  local rqa = require"simplegpt.tpl".RegQAUI()
-  rqa:build(function (question)
+function M.build_q_handler(context)
+  return function (question)
     local pp = M.Popup()
     M.update_last_pop(pp)
     -- set the filetype of pp  to mark down to enable highlight
@@ -61,8 +60,9 @@ function M.get_response()
     -- TODO: copy code with regex
     vim.api.nvim_buf_set_option(pp.popup.bufnr, 'filetype', 'markdown')
     pp:call(question)
-  end)
+  end
 end
+
 
 function M.resume_popup()
   -- TODO: this is not a elegant way to resume the last popup; research more on popup's hide and show feature(maybe from ChatGPT.nvim).
