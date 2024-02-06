@@ -4,6 +4,7 @@
 -- vim.fn.stdpath("data") .. "/config-local",
 
 local tpl_api = require("simplegpt.tpl")
+local previewers = require('telescope.previewers')
 
 local script_path = (debug.getinfo(1, "S").source:sub(2))
 local script_dir = vim.fn.fnamemodify(script_path, ":h")
@@ -84,10 +85,59 @@ end
 local actions = require("telescope.actions")
 local action_state = require("telescope.actions.state")
 
+
 function M.tele_load_reg()
+  --- preview json as mark down file
+  local my_custom_previewer = previewers.new({
+    -- define your custom previewer here
+    setup = function()
+      -- setup function
+    end,
+    preview_fn = function(self, entry, status)
+      -- preview function
+      local file_path = data_path .. entry.value
+      local file = io.open(file_path, "r")
+      if file ~= nil then
+        local contents = file:read("*all")
+        file:close()
+        local tpl_json = vim.fn.json_decode(contents)
+        if tpl_json ~= nil then
+          -- set the previewer's content
+          local preview_bufnr = status.preview_bufnr
+          local new_content = {}
+          for _, k in ipairs(tpl_api.key_sort(tpl_json)) do  -- TODO: sort the tpl_json by keys, and put T at the first
+            table.insert(new_content, "# " .. k)
+            for _, line in ipairs(vim.split(tpl_json[k], "\n")) do
+              table.insert(new_content, line)
+            end
+            table.insert(new_content, "")  -- insert a new line for each key pair
+          end
+          vim.api.nvim_buf_set_lines(preview_bufnr, 0, -1, false, new_content)
+          vim.api.nvim_buf_set_option(preview_bufnr, 'filetype', 'markdown')
+
+          -- NOTE: some editor may support conceallevel, you can use it to hide the json syntax
+          -- set the conceallevel of the preview window
+          local tabpage = vim.api.nvim_get_current_tabpage()
+          local wins = vim.api.nvim_tabpage_list_wins(tabpage)
+          for _, win in ipairs(wins) do  -- walk all windows in the current tabpage to get the preview window
+            if vim.api.nvim_win_get_buf(win) == preview_bufnr then
+              vim.api.nvim_win_set_option(win, 'conceallevel', 0)
+              break
+            end
+          end
+        end
+      end
+    end,
+    teardown = function()
+      -- teardown function
+    end,
+  })
+
   require("telescope.builtin").find_files({
     cwd = data_path,
-    previewer = true,
+    -- previewer = true,
+    previewer = my_custom_previewer,
+
     attach_mappings = function(_, map)
       map("i", "<CR>", function(prompt_bufnr)
         local selection = action_state.get_selected_entry(prompt_bufnr)
@@ -98,5 +148,7 @@ function M.tele_load_reg()
     end,
   })
 end
+
+-- M.tele_load_reg()  -- for testing
 
 return M

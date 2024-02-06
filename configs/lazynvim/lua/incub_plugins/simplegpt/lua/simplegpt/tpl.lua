@@ -9,9 +9,9 @@ M.RegQAUI = utils.class("RegQAUI", dialog.BaseDialog) -- register-based QA UI
 
 function M.RegQAUI:ctor()
   self.super:ctor()
-  self.pop_dict = {}  -- a dict of register to popup
-  self.tpl_pop = nil  -- the popup of template
-  self.special_dict = self:get_special()  -- we have to get special dict before editing the quesiton.. Ohterwise we'll lose the file and visual selection
+  self.pop_dict = {} -- a dict of register to popup
+  self.tpl_pop = nil -- the popup of template
+  self.special_dict = self:get_special() -- we have to get special dict before editing the quesiton.. Ohterwise we'll lose the file and visual selection
   if "" == vim.fn.getreg("t") then
     vim.fn.setreg("t", [[Context:```{{c}}```, {{q}}, {{i}}, Please input your answer:```]])
   end
@@ -30,7 +30,7 @@ function M.get_placeholders(key_reg)
   local template = M.get_tpl()
 
   if key_reg == nil then
-    key_reg = ".%-?"  -- {{q-}} means that the q register will not be dumped into the permanent storage; vim will only use the first letter when operating on registers.
+    key_reg = ".%-?" -- {{q-}} means that the q register will not be dumped into the permanent storage; vim will only use the first letter when operating on registers.
   end
   local reg = "%{%{(" .. key_reg .. ")%}%}"
 
@@ -42,12 +42,43 @@ function M.get_placeholders(key_reg)
   return keys
 end
 
+--- keys = key_sort(tpl_json)
+-- Example:
+-- -- Now iterate over the sorted keys
+-- for _, k in ipairs(keys) do
+--   local v = tpl_json[k]
+--   -- Rest of your code
+-- end
+---@param tpl_json
+---@return table
+function M.key_sort(tpl_json)
+  -- Create a table to store the keys
+  local keys = {}
+  for k in pairs(tpl_json) do
+    table.insert(keys, k)
+  end
+
+  -- Sort the keys
+  table.sort(keys)
+
+  -- If 't' is in the keys, move it to the first
+  for i, key in ipairs(keys) do
+    if key == "t" then
+      table.remove(keys, i)
+      table.insert(keys, 1, "t")
+      break
+    end
+  end
+
+  return keys
+end
+
 function M.RegQAUI:update_reg()
-      vim.fn.setreg("t", table.concat(vim.api.nvim_buf_get_lines(self.tpl_pop.bufnr, 0, -1, true), "\n"))
-      for k, p in pairs(self.pop_dict) do
-        vim.fn.setreg(k, table.concat(vim.api.nvim_buf_get_lines(p.bufnr, 0, -1, true), "\n"))
-      end
-      print("Register updated.")
+  vim.fn.setreg("t", table.concat(vim.api.nvim_buf_get_lines(self.tpl_pop.bufnr, 0, -1, true), "\n"))
+  for k, p in pairs(self.pop_dict) do
+    vim.fn.setreg(k, table.concat(vim.api.nvim_buf_get_lines(p.bufnr, 0, -1, true), "\n"))
+  end
+  print("Register updated.")
 end
 
 function M.RegQAUI:build(callback)
@@ -64,7 +95,7 @@ function M.RegQAUI:build(callback)
       },
     })
     reg_cnt = reg_cnt + 1
-    vim.api.nvim_buf_set_text(self.pop_dict[k].bufnr, 0, 0, 0, 0, vim.split(vim.fn.getreg(k), '\n'))
+    vim.api.nvim_buf_set_text(self.pop_dict[k].bufnr, 0, 0, 0, 0, vim.split(vim.fn.getreg(k), "\n"))
   end
 
   local size = math.floor(100 / (reg_cnt + 1))
@@ -80,10 +111,10 @@ function M.RegQAUI:build(callback)
     },
   })
 
-  vim.api.nvim_buf_set_text(self.tpl_pop.bufnr, 0, 0, 0, 0, vim.split(vim.fn.getreg("t"), '\n'))
+  vim.api.nvim_buf_set_text(self.tpl_pop.bufnr, 0, 0, 0, 0, vim.split(vim.fn.getreg("t"), "\n"))
 
   -- merge self.pop_dict and pop_dict
-  self.all_pops = {self.tpl_pop}
+  self.all_pops = { self.tpl_pop }
   for _, v in pairs(self.pop_dict) do
     table.insert(self.all_pops, v)
   end
@@ -94,12 +125,13 @@ function M.RegQAUI:build(callback)
     if callback ~= nil then
       callback(self:get_q())
     end
-  end
-)
+  end)
   -- - save the registers: This applies to only the register template
   -- TODO: auto update register
   for _, pop in ipairs(self.all_pops) do
-    pop:map("n", { "<c-s>" }, function() self:update_reg() end, { noremap = true })
+    pop:map("n", { "<c-s>" }, function()
+      self:update_reg()
+    end, { noremap = true })
   end
 
   -- create boxes and layout
@@ -109,17 +141,14 @@ function M.RegQAUI:build(callback)
     table.insert(boxes, Layout.Box(v, { ["size"] = size .. "%" }))
   end
 
-  local layout = Layout(
-    {
-      relative = "editor",
-      position = "50%",
-      size = {
-        width = "90%",
-        height = "90%",
-      },
+  local layout = Layout({
+    relative = "editor",
+    position = "50%",
+    size = {
+      width = "90%",
+      height = "90%",
     },
-    Layout.Box(boxes, { dir = "col" })
-  )
+  }, Layout.Box(boxes, { dir = "col" }))
   layout:mount()
 end
 
@@ -136,8 +165,8 @@ function M.RegQAUI:get_special()
   res["content"] = table.concat(lines, "\n")
 
   -- 2) get the visual content
-  local select_pos = require"extra_fea.utils".get_visual_selection()
-  local start_line = select_pos["start"]["row"] - 1  -- Lua indexing is 0-based
+  local select_pos = require("extra_fea.utils").get_visual_selection()
+  local start_line = select_pos["start"]["row"] - 1 -- Lua indexing is 0-based
   local end_line = select_pos["end"]["row"]
   -- Get the selected lines
   lines = vim.api.nvim_buf_get_lines(buf, start_line, end_line, false)
@@ -151,7 +180,9 @@ end
 
 function M.RegQAUI:get_q()
   local function interp(s, tab)
-    return (s:gsub('({{.-}})', function(w) return tab[w:sub(3, -3)] or w end))
+    return (s:gsub("({{.-}})", function(w)
+      return tab[w:sub(3, -3)] or w
+    end))
   end
   local ph_keys = {}
   for _, k in ipairs(M.get_placeholders()) do
