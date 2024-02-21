@@ -20,6 +20,7 @@ Supported special registers
     - [ ] Answering in the background
     - [x] temporary register(without saving to disk)
     - Shotcuts
+      - [ ] Telescope to run shortcuts.
       - [ ] Directly ask error information (load + do!)
         - [ ] while remain the original information.
   - UI:
@@ -30,7 +31,7 @@ Supported special registers
   - Docs
     - [ ] Normal vim doc.
     - [ ] One picture docs.
-  - Opensouce routine
+  - Open source routine
     - [ ] Vim CI
 
 - Bugs

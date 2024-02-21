@@ -21,6 +21,20 @@ local conf = {
       target = "popup",
       opts = { noremap = true, silent = true, desc = "Complete Code" },
     },
+    {
+      mode = { "n", "v" },
+      key = "<LocalLeader>sg",
+      tpl = "fix_grammar.json",
+      target = "diff",
+      opts = { noremap = true, silent = true, desc = "Fix grammar" },
+    },
+    {
+      mode = { "n", "v" },
+      key = "<LocalLeader>sd",
+      tpl = "condensing.json",
+      target = "popup",
+      opts = { noremap = true, silent = true, desc = "Condense" },
+    },
   },
 }
 
@@ -45,5 +59,6 @@ M.register_shortcuts = function()
     end, s.opts)
   end
 end
+
 
 return M
