@@ -59,6 +59,10 @@ end
 function M.setup()
   M.setup_main_mappings()
   shortcut.register_shortcuts()
+  require("which-key").register({
+    ["<LocalLeader>s"] = { name = "+Shortcuts" },
+    ["<LocalLeader>g"] = { name = "+SimpleGPT" },
+  })
 end
 
 return M

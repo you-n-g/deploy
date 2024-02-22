@@ -15,8 +15,7 @@ function M.BaseDialog:register_keys(exit_callback)
   -- set keys to escape for all popups
   -- - Quit
   for _, pop in pairs(all_pops) do
-    -- I don't add `"<C-c>", "<esc>" ` due to that it can easily errorously quit the dialog
-    pop:map("n", {"q"}, function()
+    pop:map("n", require"simplegpt.conf".options.dialog.exit_keys, function()
 
       -- if self.quit_action == "quit" then
       vim.cmd("q")  -- callback may open new windows. So we quit the windows before callback

@@ -9,13 +9,26 @@ Supported special registers
 | visual          | the selected lines                                          |
 | context[TODO..] | the nearby context of the selected line(10 lines up & down) |
 
+```lua
+-- Layzynvim
+{
+  "you-n-g/simplegpt.git",
+  dependencies = {
+    "MunifTanjim/nui.nvim",
+    "nvim-lua/plenary.nvim",
+    "nvim-telescope/telescope.nvim",
+    "jackMort/ChatGPT.nvim",  -- You should configure your ChatGPT make sure it works.
+  },
+  config=true,
+}
+```
+
 # TODOs
 
 - TODOs
   - Misc
     - [x] Resume last answer.
     - [X] Diff mode
-    - [ ] Add shortcuts prompt around the box
     - [ ] Fast copy code
     - [ ] Answering in the background
     - [x] temporary register(without saving to disk)
@@ -23,13 +36,21 @@ Supported special registers
       - [ ] Telescope to run shortcuts.
       - [ ] Directly ask error information (load + do!)
         - [ ] while remain the original information.
+  - Targets:
+    - Run from targets;
+      - Dialog targets ==>  Supporting edit in place.
+    - Followup actions;
+      - [ ] Replace the text
   - UI:
     - short cuts
+    - [ ] Help function: You can press `?` to see the help menu for shortcuts.
+      - Alternative implementation: [ ] Add shortcuts prompt around the box
   - Navigation
     - [ ] fast saving and loading(without entering name)
-    - [ ] Better Preview of the documents
+      - [ ] remembering the filename in the background.
+    - [x] Better Preview of the documents
   - Docs
-    - [ ] Normal vim doc.
+    - [ ] Normal vim doc(generating from README.md).
     - [ ] One picture docs.
   - Open source routine
     - [ ] Vim CI
