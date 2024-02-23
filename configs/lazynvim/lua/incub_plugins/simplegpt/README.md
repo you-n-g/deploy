@@ -1,6 +1,13 @@
 
 
 
+
+# TLDR(Too Long Didn't Read)
+
+
+# Features
+
+
 Supported special registers
 | key             | meaning                                                     |
 | -               | -                                                           |
@@ -22,6 +29,12 @@ Supported special registers
   config=true,
 }
 ```
+# Shutcuts
+- Dialog shortcuts:
+  - `{"q", "<C-c>", "<esc>"}`: exit the dialog;
+  - [ ] Copy code in backquotes;
+- normal shortcuts:
+  - ...
 
 # TODOs
 
@@ -50,7 +63,7 @@ Supported special registers
     - [ ] fast saving and loading(without entering name)
       - [ ] remembering the filename in the background.
     - [x] Better Preview of the documents
-  - Docs
+  - Docs: try panvimdoc 
     - [ ] Normal vim doc(generating from README.md).
     - [ ] One picture docs.
   - Open source routine
