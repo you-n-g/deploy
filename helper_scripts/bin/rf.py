@@ -74,7 +74,7 @@ class ReadFile:
                 print(df.head())
                 print(f"{df.shape=}")
                 return
-            except ValueError:
+            except KeyError:
                 print(f"key={k} not found")
 
     def df_conv(self, file):

@@ -95,13 +95,15 @@ jupyter serverextension enable jupyter_ascending --sys-prefix --py
 # below is for checking if the extension is installed
 # jupyter nbextension list
 # jupyter serverextension list
-# After installing the command above and vim plugin, you should also install notice following things:
+# CONFIG & Usage: After installing the command above and vim plugin, you should also install notice following things:
 # - you must specify the port before starting **both** vim and jupyter, e.g. `JUPYTER_ASCENDING_EXECUTE_PORT=9000`; 
 #    - 这个端口要和jupyter的端口一致!!!
 # - Make sure both of them can be accessed by 127.0.0.1, otherwise you should also set the IP by `JUPYTER_ASCENDING_EXECUTE_HOST=xxxxxxx`
 # - Make sure the vim end can access without credentials ` --NotebookApp.token='' --NotebookApp.password=''`
 #   - (by copilot)otherwise you should also set the credentials by `JUPYTER_ASCENDING_EXECUTE_TOKEN=xxxxxxx`
 # - The name suffix `.sync` is nessary ;  :help g:jupyter_ascending_match_pattern
+# - creating pair by `python -m jupyter_ascending.scripts.make_pair --base example`
+# - You edit .py in vim, and run .ipynb in jupyter
 # DEBUG:
 # - `/tmp/jupyter_ascending/log.log` is typically the log file for debugging of jupyter_ascending
 # - Base on my experience, you must restart the kernel after you install the plugin, otherwise it will not work

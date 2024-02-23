@@ -84,7 +84,7 @@ return {
   },
   {
     "stevearc/conform.nvim",
-    -- FIXME: it does not work...
+    -- set max line length to 120 will work in install_lazyvim.sh: 
     opts = {
       formatters_by_ft = {
         ["python"] = { "yapf" },

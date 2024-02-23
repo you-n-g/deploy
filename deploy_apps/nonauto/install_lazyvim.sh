@@ -52,6 +52,11 @@ install_lazygit() {
 	ln -s $APP_DIR/lazygit ~/bin/
 }
 
+link_conf() { 
+  # TODO: will it work?
+  ln -s ~/deploy/configs/shell/style.yapf ~/.style.yapf
+}
+
 
 install_or_update_neovim_app() {
   if ! which pip ; then
@@ -89,6 +94,7 @@ deploy() {
   install_or_update_neovim_app
   install_lazyvim
   install_lazygit
+  link_conf
 }
 
 # default install_first_time otherwise the argument
