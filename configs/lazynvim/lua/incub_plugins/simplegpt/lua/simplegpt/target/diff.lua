@@ -79,6 +79,7 @@ function M.build_q_handler(context)
     for _, pop in ipairs(dp.all_pops) do
       vim.api.nvim_set_current_win(pop.winid)
       vim.api.nvim_command("diffthis")
+      vim.o.wrap = true  -- make diff more friedly
     end
     vim.api.nvim_set_current_win(dp.a_popup.winid)
     dp:call(question)
