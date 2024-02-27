@@ -11,7 +11,7 @@ local script_dir = vim.fn.fnamemodify(script_path, ":h")
 local data_path = script_dir .. "/../../qa_tpls/"
 
 -- Dump the contents of multiple registers to a file
-local M = {}
+local M = {last_tpl_name = nil}
 
 function M.dump_reg(fname)
   local reg_values = {}
@@ -32,6 +32,11 @@ function M.input_dump_name()
   local Input = require("nui.input")
   local event = require("nui.utils.autocmd").event
 
+  local default_value_fname = "new_template"
+  if M.last_tpl_name ~= nil then
+    default_value_fname = M.last_tpl_name
+  end
+
   local input = Input({
     position = "50%",
     size = {
@@ -49,7 +54,7 @@ function M.input_dump_name()
     },
   }, {
     prompt = "> ",
-    default_value = "new_template",
+    default_value = default_value_fname,
     on_submit = function(value)
       local fname = value .. ".json"
       M.dump_reg(fname)
@@ -68,6 +73,7 @@ end
 
 -- Load the contents from a file into multiple registers
 function M.load_reg(fname)
+  M.last_tpl_name = fname:gsub("%.json$", "")
   local file = io.open(data_path .. fname, "r")
   if file ~= nil then
     local contents = file:read("*all")

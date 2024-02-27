@@ -41,6 +41,7 @@ Supported special registers
       - Dialog targets ==>  Supporting edit in place.
     - Followup actions;
       - [ ] Replace the text
+      - [ ] Append the text
   - UI:
     - short cuts
     - [ ] Help function: You can press `?` to see the help menu for shortcuts.
