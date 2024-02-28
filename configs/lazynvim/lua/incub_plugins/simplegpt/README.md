@@ -1,21 +1,10 @@
-
-
+This repository is designed to offer a highly customizable and extensible interaction with ChatGPT in the simplest way possible, specifically for neovim.
 
 
 # TLDR(Too Long Didn't Read)
 
 
-# Features
-
-
-Supported special registers
-| key             | meaning                                                     |
-| -               | -                                                           |
-| content         | the whole file content                                      |
-| filetype        | the filetype of the file                                    |
-| visual          | the selected lines                                          |
-| context[TODO..] | the nearby context of the selected line(10 lines up & down) |
-
+# installation
 ```lua
 -- Layzynvim
 {
@@ -29,6 +18,18 @@ Supported special registers
   config=true,
 }
 ```
+
+# Features
+
+
+Supported special registers
+| key             | meaning                                                     |
+| -               | -                                                           |
+| content         | the whole file content                                      |
+| filetype        | the filetype of the file                                    |
+| visual          | the selected lines                                          |
+| context[TODO..] | the nearby context of the selected line(10 lines up & down) |
+
 # Shutcuts
 - Dialog shortcuts:
   - `{"q", "<C-c>", "<esc>"}`: exit the dialog;
@@ -42,9 +43,12 @@ Supported special registers
   - Misc
     - [x] Resume last answer.
     - [X] Diff mode
-    - [ ] Fast copy code
+    - [ ] Fast copy code in backquotes
     - [ ] Answering in the background
-    - [x] temporary register(without saving to disk)
+    - [x] Temporary register(without saving to disk)
+    - Repository level context
+      - Add file content to context
+        - [ ] current file
     - Shotcuts
       - [ ] Telescope to run shortcuts.
       - [ ] Directly ask error information (load + do!)
@@ -63,11 +67,13 @@ Supported special registers
     - [ ] fast saving and loading(without entering name)
       - [ ] remembering the filename in the background.
     - [x] Better Preview of the documents
-  - Docs: try panvimdoc 
+  - Docs: try panvimdoc
     - [ ] Normal vim doc(generating from README.md).
     - [ ] One picture docs.
   - Open source routine
     - [ ] Vim CI
+  - templates design
+    - [ ] Ask inline questions(continue writing)
 
 - Bugs
   - [ ] qq will trigger error in answer
