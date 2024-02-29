@@ -33,7 +33,7 @@ Supported special registers
 # Shutcuts
 - Dialog shortcuts:
   - `{"q", "<C-c>", "<esc>"}`: exit the dialog;
-  - [ ] Copy code in backquotes;
+  - `{"C-k"}` Copy code in triple backquotes of current buffer;
 - normal shortcuts:
   - ...
 
@@ -43,12 +43,13 @@ Supported special registers
   - Misc
     - [x] Resume last answer.
     - [X] Diff mode
-    - [ ] Fast copy code in backquotes
+    - [x] Fast copy code in backquotes
     - [ ] Answering in the background
     - [x] Temporary register(without saving to disk)
     - Repository level context
       - Add file content to context
         - [ ] current file
+      - [ ] Ask repository-level question
     - Shotcuts
       - [ ] Telescope to run shortcuts.
       - [ ] Directly ask error information (load + do!)
@@ -73,7 +74,7 @@ Supported special registers
   - Open source routine
     - [ ] Vim CI
   - templates design
-    - [ ] Ask inline questions(continue writing)
+    - [x] Ask inline questions(continue writing)
 
 - Bugs
   - [ ] qq will trigger error in answer

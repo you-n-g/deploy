@@ -8,8 +8,31 @@ function M.BaseDialog:ctor()
   -- self.quit_action = "quit"
 end
 
+--- Extracts the last code block from a given text.
+-- This function was originally located in `lua/chatgpt/flows/chat/base.lua` within the ChatGPT.nvim project,
+-- but has been copied and adapted for use within this module.
+-- @param text: The input text from which the last code block is to be extracted.
+-- @return : Returns the extracted code block. If no code block is found within the text, the function returns nil.
+local function extract_code(text)
+  -- Iterate through all code blocks in the message using a regular expression pattern
+  local lastCodeBlock
+  for codeBlock in text:gmatch("```.-```%s*") do
+    lastCodeBlock = codeBlock
+  end
+  -- If a code block was found, strip the delimiters and return the code
+  if lastCodeBlock then
+    local index = string.find(lastCodeBlock, "\n")
+    if index ~= nil then
+      lastCodeBlock = string.sub(lastCodeBlock, index + 1)
+    end
+    return lastCodeBlock:gsub("```\n", ""):gsub("```", ""):match("^%s*(.-)%s*$")
+  end
+  return nil
+end
+
+
 --- register common keys for dialogs
----@param exit_callback 
+---@param exit_callback
 function M.BaseDialog:register_keys(exit_callback)
   local all_pops = self.all_pops
   -- set keys to escape for all popups
@@ -36,6 +59,18 @@ function M.BaseDialog:register_keys(exit_callback)
   for i, pop in ipairs(all_pops) do
     pop:map("n", { "<tab>" }, _closure_func(i, 1), { noremap = true })
     pop:map("n", { "<S-Tab>" }, _closure_func(i, -1), { noremap = true })
+  end
+  -- - yank code
+  
+  for _, pop in ipairs(all_pops) do
+    pop:map("n", {"<C-k>"}, function()
+      local full_cont = table.concat(vim.api.nvim_buf_get_lines(pop.bufnr, 0, -1, false), "\n")
+      local code = extract_code(full_cont)
+      if code then
+        vim.fn.setreg("+", code)
+        print("Code Yanked")
+      end
+    end, { noremap = true })
   end
 end
 
