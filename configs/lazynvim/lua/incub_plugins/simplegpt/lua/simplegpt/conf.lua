@@ -6,6 +6,10 @@ M = {
       exit_keys = {
         "q", "<C-c>", "<esc>"
       },
+      -- the shortcuts to append the response to original buffer
+      append_keys = {
+        "<C-a>"
+      }
     },
     -- shortcuts to actions: directly loading specific template and sent to target
     shortcuts = {

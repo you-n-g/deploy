@@ -9,8 +9,8 @@ local event = require("nui.utils.autocmd").event
 
 M.Popup = utils.class("Popup", dialog.ChatDialog)
 
-function M.Popup:ctor()
-  self.super:ctor()
+function M.Popup:ctor(...)
+  self.super:ctor(...)
 end
 
 function M.Popup:build()
@@ -53,7 +53,7 @@ end
 
 function M.build_q_handler(context)
   return function (question)
-    local pp = M.Popup()
+    local pp = M.Popup(context)
     M.update_last_pop(pp)
     -- set the filetype of pp  to mark down to enable highlight
     pp:build()

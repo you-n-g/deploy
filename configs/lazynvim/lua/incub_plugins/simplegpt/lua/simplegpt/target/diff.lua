@@ -7,8 +7,8 @@ local Layout = require("nui.layout")
 
 M.DiffPopup = utils.class("Popup", dialog.ChatDialog)
 
-function M.DiffPopup:ctor()
-  self.super:ctor()
+function M.DiffPopup:ctor(...)
+  self.super:ctor(...)
   self.a_popup = nil -- the answer content
   self.orig_popup = nil -- the origional content
 end
@@ -65,7 +65,7 @@ end
 
 function M.build_q_handler(context)
   return function(question)
-    local dp = M.DiffPopup()
+    local dp = M.DiffPopup(context)
     -- M.update_last_pop(dp)
     -- set the filetype of pp  to mark down to enable highlight
     dp:build()

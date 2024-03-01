@@ -6,16 +6,17 @@ local loader = require("simplegpt.loader")
 
 M = {}
 
-function M.build_func(t)
+function M.build_func(target)
   return function()
     local rqa = require("simplegpt.tpl").RegQAUI()
     -- the context when building the QA builder
     local context = {
       filetype = vim.bo.filetype,
       rqa = rqa,
+      from_bufnr = vim.api.nvim_get_current_buf(),
     }
     -- rqa will build the question and send to the target
-    rqa:build(require("simplegpt.target." .. t).build_q_handler(context))
+    rqa:build(require("simplegpt.target." .. target).build_q_handler(context))
   end
 end
 

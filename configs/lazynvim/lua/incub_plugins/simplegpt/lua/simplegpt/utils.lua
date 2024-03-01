@@ -1,6 +1,6 @@
 local M = {}
 
-local function class(className, super)
+function M.class(className, super)
   -- 构建类
   local clazz = { __cname = className, super = super }
   local mt = {
@@ -22,5 +22,21 @@ local function class(className, super)
   return clazz
 end
 
-M.class = class
+
+
+-- Fast get the windows id of a buffer to support features like below.
+--  local wid = M.get_win_of_buf(vim.api.nvim_get_current_buf())
+--  P(vim.api.nvim_win_get_cursor(wid))
+function M.get_win_of_buf(bufnr) -- get the window of the buffer
+  local tabpage = vim.api.nvim_get_current_tabpage()
+  local wins = vim.api.nvim_tabpage_list_wins(tabpage)
+  for _, win in ipairs(wins) do  -- walk all windows in the current tabpage to get the preview window
+    if vim.api.nvim_win_get_buf(win) == bufnr then
+      return win
+    end
+  end
+end
+
+
+
 return M

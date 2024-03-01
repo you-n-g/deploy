@@ -1,4 +1,11 @@
-This repository is designed to offer a highly customizable and extensible interaction with ChatGPT in the simplest way possible, specifically for neovim.
+# Motivation of this plugin
+Though we have [a lot of ChatGPT plugins](#related-projects) to leverage the power of ChatGPT in Vim, but we still hard to find a handy one that completely fits my workflow.
+After thinking about it, I found the main reason is that the most important part in my workflow is missed in existing plugins:**Fast editing questions based on my current status**!!
+So quickly editing the question template and building the question is the most important part of my workflow.
+Existing plugins are not convenience enough on this and focuses more on Chat UI.
+
+This repository is designed to offer a highly customizable and extensible QA interaction with ChatGPT in the simplest way possible.
+
 
 
 # TLDR(Too Long Didn't Read)
@@ -32,8 +39,12 @@ Supported special registers
 
 # Shutcuts
 - Dialog shortcuts:
-  - `{"q", "<C-c>", "<esc>"}`: exit the dialog;
-  - `{"C-k"}` Copy code in triple backquotes of current buffer;
+  - For all dialogs
+    - `{"q", "<C-c>", "<esc>"}`: exit the dialog;
+    - `{"C-k"}` Copy code in triple backquotes of current buffer;
+  - For only `ChatDialog` (The dialog that are able to get response)
+    - `{"C-a"}`: Append the response to current meeting.
+
 - normal shortcuts:
   - ...
 
@@ -54,12 +65,14 @@ Supported special registers
       - [ ] Telescope to run shortcuts.
       - [ ] Directly ask error information (load + do!)
         - [ ] while remain the original information.
+    - Utils:
+      - [ ] get the buffer number where you are from; It is helpful to accurate control the content in different windows.
   - Targets:
     - Run from targets;
       - Dialog targets ==>  Supporting edit in place.
     - Followup actions;
       - [ ] Replace the text
-      - [ ] Append the text
+      - [X] Append the text
   - UI:
     - short cuts
     - [ ] Help function: You can press `?` to see the help menu for shortcuts.
@@ -82,5 +95,9 @@ Supported special registers
 
 # Limitations
 
-It only leverage the `ChatCompletion` API (which is the most powerful and frequently used in the future trend).
+- It only leverage the `ChatCompletion` API (which is the most powerful and frequently used in the future trend).
+- It is based on Vim registers, which may conflict with users' usage of them.
 
+# Related Projects
+- [jackMort/ChatGPT.nvim](https://github.com/jackMort/ChatGPT.nvim)
+- [robitx/gp.nvim](https://github.com/Robitx/gp.nvim)

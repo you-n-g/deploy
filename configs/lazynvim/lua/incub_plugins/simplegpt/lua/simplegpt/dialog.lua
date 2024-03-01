@@ -3,7 +3,9 @@ local utils = require("simplegpt.utils")
 local M = {}
 M.BaseDialog = utils.class("BaseDialog")
 
-function M.BaseDialog:ctor()
+-- @param context: The context in which the dialog is being created.
+function M.BaseDialog:ctor(context)
+  self.context = context
   self.all_pops = {}
   -- self.quit_action = "quit"
 end
@@ -35,6 +37,7 @@ end
 ---@param exit_callback
 function M.BaseDialog:register_keys(exit_callback)
   local all_pops = self.all_pops
+
   -- set keys to escape for all popups
   -- - Quit
   for _, pop in pairs(all_pops) do
@@ -49,6 +52,7 @@ function M.BaseDialog:register_keys(exit_callback)
       end
     end, { noremap = true })
   end
+
   -- - cycle windows
   local _closure_func = function(i, sft)
     return function()
@@ -60,8 +64,8 @@ function M.BaseDialog:register_keys(exit_callback)
     pop:map("n", { "<tab>" }, _closure_func(i, 1), { noremap = true })
     pop:map("n", { "<S-Tab>" }, _closure_func(i, -1), { noremap = true })
   end
+
   -- - yank code
-  
   for _, pop in ipairs(all_pops) do
     pop:map("n", {"<C-k>"}, function()
       local full_cont = table.concat(vim.api.nvim_buf_get_lines(pop.bufnr, 0, -1, false), "\n")
@@ -81,8 +85,8 @@ local Settings = require("chatgpt.settings")
 -- The dialog that are able to get response to a specific PopUps
 M.ChatDialog = utils.class("ChatDialog", M.BaseDialog)
 
-function M.ChatDialog:ctor()
-  M.ChatDialog.super.ctor(self)
+function M.ChatDialog:ctor(...)
+  M.ChatDialog.super.ctor(self, ...)
   self.answer_popup = nil  -- the popup to display the answer
   self.full_answer = {}
   -- self.quit_action = "hide"
@@ -140,5 +144,26 @@ function M.ChatDialog:call(question)
   api.chat_completions(params, cb, should_stop)
 end
 
+function M.ChatDialog:register_keys(exit_callback)
+  self.super:register_keys(exit_callback)
+
+  for _, pop in pairs(self.all_pops) do
+    pop:map("n", require"simplegpt.conf".options.dialog.append_keys, function()
+
+      vim.cmd("q")  -- callback may open new windows. So we quit the windows before callback
+      if exit_callback ~= nil then
+        exit_callback()
+      end
+
+      local from_bufnr = self.context["from_bufnr"]
+
+      -- Get the cursor position in the from_bufnr
+      local cursor_pos = vim.api.nvim_win_get_cursor(require"simplegpt.utils".get_win_of_buf(from_bufnr))
+      -- Insert `self.full_answer` into from_bufnr after the line of the cursor
+      vim.api.nvim_buf_set_lines(from_bufnr, cursor_pos[1], cursor_pos[1], false, self.full_answer)
+
+    end, { noremap = true })
+  end
+end
 
 return M
