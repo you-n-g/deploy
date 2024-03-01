@@ -8,7 +8,7 @@ local M = {}
 M.RegQAUI = utils.class("RegQAUI", dialog.BaseDialog) -- register-based QA UI
 
 function M.RegQAUI:ctor(...)
-  self.super:ctor(...)
+  M.RegQAUI.super.ctor(self, ...)
   self.pop_dict = {} -- a dict of register to popup
   self.tpl_pop = nil -- the popup of template
   self.special_dict = self:get_special() -- we have to get special dict before editing the quesiton.. Ohterwise we'll lose the file and visual selection

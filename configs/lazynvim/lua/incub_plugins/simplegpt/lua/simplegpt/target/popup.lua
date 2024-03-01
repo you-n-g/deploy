@@ -10,7 +10,7 @@ local event = require("nui.utils.autocmd").event
 M.Popup = utils.class("Popup", dialog.ChatDialog)
 
 function M.Popup:ctor(...)
-  self.super:ctor(...)
+  M.Popup.super.ctor(self, ...)
 end
 
 function M.Popup:build()

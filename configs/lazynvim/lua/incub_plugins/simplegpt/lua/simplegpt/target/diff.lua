@@ -8,7 +8,7 @@ local Layout = require("nui.layout")
 M.DiffPopup = utils.class("Popup", dialog.ChatDialog)
 
 function M.DiffPopup:ctor(...)
-  self.super:ctor(...)
+  M.DiffPopup.super.ctor(self, ...)
   self.a_popup = nil -- the answer content
   self.orig_popup = nil -- the origional content
 end

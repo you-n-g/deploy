@@ -6,7 +6,7 @@ M.BaseDialog = utils.class("BaseDialog")
 -- @param context: The context in which the dialog is being created.
 function M.BaseDialog:ctor(context)
   self.context = context
-  self.all_pops = {}
+  self.all_pops = {}  -- all_popups will be a list table
   -- self.quit_action = "quit"
 end
 
@@ -40,7 +40,7 @@ function M.BaseDialog:register_keys(exit_callback)
 
   -- set keys to escape for all popups
   -- - Quit
-  for _, pop in pairs(all_pops) do
+  for _, pop in ipairs(all_pops) do
     pop:map("n", require"simplegpt.conf".options.dialog.exit_keys, function()
 
       -- if self.quit_action == "quit" then
@@ -145,9 +145,9 @@ function M.ChatDialog:call(question)
 end
 
 function M.ChatDialog:register_keys(exit_callback)
-  self.super:register_keys(exit_callback)
+  M.ChatDialog.super.register_keys(self, exit_callback)
 
-  for _, pop in pairs(self.all_pops) do
+  for _, pop in ipairs(self.all_pops) do
     pop:map("n", require"simplegpt.conf".options.dialog.append_keys, function()
 
       vim.cmd("q")  -- callback may open new windows. So we quit the windows before callback

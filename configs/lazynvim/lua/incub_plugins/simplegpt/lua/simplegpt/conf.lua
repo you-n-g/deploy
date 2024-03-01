@@ -4,11 +4,11 @@ M = {
     dialog = {
       -- The shortcuts to close a dialog
       exit_keys = {
-        "q", "<C-c>", "<esc>"
+        "q", "<c-c>", "<esc>"
       },
       -- the shortcuts to append the response to original buffer
       append_keys = {
-        "<C-a>"
+        "<c-a>"
       }
     },
     -- shortcuts to actions: directly loading specific template and sent to target

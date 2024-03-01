@@ -11,7 +11,7 @@ This repository is designed to offer a highly customizable and extensible QA int
 # TLDR(Too Long Didn't Read)
 
 
-# installation
+# Installation
 ```lua
 -- Layzynvim
 {
