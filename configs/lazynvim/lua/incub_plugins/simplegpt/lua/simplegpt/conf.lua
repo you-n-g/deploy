@@ -8,8 +8,11 @@ M = {
       },
       -- the shortcuts to append the response to original buffer
       append_keys = {
-        "<c-a>"
-      }
+        "<C-a>"
+      },
+      yank_keys = {
+        "<C-y>"
+      },
     },
     -- shortcuts to actions: directly loading specific template and sent to target
     shortcuts = {

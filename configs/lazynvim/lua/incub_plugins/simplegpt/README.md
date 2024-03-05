@@ -1,6 +1,6 @@
 # Motivation of this plugin
-Though we have [a lot of ChatGPT plugins](#related-projects) to leverage the power of ChatGPT in Vim, but we still hard to find a handy one that completely fits my workflow.
-After thinking about it, I found the main reason is that the most important part in my workflow is missed in existing plugins:**Fast editing questions based on my current status**!!
+Though we have [a lot of ChatGPT plugins](#related-projects) to leverage the power of ChatGPT in Vim, I still find it hard to locate a handy one that completely fits my workflow.
+After thinking about it, I found that the main reason is that the most important part of my workflow is missing in existing plugins: **Fast editing of questions based on my current status**!!
 So quickly editing the question template and building the question is the most important part of my workflow.
 Existing plugins are not convenience enough on this and focuses more on Chat UI.
 
@@ -44,6 +44,7 @@ Supported special registers
     - `{"C-k"}` Copy code in triple backquotes of current buffer;
   - For only `ChatDialog` (The dialog that are able to get response)
     - `{"C-a"}`: Append the response to current meeting.
+    - `{"C-y"}`: Copy the full response to the clipboard.
 
 - normal shortcuts:
   - ...

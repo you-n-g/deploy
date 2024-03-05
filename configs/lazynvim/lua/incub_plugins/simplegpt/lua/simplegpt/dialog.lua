@@ -148,6 +148,7 @@ function M.ChatDialog:register_keys(exit_callback)
   M.ChatDialog.super.register_keys(self, exit_callback)
 
   for _, pop in ipairs(self.all_pops) do
+    -- Append keys
     pop:map("n", require"simplegpt.conf".options.dialog.append_keys, function()
 
       vim.cmd("q")  -- callback may open new windows. So we quit the windows before callback
@@ -162,6 +163,12 @@ function M.ChatDialog:register_keys(exit_callback)
       -- Insert `self.full_answer` into from_bufnr after the line of the cursor
       vim.api.nvim_buf_set_lines(from_bufnr, cursor_pos[1], cursor_pos[1], false, self.full_answer)
 
+    end, { noremap = true })
+
+    -- Yank keys
+    pop:map("n", require"simplegpt.conf".options.dialog.yank_keys, function()
+      vim.fn.setreg("+", table.concat(self.full_answer, "\n"))
+      print("answer Yanked")
     end, { noremap = true })
   end
 end
