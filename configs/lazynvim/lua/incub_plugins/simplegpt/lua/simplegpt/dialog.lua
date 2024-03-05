@@ -137,18 +137,22 @@ function M.ChatDialog:call(question)
         end
       end
 
-      self.full_answer = vim.api.nvim_buf_get_lines(popup.bufnr, 0, -1, false)
+      self:update_full_answer()
     end
   end
 
   api.chat_completions(params, cb, should_stop)
 end
 
+function M.ChatDialog:update_full_answer()
+  self.full_answer = vim.api.nvim_buf_get_lines(self.popup.bufnr, 0, -1, false)
+end
+
 function M.ChatDialog:register_keys(exit_callback)
   M.ChatDialog.super.register_keys(self, exit_callback)
 
   for _, pop in ipairs(self.all_pops) do
-    -- Append keys
+    -- Append full answer: append the response to original buffer
     pop:map("n", require"simplegpt.conf".options.dialog.append_keys, function()
 
       vim.cmd("q")  -- callback may open new windows. So we quit the windows before callback
@@ -161,8 +165,39 @@ function M.ChatDialog:register_keys(exit_callback)
       -- Get the cursor position in the from_bufnr
       local cursor_pos = vim.api.nvim_win_get_cursor(require"simplegpt.utils".get_win_of_buf(from_bufnr))
       -- Insert `self.full_answer` into from_bufnr after the line of the cursor
+      self:update_full_answer()  -- update the full_answer
       vim.api.nvim_buf_set_lines(from_bufnr, cursor_pos[1], cursor_pos[1], false, self.full_answer)
 
+    end, { noremap = true })
+
+    -- replace the selected buffer (or current line) with the response
+    pop:map("n", require"simplegpt.conf".options.dialog.replace_keys, function()
+
+      -- TODO: we can support only inserting the code. It may bring more conveniences.
+
+      vim.cmd("q")  -- callback may open new windows. So we quit the windows before callback
+      if exit_callback ~= nil then
+        exit_callback()
+      end
+
+      local from_bufnr = self.context["from_bufnr"]
+
+      -- Get the cursor position in the from_bufnr
+      local cursor_pos = vim.api.nvim_win_get_cursor(require"simplegpt.utils".get_win_of_buf(from_bufnr))
+
+      -- Get the range of lines to replace
+      local start_line, end_line
+      if vim.fn.visualmode() then -- NOTE: This will return to the status of the origianl window seems beyond the expectation of me..
+        -- If in visual mode, replace the selected lines; 
+        start_line, end_line = unpack(vim.fn.getpos("'<"), 2, 3), unpack(vim.fn.getpos("'>"), 2, 3)
+      else
+        -- If not in visual mode, replace the current line
+        start_line, end_line = cursor_pos[1], cursor_pos[1]
+      end
+
+      -- Replace the lines in from_bufnr with `self.full_answer`
+      self:update_full_answer()  -- update the full_answer
+      vim.api.nvim_buf_set_lines(from_bufnr, start_line - 1, end_line, false, self.full_answer)
     end, { noremap = true })
 
     -- Yank keys

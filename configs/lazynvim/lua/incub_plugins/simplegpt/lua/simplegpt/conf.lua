@@ -2,14 +2,21 @@ M = {
   options  = {},
   defaults = {
     dialog = {
-      -- The shortcuts to close a dialog
+      -- Dialog shortcuts
+      -- - close a dialog
       exit_keys = {
         "q", "<c-c>", "<esc>"
       },
-      -- the shortcuts to append the response to original buffer
+      -- QA Dialog shortcuts
+      -- - append the response to original buffer
       append_keys = {
         "<C-a>"
       },
+      -- - replace the selected buffer (or current line) with the response
+      replace_keys = {
+        "<C-r>"
+      },
+      -- - yank the response to clipboard
       yank_keys = {
         "<C-y>"
       },
