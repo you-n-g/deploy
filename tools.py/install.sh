@@ -2,6 +2,25 @@
 DIR="$( cd "$(dirname "$(readlink -f "$0")")" || exit ; pwd -P )"
 cd $DIR
 
+SKIP_INSTALL=0
+# https://stackoverflow.com/a/34531699
+while getopts ":k" opt; do
+    case $opt in
+        k)
+        echo "-k was triggered, Parameter: $OPTARG" >&2
+        SKIP_INSTALL=1
+        ;;
+        \?)
+        echo "Invalid option: -$OPTARG" >&2
+        exit 1
+        ;;
+        :)
+        echo "Option -$OPTARG requires an argument." >&2
+        exit 1
+        ;;
+    esac
+done
+
 # if pipx does not exist, otherwise activate anaconda and add the PATH
 # - in case of the first installation of pipx
 if ! which pipx ; then
@@ -22,7 +41,10 @@ for p in $(find . -maxdepth 1 -type d); do
   fi
 
   cd $DIR/$p
-  git pull
-  # make dev  # this will install package in `pipenv` instead of global.
-  pipx install -e .
+  if [[ (-e "pyproject.toml" || -e "requirements.txt" || -e "setup.py") && $SKIP_INSTALL -eq 0 ]]; then
+    # Python package
+    git pull
+    # make dev  # this will install package in `pipenv` instead of global.
+    pipx install -e .
+  fi
 done

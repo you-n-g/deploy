@@ -4,3 +4,6 @@
 [submodule "tools.py/misc"]
 	path = tools.py/misc
 	url = git@github.com:you-n-g/misc.git
+[submodule "tools.py/simplegpt.nvim"]
+	path = tools.py/misc
+	url = git@github.com:you-n-g/simplegpt.nvim

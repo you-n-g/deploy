@@ -121,7 +121,7 @@ local modules = {
 }
 
 local extra_m = {
-  dir = "~/deploy/configs/lazynvim/lua/incub_plugins/simplegpt/",
+  dir = "~/deploy/tools.py/simplegpt.nvim/",
   dependencies = {
     "MunifTanjim/nui.nvim",
     "nvim-lua/plenary.nvim",
