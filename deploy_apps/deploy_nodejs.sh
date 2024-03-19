@@ -58,5 +58,7 @@ mkdir -p ~/bin/
 #     fi
 # done
 
+# favorate packages:
+npm install -g terminalizer
 
 export PATH="$NP/bin/:$PATH"

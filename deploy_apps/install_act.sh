@@ -1,15 +1,5 @@
 #!/bin/sh
-
-BASE_NAME="$(basename -- "$0")"
-case "$BASE_NAME" in
-  -bash|bash|-zsh|zsh|-sh|sh)
-    # the first if is to supporting REPL
-    DIR="/home/xiaoyang/deploy/deploy_apps"
-    ;;
-  *)
-    DIR="$( cd "$(dirname "$(readlink -f "$0")")" || exit ; pwd -P )"
-    ;;
-esac
+DIR="$( cd "$(dirname "$(readlink -f "$0")")" || exit ; pwd -P )"
 
 source $DIR/utils.sh
 cd ~/apps/

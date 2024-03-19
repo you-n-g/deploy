@@ -41,9 +41,9 @@ for p in $(find . -maxdepth 1 -type d); do
   fi
 
   cd $DIR/$p
+  # Python package
+  git pull
   if [[ (-e "pyproject.toml" || -e "requirements.txt" || -e "setup.py") && $SKIP_INSTALL -eq 0 ]]; then
-    # Python package
-    git pull
     # make dev  # this will install package in `pipenv` instead of global.
     pipx install -e .
   fi

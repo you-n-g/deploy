@@ -18,6 +18,7 @@ class PaperSpider(scrapy.Spider):
         ]:
             yield scrapy.Request(url=self.get_url(kw),
                                  callback=self.parse_list)
+        # 组合的时候别漏了：Agent +  Language(不一定要large)
 
     def get_forum_url(self, forum):
         return f"https://api2.openreview.net/notes?details=replyCount%2Cwritable%2Csignatures%2Cinvitation%2Cpresentation&domain={self.DOMAIN}%2F2024%2FConference&forum={forum}&limit=1000&trash=true"

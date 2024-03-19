@@ -10,6 +10,9 @@ git submodule update --init --recursive
 cd ~/deploy
 git pull
 
+cd ~/deploy/tools.py/
+./install.sh
+
 
 # 如果是用新版本脚本安装的nvim 其实不用管这个
 # mv ~/.config/nvim ~/.config/nvim.back
