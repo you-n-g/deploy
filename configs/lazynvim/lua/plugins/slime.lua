@@ -14,9 +14,21 @@ end
 
 return {
   {
-    "jpalardy/vim-slime",
-    config = function()
+    -- "jpalardy/vim-slime",
+    "you-n-g/vim-slime",
+    branch = "patch-1",
+    init = function()
+      -- these two should be set before the plugin loads
       vim.g.slime_target = "neovim"
+      -- vim.g.slime_no_mappings = true
+    end,
+    config = function()
+      -- from neovim docs.
+      vim.g.slime_input_pid = false
+      vim.g.slime_suggest_default = true
+      vim.g.slime_menu_config = false
+
+      -- vim.g.slime_target = "neovim"
       vim.g.slime_python_ipython = 1
       if vim.fn.has("win32") == 1 then
         vim.api.nvim_set_keymap("n", "<c-c><c-u>", [[<cmd>SlimeSend0 "\x15"<CR>]], { noremap = true })
