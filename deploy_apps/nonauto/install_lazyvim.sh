@@ -55,6 +55,7 @@ install_lazygit() {
 link_conf() { 
   # TODO: will it work?
   ln -s ~/deploy/configs/shell/style.yapf ~/.style.yapf
+  ln -s ~/deploy/configs/lazynvim/stylua.toml ~/.config/
 }
 
 

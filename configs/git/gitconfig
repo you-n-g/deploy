@@ -18,3 +18,5 @@ fza = "!git ls-files -m -o --exclude-standard | fzf --print0 -m | xargs -0 -t -r
 fzm = "!git ls-files -m --exclude-standard | fzf --print0 -m | xargs -0 -t -r git add"
 
 # Ref: https://spin.atomicobject.com/2018/04/05/fuzzy-find-git-add/
+[pull]
+	rebase = true
