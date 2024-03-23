@@ -297,3 +297,8 @@
   description = "Python pretty print"
   command = "__import__(\"pprint\").pprint("
   output = ""
+
+[[snippets]]
+  description = "use gdb to attach to python program"
+  command = "sudo `which gdb` python <pid>"
+  output = ""

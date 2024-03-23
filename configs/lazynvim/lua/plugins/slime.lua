@@ -14,9 +14,9 @@ end
 
 return {
   {
-    -- "jpalardy/vim-slime",
-    "you-n-g/vim-slime",
-    branch = "patch-1",
+    "jpalardy/vim-slime",
+    -- "you-n-g/vim-slime", -- to fix conflict with toggleterm.
+    -- branch = "patch-1",
     init = function()
       -- these two should be set before the plugin loads
       vim.g.slime_target = "neovim"
@@ -27,6 +27,9 @@ return {
       vim.g.slime_input_pid = false
       vim.g.slime_suggest_default = true
       vim.g.slime_menu_config = false
+      -- You might set both `g:slime_suggest_default = 0` and `g:slime_menu_config = 0` in cases where other plugins create terminals that you would never want to send text to.
+
+      vim.g.slime_neovim_ignore_unlisted = false -- we must set this to enable discovery neovim supported by toggleterm.
 
       -- vim.g.slime_target = "neovim"
       vim.g.slime_python_ipython = 1
