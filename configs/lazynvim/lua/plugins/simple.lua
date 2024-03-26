@@ -151,10 +151,87 @@ return {
         hashfile = vim.fn.stdpath("data") .. "/config-local",
 
         autocommands_create = true, -- Create autocommands (VimEnter, DirectoryChanged)
-        commands_create = true,   -- Create commands (ConfigLocalSource, ConfigLocalEdit, ConfigLocalTrust, ConfigLocalIgnore)
-        silent = false,           -- Disable plugin messages (Config loaded/ignored)
-        lookup_parents = false,   -- Lookup config files in parent directories
+        commands_create = true,     -- Create commands (ConfigLocalSource, ConfigLocalEdit, ConfigLocalTrust, ConfigLocalIgnore)
+        silent = false,             -- Disable plugin messages (Config loaded/ignored)
+        lookup_parents = false,     -- Lookup config files in parent directories
       }
     end
   },
+  {
+    "ThePrimeagen/harpoon",
+    branch = "harpoon2",
+    config = true,
+    -- config=function ()
+    --   require("harpoon"):setup()
+    -- end,
+    keys = {
+      {
+        "<leader>ha",
+        function()
+          require("harpoon"):list():append()
+        end,
+        mode = "n",
+        desc = "Append to Harpoon list",
+      },
+      {
+        -- "<leader>he",
+        "<C-h>",
+        function()
+          require("harpoon").ui:toggle_quick_menu(require("harpoon"):list())
+        end,
+        mode = "n",
+        desc = "Toggle Harpoon quick menu",
+      },
+      {
+        "<leader>h1",
+        function()
+          require("harpoon"):list():select(1)
+        end,
+        mode = "n",
+        desc = "Select first item in Harpoon list",
+      },
+      {
+        "<leader>h2",
+        function()
+          require("harpoon"):list():select(2)
+        end,
+        mode = "n",
+        desc = "Select second item in Harpoon list",
+      },
+      {
+        "<leader>h3",
+        function()
+          require("harpoon"):list():select(3)
+        end,
+        mode = "n",
+        desc = "Select third item in Harpoon list",
+      },
+      {
+        "<leader>h4",
+        function()
+          require("harpoon"):list():select(4)
+        end,
+        mode = "n",
+        desc = "Select fourth item in Harpoon list",
+      },
+      -- Toggle previous & next buffers stored within Harpoon list
+      {
+        "<leader>hh",
+        function()
+          require("harpoon"):list():prev()
+        end,
+        mode = "n",
+        desc = "Select previous buffer in Harpoon list",
+      },
+      {
+        "<leader>hl",
+        function()
+          require("harpoon"):list():next()
+        end,
+        mode = "n",
+        desc = "Select next buffer in Harpoon list",
+      },
+    },
+    dependencies = { "nvim-lua/plenary.nvim" }
+  }
 }
