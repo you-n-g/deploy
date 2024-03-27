@@ -76,11 +76,11 @@ return {
       -- VM_maps["Add Cursors Up"] = ""
       -- VM_maps["Add Cursors Down"] = ""
       -- vim.g.VM_maps = VM_maps
-      vim.cmd [[
+      vim.cmd([[
         let g:VM_maps = {}
         let g:VM_maps["Add Cursors Up"] = ""
         let g:VM_maps["Add Cursors Down"] = ""
-      ]]
+      ]])
       -- print(vim.inspect(vim.g.VM_maps))
       -- this does not work.. When the plugin is activated, it will work again..
       --
@@ -141,7 +141,7 @@ return {
   {
     "klen/nvim-config-local",
     config = function()
-      require('config-local').setup {
+      require("config-local").setup({
         -- Default options (optional)
 
         -- Config file patterns to load (lua supported)
@@ -151,19 +151,20 @@ return {
         hashfile = vim.fn.stdpath("data") .. "/config-local",
 
         autocommands_create = true, -- Create autocommands (VimEnter, DirectoryChanged)
-        commands_create = true,     -- Create commands (ConfigLocalSource, ConfigLocalEdit, ConfigLocalTrust, ConfigLocalIgnore)
-        silent = false,             -- Disable plugin messages (Config loaded/ignored)
-        lookup_parents = false,     -- Lookup config files in parent directories
-      }
-    end
+        commands_create = true, -- Create commands (ConfigLocalSource, ConfigLocalEdit, ConfigLocalTrust, ConfigLocalIgnore)
+        silent = false, -- Disable plugin messages (Config loaded/ignored)
+        lookup_parents = false, -- Lookup config files in parent directories
+      })
+    end,
   },
   {
     "ThePrimeagen/harpoon",
     branch = "harpoon2",
-    config = true,
-    -- config=function ()
-    --   require("harpoon"):setup()
-    -- end,
+    -- config = true,
+    -- config = { settings = { save_on_toggle = true } },
+    config=function ()
+      require("harpoon"):setup({settings = {save_on_toggle = true}})
+    end,
     keys = {
       {
         "<leader>ha",
@@ -175,7 +176,7 @@ return {
       },
       {
         -- "<leader>he",
-        "<C-h>",
+        "<m-h>",
         function()
           require("harpoon").ui:toggle_quick_menu(require("harpoon"):list())
         end,
@@ -232,6 +233,6 @@ return {
         desc = "Select next buffer in Harpoon list",
       },
     },
-    dependencies = { "nvim-lua/plenary.nvim" }
-  }
+    dependencies = { "nvim-lua/plenary.nvim" },
+  },
 }

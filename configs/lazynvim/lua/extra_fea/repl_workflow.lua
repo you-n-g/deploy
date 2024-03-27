@@ -244,6 +244,38 @@ function BaseREPL:get_path_symbol()
   end
 end
 
+function BaseREPL:debug_breakpoint()
+  -- get the current line number
+  local line_number = vim.fn.line('.')
+  -- get the current file path
+  local file_path = vim.fn.expand('%:p')
+  -- construct the command
+  local cmd = string.format('b %s:%d', file_path, line_number)
+  -- send the command to the terminal
+  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+end
+
+function BaseREPL:debug_unt()
+  local line_number = vim.fn.line('.')
+  -- construct the command
+  local cmd = string.format('unt %d', line_number)
+  -- send the command to the terminal
+  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+end
+
+function BaseREPL:debug_explore()
+  print("No debug_explore supported")
+end
+
+function BaseREPL:debug_print()
+  local cmd = string.format('p %s', vim.fn.expand("<cword>"))
+  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+end
+
+function BaseREPL:start_db()
+  print("No start ?db supported")
+end
+
 -- for all kinds of language
 
 -- - Python
@@ -330,6 +362,19 @@ function PythonREPL:run_func()
   edit_before_send(cmd)
 end
 
+function PythonREPL:start_db()
+  local cmd = "python -m ipdb"
+  cmd = cmd .. " " .. vim.fn.expand(self:get_path_symbol())
+  edit_before_send(cmd)
+end
+
+function PythonREPL:debug_explore()
+  local current_word = vim.fn.expand("<cword>")
+  local cmd = string.format('__import__("objexplore").explore(%s)', current_word)
+  -- send the command to the terminal
+  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+end
+
 -- - Bash
 local BashREPL = class("BashREPL", BaseREPL)
 BashREPL.interpreter = "bash"
@@ -406,6 +451,27 @@ end, { desc = "Launch interpreter" })
 vim.keymap.set("n", "<leader>rt", function()
   REPLFactory():test()
 end, { desc = "Run Test" })
+
+vim.keymap.set("n", "<leader>rdb", function()
+  REPLFactory():debug_breakpoint()
+end, { desc = "Send break point" })
+
+vim.keymap.set("n", "<leader>rdd", function()
+  REPLFactory():start_db()
+end, { desc = "start ?db" })
+
+vim.keymap.set("n", "<leader>rdu", function()
+  REPLFactory():debug_unt()
+end, { desc = "until line" })
+
+vim.keymap.set("n", "<leader>rdp", function()
+  REPLFactory():debug_print()
+end, { desc = "print variable" })
+
+vim.keymap.set("n", "<leader>rde", function()
+  REPLFactory():debug_explore()
+end, { desc = "explore object" })
+
 -- TODO: `configs/nvim/yx/plugins_conf.vim` for doc test
 
 vim.keymap.set({"n", "v", "o"}, "<leader>rr", function()

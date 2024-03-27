@@ -48,6 +48,8 @@ return {
       -- Bad cases:
       --   - Python Debuger is much slower than normal running
       --     - It may be caused by joblib
+      --     - When it comes to multiprocessing, it is even slower.
+      --   - I tried a lot... But I fail to make the performance efficent enough
       --   - So insert ipdb breakpoints is a better choice when performance affect much
       "mfussenegger/nvim-dap-python",
       keys = {
@@ -69,8 +71,9 @@ return {
                   program = vim.fn.expand("%:p"),
                   -- TODO: select args in neovim
                   args = {},
-                  console = "integratedTerminal", -- This is very important. Otherwise, the stdin will mixed with std in...And the program will get stuck at the stdin.
+                  -- console = "integratedTerminal", -- This is very important. Otherwise, the stdin will mixed with std in...And the program will get stuck at the stdin.
                                                   -- https://github.com/mfussenegger/nvim-dap/discussions/430
+                  console = "externalTerminal",
                   justMyCode = true,
                 },
               },
@@ -113,6 +116,12 @@ return {
         -- require('dap-python').setup('~/.virtualenvs/debugpy/bin/python')
 
         require("dap.ext.vscode").load_launchjs()
+        local dap = require('dap')
+        dap.defaults.fallback.external_terminal = {
+          command = os.getenv("HOME") .. '/deploy/helper_scripts/bin/tmux_cli.sh',
+          -- command = "/bin/bash",
+          -- args = {'-e'};
+        }
       end,
     },
     -- NOTE: cheatsheet

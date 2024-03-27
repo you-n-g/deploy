@@ -60,7 +60,7 @@ done
 
 
 # for developing environment
-pip install autopep8 better_exceptions ipython-autotime fire pylint debugpy
+pip install autopep8 better_exceptions ipython-autotime fire pylint debugpy objexplore
 # ruff-lsp #  ruff-lsp only give warnings and does not provide docs. So it can't replace pyright.
 
 
