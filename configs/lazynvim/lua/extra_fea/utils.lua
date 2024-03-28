@@ -37,4 +37,20 @@ function M.get_visual_selection()
   end
 end
 
+function M.get_visual_selection_content()
+  local mode = vim.api.nvim_get_mode().mode
+  local range_pos = M.get_visual_selection()
+  local lines = vim.api.nvim_buf_get_lines(0, range_pos["start"]["row"] - 1, range_pos["end"]["row"], false)
+  if #lines > 0 and mode == 'v' then
+    lines[1] = string.sub(lines[1], range_pos["start"]["col"])
+    if #lines > 1 then
+      lines[#lines] = string.sub(lines[#lines], 1, range_pos["end"]["col"])
+    else
+      lines[1] = string.sub(lines[1], 1, range_pos["end"]["col"] + 1 - range_pos["start"]["col"])
+    end
+  end
+  -- lines[#lines] = "return " .. lines[#lines]
+  return table.concat(lines, '\n')
+end
+
 return M

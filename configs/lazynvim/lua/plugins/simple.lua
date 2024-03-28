@@ -158,6 +158,10 @@ return {
     end,
   },
   {
+    -- NOTE:
+    -- I need more;
+    -- - Line number
+    -- We may find alternatives here https://github.com/you-n-g/awesome-neovim?tab=readme-ov-file#marks
     "ThePrimeagen/harpoon",
     branch = "harpoon2",
     -- config = true,

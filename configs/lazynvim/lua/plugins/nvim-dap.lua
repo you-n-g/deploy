@@ -75,6 +75,7 @@ return {
                                                   -- https://github.com/mfussenegger/nvim-dap/discussions/430
                   console = "externalTerminal",
                   justMyCode = true,
+                  subProcess = false  -- Very important for multiprocessing performance ; "subProcess": false means that child processes spawned by the process you're debugging will not be automatically debugged.
                 },
               },
             }

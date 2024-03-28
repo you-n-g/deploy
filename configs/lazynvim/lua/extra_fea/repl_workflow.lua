@@ -159,7 +159,7 @@ local config = {
   edit_before_send = false,
   goto_debug_when_fail = false,
   doc_test = false,
-  abs_path = true,  -- should we use absolute path
+  abs_path = true, -- should we use absolute path
 }
 
 local function edit_before_send(cmd)
@@ -246,29 +246,40 @@ end
 
 function BaseREPL:debug_breakpoint()
   -- get the current line number
-  local line_number = vim.fn.line('.')
+  local line_number = vim.fn.line(".")
   -- get the current file path
-  local file_path = vim.fn.expand('%:p')
+  local file_path = vim.fn.expand("%:p")
   -- construct the command
-  local cmd = string.format('b %s:%d', file_path, line_number)
+  local cmd = string.format("b %s:%d", file_path, line_number)
   -- send the command to the terminal
   require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
 end
 
 function BaseREPL:debug_unt()
-  local line_number = vim.fn.line('.')
+  local line_number = vim.fn.line(".")
   -- construct the command
-  local cmd = string.format('unt %d', line_number)
+  local cmd = string.format("unt %d", line_number)
   -- send the command to the terminal
   require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
 end
 
-function BaseREPL:debug_explore()
+function BaseREPL:debug_explore(var)
   print("No debug_explore supported")
 end
 
 function BaseREPL:debug_print()
-  local cmd = string.format('p %s', vim.fn.expand("<cword>"))
+  -- TODO:
+  -- if in visual model, set the selected content to the current word
+  -- otherwise set the current word to the content
+  local cur_content
+  local mode = vim.api.nvim_get_mode().mode
+  if mode == "n" then
+    -- In normal mode, get the current word under the cursor
+    cur_content = vim.fn.expand("<cword>")
+  elseif mode == "v" or mode == "V" or mode == "\\<C-v>" then
+    cur_content = require("extra_fea.utils").get_visual_selection_content()
+  end
+  local cmd = string.format("p %s", cur_content)
   require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
 end
 
@@ -287,51 +298,56 @@ function PythonREPL:launch_interpreter()
 end
 
 function get_pytest_doctest_module()
-    -- python test doctest module:
-    -- - because  --doctest-modules expect  <filepath>::<full_packagename>.<function_name> to specific a function.
-    -- - vim can't automatically get it. So we have to set it mannually often.
-    -- often used command let b:ptdm="abc"
-    -- - let b:ptdm="abc"
-    -- - unlet b:ptdm
-    local ok, ptdm = pcall(vim.api.nvim_buf_get_var, 0, "ptdm")
-    if ok then
-        return ptdm
-    end
-    local st = vim.fn.expand("%:r")
-    local t = vim.split(st, "/")
+  -- python test doctest module:
+  -- - because  --doctest-modules expect  <filepath>::<full_packagename>.<function_name> to specific a function.
+  -- - vim can't automatically get it. So we have to set it mannually often.
+  -- often used command let b:ptdm="abc"
+  -- - let b:ptdm="abc"
+  -- - unlet b:ptdm
+  local ok, ptdm = pcall(vim.api.nvim_buf_get_var, 0, "ptdm")
+  if ok then
+    return ptdm
+  end
+  local st = vim.fn.expand("%:r")
+  local t = vim.split(st, "/")
 
-    local module = {}
-    local finished = false
-    for i = #t, 1, -1 do
-      v = t[i]
-      if not finished then
-        -- module = v .. "." .. module
-        table.insert(module, v)
-      end
-      -- FIXME: qlib is hard code!!!!!
-      if v == "qlib" then
-        finished = true
-      end
+  local module = {}
+  local finished = false
+  for i = #t, 1, -1 do
+    v = t[i]
+    if not finished then
+      -- module = v .. "." .. module
+      table.insert(module, v)
     end
+    -- FIXME: qlib is hard code!!!!!
+    if v == "qlib" then
+      finished = true
+    end
+  end
 
-    if finished then
-      -- reverse t
-      for i = 1, #module / 2 do
-        local tmp = module[i]
-        module[i] = module[#module - i + 1]
-        module[#module - i + 1] = tmp
-      end
-      return table.concat(module, ".")
-    else
-      return vim.fn.expand("%:t:r")
+  if finished then
+    -- reverse t
+    for i = 1, #module / 2 do
+      local tmp = module[i]
+      module[i] = module[#module - i + 1]
+      module[#module - i + 1] = tmp
     end
+    return table.concat(module, ".")
+  else
+    return vim.fn.expand("%:t:r")
+  end
 end
 
 function PythonREPL:test()
   -- nnoremap <silent>  <leader>psT :SlimeSend0 "pytest -s --pdb --disable-warnings --doctest-modules ".expand("%:p")."::".luaeval("get_pytest_doctest_module()").".".luaeval('require("yx/plugs/run_func").get_current_function_name(true)')."\n"<CR>
   local cmd = ""
   if config.doc_test then
-    cmd = "pytest -s --pdb --disable-warnings --doctest-modules " .. vim.fn.expand("%:p") .. "::" .. get_pytest_doctest_module() .. "." .. get_current_function_name(true)
+    cmd = "pytest -s --pdb --disable-warnings --doctest-modules "
+      .. vim.fn.expand("%:p")
+      .. "::"
+      .. get_pytest_doctest_module()
+      .. "."
+      .. get_current_function_name(true)
   else
     cmd = "pytest -s --pdb --disable-warnings " .. vim.fn.expand("%:p") .. "::" .. get_current_function_name(true)
   end
@@ -368,9 +384,20 @@ function PythonREPL:start_db()
   edit_before_send(cmd)
 end
 
-function PythonREPL:debug_explore()
-  local current_word = vim.fn.expand("<cword>")
-  local cmd = string.format('__import__("objexplore").explore(%s)', current_word)
+function PythonREPL:debug_explore(var)
+  local cur_content
+  if var == nil then
+    local mode = vim.api.nvim_get_mode().mode
+    if mode == "n" then
+      -- In normal mode, get the current word under the cursor
+      cur_content = vim.fn.expand("<cword>")
+    elseif mode == "v" or mode == "V" or mode == "\\<C-v>" then
+      cur_content = require("extra_fea.utils").get_visual_selection_content()
+    end
+  else
+    cur_content = var
+  end
+  local cmd = string.format('__import__("objexplore").explore(%s)', cur_content)
   -- send the command to the terminal
   require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
 end
@@ -383,45 +410,35 @@ BashREPL.interpreter = "bash"
 local LuaREPL = class("LuaREPL", BaseREPL)
 
 function LuaREPL:send_code()
-    -- TODO:
-    -- - Maybe we should add `return` in load; Currently it just simply add return to the last line. Maybe we should use treesitter intead.
-    local mode = vim.api.nvim_get_mode().mode
-    if mode == 'n' then
-        -- lua run current line if in normal mode
-        local row = vim.fn.getpos('.')[2]
-        local lines = vim.api.nvim_buf_get_lines(0, row - 1, row, false)
-        print(load("return " ..  lines[1])())
-    elseif mode == 'v' or mode == 'V' or mode == '\\<C-v>' then
-        -- https://www.reddit.com/r/neovim/comments/13mfta8/reliably_get_the_visual_selection_range/
-        -- We must escape visual mode before make  "<" ">"  take effects
-        -- P("before:", vim.api.nvim_get_mode().mode)
-        vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<esc>", true, false, true), 'n', false)
-        -- -- Finnaly, I found it will not exit visual mode to make '<'> take effect.
-        -- P("end:", vim.api.nvim_get_mode().mode)
+  -- TODO:
+  -- - Maybe we should add `return` in load; Currently it just simply add return to the last line. Maybe we should use treesitter intead.
+  local mode = vim.api.nvim_get_mode().mode
+  if mode == "n" then
+    -- lua run current line if in normal mode
+    local row = vim.fn.getpos(".")[2]
+    local lines = vim.api.nvim_buf_get_lines(0, row - 1, row, false)
+    print(load("return " .. lines[1])())
+  elseif mode == "v" or mode == "V" or mode == "\\<C-v>" then
+    -- https://www.reddit.com/r/neovim/comments/13mfta8/reliably_get_the_visual_selection_range/
+    -- We must escape visual mode before make  "<" ">"  take effects
+    -- P("before:", vim.api.nvim_get_mode().mode)
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<esc>", true, false, true), "n", false)
+    -- -- Finnaly, I found it will not exit visual mode to make '<'> take effect.
+    -- P("end:", vim.api.nvim_get_mode().mode)
 
-        -- P(vim.api.nvim_buf_get_mark(0, "<"), vim.api.nvim_buf_get_mark(0, ">"))
-        local range_pos = require"extra_fea.utils".get_visual_selection()
-        -- P(range_pos)
-        local lines = vim.api.nvim_buf_get_lines(0, range_pos["start"]["row"] - 1, range_pos["end"]["row"], false)
-        if #lines > 0 and mode == 'v' then
-          lines[1] = string.sub(lines[1], range_pos["start"]["col"])
-          if #lines > 1 then
-            lines[#lines] = string.sub(lines[#lines], 1, range_pos["end"]["col"])
-          else
-            lines[1] = string.sub(lines[1], 1, range_pos["end"]["col"] + 1 - range_pos["start"]["col"])
-          end
-        end
-        lines[#lines] = "return " .. lines[#lines]
-        local code = table.concat(lines, '\n')
-        print(code)  -- TODO: remove it
-        print(load(code)())
-    end
+    -- P(vim.api.nvim_buf_get_mark(0, "<"), vim.api.nvim_buf_get_mark(0, ">"))
+    local code = require("extra_fea.utils").get_visual_selection_content()
+    local lines = vim.split(code, "\n")
+    lines[#lines] = "return " .. lines[#lines]
+    code = table.concat(lines, "\n")
+    print(code) -- TODO: remove it
+    print(load(code)())
+  end
 end
 
 function LuaREPL:run_script()
   dofile(vim.fn.expand(self:get_path_symbol()))
 end
-
 
 local function REPLFactory()
   local ft = vim.bo.filetype
@@ -429,7 +446,7 @@ local function REPLFactory()
     python = PythonREPL,
     sh = BashREPL,
     bash = BashREPL,
-    lua = LuaREPL
+    lua = LuaREPL,
   }
   return repl_map[ft].new()
 end
@@ -464,17 +481,21 @@ vim.keymap.set("n", "<leader>rdu", function()
   REPLFactory():debug_unt()
 end, { desc = "until line" })
 
-vim.keymap.set("n", "<leader>rdp", function()
+vim.keymap.set({ "n", "v" }, "<leader>rdp", function()
   REPLFactory():debug_print()
 end, { desc = "print variable" })
 
-vim.keymap.set("n", "<leader>rde", function()
+vim.keymap.set({ "n", "v" }, "<leader>rde", function()
   REPLFactory():debug_explore()
 end, { desc = "explore object" })
 
+vim.keymap.set("n", "<leader>rdE", function()
+  REPLFactory():debug_explore("locals()")
+end, { desc = "explore locals()" })
+
 -- TODO: `configs/nvim/yx/plugins_conf.vim` for doc test
 
-vim.keymap.set({"n", "v", "o"}, "<leader>rr", function()
+vim.keymap.set({ "n", "v", "o" }, "<leader>rr", function()
   -- P(vim.api.nvim_get_mode().mode)
   -- local start_pos = vim.api.nvim_buf_get_mark(0, '<')
   -- local end_pos = vim.api.nvim_buf_get_mark(0, '>')
