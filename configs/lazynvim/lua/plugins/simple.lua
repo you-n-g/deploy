@@ -66,6 +66,12 @@ return {
       { "<leader>ren", [[<esc>}o<CR><c-u># %%<esc>o<esc>0"_C]], desc = "Create next cell" },
       -- NOTE: 有时候会有自动缩进，而且缩进的时候还会给写一些注释前缀，所以要多出一个动作来清理这一行
     },
+
+    config = function () 
+      -- TODO: set `vim.g.jupyter_ascending_match_pattern` to current file name
+      vim.g.jupyter_ascending_match_pattern = vim.fn.expand("%:t")
+      print(vim.g.jupyter_ascending_match_pattern)
+    end,
   },
   {
     "mg979/vim-visual-multi",

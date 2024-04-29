@@ -14,10 +14,12 @@ sudo apt-get update
 # 1) Essential
 # 2) Optional (the installation of these softwares may fail due to different system versions)  # this line is for common use
 for p in git build-essential cmake python-dev htop zsh autossh exuberant-ctags \
-	 tmux clang software-properties-common silversearcher-ag moreutils ack-grep cloc ; do
+	 tmux clang software-properties-common silversearcher-ag moreutils ack-grep cloc jq; do
     # in case of lacking specific package result in failing of all packages. So we just install them one by one
     sudo apt-get install -y $p
 done
+# Explain the necessity of the above packages
+# jq: enhance the experience of json
 
 # sudo apt-get install -y gnupg2
 # ruby和 rvm 后面都选择在 ./deploy_apps/install_tmuxinator.sh 中在个人账户安装
