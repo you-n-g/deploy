@@ -45,7 +45,7 @@
 
 [[snippets]]
   description = "py-spy record"
-  command = "py-spy record -o profile.svg --"
+  command = "py-spy record -o profile.svg -- <cmd>"
   output = ""
 
 [[snippets]]
@@ -301,4 +301,9 @@
 [[snippets]]
   description = "use gdb to attach to python program"
   command = "sudo `which gdb` python <pid>"
+  output = ""
+
+[[snippets]]
+  description = "cprofile profiling debuggging"
+  command = "python -m cProfile -s <sort_filed=time> -o <out_file=stat_out> <script=script.py>"
   output = ""

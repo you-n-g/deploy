@@ -161,7 +161,9 @@ return {
     -- NOTE:
     -- I need more;
     -- - Line number
-    -- We may find alternatives here https://github.com/you-n-g/awesome-neovim?tab=readme-ov-file#marks
+    --    We may find alternatives here https://github.com/you-n-g/awesome-neovim?tab=readme-ov-file#marks
+    -- - Support ident for tracing
+    -- - Support note taking
     "ThePrimeagen/harpoon",
     branch = "harpoon2",
     -- config = true,
@@ -180,7 +182,7 @@ return {
       },
       {
         -- "<leader>he",
-        "<m-h>",
+        "<m-h>",  -- <esc>h will also trigger this
         function()
           require("harpoon").ui:toggle_quick_menu(require("harpoon"):list())
         end,
