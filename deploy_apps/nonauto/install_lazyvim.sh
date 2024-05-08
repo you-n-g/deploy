@@ -7,13 +7,14 @@ DIR="$(
 
 install_first_time() {
 	# NOTE: This only needs to be run once
-	# required
-	mv ~/.config/nvim ~/.config/nvim.bak
 
-	# optional but recommended
-	mv ~/.local/share/nvim ~/.local/share/nvim.bak
-	mv ~/.local/state/nvim ~/.local/state/nvim.bak
-	mv ~/.cache/nvim ~/.cache/nvim.bak
+	# Backup lazyvim
+	# - only the first is  required; remains are  optional but recommended
+  for f in ~/.config/nvim  ~/.local/share/nvim ~/.local/state/nvim ~/.cache/nvim ; do
+     if [ -e $f ] ; then
+        echo mv $f $f.bak
+     fi
+  done
 
 	TARGET="$DIR/../../configs/lazynvim"
 	git clone https://github.com/LazyVim/starter "$TARGET"
@@ -30,12 +31,12 @@ install_first_time() {
 
 install_lazyvim() {
 	# Backup lazyvim
-	# - required
-	mv ~/.config/nvim ~/.config/nvim.bak
-	# - optional but recommended
-	mv ~/.local/share/nvim ~/.local/share/nvim.bak
-	mv ~/.local/state/nvim ~/.local/state/nvim.bak
-	mv ~/.cache/nvim ~/.cache/nvim.bak
+	# - only the first is  required; remains are  optional but recommended
+  for f in ~/.config/nvim  ~/.local/share/nvim ~/.local/state/nvim ~/.cache/nvim ; do
+     if [ -e $f ] ; then
+        echo mv $f $f.bak
+     fi
+  done
 
 	# link the lazyvim config
 	TARGET="$DIR/../../configs/lazynvim"
@@ -72,7 +73,9 @@ install_or_update_neovim_app() {
   curl -L -o ~/bin/$NAME https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
   chmod a+x ~/bin/$NAME
   for target in vim nvim; do
-    unlink ~/bin/$target
+    if [ -e ~/bin/$target ] ; then
+      unlink ~/bin/$target
+    fi
     ln -s ~/bin/$NAME ~/bin/$target
   done
 }
