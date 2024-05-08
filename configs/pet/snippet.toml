@@ -307,3 +307,8 @@
   description = "cprofile profiling debuggging"
   command = "python -m cProfile -s <sort_filed=time> -o <out_file=stat_out> <script=script.py>"
   output = ""
+
+[[snippets]]
+  description = "download with http.server in Python"
+  command = "python -m http.server --bind `hostname -I | awk '{print $1}'`"
+  output = ""
