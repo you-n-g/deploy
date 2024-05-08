@@ -13,8 +13,16 @@ if [ ! -e ~/miniconda3/ ]; then
     mkdir -p ~/tmp/
     cd ~/tmp/
     # wget https://repo.continuum.io/archive/Anaconda3-5.1.0-Linux-x86_64.sh -O Anaconda3-latest-Linux-x86_64.sh
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O Miniconda3-latest-Linux-x86_64.sh
-    sh Miniconda3-latest-Linux-x86_64.sh -b
+    # wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O Miniconda3-latest-Linux-x86_64.sh
+    # sh Miniconda3-latest-Linux-x86_64.sh -b
+
+    # NOTE:
+    # https://docs.anaconda.com/free/miniconda/miniconda-release-notes/#miniconda-23-10-0-1-nov-16-2023
+    # From Miniconda 23.10.0-1 (Nov 16, 2023)  The default solver has been changed to conda-libmamba-solver
+    # It does not work for me (even the solution https://stackoverflow.com/q/77617946/443311)
+    VERSION=py311_23.9.0-0
+    wget https://repo.anaconda.com/miniconda/Miniconda3-${VERSION}-Linux-x86_64.sh -O Miniconda3-${VERSION}-Linux-x86_64.sh
+    sh Miniconda3-${VERSION}-Linux-x86_64.sh -b
 fi
 
 export PATH="$HOME/anaconda3/bin:$HOME/miniconda3/bin:$PATH"
@@ -23,7 +31,10 @@ CONDA="$HOME/miniconda3/bin/conda"
 $CONDA init zsh
 $CONDA init bash
 
-$CONDA update --all -y
+# $CONDA update --all -y
+# I don't want to upgrade conda; Because 
+# - I didn't solve theee libmamba problem
+# - It will cause installation of jupyter  notebook extension installation failures
 
 
 # some
