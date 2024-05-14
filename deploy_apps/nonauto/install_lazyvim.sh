@@ -44,7 +44,7 @@ install_lazyvim() {
 }
 
 install_lazygit() {
-	APP_DIR="$HOME/app/lazygit"
+	APP_DIR="$HOME/apps/lazygit"
 	mkdir -p $APP_DIR
 	cd $APP_DIR
 	LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')

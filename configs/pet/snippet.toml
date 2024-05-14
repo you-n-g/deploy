@@ -30,12 +30,12 @@
 
 [[snippets]]
   description = "jupyter --ip 0.0.0.0"
-  command = "jupyter notebook --no-browser --port 9000 --ip 0.0.0.0"
+  command = "echo `hostname -I` && jupyter notebook --no-browser --port 9000 --ip 0.0.0.0"
   output = ""
 
 [[snippets]]
-  description = "jupyter --ip `hostname`"
-  command = "jupyter notebook --no-browser --port 9000 --ip `hostname` # You can not access 127.0.0.1 when binding hostname"
+  description = "jupyter --ip `hostname -I | awk '{print $1}'`"
+  command = "jupyter notebook --no-browser --port 9000 --ip `hostname -I | awk '{print $1}'` # You can not access 127.0.0.1 when binding hostname"
   output = ""
 
 [[snippets]]
@@ -60,7 +60,7 @@
 
 [[snippets]]
   description = "snakeviz"
-  command = "snakeviz -s -H `hostname` stats_out"
+  command = "snakeviz -s -H `hostname -I | awk '{print $1}'` stats_out"
   output = ""
 
 [[snippets]]
@@ -110,7 +110,7 @@
 
 [[snippets]]
   description = "start mlflow ui with long timeout"
-  command = "GUNICORN_CMD_ARGS='--timeout 120'  mlflow ui -h `hostname` -p <port=5000>"
+  command = "GUNICORN_CMD_ARGS='--timeout 120'  mlflow ui -h `hostname -I | awk '{print $1}'` -p <port=5000>"
   output = ""
 
 [[snippets]]
@@ -140,12 +140,12 @@
 
 [[snippets]]
   description = "Forward proxy"
-  command = "ssh xiaoyang@52.229.162.130 -L0.0.0.0:6489:0.0.0.0:6489  -D 0.0.0.0:8964"
+  command = "ssh xiaoyang@us.afeyoung.icu -L0.0.0.0:6489:0.0.0.0:6489  -D 0.0.0.0:8964"
   output = ""
 
 [[snippets]]
   description = "agedu"
-  command = "agedu --auth none -f agedu.dat -w --address 0.0.0.0:5432"
+  command = "agedu --auth none -f agedu.dat -w --address `hostname -I | awk '{print $1}'`:5432"
   output = ""
 
 [[snippets]]
@@ -155,7 +155,7 @@
 
 [[snippets]]
   description = "python minimal install after create conda env"
-  command = "pip install --user ipdb ipython neovim fire yapf pylint black"
+  command = "pip install --user ipdb ipython neovim fire yapf pylint black pipenv"
   output = ""
 
 [[snippets]]
@@ -250,7 +250,7 @@
 
 [[snippets]]
   description = "jupyter ascending prefix"
-  command = "export JUPYTER_ASCENDING_EXECUTE_PORT=9000"
+  command = "export JUPYTER_ASCENDING_EXECUTE_PORT=9000 # vim  # <space>rx <space>ren"
   output = ""
 
 [[snippets]]
@@ -261,6 +261,11 @@
 [[snippets]]
   description = "ascending suite (jupyter and vim)"
   command = "_JPORT=9011 ; JUPYTER_ASCENDING_EXECUTE_PORT=$_JPORT jupyter notebook --no-browser --port $_JPORT --ip 0.0.0.0  --NotebookApp.token='' --NotebookApp.password='' # JUPYTER_ASCENDING_EXECUTE_PORT=$_JPORT vim"
+  output = "This should  be 0.0.0.0 instead of ip address to enable local vim access"
+
+[[snippets]]
+  description = "jupyter ascending make pair"
+  command = "python -m jupyter_ascending.scripts.make_pair --base <project=jupyter>"
   output = ""
 
 [[snippets]]
@@ -311,4 +316,9 @@
 [[snippets]]
   description = "download with http.server in Python"
   command = "python -m http.server --bind `hostname -I | awk '{print $1}'`"
+  output = ""
+
+[[snippets]]
+  description = "add python path (only export &  same line command works)"
+  command = "export PYTHONPATH=$PYTHONPATH ; python -c 'import sys; print(sys.path)'"
   output = ""

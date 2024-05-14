@@ -15,16 +15,15 @@ snippet import "Import frequently used modules"
 	import pandas as pd
 	import matplotlib.pyplot as plt
 	import seaborn as sns
+
 	sns.set(color_codes=True)
 	plt.rcParams['font.sans-serif'] = 'SimHei'
 	plt.rcParams['axes.unicode_minus'] = False
 	from tqdm.cli import tqdm
 	# tqdm.pandas()  # for progress_apply
-	from IPython.core.getipython import get_ipython
-	IPY = get_ipython()
-	IPY.run_line_magic("matplotlib", "inline")
-	IPY.run_line_magic("load_ext", "autoreload")
-	# IPY.run_line_magic("autoreload", 1)
-	IPY.run_line_magic("load_ext", "autotime")
+	# %matplotlib inline
+	# %load_ext autoreload
+	# %autoreload 1
+	# %load_ext autotime
 	# this is to improve the UE of jupyter_ascending(the saving confliction is annoying)
 	# %autosave 0

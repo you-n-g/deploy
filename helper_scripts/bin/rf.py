@@ -61,10 +61,15 @@ def reduce_memory_usage(df):
 
 
 class ReadFile:
-    def pk(self, path):
+    def pk(self, path, e=False):
         with Path(path).open("rb") as f:
             obj = pickle.load(f)
         pprint(obj)
+        if e:
+            try:
+                __import__("objexplore").explore(obj)
+            except ImportError:
+                print("objexplore not installed")
 
     def v(self, path):
         """quick view"""

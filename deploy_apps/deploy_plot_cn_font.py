@@ -14,6 +14,17 @@ def run(cmd, output=False):
         return subprocess.call(cmd, shell=True)
 
 
+# If unzip command is not available, install it
+if run("which unzip", output=False) != 0:
+    print("unzip command not found. Installing unzip...")
+    run("sudo apt-get update", output=False)
+    if run("sudo apt-get install unzip -y", output=False):
+        print("unzip command installed successfully.")
+    else:
+        raise Exception("unzip command installation failed.")
+else:
+    print("unzip command is available.")
+
 conda_path = Path(run("which python", output=True))
 
 run("wget http://legionfonts.com/download/simhei -O /tmp/simhei.zip")
@@ -33,7 +44,6 @@ except ImportError:
     from matplotlib.font_manager import _load_fontmanager
 
     _load_fontmanager(try_read_cache=False)
-
 
 ## 使用
 # 在代码中需要用下面的方式指定字体

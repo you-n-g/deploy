@@ -35,11 +35,13 @@ conda install -y -c conda-forge python-cufflinks shellcheck
 # pip install mysqlclient  # for python3
 # pip install tensorboardX
 # conda install -y tensorboard
-pip install papermill ipdb nbresuse jupytext pdbpp
+pip install papermill ipdb nbresuse jupytext # pdbpp
 # - jupytext: 必须先安装再启动jupyter， 不然不会自动帮你保存py文件
 # - pdbpp: sticky 功能非常好用!!!!
+#   - NOTE: pdbpp is not compatible with jupyter debugging.
 
 conda install -y xlwt
+pip install openpyxl # for excel engine for pandas , xlrd is another choice
 
 conda install -c conda-forge -y jupyter_contrib_nbextensions
 # -  `jupyter nbconvert --to script` 这种命令需要它
