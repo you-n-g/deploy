@@ -29,6 +29,7 @@ function intall_zathura ()
 }
 
 function install_latexmk() {
+  # NOTE: This is the preferred solution(recommanded by offical repo).
   # this support continuous compilation
 	sudo apt install texlive-latex-extra -y
   conda install -y -c conda-forge latexmk  # this require latex

@@ -81,9 +81,17 @@ return {
   },
   {
     "lervag/vimtex",
+    -- NOTE: cheatsheets
+    -- Prequisites:
+    -- - You should create a main.tex file. I often use softlink
+    -- - Using `bibtex main` to compile `main.bib` to support more
+    -- Frequently used commands:
+    -- - <localleader>ll: to start (continuous) compiling.
+    -- - <localleader>lv: to view the compiled document.
+    --
     config = function ()
       -- vim.g.vimtex_compiler_method = "tectonic"
-      -- tectonic does not support continuous compilation
+      -- tectonic does not support continuous compilation; So we use the preferred compiler backend(latexmk).
 
       local function get_onedrive_path()
         local handle = io.popen([[cmd.exe /c echo %onedriveconsumer% 2> /dev/null | sed -e 's/C:/\\mnt\\c/g' | sed -e 's/\\/\//g' | tr -d '\r' | tr -d '\n']])
