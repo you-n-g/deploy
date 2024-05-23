@@ -75,12 +75,13 @@ local modules = {
         actions_paths = { action_path },
       }
       if vim.fn.has("win32") ~= 1 then
+        local fname = 'gpt.gpg'
         local api_base = vim.fn.system("gpg -q --decrypt " ..
-        vim.fn.expand("$HOME") .. "/deploy/keys/gpt4.gpg | sed -n 1p")
+          vim.fn.expand("$HOME") .. "/deploy/keys/".. fname .. " | sed -n 1p")
         local azure_engine = vim.fn.system("gpg -q --decrypt " ..
-        vim.fn.expand("$HOME") .. "/deploy/keys/gpt4.gpg | sed -n 2p")
+          vim.fn.expand("$HOME") .. "/deploy/keys/".. fname .. " | sed -n 2p")
         local api_key = vim.fn.system("gpg -q --decrypt " ..
-        vim.fn.expand("$HOME") .. "/deploy/keys/gpt4.gpg | sed -n 3p")
+          vim.fn.expand("$HOME") .. "/deploy/keys/".. fname .. " | sed -n 3p")
 
         vim.fn.execute("let $OPENAI_API_TYPE='azure'")
         vim.fn.execute("let $OPENAI_API_BASE='" .. api_base .. "'")
@@ -121,7 +122,8 @@ local modules = {
 }
 
 local extra_m = {
-  dir = "~/deploy/tools.py/simplegpt.nvim/",
+  -- dir = "~/deploy/tools.py/simplegpt.nvim/",
+  url = "git@github.com:you-n-g/simplegpt.nvim",
   dependencies = {
     "MunifTanjim/nui.nvim",
     "nvim-lua/plenary.nvim",
@@ -129,15 +131,18 @@ local extra_m = {
     "you-n-g/ChatGPT.nvim",
   },
   opts = {
+    new_tab = true,
     dialog = {
       -- I don't add `"<C-c>", "<esc>" ` due to that it can easily errorously quit the dialog
       exit_keys = { "q" },
+    },
+    tpl_conf = {
+      context_len = 20,
     }
   },
 }
 
-if vim.fn.isdirectory(vim.fn.expand(extra_m["dir"])) == 1 then
+if extra_m.dir == nil or vim.fn.isdirectory(vim.fn.expand(extra_m["dir"])) == 1 then
   table.insert(modules, extra_m)
 end
-
 return modules
