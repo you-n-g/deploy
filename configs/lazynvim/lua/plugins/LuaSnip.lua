@@ -14,7 +14,7 @@ return {
     -- - Config documents: https://github.com/L3MON4D3/LuaSnip/blob/master/DOC.md#loaders
     keys = {
       {
-        "<leader>sNn",
+        "<leader>sN",
         -- `only_sort_text=true` will only search text without filename
         -- https://github.com/nvim-telescope/telescope.nvim/issues/564
         -- [[:Telescope grep_string only_sort_text=true<cr>]],
@@ -29,7 +29,7 @@ return {
       },
       -- sNf to use telescope to select the right snippet file
       {
-        "<leader>sNf",
+        "<leader>fN",
         function()
           local search_path = vim.fn.expand("~/.config/nvim/luasnip_snippets")
           require'telescope.builtin'.find_files{ cwd = search_path }

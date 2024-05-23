@@ -163,90 +163,90 @@ return {
       })
     end,
   },
-  -- {
-  --   -- NOTE:
-  --   -- I need more;
-  --   -- - Line number
-  --   --    We may find alternatives here https://github.com/you-n-g/awesome-neovim?tab=readme-ov-file#marks
-  --   -- - Support ident for tracing
-  --   -- - Support note taking
-  --   -- A lot of people think it is not useful
-  --   -- - BufferLineTogglePin can create fix buffer: https://www.reddit.com/r/neovim/comments/1bh3npw/comment/kvdz1rr/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
-  --   "ThePrimeagen/harpoon",
-  --   branch = "harpoon2",
-  --   -- config = true,
-  --   -- config = { settings = { save_on_toggle = true } },
-  --   config=function ()
-  --     require("harpoon"):setup({settings = {save_on_toggle = true}})
-  --   end,
-  --   keys = {
-  --     {
-  --       "<leader>ha",
-  --       function()
-  --         require("harpoon"):list():append()
-  --       end,
-  --       mode = "n",
-  --       desc = "Append to Harpoon list",
-  --     },
-  --     {
-  --       -- "<leader>he",
-  --       "<m-h>",  -- <esc>h will also trigger this
-  --       function()
-  --         require("harpoon").ui:toggle_quick_menu(require("harpoon"):list())
-  --       end,
-  --       mode = "n",
-  --       desc = "Toggle Harpoon quick menu",
-  --     },
-  --     {
-  --       "<leader>h1",
-  --       function()
-  --         require("harpoon"):list():select(1)
-  --       end,
-  --       mode = "n",
-  --       desc = "Select first item in Harpoon list",
-  --     },
-  --     {
-  --       "<leader>h2",
-  --       function()
-  --         require("harpoon"):list():select(2)
-  --       end,
-  --       mode = "n",
-  --       desc = "Select second item in Harpoon list",
-  --     },
-  --     {
-  --       "<leader>h3",
-  --       function()
-  --         require("harpoon"):list():select(3)
-  --       end,
-  --       mode = "n",
-  --       desc = "Select third item in Harpoon list",
-  --     },
-  --     {
-  --       "<leader>h4",
-  --       function()
-  --         require("harpoon"):list():select(4)
-  --       end,
-  --       mode = "n",
-  --       desc = "Select fourth item in Harpoon list",
-  --     },
-  --     -- Toggle previous & next buffers stored within Harpoon list
-  --     {
-  --       "<leader>hh",
-  --       function()
-  --         require("harpoon"):list():prev()
-  --       end,
-  --       mode = "n",
-  --       desc = "Select previous buffer in Harpoon list",
-  --     },
-  --     {
-  --       "<leader>hl",
-  --       function()
-  --         require("harpoon"):list():next()
-  --       end,
-  --       mode = "n",
-  --       desc = "Select next buffer in Harpoon list",
-  --     },
-  --   },
-  --   dependencies = { "nvim-lua/plenary.nvim" },
-  -- },
+  {
+    -- NOTE:
+    -- I need more;
+    -- - Line number
+    --    We may find alternatives here https://github.com/you-n-g/awesome-neovim?tab=readme-ov-file#marks
+    -- - Support ident for tracing
+    -- - Support note taking
+    -- A lot of people think it is not useful
+    -- - BufferLineTogglePin can create fix buffer: https://www.reddit.com/r/neovim/comments/1bh3npw/comment/kvdz1rr/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+    "ThePrimeagen/harpoon",
+    branch = "harpoon2",
+    -- config = true,
+    -- config = { settings = { save_on_toggle = true } },
+    config=function ()
+      require("harpoon"):setup({settings = {save_on_toggle = true}})
+    end,
+    keys = {
+      {
+        "<leader>ha",
+        function()
+          require("harpoon"):list():append()
+        end,
+        mode = "n",
+        desc = "Append to Harpoon list",
+      },
+      {
+        -- "<leader>he",
+        "<m-h>",  -- <esc>h will also trigger this
+        function()
+          require("harpoon").ui:toggle_quick_menu(require("harpoon"):list())
+        end,
+        mode = "n",
+        desc = "Toggle Harpoon quick menu",
+      },
+      {
+        "<leader>h1",
+        function()
+          require("harpoon"):list():select(1)
+        end,
+        mode = "n",
+        desc = "Select first item in Harpoon list",
+      },
+      {
+        "<leader>h2",
+        function()
+          require("harpoon"):list():select(2)
+        end,
+        mode = "n",
+        desc = "Select second item in Harpoon list",
+      },
+      {
+        "<leader>h3",
+        function()
+          require("harpoon"):list():select(3)
+        end,
+        mode = "n",
+        desc = "Select third item in Harpoon list",
+      },
+      {
+        "<leader>h4",
+        function()
+          require("harpoon"):list():select(4)
+        end,
+        mode = "n",
+        desc = "Select fourth item in Harpoon list",
+      },
+      -- Toggle previous & next buffers stored within Harpoon list
+      {
+        "<leader>hh",
+        function()
+          require("harpoon"):list():prev()
+        end,
+        mode = "n",
+        desc = "Select previous buffer in Harpoon list",
+      },
+      {
+        "<leader>hl",
+        function()
+          require("harpoon"):list():next()
+        end,
+        mode = "n",
+        desc = "Select next buffer in Harpoon list",
+      },
+    },
+    dependencies = { "nvim-lua/plenary.nvim" },
+  },
 }

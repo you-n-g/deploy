@@ -35,3 +35,37 @@ snippet ifve "if a variable is empty"
 
 snippet date "get current datetime"
 	datetime=\`date "+%Y-%m-%d_%H:%M:%S"\`
+
+
+snippet tplexp "templates for experiments"
+	#!/bin/sh
+	
+	set -x # show command
+	set -e # Error on exception
+	
+	DIR="$(
+		cd "$(dirname "$(readlink -f "$0")")" || exit
+		pwd -P
+	)"
+	
+	# Go to the project name
+	DIR="`dirname $DIR`"
+	DIR="`dirname $DIR`"
+	
+	cd "$DIR" || return
+	
+	# Variables
+	# 1. Default Parameters
+	PY="python"
+	
+	# 2. Parameters from file
+	if [ -e $DIR/.env ]; then
+	  echo "Loading environment variables from $DIR/.env"
+	  source $DIR/.env
+	else
+	  echo "No .env file found"
+	fi
+	
+	# 3. experiments specific parameters in each function
+	
+	\$1 "${@:2}"  # pass the remain pawrameters
