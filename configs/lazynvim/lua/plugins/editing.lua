@@ -82,7 +82,7 @@ return {
   {
     "lervag/vimtex",
     -- NOTE: cheatsheets
-    -- Prequisites:
+    -- Prequisites(to be automated):
     -- - You should create a main.tex file. I often use softlink
     -- - Using `bibtex main` to compile `main.bib` to support more
     -- Frequently used commands:
@@ -123,6 +123,7 @@ return {
 --     autocmd Filetype tex let b:vimtex_main = 'main.tex'
 --   augroup END
 -- ]])
+      -- vim.g.vimtex_parser_bib_backend = "bibtex"  -- default value is `lua`, All of them do not work for me.
     end,
   },
 }
