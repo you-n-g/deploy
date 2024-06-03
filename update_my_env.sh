@@ -2,14 +2,29 @@
 
 set -x
 
+
+update_repo() {
+  if git diff-index --quiet HEAD --; then
+      echo "No uncommitted changes. Proceeding with git pull."
+      git pull
+  else
+      echo "Uncommitted changes detected. Stashing changes."
+      git stash push -m "Auto-stashed by deploy script"
+      echo "Pulling latest changes from remote."
+      git pull
+      echo "Applying stashed changes."
+      git stash pop
+  fi
+}
+
+
 cd ~/cheatsheets
-git pull
+update_repo
 git submodule update --init --recursive
 
 
 cd ~/deploy
-git pull
-
+update_repo
 cd ~/deploy/tools.py/
 ./install.sh
 

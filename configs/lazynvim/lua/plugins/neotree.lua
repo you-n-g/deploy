@@ -35,10 +35,12 @@ return {
 
       -- Add some extra features.
       -- opts.commands = vim.tbl_extend("force", opts.commands, {""})  -- to make it a named function.
-      -- Y is already mapped to copy_file_name, So we don't need to override it.
-      -- opts.window.mappings["YP"] = copy_path("P")
-      -- opts.window.mappings["Yp"] = copy_path("p")
-      -- opts.window.mappings["Yn"] = copy_path("n")
+      -- NOTE:
+      -- `Y` is already mapped to copy_file_name, So we don't need to override it.
+      -- But it does not work on my case. So I create a more comprehensive solution.
+      opts.window.mappings["YP"] = copy_path("P")
+      opts.window.mappings["Yp"] = copy_path("p")
+      opts.window.mappings["Yn"] = copy_path("n")
     end,
   },
 }
