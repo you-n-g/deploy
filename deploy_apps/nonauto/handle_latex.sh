@@ -33,6 +33,9 @@ function install_latexmk() {
   # this support continuous compilation
 	sudo apt install texlive-latex-extra -y
   conda install -y -c conda-forge latexmk  # this require latex
+  sudo apt install -y texlive
+  sudo apt install -y texlive-xetex  # some project requires `xelatex`
+  sudo apt install -y texlive-fonts-extra  # maybe it will support -fontawesome5?
 }
 
 function install_tectonic () {
