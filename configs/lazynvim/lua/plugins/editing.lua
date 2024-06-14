@@ -112,7 +112,9 @@ return {
       -- vim.g.vimtex_view_general_options = vim.fn.getcwd() .. "/main.pdf"
       -- -- strip the left "/mnt/c/" part in vim.g.vimtex_view_general_options if exists
       -- vim.g.vimtex_view_general_options = vim.g.vimtex_view_general_options:gsub("^/mnt/c", "")  -- the prefix / must be kept.
-      vim.g.vimtex_view_general_options = "-reuse-instance @pdf"  -- this will be much simpler than above methods
+      vim.g.vimtex_view_general_options = "-reuse-instance -forward-search @tex @line @pdf"  -- this will be much simpler than above methods
+      -- TODO: add `-forward-search @tex @line` before @pdf
+      -- NOTE: the path does not work. It only works after adding deploy/helper_scripts/bin/cygpath into the bin search path
 
       -- NOTE: set default to main.tex (We don't need this now)
       -- It seems that the vimtex will prompt you to make the choice. But it may affect `simplegpt.nvim` everytime when you create a buffer with specific type.
