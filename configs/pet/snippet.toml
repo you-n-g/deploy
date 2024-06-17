@@ -250,7 +250,7 @@
 
 [[snippets]]
   description = "jupyter ascending prefix"
-  command = "export JUPYTER_ASCENDING_EXECUTE_PORT=9000 # vim  # <space>rx <space>ren"
+  command = "export JUPYTER_ASCENDING_EXECUTE_PORT=9000 # vim  # space+rx space+ren"
   output = ""
 
 [[snippets]]

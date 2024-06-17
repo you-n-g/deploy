@@ -49,8 +49,8 @@ snippet tplexp "templates for experiments"
 	)"
 	
 	# Go to the project name
-	DIR="\`dirname $DIR\`"
-	DIR="\`dirname $DIR\`"
+	DIR="\`dirname \$DIR\`"
+	DIR="\`dirname \$DIR\`"
 	
 	cd "\$DIR" || return
 	
@@ -60,12 +60,26 @@ snippet tplexp "templates for experiments"
 	
 	# 2. Parameters from file
 	if [ -e \$DIR/.env ]; then
-	  echo "Loading environment variables from $DIR/.env"
-	  source $DIR/.env
+	  echo "Loading environment variables from \$DIR/.env"
+	  source \$DIR/.env
 	else
 	  echo "No .env file found"
 	fi
 	
 	# 3. experiments specific parameters in each function
+	_example() {
+	  # default 
+	  UBS_BT_RISK_AVERSION=40.
+	  OPTIND=1  # Reset OPTIND to 1 to handle multiple calls to getopts
+	  while getopts "r:" opt; do
+	    case \$opt in
+	      r) UBS_BT_RISK_AVERSION="\$OPTARG" ;;
+	      *) echo "Invalid option: -\$OPTARG" >&2; exit 1 ;;
+	    esac
+	  done
+	  export UBS_BT_RISK_AVERSION
 	
-	\$1 "${@:2}"  # pass the remain pawrameters
+	  \$PY scripts/a.py
+	}
+	
+	\$1 "\${@:2}"  # pass the remain pawrameters

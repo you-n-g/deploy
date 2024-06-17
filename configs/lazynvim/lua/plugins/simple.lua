@@ -183,10 +183,10 @@ return {
       {
         "<leader>ha",
         function()
-          require("harpoon"):list():append()
+          require("harpoon"):list():add()
         end,
         mode = "n",
-        desc = "Append to Harpoon list",
+        desc = "Add to Harpoon list",
       },
       {
         -- "<leader>he",

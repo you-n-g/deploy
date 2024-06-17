@@ -9,7 +9,7 @@ python -m pip install --user pipx
 python -m pipx ensurepath
 export PATH="$PATH:$HOME/.local/bin"
 pip install --user neovim pynvim
-for p in pipenv pre-commit ranger-fm yapf black copier virtualenv ; do
+for p in pipenv pre-commit ranger-fm yapf black copier virtualenv tldr; do
     # pipx will install things in user space
     pipx install $p
 done
@@ -51,7 +51,7 @@ conda install -c conda-forge -y pyarrow
 
 
 # 这些都是针对个人用户的， 别人安装了没有用
-jupyter contrib nbextension install --user
+jupyter contrib nbextension install  # --user
 
 for plg in toc2/main select_keymap/main execute_time/ExecuteTime scratchpad/main notify/notify codefolding/main collapsible_headings/main snippets/main
 do

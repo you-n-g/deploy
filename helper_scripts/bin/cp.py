@@ -49,7 +49,8 @@ class CP:
         """
         assert self.name is not None
         subprocess.run(f"conda create -y -n {self.name} python={self.py_ver}", shell=True)
-        subprocess.run(f"{self._act()}; sh ~/deploy/deploy_apps/install_fav_py_pack.sh", shell=True)
+        # NOTE: to be efficent, we don't install too much tools
+        # subprocess.run(f"{self._act()}; sh ~/deploy/deploy_apps/install_fav_py_pack.sh", shell=True)
 
     def check_env(self):
         res = subprocess.check_output(f"conda env list", shell=True)
@@ -84,7 +85,7 @@ class CP:
             )
 
             subprocess.run(
-                f"cd qlib && {self._act()} &&  pip install -e .",
+                f"cd qlib && {self._act()} &&  pip install -e '.[dev]'",
                 shell=True,
                 cwd=lib_path,
             )
