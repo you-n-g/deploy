@@ -9,8 +9,19 @@ path = sys.argv[-1]
 
 cur_path = os.getcwd()
 
+
+# It will run more things than expected;
+# ['/home/<user>/deploy/helper_scripts/bin/cygpath', '--version'] + /home/<user>/repos/CV
+# ['/home/<user>/deploy/helper_scripts/bin/cygpath', '-u', '/home/<user>/repos/CV'] + /home/<user>/repos/CV
+# ['/home/<user>/deploy/helper_scripts/bin/cygpath', '--version'] + /home/<user>/repos/CV
+# ['/home/<user>/deploy/helper_scripts/bin/cygpath', '-u', '/home/<user>/repos/CV'] + /home/<user>/repos/CV
+# ['/home/<user>/deploy/helper_scripts/bin/cygpath', '--version'] + /home/<user>/repos/CV
+# ['/home/<user>/deploy/helper_scripts/bin/cygpath', '-u', '/home/<user>/repos/CV'] + /home/<user>/repos/CV
+# with open("cmd.txt", "a") as f:
+#     f.write(f"{str(sys.argv)} + {cur_path}\n")
+
 # Get relative_path from `path` to `cur_path`
 relative_path = os.path.relpath(path, cur_path)
 print(relative_path)
 
-# python helper_scripts/bin/cygpath -aw /mnt/c/Users/xiaoyang/OneDrive/repos/CV/examples/cv.pdf
+# python helper_scripts/bin/cygpath -aw /mnt/c/Users/<user>/OneDrive/repos/CV/examples/cv.pdf
