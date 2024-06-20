@@ -172,6 +172,8 @@ return {
     -- - Support note taking
     -- A lot of people think it is not useful
     -- - BufferLineTogglePin can create fix buffer: https://www.reddit.com/r/neovim/comments/1bh3npw/comment/kvdz1rr/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+    -- NOTE: How I use it.
+    -- Orgnized it in the calling level.
     "ThePrimeagen/harpoon",
     branch = "harpoon2",
     -- config = true,
@@ -248,5 +250,12 @@ return {
       },
     },
     dependencies = { "nvim-lua/plenary.nvim" },
+  },
+  {
+    "ruifm/gitlinker.nvim",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+    },
+    config=true,
   },
 }

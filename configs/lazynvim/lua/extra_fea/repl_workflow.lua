@@ -158,6 +158,7 @@ end
 local config = {
   edit_before_send = false,
   goto_debug_when_fail = false,
+  load_env = true,
   doc_test = false,
   abs_path = true, -- should we use absolute path
 }

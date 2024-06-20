@@ -17,15 +17,37 @@ end
 vim.keymap.del({"n"}, "<leader>L")
 
 -- 拷贝当前buffer的相对路径
+-- # TODO: yp for relative path, yP for absolute path. Please implement it with a for loop
+local function copy_relative_path()
+  for _, reg in ipairs({ "\"", "1", "+" }) do
+    vim.fn.setreg(reg, vim.fn.expand("%"))
+  end
+  print("Relative path: " .. vim.fn.getreg("\""))
+end
+
+-- Function to copy the absolute path
+local function copy_absolute_path()
+  for _, reg in ipairs({ "\"", "1", "+" }) do
+    vim.fn.setreg(reg, vim.fn.expand("%:p"))
+  end
+  print("Absolute path: " .. vim.fn.getreg("\""))
+end
+
+-- Keymap for copying the relative path
 vim.keymap.set(
   "n",
   "yp",
-  function()
-    for _, reg in ipairs({ "\"", "1", "+" }) do
-      vim.fn.setreg(reg, vim.fn.expand("%"))
-    end
-    print(vim.fn.getreg("\""))
-end, { expr = false, noremap = true, desc = "Copy path to the clipboard" })
+  copy_relative_path,
+  { expr = false, noremap = true, desc = "Copy relative path to the clipboard" }
+)
+
+-- Keymap for copying the absolute path
+vim.keymap.set(
+  "n",
+  "yP",
+  copy_absolute_path,
+  { expr = false, noremap = true, desc = "Copy absolute path to the clipboard" }
+)
 
 
 -- this is usually useful when check the content in small window
