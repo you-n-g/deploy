@@ -50,8 +50,8 @@ local modules = {
   --      },
   --  },
   {
-    -- "jackMort/ChatGPT.nvim",
-    "you-n-g/ChatGPT.nvim",
+    "jackMort/ChatGPT.nvim",
+    -- "you-n-g/ChatGPT.nvim",
     branch = "main",
     event = "VeryLazy",
     config = function()
@@ -70,6 +70,12 @@ local modules = {
             use_output_as_input = "<c-a>", -- sw(a)p. <c-i> is expand as tab in my terminal
             -- yank_last = "<c-e>", -- accept , <c-y> is occupied by accept;  this does not work..
             -- accept = "<c-e>", -- this will not make yank_last work in <c-y>
+          },
+        },
+        popup_layout = {
+          center = {
+            width = "99%",
+            height = "99%",
           },
         },
         actions_paths = { action_path },

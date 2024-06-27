@@ -115,3 +115,4 @@ echo  "${RED} Maybe you still have to install zsh with conda ${NC}"
 
 # Cheatsheet系列
 ## ctrl+r ctrl+s 可以查找历史的命令，并且前后查询
+## vv 可以打开vim

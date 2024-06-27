@@ -158,12 +158,20 @@ end
 local config = {
   edit_before_send = false,
   goto_debug_when_fail = false,
-  load_env = true,
+  load_env = true, -- load_env before.
   doc_test = false,
   abs_path = true, -- should we use absolute path
 }
 
+--- Modify the command before sending it out
+---@param cmd 
 local function edit_before_send(cmd)
+  -- modify the config based on config
+  if config.load_env then
+    cmd = "dotenv run -- " .. cmd
+  end
+
+  -- involve human editing
   if config.edit_before_send then
     vim.ui.input({ prompt = "Edit before sending", default = cmd }, function(input)
       require("toggleterm").exec(input, tonumber(vim.g.toggleterm_last_id), 12)
@@ -193,9 +201,15 @@ end, { desc = "Using doctest for testing." })
 
 vim.keymap.set("n", "<leader>rca", function()
   --  toggle  config["edit_before_send"] between true and false
-  config["abs_path])"] = not config["abs_path])"]
-  P(config["abs_path])"])
+  config["abs_path"] = not config["abs_path"]
+  P(config["abs_path"])
 end, { desc = "Toggle Absolute Path." })
+
+vim.keymap.set("n", "<leader>rcl", function()
+  --  toggle  config["edit_before_send"] between true and false
+  config["load_env"] = not config["load_env"]
+  P(config["load_env"])
+end, { desc = "Toggle load env before sending." })
 
 -- Base class and methods
 
@@ -359,7 +373,7 @@ end
 function PythonREPL:run_script()
   local cmd = ""
   if config.goto_debug_when_fail then
-    cmd = "pypdb"
+    cmd = "python -m ipdb -c c "
   else
     cmd = "python"
   end
