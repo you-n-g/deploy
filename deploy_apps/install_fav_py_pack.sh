@@ -9,7 +9,8 @@ python -m pip install --user pipx
 python -m pipx ensurepath
 export PATH="$PATH:$HOME/.local/bin"
 pip install --user neovim pynvim
-for p in pipenv pre-commit ranger-fm yapf black copier virtualenv tldr; do
+# `pipenv virtualenv` are not installed in this way due to it should bind with a specific python env
+for p in pre-commit ranger-fm yapf black copier tldr; do
     # pipx will install things in user space
     pipx install $p
 done
