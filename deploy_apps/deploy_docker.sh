@@ -1,6 +1,6 @@
 #!/bin/bash
 
-curl -sSL https://get.docker.com/ | sudo -E sh
+# curl -sSL https://get.docker.com/ | sudo -E sh
 # -E for http_proxy
 
 #requirements.txt Ubuntu 14.04 安装之后可能无法立即访问docker的服务，需要把相应的用户加入docker组才行
@@ -15,7 +15,7 @@ curl -sSL https://get.docker.com/ | sudo -E sh
 
 
 # Install docker GPU
-'''
+cat << 'EOF'
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
 
 echo $distribution
@@ -45,4 +45,4 @@ sudo systemctl restart docker
 
 # Reference
 # - https://blog.csdn.net/weixin_43975924/article/details/104046790
-'''
+EOF
