@@ -1,7 +1,9 @@
 #!/bin/sh
 
 # usage
-# sudo bash create_user.sh user1 user2
+# sudo bash create_user.sh -u user1,user2 -d
+# - creating users
+# - and add docker permission
 
 if [ `whoami` != root ]; then
   echo Please run this script as root or using sudo
@@ -23,7 +25,7 @@ while getopts ":dku:" opt; do
         SKIP_CREATE_USER=true
         ;;
         u)
-        echo "user list: $OPTARG" >&2
+        echo "User list: $OPTARG" >&2
         USER_LIST=$OPTARG
         ;;
         \?)
@@ -56,8 +58,15 @@ add_docker_perm() {
     echo "Docker is not installed, skipping docker permission for user $1"
   fi
 }
+if [ -z "$USER_LIST" ]; then
+  echo "No user list provided"
+  exit 1
+fi
 
-for u in "$USER_LIST" ; do
+IFS=',' read -r -a user_array <<< "$USER_LIST"
+
+for u in "${user_array[@]}" ; do
+    echo $u    
     if [ $SKIP_CREATE_USER = false ]; then
       echo "Creating user $u"
       create_user $u
