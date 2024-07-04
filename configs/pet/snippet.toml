@@ -149,8 +149,8 @@
   output = ""
 
 [[snippets]]
-  description = "install favorate package"
-  command = "sh ~/deploy/deploy_apps/install_fav_py_pack.sh"
+  description = "install favorite package"
+  command = "bash ~/deploy/deploy_apps/install_fav_py_pack.sh"
   output = ""
 
 [[snippets]]

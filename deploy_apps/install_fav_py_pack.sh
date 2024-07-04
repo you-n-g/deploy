@@ -32,26 +32,24 @@ done
 # TODO: extract following system-wide dependencies to the above section.
 
 # install some essential scripts
-# conda install -y tensorflow-gpu keras-gpu
-conda install -y pandas matplotlib ipywidgets scikit-learn seaborn # some software we should reinstall if we recreate a new environment
-conda install -y -c conda-forge python-cufflinks shellcheck
-# sudo apt-get install -y libmysqlclient-dev  # https://stackoverflow.com/a/5178698
-# pip install mysqlclient  # for python3
-# pip install tensorboardX
-# conda install -y tensorboard
-pip install ipdb nbresuse jupytext # pdbpp
+conda install -y xlwt pandas matplotlib ipywidgets scikit-learn seaborn  # some software we should reinstall if we recreate a new environment
+conda install -y -c conda-forge shellcheck pyarrow
+pip install ipdb openpyxl
 # - jupytext: 必须先安装再启动jupyter， 不然不会自动帮你保存py文件
-# - pdbpp: sticky 功能非常好用!!!!
-#   - NOTE: pdbpp is not compatible with jupyter debugging.
+# openpyxl # for excel engine for pandas , xlrd is another choice
 
-conda install -y xlwt
-pip install openpyxl # for excel engine for pandas , xlrd is another choice
 
+# ## Outlines: for development & configuration
+
+pip install autopep8 better_exceptions ipython-autotime fire pylint debugpy objexplore nose ipdbplugin 
+if [[ ! -e ~/.pdbrc.py ]]; then
+  ln -s ~/deploy/configs/python/pdbrc.py ~/.pdbrc.py
+fi
+
+# Jupyter
+conda install -y notebook==6.4.12   # NOTE: Only the older version of jupyter supporting extensions.
 conda install -c conda-forge -y jupyter_contrib_nbextensions
 # -  `jupyter nbconvert --to script` 这种命令需要它
-
-conda install -c conda-forge -y pyarrow
-# - this is for supporting parquet (data format decoupled with code and env)
 
 jupyter contrib nbextension install
 
@@ -59,9 +57,7 @@ for plg in toc2/main select_keymap/main execute_time/ExecuteTime scratchpad/main
   jupyter nbextension enable $plg
 done
 
-# ## Outlines: for development & configuration
-pip install autopep8 better_exceptions ipython-autotime fire pylint debugpy objexplore
-# ruff-lsp #  ruff-lsp only give warnings and does not provide docs. So it can't replace pyright.
+pip install nbresuse jupytext 
 
 # candidates packages
 # - https://github.com/tartley/colorama
@@ -72,17 +68,12 @@ FILE_P=$DIR_P/snippets.json
 rm "$FILE_P"
 ln -s ~/deploy/configs/jupyter/snippets.json "$FILE_P"
 
-if [[ ! -e ~/.pdbrc.py ]]; then
-  ln -s ~/deploy/configs/python/pdbrc.py ~/.pdbrc.py
-fi
 
 cd ~/deploy/
 python deploy_apps/deploy_plot_cn_font.py
 
 sh deploy_apps/set_jupyter_pwd.sh
 
-# 一般常用的软件
-pip install nose ipdbplugin
 
 # jupyter_ascending.vim
 pip install jupyter_ascending
@@ -111,3 +102,17 @@ jupyter serverextension enable jupyter_ascending --sys-prefix --py
 # ## Outlines: Deprecated packages:
 # - conda:  ipyparallel
 # - pip: papermill
+
+# Others:
+# conda install -y tensorflow-gpu keras-gpu
+# sudo apt-get install -y libmysqlclient-dev  # https://stackoverflow.com/a/5178698
+# pip install mysqlclient  # for python3
+# pip install tensorboardX
+# conda install -y tensorboard
+#
+# ruff-lsp #  ruff-lsp only give warnings and does not provide docs. So it can't replace pyright.
+
+# - pdbpp: sticky 功能非常好用!!!!
+#   - NOTE: pdbpp is not compatible with jupyter debugging.
+#
+# python-cufflinks # I rarely use such complex plot package now.
