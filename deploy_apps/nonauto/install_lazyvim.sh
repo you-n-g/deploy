@@ -86,8 +86,9 @@ merge_previous_config() {
 }
 
 deploy() {
-  # https://askubuntu.com/a/1451171
-  sudo apt-get install libfuse2
+  sudo apt-get install libfuse2 xsel
+  # - libfuse2: https://askubuntu.com/a/1451171
+  # - xsel: https://github.com/tmux-plugins/tmux-yank to support copying in tmux and the system clipboard
 
   # nodejs is necessary for language servers
   deploy_apps/deploy_nodejs.sh

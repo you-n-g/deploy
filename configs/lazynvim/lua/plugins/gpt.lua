@@ -96,11 +96,15 @@ local modules = {
       end
       require("chatgpt").setup(opts)
       -- config whick key with ["<leader><tab>"] = { name = "+tabs & windows" },
-      require("which-key").register({
-        ["<leader>"] = {
-          ["G"] = { name = "ChatGPT" },
-        },
+      -- require("which-key").register({
+      --   ["<leader>"] = {
+      --     ["G"] = { name = "ChatGPT" },
+      --   },
+      -- })
+      require("which-key").add({
+        { "<leader>G", group="ChatGPT" },
       })
+           
     end,
     dependencies = {
       "MunifTanjim/nui.nvim",
@@ -123,6 +127,7 @@ local modules = {
       { "<leader>jt", "<cmd>ChatGPTRun translate<cr>",                     mode = { "n", "x" }, desc = "Translate", },
       { "<leader>jL", function() P(require "chatgpt.api".last_params) end, mode = { "n", "x" }, desc = "Last call parameter", },
       { "<leader>jC", set_context,                                         mode = { "n", "x" }, desc = "set context(up)", },
+      -- { "<leader>G", group="ChatGPT" },  -- TODO: why this does not work
     },
   },
 }
