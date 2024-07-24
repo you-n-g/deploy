@@ -322,3 +322,13 @@
   description = "add python path (only export &  same line command works)"
   command = "export PYTHONPATH=$PYTHONPATH ; python -c 'import sys; print(sys.path)'"
   output = ""
+
+[[snippets]]
+  description = "run docker"
+  command = "docker run -it --rm <image=XXX_Repo:XXX_tag> /bin/bash"
+  output = ""
+
+[[snippets]]
+  description = "build sphinx and watch changes"
+  command = "sphinx-autobuild docs docs/_build/html  --host `hostname -I | awk '{print $1}'`"
+  output = ""
