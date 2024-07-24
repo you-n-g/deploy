@@ -2,6 +2,7 @@
 """
 Quick review files content.
 """
+from collections import defaultdict
 from pathlib import Path
 import pickle
 from pprint import pprint
@@ -64,12 +65,16 @@ class ReadFile:
     def pk(self, path, e=False):
         with Path(path).open("rb") as f:
             obj = pickle.load(f)
-        pprint(obj)
         if e:
+            if isinstance(obj, defaultdict):
+                # defaultdict does not work well with objexplore
+                obj = dict(obj)
             try:
-                __import__("objexplore").explore(obj)
+                __import__("objexplore").explore(dict(obj))
             except ImportError:
                 print("objexplore not installed")
+        else:
+            pprint(obj)
 
     def v(self, path):
         """quick view"""

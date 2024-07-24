@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # usage
-# sudo bash create_user.sh -u user1,user2 -d
+# sudo bash helper_scripts/SA/create_user.sh -u user1,user2 -d -b /data/userdata/
 # - creating users
 # - and add docker permission
 
@@ -14,7 +14,8 @@ fi
 ADD_DOCKER_PERM=false
 SKIP_CREATE_USER=false
 USER_LIST=""
-while getopts ":dku:" opt; do
+BASE_DIR="/home"
+while getopts ":dku:b:" opt; do
     case $opt in
         d)
         echo "Adding docker perm" >&2
@@ -28,6 +29,10 @@ while getopts ":dku:" opt; do
         echo "User list: $OPTARG" >&2
         USER_LIST=$OPTARG
         ;;
+        b)
+        echo "Base directory: $OPTARG" >&2
+        BASE_DIR=$OPTARG
+        ;;
         \?)
         echo "Invalid option: -$OPTARG" >&2
         exit 1
@@ -39,9 +44,10 @@ while getopts ":dku:" opt; do
     esac
 done
 
+
 create_user() {
   # Create a user with a random password
-  useradd -m -s /bin/bash $1
+  useradd -m -b $BASE_DIR -s /bin/bash $1
   password=$(openssl rand -base64 14)
   echo "${1}:${password}" | chpasswd
   
