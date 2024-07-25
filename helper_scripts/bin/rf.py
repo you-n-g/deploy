@@ -70,7 +70,7 @@ class ReadFile:
                 # defaultdict does not work well with objexplore
                 obj = dict(obj)
             try:
-                __import__("objexplore").explore(dict(obj))
+                __import__("objexplore").explore(obj)
             except ImportError:
                 print("objexplore not installed")
         else:
