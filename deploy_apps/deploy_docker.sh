@@ -3,44 +3,45 @@
 set -x
 # TODO: we have one thing you have to confirm
 
-if [ `whoami` != root ]; then
-  echo Please run this script as root or using sudo
-  exit
+if [ `whoami` != root ] && ! groups `whoami` | grep -q '\bdocker\b'; then
+  echo "Please run this script as root or as a user in the docker group"
+  exit 1
 fi
 
-sudo apt-get update
-sudo apt-get install ca-certificates curl
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
+deploy() {
+  sudo apt-get update
+  sudo apt-get install ca-certificates curl
+  sudo install -m 0755 -d /etc/apt/keyrings
+  sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  sudo chmod a+r /etc/apt/keyrings/docker.asc
 
-# Add the repository to Apt sources:
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt-get update
-
-
-sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  # Add the repository to Apt sources:
+  echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  sudo apt-get update
 
 
-# curl -sSL https://get.docker.com/ | sudo -E sh
-# -E for http_proxy
-
-#requirements.txt Ubuntu 14.04 安装之后可能无法立即访问docker的服务，需要把相应的用户加入docker组才行
-# http://stackoverflow.com/questions/33562109/docker-command-cant-connect-to-docker-daemon
-# 总之当前用户必须在docker组里(通过newgrp或者重新登录都行)，重启docker
+  sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 
-# on 12.04
-# if it report
-# FATA[0000] Shutting down daemon due to errors: Error loading docker apparmor profile: exit status 1 (Feature buffer full.)
-# sudo apt-get install -y apparmor
+  # curl -sSL https://get.docker.com/ | sudo -E sh
+  # -E for http_proxy
+
+  #requirements.txt Ubuntu 14.04 安装之后可能无法立即访问docker的服务，需要把相应的用户加入docker组才行
+  # http://stackoverflow.com/questions/33562109/docker-command-cant-connect-to-docker-daemon
+  # 总之当前用户必须在docker组里(通过newgrp或者重新登录都行)，重启docker
 
 
-# Install docker GPU
-cat << 'EOF'
+  # on 12.04
+  # if it report
+  # FATA[0000] Shutting down daemon due to errors: Error loading docker apparmor profile: exit status 1 (Feature buffer full.)
+  # sudo apt-get install -y apparmor
+
+
+  # Install docker GPU
+  cat << 'EOF'
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
 
 echo $distribution
@@ -71,3 +72,34 @@ sudo systemctl restart docker
 # Reference
 # - https://blog.csdn.net/weixin_43975924/article/details/104046790
 EOF
+}
+
+clear_docker() {
+  # TODO: clear stopped containers
+  docker container prune -f
+}
+
+move_docker() { 
+  # Stop Docker service
+  sudo systemctl stop docker
+
+  # Create the new Docker data directory
+  sudo mkdir -p /data/docker
+
+  # Move existing Docker data to the new directory
+  sudo rsync -aP /var/lib/docker/ /data/docker/
+
+  # Backup the old Docker data directory
+  sudo mv /var/lib/docker /var/lib/docker.bak
+
+  # Create a symbolic link to the new Docker data directory
+  sudo ln -s /data/docker /var/lib/docker
+
+  # Start Docker service
+  sudo systemctl start docker
+
+  echo "Docker data has been moved to /data/docker and Docker service has been restarted."
+}
+
+
+$@
