@@ -168,7 +168,7 @@ local config = {
 local function edit_before_send(cmd)
   -- modify the config based on config
   if config.load_env then
-    cmd = "dotenv run -- " .. cmd
+    cmd = "mydotenv.sh " .. cmd
   end
 
   -- involve human editing

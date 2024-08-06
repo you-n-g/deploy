@@ -330,5 +330,5 @@
 
 [[snippets]]
   description = "build sphinx and watch changes"
-  command = "sphinx-autobuild docs docs/_build/html  --host `hostname -I | awk '{print $1}'`"
+  command = "sphinx-autobuild docs docs/_build/html  --host `hostname -I | awk '{print $1}'` --watch ."
   output = ""
