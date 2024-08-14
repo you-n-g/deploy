@@ -20,3 +20,8 @@ fzm = "!git ls-files -m --exclude-standard | fzf --print0 -m | xargs -0 -t -r gi
 # Ref: https://spin.atomicobject.com/2018/04/05/fuzzy-find-git-add/
 [pull]
 	rebase = true
+[credential]
+	helper = /usr/local/bin/git-credential-manager
+	credentialStore = gpg
+[credential "https://dev.azure.com"]
+	useHttpPath = true

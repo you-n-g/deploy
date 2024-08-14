@@ -62,6 +62,7 @@ snippet tplexp "templates for experiments"
 	if [ -e \$DIR/.env ]; then
 	  echo "Loading environment variables from \$DIR/.env"
 	  source \$DIR/.env
+	  # export $(grep -v '^#' \$DIR/.env | xargs)  # sometimes only this will work
 	else
 	  echo "No .env file found"
 	fi

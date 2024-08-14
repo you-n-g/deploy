@@ -15,3 +15,20 @@ if [ -e $CONF_PATH ]; then
 fi
 
 ln -s ~/deploy/configs/git/gitconfig $CONF_PATH
+
+
+
+# Config fir git-credential-manager
+cd ~/tmp/
+wget https://github.com/git-ecosystem/git-credential-manager/releases/download/v2.5.1/gcm-linux_amd64.2.5.1.deb
+
+sudo dpkg -i gcm-linux_amd64.2.5.1.deb
+# git-credential-manager configure  # this is saved in my config rc
+git config --global credential.credentialStore gpg
+
+sudo apt-get install -y pass
+
+# `gpg --gen-key` to create a key
+# command like `pass init "xiaoyang <xiaoyang@microsoft.com>"`
+# then you can clone devops repository
+# you can use `gpg -d  <path to *.gpg>` to use the credential.
