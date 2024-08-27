@@ -81,6 +81,8 @@ chmod a+x ./deploy_apps/*
 ./tools.py/install.sh
 ./deploy_apps/nonauto/install_lazyvim.sh deploy
 
+sudo ./deploy_apps/set_code.sh
+
 cat <<EOF
 Maybe the following things should be done mannually
 - Install tpm

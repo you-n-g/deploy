@@ -22,6 +22,7 @@ class OpenReviewPaper(scrapy.Item):
     id = scrapy.Field()  # url
     title = scrapy.Field()
     abstract = scrapy.Field()
-    keywords = scrapy.Field()
+    keywords = scrapy.Field(required=False)
     rating = scrapy.Field(serializer=list, required=False)
     source = scrapy.Field()
+    venue = scrapy.Field(required=False)

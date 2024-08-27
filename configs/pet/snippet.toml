@@ -270,7 +270,7 @@
 
 [[snippets]]
   description = "create a project from Python project template based on copier"
-  command = "copier gh:huxuan/serious-scaffold-python <project_path>"
+  command = "copier copy gh:serious-scaffold/ss-python <project_path>  # pipx install copier==9.3.1 # you must install the right version of copier"
   output = ""
 
 [[snippets]]
@@ -285,7 +285,7 @@
 
 [[snippets]]
   description = "create new Python project from scaffold (suppose you have already create the github project)"
-  command = "git init && git add . && make dev && make pre-commit && git commit -a -m \"Init from serious-scaffold-python.\" && git remote add origin git@github.com:you-n-g/<project>.git && git branch -M main  && git push -u origin main --no-verify"
+  command = "git init && make prerequisites && pdm lock && make dev && git remote add origin git@github.com:you-n-g/<project>.git && git branch -M main && git add . && git commit -a -m \"Init from serious-scaffold-python.\" && git push -u origin main --no-verify"
   output = ""
 
 [[snippets]]
