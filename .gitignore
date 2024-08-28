@@ -8,3 +8,4 @@ configs/lazynvim/.neoconf.json
 configs/lazynvim/.luarc.json
 *.pyc
 tools.py/watcher/watcher/*.json
+log/

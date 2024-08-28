@@ -32,9 +32,10 @@ data_w_tags = from_json()
 for p in tqdm(data):
     for d in data_w_tags:
         if d["id"] == p["id"]:
-            continue
-    resp = APIBackend().build_messages_and_create_chat_completion(user_prompt=user_prompt.r(title=p['title'], abstract=p['abstract']), system_prompt=system_prompt.r(), json_mode=True)
-    p_w_tag = p.copy()
-    p_w_tag['tags'] = json.loads(resp)['tags']
-    data_w_tags.append(p_w_tag)
-    to_json(data_w_tags)
+            break
+    else:
+        resp = APIBackend().build_messages_and_create_chat_completion(user_prompt=user_prompt.r(title=p['title'], abstract=p['abstract']), system_prompt=system_prompt.r(), json_mode=True)
+        p_w_tag = p.copy()
+        p_w_tag['tags'] = json.loads(resp)['tags']
+        data_w_tags.append(p_w_tag)
+        to_json(data_w_tags)
