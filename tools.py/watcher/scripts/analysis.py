@@ -8,11 +8,11 @@ import json
 with data_path.open("r") as f:
     data = json.load(f)
 
-from IPython import embed; embed()
 
 for d in data:
     for t in d["tags"]:
-        d[f"tag/{t['tag']}"] = t["reason"]
+        if t["relevant"]:
+            d[f"tag/{t['tag']}"] = t["reason"]
     del d["tags"]
 
 import pandas as pd
@@ -21,14 +21,20 @@ df = pd.DataFrame(data)
 df.head()
 df.columns
 
-.sum()
 
-relavent = (~(df["tag/Agent"].isna() | df["tag/LLM"].isna()))
+relevant = (~(df["tag/Agent"].isna() | df["tag/LLM"].isna()))
 spotlight = (df["venue"] == "Spotlight")
+rl = ~df["tag/RL"].isna()
 
-(relavent & spotlight).sum()
+print((relevant).sum())
+print((relevant & ~rl).sum())
 
-df[relavent & spotlight].to_excel(DIRNAME / "data_spotlight.xlsx")
+print((relevant & ~rl & spotlight).sum())
+
+print((relevant & spotlight).sum())
+
+df[relevant & spotlight].to_excel(DIRNAME / "data_spotlight.xlsx")
 
 
-df.to_excel(DIRNAME / "data.xlsx")
+print((relevant & (~rl | spotlight)).sum())
+df[relevant & (~rl | spotlight)].to_excel(DIRNAME / "data.xlsx")

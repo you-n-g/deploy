@@ -26,7 +26,7 @@ def from_json():
     if p.exists():
         with p.open("r") as f:
             return json.load(f)
-    return  []
+    return []
 
 data_w_tags = from_json()
 for p in tqdm(data):

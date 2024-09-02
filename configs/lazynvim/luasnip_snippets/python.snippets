@@ -27,3 +27,19 @@ snippet import "Import frequently used modules"
 	# %load_ext autotime
 	# this is to improve the UE of jupyter_ascending(the saving confliction is annoying)
 	# %autosave 0
+
+snippet jsonld "json load and dump"
+	from pathlib import Path
+	DIRNAME = Path(__file__).absolute().resolve().parent
+	FILE = DIRNAME.parent / "data.json"
+	
+	def to_json(data):
+	    with FILE.open("w") as f:
+	        json.dump(data, f)
+	
+	def from_json(default={}):
+	    p = FILE
+	    if p.exists():
+	        with p.open("r") as f:
+	            return json.load(f)
+	    return default
