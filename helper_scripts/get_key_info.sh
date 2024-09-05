@@ -28,6 +28,11 @@ get_hw_info() {
 }
 
 
+get_glibc_info() {
+  ldd --version
+}
+
+
 get_performance_info() {
     sudo apt-get -y install fio
     # reading performance

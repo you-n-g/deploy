@@ -80,6 +80,27 @@ install_or_update_neovim_app() {
   done
 }
 
+build_from_source() {
+  # For legacy system with glibc 2.27, we have to build from source
+  # - https://www.reddit.com/r/neovim/comments/1cxdf1i/nvim_appimagerelease_tarballs_not_working_on/
+  # this for vim with old version.
+  sudo apt-get install -y gettext
+  APP_PATH=~/apps/nvim-source
+  mkdir -p $APP_PATH
+  cd ~/apps/nvim-source
+  wget https://github.com/neovim/neovim/archive/refs/tags/stable.tar.gz
+  tar xf stable.tar.gz
+  cd neovim-stable
+  make CMAKE_BUILD_TYPE=RelWithDebInfo CMAKE_INSTALL_PREFIX=$APP_PATH
+  make install
+  for target in vim nvim; do
+    if [ -e ~/bin/$target ] ; then
+      unlink ~/bin/$target
+    fi
+    ln -s $APP_PATH/bin/nvim ~/bin/$target
+  done
+}
+
 merge_previous_config() {
 	# TODO: link previous snippets
 	echo TODO
