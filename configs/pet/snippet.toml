@@ -332,3 +332,8 @@
   description = "build sphinx and watch changes"
   command = "sphinx-autobuild docs docs/_build/html  --host `hostname -I | awk '{print $1}'` --watch ."
   output = ""
+
+[[snippets]]
+  description = "remove pre-commmit when pushing"
+  command = "pre-commit uninstall --hook-type pre-push"
+  output = ""
