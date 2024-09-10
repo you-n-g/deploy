@@ -34,8 +34,13 @@ local function auto_virtual_env()
   local basename = vim.fn.fnamemodify(path, ":t")
   if vim.fn.filereadable("~/.virtualenvs/debugpy-" .. basename .. "/bin/python") ~= 1 then
     vim.fn.system("mkdir -p ~/.virtualenvs")
-    vim.fn.system("cd ~/.virtualenvs && python -m venv --system-site-packages debugpy-" ..
-      basename .. " && debugpy-" .. basename .. "/bin/python -m pip install debugpy")
+    vim.fn.system(
+      "cd ~/.virtualenvs && python -m venv --system-site-packages debugpy-"
+        .. basename
+        .. " && debugpy-"
+        .. basename
+        .. "/bin/python -m pip install debugpy"
+    )
   end
 end
 
@@ -72,10 +77,10 @@ return {
                   -- TODO: select args in neovim
                   args = {},
                   -- console = "integratedTerminal", -- This is very important. Otherwise, the stdin will mixed with std in...And the program will get stuck at the stdin.
-                                                  -- https://github.com/mfussenegger/nvim-dap/discussions/430
+                  -- https://github.com/mfussenegger/nvim-dap/discussions/430
                   console = "externalTerminal",
                   justMyCode = true,
-                  subProcess = false  -- Very important for multiprocessing performance ; "subProcess": false means that child processes spawned by the process you're debugging will not be automatically debugged.
+                  subProcess = false, -- NOTE: Very important for multiprocessing performance ; "subProcess": false means that child processes spawned by the process you're debugging will not be automatically debugged.
                 },
               },
             }
@@ -117,15 +122,39 @@ return {
         -- require('dap-python').setup('~/.virtualenvs/debugpy/bin/python')
 
         require("dap.ext.vscode").load_launchjs()
-        local dap = require('dap')
+        local dap = require("dap")
         dap.defaults.fallback.external_terminal = {
-          command = os.getenv("HOME") .. '/deploy/helper_scripts/bin/tmux_cli.sh',
+          command = os.getenv("HOME") .. "/deploy/helper_scripts/bin/tmux_cli.sh",
           -- command = "/bin/bash",
           -- args = {'-e'};
         }
+
+        for _, d in ipairs(require("dap").configurations.python) do
+          -- NOTE: very important for performance if you are not interested in the subProcess!!!
+          d["subProcess"] = false
+        end
       end,
     },
     -- NOTE: cheatsheet
     -- - good shortcuts: o(open file for breakpoints/frame...)
+  },
+  {
+    "theHamsta/nvim-dap-virtual-text",
+    opts = {
+      display_callback = function(variable, buf, stackframe, node, options)
+        -- by default, strip out new line characters
+        if options.virt_text_pos == "inline" then
+          -- NOTE: only keep the first and last 40 characters if its length exeeds 80
+          local value = variable.value:gsub("%s+", " ")
+          -- Only keep the first and last 40 characters if its length exceeds 80
+          if #value > 80 then
+            value = value:sub(1, 40) .. " <..omitted content..> " .. value:sub(-40)
+          end
+          return " = " .. value:gsub("%s+", " ")
+        else
+          return variable.name .. " = " .. variable.value:gsub("%s+", " ")
+        end
+      end,
+    },
   },
 }

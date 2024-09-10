@@ -78,7 +78,7 @@ return {
       -- this does not work...
       -- automatic_installation = false, --{ exclude = { "debugpy" } },
       -- automatic_installation = false, -- this works
-      automatic_installation = { exclude = { "python" } }, -- this works
+      automatic_installation = { exclude = { "python" } }, -- this works;  It disable auto-config python and enable the config of "mfussenegger/nvim-dap-python" in "lua/plugins/nvim-dap.lua"
       -- So, it is language specific.
     },
   },
