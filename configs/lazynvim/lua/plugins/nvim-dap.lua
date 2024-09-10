@@ -47,97 +47,97 @@ end
 -- local py_path =
 return {
   {
-    "mfussenegger/nvim-dap",
-    dependencies = {
-      -- NOTE:
-      -- Bad cases:
-      --   - Python Debuger is much slower than normal running
-      --     - It may be caused by joblib
-      --     - When it comes to multiprocessing, it is even slower.
-      --   - I tried a lot... But I fail to make the performance efficent enough
-      --   - So insert ipdb breakpoints is a better choice when performance affect much
-      "mfussenegger/nvim-dap-python",
-      keys = {
-        {
-          "<leader>dG",
-          function()
-            local config = {
-              configurations = {
-                {
-                  name = "vscode json launcher",
-                  type = "python",
-                  request = "launch",
-                  cwd = vim.fn.getcwd(),
-                  -- '${workspaceFolder}' looks good too.
-                  python = get_python_path(),
-                  stopOnEntry = true,
-                  -- console = "externalTerminal",
-                  debugOptions = {},
-                  program = vim.fn.expand("%:p"),
-                  -- TODO: select args in neovim
-                  args = {},
-                  -- console = "integratedTerminal", -- This is very important. Otherwise, the stdin will mixed with std in...And the program will get stuck at the stdin.
-                  -- https://github.com/mfussenegger/nvim-dap/discussions/430
-                  console = "externalTerminal",
-                  justMyCode = true,
-                  subProcess = false, -- NOTE: Very important for multiprocessing performance ; "subProcess": false means that child processes spawned by the process you're debugging will not be automatically debugged.
-                },
+    -- NOTE:
+    -- Bad cases:
+    --   - Python Debuger is much slower than normal running
+    --     - It may be caused by joblib
+    --     - When it comes to multiprocessing, it is even slower.
+    --   - I tried a lot... But I fail to make the performance efficent enough
+    --   - So insert ipdb breakpoints is a better choice when performance affect much
+    "mfussenegger/nvim-dap-python",
+    -- dependencies = {
+    --   "mfussenegger/nvim-dap",
+    -- },
+    keys = {
+      {
+        "<leader>dG",
+        function()
+          local config = {
+            configurations = {
+              {
+                name = "vscode json launcher",
+                type = "python",
+                request = "launch",
+                cwd = vim.fn.getcwd(),
+                -- '${workspaceFolder}' looks good too.
+                python = get_python_path(),
+                stopOnEntry = true,
+                -- console = "externalTerminal",
+                debugOptions = {},
+                program = vim.fn.expand("%:p"),
+                -- TODO: select args in neovim
+                args = {},
+                -- console = "integratedTerminal", -- This is very important. Otherwise, the stdin will mixed with std in...And the program will get stuck at the stdin.
+                -- https://github.com/mfussenegger/nvim-dap/discussions/430
+                console = "externalTerminal",
+                justMyCode = true,
+                subProcess = false, -- NOTE: Very important for multiprocessing performance ; "subProcess": false means that child processes spawned by the process you're debugging will not be automatically debugged.
               },
-            }
-            -- NOTE: this does not work...
-            -- - config["configurations"][1]["justMyCode#json"] = "${justMyCode:true}"
-            -- - For stopping on uncaught exception: please refer to `require'dap'.set_exception_breakpoints()`
+            },
+          }
+          -- NOTE: this does not work...
+          -- - config["configurations"][1]["justMyCode#json"] = "${justMyCode:true}"
+          -- - For stopping on uncaught exception: please refer to `require'dap'.set_exception_breakpoints()`
 
-            -- dump `config` to a json file
-            local json = vim.fn.json_encode(config)
-            vim.fn.mkdir(".vscode", "p") -- create .vscode dir if not exists
+          -- dump `config` to a json file
+          local json = vim.fn.json_encode(config)
+          vim.fn.mkdir(".vscode", "p") -- create .vscode dir if not exists
 
-            local ok, file = pcall(io.open, ".vscode/launch.json", "w")
-            if ok and file ~= nil then
-              file:write(json)
-              file:close()
-              print("Generated .vscode/launch.json")
-              vim.cmd("edit .vscode/launch.json")
-            else
-              print("Error writing to file: " .. file)
-            end
-          end,
-          mode = "n",
-          desc = "Generate .vscode/launch.json",
-        },
-        {
-          "<leader>dL",
-          "<cmd>lua require'osv'.launch({port=8086})<cr>",
-          mode = "n",
-          desc = "Launch neovim server",
-        },
+          local ok, file = pcall(io.open, ".vscode/launch.json", "w")
+          if ok and file ~= nil then
+            file:write(json)
+            file:close()
+            print("Generated .vscode/launch.json")
+            vim.cmd("edit .vscode/launch.json")
+          else
+            print("Error writing to file: " .. file)
+          end
+        end,
+        mode = "n",
+        desc = "Generate .vscode/launch.json",
       },
-      config = function()
-        -- auto_install_debugpy()
-        -- require("dap-python").setup(get_python_path())
-        auto_virtual_env()
-        require("dap-python").setup(get_venv_python_path())
-
-        -- Following the guideline in homepage does not necessarily work
-        -- require('dap-python').setup('~/.virtualenvs/debugpy/bin/python')
-
-        require("dap.ext.vscode").load_launchjs()
-        local dap = require("dap")
-        dap.defaults.fallback.external_terminal = {
-          command = os.getenv("HOME") .. "/deploy/helper_scripts/bin/tmux_cli.sh",
-          -- command = "/bin/bash",
-          -- args = {'-e'};
-        }
-
-        for _, d in ipairs(require("dap").configurations.python) do
-          -- NOTE: very important for performance if you are not interested in the subProcess!!!
-          d["subProcess"] = false
-        end
-      end,
+      {
+        "<leader>dL",
+        "<cmd>lua require'osv'.launch({port=8086})<cr>",
+        mode = "n",
+        desc = "Launch neovim server",
+      },
     },
-    -- NOTE: cheatsheet
-    -- - good shortcuts: o(open file for breakpoints/frame...)
+    config = function()
+      -- auto_install_debugpy()
+      -- require("dap-python").setup(get_python_path())
+      auto_virtual_env()
+      require("dap-python").setup(get_venv_python_path())
+
+      -- Following the guideline in homepage does not necessarily work
+      -- require('dap-python').setup('~/.virtualenvs/debugpy/bin/python')
+
+      require("dap.ext.vscode").load_launchjs()
+      local dap = require("dap")
+      dap.defaults.fallback.external_terminal = {
+        command = os.getenv("HOME") .. "/deploy/helper_scripts/bin/tmux_cli.sh",
+        -- command = "/bin/bash",
+        -- args = {'-e'};
+      }
+
+      for _, d in ipairs(require("dap").configurations.python) do
+        -- NOTE: very important for performance if you are not interested in the subProcess!!!
+        d["subProcess"] = false
+      end
+    end,
   },
+  -- NOTE: cheatsheet
+  -- - good shortcuts: o(open file for breakpoints/frame...)
   {
     "theHamsta/nvim-dap-virtual-text",
     opts = {
@@ -156,5 +156,6 @@ return {
         end
       end,
     },
+    lazy=true,
   },
 }

@@ -81,13 +81,13 @@ local modules = {
         actions_paths = { action_path },
       }
       if vim.fn.has("win32") ~= 1 then
-        local fname = 'gpt.gpg'
-        local api_base = vim.fn.system("gpg -q --decrypt " ..
-          vim.fn.expand("$HOME") .. "/deploy/keys/".. fname .. " | sed -n 1p")
-        local azure_engine = vim.fn.system("gpg -q --decrypt " ..
-          vim.fn.expand("$HOME") .. "/deploy/keys/".. fname .. " | sed -n 2p")
-        local api_key = vim.fn.system("gpg -q --decrypt " ..
-          vim.fn.expand("$HOME") .. "/deploy/keys/".. fname .. " | sed -n 3p")
+        local fname = "gpt.gpg"
+        local api_base =
+          vim.fn.system("gpg -q --decrypt " .. vim.fn.expand("$HOME") .. "/deploy/keys/" .. fname .. " | sed -n 1p")
+        local azure_engine =
+          vim.fn.system("gpg -q --decrypt " .. vim.fn.expand("$HOME") .. "/deploy/keys/" .. fname .. " | sed -n 2p")
+        local api_key =
+          vim.fn.system("gpg -q --decrypt " .. vim.fn.expand("$HOME") .. "/deploy/keys/" .. fname .. " | sed -n 3p")
 
         vim.fn.execute("let $OPENAI_API_TYPE='azure'")
         vim.fn.execute("let $OPENAI_API_BASE='" .. api_base .. "'")
@@ -102,9 +102,8 @@ local modules = {
       --   },
       -- })
       require("which-key").add({
-        { "<leader>G", group="ChatGPT" },
+        { "<leader>G", group = "ChatGPT" },
       })
-           
     end,
     dependencies = {
       "MunifTanjim/nui.nvim",
@@ -113,20 +112,57 @@ local modules = {
     },
     keys = {
       -- it costs money, so G is used..
-      { "<leader>Gt", "<cmd>ChatGPT<cr>",                                  mode = { "n", "x" }, desc = "Toggle GPT" },
-      { "<leader>Gg", "<cmd>ChatGPTRun grammar_correction<cr>",            mode = { "n", "x" }, desc = "Fix Grammar" },
-      { "<leader>Gc", "<cmd>ChatGPTCompleteCode<cr>",                      mode = { "n", "x" }, desc = "Code Complete" },
-      { "<leader>Gr", ":ChatGPTRun ",                                      mode = { "n", "x" }, desc = "GPT Run" },
-      { "<leader>Ga", "<cmd>ChatGPTActAs<cr>",                             mode = { "n", "x" }, desc = "GPT Act As" },
-      { "<leader>Ge", "<cmd>ChatGPTEditWithInstructions<cr>",              mode = { "n", "x" }, desc = "GPT Instruct Edit" },
+      { "<leader>Gt", "<cmd>ChatGPT<cr>", mode = { "n", "x" }, desc = "Toggle GPT" },
+      { "<leader>Gg", "<cmd>ChatGPTRun grammar_correction<cr>", mode = { "n", "x" }, desc = "Fix Grammar" },
+      {
+        "<leader>Gc",
+        "<cmd>ChatGPTCompleteCode<cr>",
+        mode = { "n", "x" },
+        desc = "Code Complete",
+      },
+      { "<leader>Gr", ":ChatGPTRun ", mode = { "n", "x" }, desc = "GPT Run" },
+      { "<leader>Ga", "<cmd>ChatGPTActAs<cr>", mode = { "n", "x" }, desc = "GPT Act As" },
+      {
+        "<leader>Ge",
+        "<cmd>ChatGPTEditWithInstructions<cr>",
+        mode = { "n", "x" },
+        desc = "GPT Instruct Edit",
+      },
       -- Quick actions
-      { "<leader>jp", "<cmd>ChatGPTRun grammar_paper<cr>",                 mode = { "n", "x" }, desc = "Fix Grammar(paper)", },
-      { "<leader>js", "<cmd>ChatGPTRun grammar_simple_fix<cr>",            mode = { "n", "x" }, desc = "Fix Grammar(simple)", },
-      { "<leader>jr", "<cmd>ChatGPTRun grammar_rewrite<cr>",               mode = { "n", "x" }, desc = "Rewrite", },
-      { "<leader>jc", "<cmd>ChatGPTRun continue_writing<cr>",              mode = { "n", "x" }, desc = "Continue writing", },
-      { "<leader>jt", "<cmd>ChatGPTRun translate<cr>",                     mode = { "n", "x" }, desc = "Translate", },
-      { "<leader>jL", function() P(require "chatgpt.api".last_params) end, mode = { "n", "x" }, desc = "Last call parameter", },
-      { "<leader>jC", set_context,                                         mode = { "n", "x" }, desc = "set context(up)", },
+      {
+        "<leader>jp",
+        "<cmd>ChatGPTRun grammar_paper<cr>",
+        mode = { "n", "x" },
+        desc = "Fix Grammar(paper)",
+      },
+      {
+        "<leader>js",
+        "<cmd>ChatGPTRun grammar_simple_fix<cr>",
+        mode = { "n", "x" },
+        desc = "Fix Grammar(simple)",
+      },
+      { "<leader>jr", "<cmd>ChatGPTRun grammar_rewrite<cr>", mode = { "n", "x" }, desc = "Rewrite" },
+      {
+        "<leader>jc",
+        "<cmd>ChatGPTRun continue_writing<cr>",
+        mode = { "n", "x" },
+        desc = "Continue writing",
+      },
+      { "<leader>jt", "<cmd>ChatGPTRun translate<cr>", mode = { "n", "x" }, desc = "Translate" },
+      {
+        "<leader>jL",
+        function()
+          P(require("chatgpt.api").last_params)
+        end,
+        mode = { "n", "x" },
+        desc = "Last call parameter",
+      },
+      {
+        "<leader>jC",
+        set_context,
+        mode = { "n", "x" },
+        desc = "set context(up)",
+      },
       -- { "<leader>G", group="ChatGPT" },  -- TODO: why this does not work
     },
   },
@@ -149,8 +185,9 @@ local extra_m = {
     },
     tpl_conf = {
       context_len = 20,
-    }
+    },
   },
+  event = "VeryLazy", -- greatly boost the initial of neovim
 }
 
 if extra_m.dir == nil or vim.fn.isdirectory(vim.fn.expand(extra_m["dir"])) == 1 then
