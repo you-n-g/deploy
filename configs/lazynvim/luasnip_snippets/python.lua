@@ -18,7 +18,7 @@ local c = ls.choice_node
 -- local postfix = require("luasnip.extras.postfix").postfix
 
 return {
-    s("pwd", f(function(args) return "python " .. vim.fn.expand("%") .. " " .. require("yx/plugs/run_func").get_current_function_name() end, {})),
+    s("pwd", f(function(args) return "python " .. vim.fn.expand("%") .. " " .. require("extra_fea/repl_workflow").get_current_function_name() end, {})),
     s("dirn", {
         t("from pathlib import Path"),
         t({"", "DIRNAME = Path(__file__).absolute().resolve().parent", ""}),

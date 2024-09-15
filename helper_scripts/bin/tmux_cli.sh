@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # tmux new-window -n 'ExtermanlConsole'  "$@"
 # - the terminal will disappear after running if I use this
@@ -9,7 +9,22 @@
 
 
 # It will exit when the command is done; plesse keep it;
-tmux new-window -n 'ExtermanlConsole'  "$@"
+# tmux new-window -n 'ExtermanlConsole'  "bash /home/xiaoyang/deploy/helper_scripts/bin//mydotenv.sh"
+# tmux new-window -n 'ExtermanlConsole'  "bash /home/xiaoyang/deploy/helper_scripts/bin//mydotenv.sh bash a.sh"
+
+# tmux new-window -n 'ExtermanlConsole'  "mydotenv.sh $@" # will not work directly.
+# tmux new-window -n ExtermanlConsole "mydotenv.sh bash a.sh"  # success
+CMD_ARRAY=("mydotenv.sh" "$@")
+# echo "${CMD_ARRAY[@]}" > arg.log
+tmux new-window -n ExtermanlConsole "${CMD_ARRAY[@]}" # success with bash a.sh
+# NOTE: please refer to `cheatsheets/language/shell/syntax.sh` for more details
+
+# Q: What is the difference between?
+# 1)
+# tmux new-window -n 'ExtermanlConsole'  "mydotenv.sh $@"  # will not work directly.
+# 2)
+# CMD_ARRAY=("mydotenv.sh" "$@")
+# tmux new-window -n ExtermanlConsole "${CMD_ARRAY[@]}" # success with bash a.sh
 
 
 # # Check if the window 'ExtermanlConsole' exists

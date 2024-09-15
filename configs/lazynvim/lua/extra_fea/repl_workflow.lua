@@ -154,6 +154,8 @@ local function get_current_function_name(find_cls, sep)
   return cls_name .. sep .. func_name
 end
 
+M.get_current_function_name = get_current_function_name
+
 -- Configs
 local config = {
   edit_before_send = false,
