@@ -24,7 +24,7 @@ end
 local function get_venv_python_path()
   local path = vim.fn.expand("$CONDA_PREFIX")
   local basename = vim.fn.fnamemodify(path, ":t")
-  return "~/.virtualenvs/debugpy-" .. basename .. "/bin/python"
+  return os.getenv("HOME") .. "/.virtualenvs/debugpy-" .. basename .. "/bin/python"
 end
 
 local function auto_virtual_env()
@@ -133,11 +133,12 @@ return {
       auto_virtual_env()  -- this is very slow
       require("dap-python").setup(get_venv_python_path())
       -- require("dap.ext.vscode").load_launchjs() -- it seems that vscode json is loaded elsewhere
-
       for _, d in ipairs(require("dap").configurations.python) do
         -- NOTE: very important for performance if you are not interested in the subProcess!!!
         d["subProcess"] = false
+        d["python"] = get_venv_python_path()  -- I'm not sure why `require("dap-python").setup` does not work well.
       end
+      -- P(require("dap").configurations.python)
     end,
     -- event = "VeryLazy", -- you have to configure it if no other trigger. Otherwise config will only be triggered by keymapping
   },

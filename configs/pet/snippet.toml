@@ -337,3 +337,13 @@
   description = "remove pre-commmit when pushing"
   command = "pre-commit uninstall --hook-type pre-push"
   output = ""
+
+[[snippets]]
+  description = "vim git sign show diff files"
+  command = "Gitsigns diffthis ~1"
+  output = ""
+
+[[snippets]]
+  description = "vim git sign show change base commit"
+  command = "Gitsigns change_base ~1"
+  output = ""
