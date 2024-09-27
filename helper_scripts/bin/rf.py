@@ -62,9 +62,18 @@ def reduce_memory_usage(df):
 
 
 class ReadFile:
-    def pk(self, path, e=False):
+    def _auto_load(self, path):
+        for f in [self._pkl, self._hdf]:
+            try:
+                return f(path)
+            except Exception as e:
+                print(f"{f.__name__} failed: {e}")
+
+    def _pkl(self, path):
         with Path(path).open("rb") as f:
-            obj = pickle.load(f)
+            return pickle.load(f)
+
+    def _inspect(self, obj, e=False):
         if e:
             if isinstance(obj, defaultdict):
                 # defaultdict does not work well with objexplore
@@ -74,18 +83,27 @@ class ReadFile:
             except ImportError:
                 print("objexplore not installed")
         else:
-            pprint(obj)
+            if isinstance(obj, pd.DataFrame):
+                print(obj.head())
+                print(f"{obj.shape=}")
+            else:
+                pprint(obj)
 
-    def v(self, path):
+    def _hdf(self, path):
         """quick view"""
         for k in [None, "data"]:
             try:
-                df = pd.read_hdf(path, key=k)
-                print(df.head())
-                print(f"{df.shape=}")
-                return
+                return pd.read_hdf(path, key=k)
             except KeyError:
                 print(f"key={k} not found")
+
+    def auto(self, path, e=False):
+        obj = self._auto_load(path)
+        self._inspect(obj, e)
+
+    def pk(self, path, e=False):
+        obj = self._pkl(path)
+        self._inspect(obj, e)
 
     def df_conv(self, file):
         """

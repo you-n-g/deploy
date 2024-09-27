@@ -347,3 +347,8 @@
   description = "vim git sign show change base commit"
   command = "Gitsigns change_base ~1"
   output = ""
+
+[[snippets]]
+  description = "export source"
+  command = "export $(grep -v '^#' <env-file=.env> | xargs)"
+  output = ""

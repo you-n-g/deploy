@@ -137,6 +137,7 @@ return {
         -- NOTE: very important for performance if you are not interested in the subProcess!!!
         d["subProcess"] = false
         d["python"] = get_venv_python_path()  -- I'm not sure why `require("dap-python").setup` does not work well.
+        d["console"] = "externalTerminal" -- for supporting mydotenv.sh
       end
       -- P(require("dap").configurations.python)
     end,

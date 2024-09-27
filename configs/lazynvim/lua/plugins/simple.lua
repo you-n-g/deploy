@@ -258,4 +258,7 @@ return {
     },
     config=true,
   },
+  -- {
+  --   "powerman/vim-plugin-AnsiEsc"
+  -- }
 }
