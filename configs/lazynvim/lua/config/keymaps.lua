@@ -16,6 +16,8 @@ end
 -- disable map("n", "<leader>L", Util.changelog, {desc = "LazyVim Changelog"})
 vim.keymap.del({"n"}, "<leader>L")
 
+vim.keymap.del({"t"}, "<esc><esc>")  -- We may use vim in the terminal.
+
 -- 拷贝当前buffer的相对路径
 -- # TODO: yp for relative path, yP for absolute path. Please implement it with a for loop
 local function copy_relative_path()
