@@ -352,3 +352,8 @@
   description = "export source"
   command = "export $(grep -v '^#' <env-file=.env> | xargs)"
   output = ""
+
+[[snippets]]
+  description = "unset $DISPLAY; So some CLI tools will work more correctly without calling X server"
+  command = "unset $DISPLAY"
+  output = ""

@@ -13,9 +13,9 @@ set -x # I still have a lot of issue about this script. So make it more verbose.
 python -m pip install # this will trigger unexpected behaviour in ss-python
 python -m pipx ensurepath
 export PATH="$PATH:$HOME/.local/bin"
-pip install --user neovim pynvim
+pip install --user neovim pynvim tldr
 # `pipenv virtualenv` are not installed in this way due to it should bind with a specific python env
-for p in pre-commit ranger-fm yapf black copier tldr wanot; do
+for p in pre-commit ranger-fm yapf black copier wanot; do
   # pipx will install things in user space
   pipx install $p
 done

@@ -23,7 +23,7 @@ snippet ife "if file exists"
 		fi
 
 snippet EOF "EOF(usually for comments)"
-	cat << EOF
+	cat << "EOF" > /dev/null
 	${1:Comments}
 	EOF
 
