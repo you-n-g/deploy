@@ -310,6 +310,16 @@ function pipenvd() {
     exit
 }
 
+function pdma() {
+    tmux setenv pdm_env 1  # this must come before
+    pdm run $SHELL
+}
+
+function pdmd() {
+    tmux setenv -r pdm_env
+    exit
+}
+
 
 # # Outlines: 准备删掉的
 

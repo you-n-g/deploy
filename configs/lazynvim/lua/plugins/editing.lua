@@ -117,6 +117,11 @@ return {
       -- NOTE: the path does not work. It only works after adding deploy/helper_scripts/bin/cygpath into the bin search path
       vim.g.vimtex_view_general_options = "-reuse-instance @pdf"  --It seems the path to @tex can't be rightly handled. So we skip them
 
+      -- NOTE: hack!!!!  add "hack" to the $PATH environment to make it successfully to run cygpath
+      vim.env.PATH = vim.env.HOME .. '/deploy/helper_scripts/bin/hack' .. ':' .. vim.env.PATH
+      -- local h = io.popen([[cygpath -w test test]])
+      -- h:read("*a")
+
       -- NOTE: set default to main.tex (We don't need this now)
       -- It seems that the vimtex will prompt you to make the choice. But it may affect `simplegpt.nvim` everytime when you create a buffer with specific type.
 --       vim.cmd([[

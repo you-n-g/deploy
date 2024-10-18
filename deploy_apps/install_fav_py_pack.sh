@@ -10,12 +10,12 @@ set -x # I still have a lot of issue about this script. So make it more verbose.
 # # Outlines: user-wise instead of environment-wise dependencies
 
 # python -m pip install --user pipx
-python -m pip install # this will trigger unexpected behaviour in ss-python
+python -m pip install pipx # this will trigger unexpected behaviour in ss-python
 python -m pipx ensurepath
 export PATH="$PATH:$HOME/.local/bin"
 pip install --user neovim pynvim tldr
 # `pipenv virtualenv` are not installed in this way due to it should bind with a specific python env
-for p in pre-commit ranger-fm yapf black copier wanot; do
+for p in pre-commit ranger-fm yapf black copier wanot pdm; do
   # pipx will install things in user space
   pipx install $p
 done

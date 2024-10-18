@@ -355,5 +355,5 @@
 
 [[snippets]]
   description = "unset $DISPLAY; So some CLI tools will work more correctly without calling X server"
-  command = "unset $DISPLAY"
+  command = "unset DISPLAY"
   output = ""

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """
 This is for hacking the vimtex on WLS to be able to open pdf directly.
+
+FIXME: this will affact program like `pdm` 
 """
 # print("cv.pdf")
 import os
