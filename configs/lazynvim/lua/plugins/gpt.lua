@@ -81,18 +81,7 @@ local modules = {
         actions_paths = { action_path },
       }
       if vim.fn.has("win32") ~= 1 then
-        local fname = "gpt.gpg"
-        local api_base =
-          vim.fn.system("gpg -q --decrypt " .. vim.fn.expand("$HOME") .. "/deploy/keys/" .. fname .. " | sed -n 1p")
-        local azure_engine =
-          vim.fn.system("gpg -q --decrypt " .. vim.fn.expand("$HOME") .. "/deploy/keys/" .. fname .. " | sed -n 2p")
-        local api_key =
-          vim.fn.system("gpg -q --decrypt " .. vim.fn.expand("$HOME") .. "/deploy/keys/" .. fname .. " | sed -n 3p")
-
-        vim.fn.execute("let $OPENAI_API_TYPE='azure'")
-        vim.fn.execute("let $OPENAI_API_BASE='" .. api_base .. "'")
-        vim.fn.execute("let $OPENAI_API_AZURE_ENGINE='" .. azure_engine .. "'")
-        vim.fn.execute("let $OPENAI_API_KEY='" .. api_key .. "'")
+        require"extra_fea.utils".export_cred_env()
       end
       require("chatgpt").setup(opts)
       -- config whick key with ["<leader><tab>"] = { name = "+tabs & windows" },
@@ -166,6 +155,62 @@ local modules = {
       -- { "<leader>G", group="ChatGPT" },  -- TODO: why this does not work
     },
   },
+
+  {
+    "yetone/avante.nvim",
+    event = "VeryLazy",
+    lazy = false,
+    version = false, -- set this if you want to always pull the latest change
+    -- opts = {
+    --   -- add any opts here
+    -- },
+    opts = function(_, opts)
+      local cred = require("extra_fea.utils").get_cred()
+      opts["provider"] = "azure"
+      opts["azure"] = {
+        endpoint = cred.api_base, -- example: "https://<your-resource-name>.openai.azure.com"
+        deployment = cred.azure_deployment, -- Azure deployment name (e.g., "gpt-4o", "my-gpt-4o-deployment")
+      }
+      vim.env.AZURE_OPENAI_API_KEY = cred.api_key
+    end,
+    -- if you want to build from source then do `make BUILD_FROM_SOURCE=true`
+    build = "make",
+    -- build = "powershell -ExecutionPolicy Bypass -File Build.ps1 -BuildFromSource false" -- for windows
+    dependencies = {
+      "nvim-treesitter/nvim-treesitter",
+      "stevearc/dressing.nvim",
+      "nvim-lua/plenary.nvim",
+      "MunifTanjim/nui.nvim",
+      --- The below dependencies are optional,
+      "nvim-tree/nvim-web-devicons", -- or echasnovski/mini.icons
+      "zbirenbaum/copilot.lua", -- for providers='copilot'
+      {
+        -- support for image pasting
+        "HakonHarnes/img-clip.nvim",
+        event = "VeryLazy",
+        opts = {
+          -- recommended settings
+          default = {
+            embed_image_as_base64 = false,
+            prompt_for_file_name = false,
+            drag_and_drop = {
+              insert_mode = true,
+            },
+            -- required for Windows users
+            use_absolute_path = true,
+          },
+        },
+      },
+      {
+        -- Make sure to set this up properly if you have lazy=true
+        'MeanderingProgrammer/render-markdown.nvim',
+        opts = {
+          file_types = { "markdown", "Avante" },
+        },
+        ft = { "markdown", "Avante" },
+      },
+    },
+  }
 }
 
 local extra_m = {
