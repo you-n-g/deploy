@@ -117,6 +117,8 @@ return {
         mode = "n",
         desc = "Launch neovim server",
       },
+      { "<leader>dO", function() require("dap").step_out() end, desc = "Step Out" },
+      { "<leader>do", function() require("dap").step_over() end, desc = "Step Over" },
     },
     config = function()
       local dap = require("dap")

@@ -107,7 +107,7 @@ merge_previous_config() {
 }
 
 deploy() {
-  sudo apt-get install libfuse2 xsel
+  sudo apt-get install -y libfuse2 xsel
   # - libfuse2: https://askubuntu.com/a/1451171
   # - xsel: https://github.com/tmux-plugins/tmux-yank to support copying in tmux and the system clipboard
   #   MobaXterm can support bi-directional clipboard between remote and local

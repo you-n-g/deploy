@@ -58,8 +58,8 @@ vim.keymap.set("n", "<leader><tab>b", function()
 
   vim.api.nvim_open_win(bufnr, true, {
     relative = "editor",
-    width = math.floor(0.8 * vim.o.columns),
-    height = math.floor(0.8 * vim.o.lines),
+    width = math.floor(0.99 * vim.o.columns),
+    height = math.floor(0.99 * vim.o.lines),
     row = math.floor(0.1 * vim.o.lines),
     col = math.floor(0.1 * vim.o.columns),
     border = "single",
@@ -74,6 +74,9 @@ vim.api.nvim_set_keymap(
   -- [[:Telescope grep_string only_sort_text=true<cr>]],
   [[:lua require'telescope.builtin'.grep_string{ shorten_path = true, word_match = "-w", only_sort_text = false, search = '' }<cr>]],
   { expr = false, noremap = true, desc = "Search All!" }
+  -- NOTE:
+  -- <leader>sg/G uses live_grep, which will strictly search the word and not fuzzy enough.
+  -- We prefer this grep_string when we fail to sG/g
 )
 
 

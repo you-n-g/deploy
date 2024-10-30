@@ -116,4 +116,14 @@ return {
   --   },
   --   dependencies = { "nvim-lua/plenary.nvim" },
   -- },
+
+  -- 有一种脱了裤子放屁的感觉...
+  -- { 
+  --   "RutaTang/quicknote.nvim",
+  --   config=function()
+  --     -- you must call setup to let quicknote.nvim works correctly
+  --     require("quicknote").setup({})
+  --   end,
+  --   dependencies = { "nvim-lua/plenary.nvim"}
+  -- },
 }
