@@ -18,17 +18,18 @@ Here is an example of `nav.md`
 ]]
 local conf = {
   keymap = {
-    ["nav_mode"] = {
+    nav_mode = {
       next = "<tab>",
       prev = "<s-tab>",
-      open = "<cr>",
+      open = "<m-cr>",
+      switch_back = "<m-h>",
       _tmp_ = {
         append_link = "a",
       },
     },
     add = "<localleader>na",
     open_nav = "<m-h>",
-  }
+  },
 }
 
 local M = {
@@ -39,11 +40,14 @@ local M = {
 local api = vim.api
 local nav_md_file = "nav.md"
 
-
 local file_line_pattern = "`([^:`]+):?(%d*)`"
 
 -- Function to return all {line_number, start_pos, end_pos} in appearing order
 local function get_all_matched(content)
+  if content == nil then
+    content = table.concat(api.nvim_buf_get_lines(0, 0, -1, false), "\n")
+  end
+
   local matches = {}
   local line_number = 1
 
@@ -52,8 +56,10 @@ local function get_all_matched(content)
     local start_pos, end_pos = 0, 0
     while true do
       start_pos, end_pos = string.find(line, file_line_pattern, end_pos + 1)
-      if not start_pos then break end
-      table.insert(matches, {line_number, start_pos - 1, end_pos - 1}) -- -1 to align with the (0, 1) based pos
+      if not start_pos then
+        break
+      end
+      table.insert(matches, { line_number, start_pos - 1, end_pos - 1 }) -- -1 to align with the (0, 1) based pos
     end
     line_number = line_number + 1
   end
@@ -78,27 +84,27 @@ local function navigate_to_next(reverse)
     for i = #matches, 1, -1 do
       local match = matches[i]
       if match[1] < cursor_pos[1] or match[1] == cursor_pos[1] and cursor_pos[2] > match[3] then
-        api.nvim_win_set_cursor(0, {match[1], match[2]})
+        api.nvim_win_set_cursor(0, { match[1], match[2] })
         found = true
         break
       end
     end
 
     if not found then
-      api.nvim_win_set_cursor(0, {matches[#matches][1], matches[#matches][2]})
+      api.nvim_win_set_cursor(0, { matches[#matches][1], matches[#matches][2] })
     end
   else
     -- Find the next match
     for _, match in ipairs(matches) do
       if match[1] > cursor_pos[1] or match[1] == cursor_pos[1] and cursor_pos[2] < match[2] then
-        api.nvim_win_set_cursor(0, {match[1], match[2]})
+        api.nvim_win_set_cursor(0, { match[1], match[2] })
         found = true
         break
       end
     end
 
     if not found then
-      api.nvim_win_set_cursor(0, {matches[1][1], matches[1][2]})
+      api.nvim_win_set_cursor(0, { matches[1][1], matches[1][2] })
     end
   end
 end
@@ -107,16 +113,16 @@ local function navigate_to_prev()
   navigate_to_next(true)
 end
 
-
 -- Function to open the file and line under cursor
 local function open_file_line()
   local current_line = api.nvim_get_current_line()
   -- match pattern like `src/utils.py:40` or `src/utils.py`
   local file, line = string.match(current_line, file_line_pattern)
   if file then
-    api.nvim_command('edit ' .. file)
+    P(file)
+    api.nvim_command("edit " .. file)
     if line and line ~= "" then
-      api.nvim_win_set_cursor(0, {tonumber(line), 0})
+      api.nvim_win_set_cursor(0, { tonumber(line), 0 })
     else
       print("Opened file: " .. file .. " (no specific line number provided)")
     end
@@ -126,7 +132,7 @@ local function open_file_line()
 end
 
 local function get_entry()
-  return string.format("`%s:%d`", vim.fn.expand('%:p'), vim.fn.line('.'))
+  return string.format("`%s:%d`", vim.fn.expand("%"), vim.fn.line("."))
 end
 
 local function write_entry(entry)
@@ -148,7 +154,7 @@ local function write_entry(entry)
   if buf_exists then
     -- If nav.md is already open in a buffer, update the buffer
     local bufnr = vim.fn.bufnr(nav_md_file)
-    vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, {entry})
+    vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { entry })
     print("Added entry to nav.md buffer: " .. entry)
   else
     -- Otherwise, append to the file
@@ -170,43 +176,43 @@ local function add_file_line()
 end
 
 -- Function to open nav.md
-local function open_nav_md()
+local function switch_nav_md()
   M.last_entry = get_entry()
-  if vim.fn.expand('%:t') == 'nav.md' then
+  if vim.fn.expand("%:t") == "nav.md" then
     -- If we are already in nav.md, go to the previous file by pressing "<C-^>"
-    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-^>", true, false, true), 'n', true)
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-^>", true, false, true), "n", true)
   else
-    vim.cmd('edit ' .. nav_md_file)
+    vim.cmd("edit " .. nav_md_file)
   end
 end
 
-local function onetime_keymap(key, func, callback) 
+local function onetime_keymap(key, func, callback)
   local function _func()
-    vim.keymap.del('n', key, { noremap = true, silent = true, buffer=true })
+    vim.keymap.del("n", key, { noremap = true, silent = true, buffer = true })
     M.active_keymap[key] = nil
     func()
     if callback ~= nil then
       callback()
     end
   end
-  vim.keymap.set('n', key, _func, { noremap = true, silent = true, buffer=true })
+  vim.keymap.set("n", key, _func, { noremap = true, silent = true, buffer = true })
   M.active_keymap[key] = _func
 end
 
 local function render_winbar_text()
   -- render all keymap in conf.keymap.nav_mode
-  -- TODO: only include active _tmp_ keymap in active_keymap and persistent key map
+  -- only include active _tmp_ keymap in active_keymap and persistent key map
   local title = "🎹:"
 
   -- Include persistent keymaps
-  for name, key  in pairs(conf.keymap["nav_mode"]) do
+  for name, key in pairs(conf.keymap["nav_mode"]) do
     if name ~= "_tmp_" then
       title = title .. " " .. string.format("(%s)%s", key, name)
     end
   end
 
   -- Include active temporary keymaps
-  for name, key  in pairs(conf.keymap["nav_mode"]._tmp_) do
+  for name, key in pairs(conf.keymap["nav_mode"]._tmp_) do
     for a_key, _ in pairs(M.active_keymap) do
       if a_key == key then
         title = title .. " " .. string.format("(%s)%s", key, name)
@@ -221,17 +227,55 @@ local update_winbar_text = function()
   vim.api.nvim_set_option_value("winbar", render_winbar_text(), { win = vim.api.nvim_get_current_win() })
 end
 
+local function open_ith_link(i)
+  local matches = get_all_matched()
+  if #matches < i then
+    print("No such link")
+    return
+  end
+  local match = matches[i]
+  api.nvim_win_set_cursor(0, { match[1], match[2] })
+  open_file_line()
+end
+
+local NAV_LINK_NS = vim.api.nvim_create_namespace('NavigationLink')
+
+local function update_extmark()
+  -- Clear previous extmarks before setting the new extmarks
+  local bufnr = vim.api.nvim_get_current_buf()
+  vim.api.nvim_buf_clear_namespace(bufnr, NAV_LINK_NS, 0, -1)
+
+  local matches = get_all_matched()
+  for i, match in ipairs(matches) do
+    if i > 9 then
+      break
+    end
+    vim.api.nvim_buf_set_extmark(bufnr, NAV_LINK_NS, match[1] - 1, match[3], {
+      virt_text = { { string.format("🎹[%d]", i), "Comment" } },
+      virt_text_pos = "inline",
+    })
+  end
+end
+
 -- Function to enter nav-mode
 local function enter_nav_mode()
-  -- TODO: set previous file to M.last_entry
-  vim.keymap.set('n', conf.keymap["nav_mode"].next, navigate_to_next, { noremap = true, silent = true, buffer=true })
-  vim.keymap.set('n', conf.keymap["nav_mode"].prev, navigate_to_prev, { noremap = true, silent = true, buffer=true  })
-  vim.keymap.set('n', conf.keymap["nav_mode"].open, open_file_line, { noremap = true, silent = true, buffer=true  })
+  update_extmark()
+  vim.keymap.set("n", conf.keymap["nav_mode"].next, navigate_to_next, { noremap = true, silent = true, buffer = true })
+  vim.keymap.set("n", conf.keymap["nav_mode"].prev, navigate_to_prev, { noremap = true, silent = true, buffer = true })
+  vim.keymap.set("n", conf.keymap["nav_mode"].open, open_file_line, { noremap = true, silent = true, buffer = true })
+  vim.keymap.set("n", conf.keymap["nav_mode"].switch_back, switch_nav_md, { noremap = true, silent = true, buffer = true })
 
   if M.last_entry ~= "" then
     onetime_keymap(conf.keymap["nav_mode"]._tmp_.append_link, write_entry, update_winbar_text)
   end
   update_winbar_text()
+
+  -- Map 1, 2, 3, ..., 9 to open the i-th link in nav.md
+  for i = 1, 9 do
+    vim.keymap.set("n", tostring(i), function()
+      open_ith_link(i)
+    end, { noremap = true, silent = true, buffer = true })
+  end
   print("Entered nav-mode")
 end
 
@@ -247,12 +291,19 @@ vim.api.nvim_create_autocmd("BufEnter", {
   callback = enter_nav_mode,
   group = nav_mode_group,
 })
+
 vim.api.nvim_create_autocmd("BufLeave", {
   pattern = nav_md_file,
   callback = leave_nav_mode,
   group = nav_mode_group,
 })
+-- Autocommand to update extmarks when content changes
+vim.api.nvim_create_autocmd({"TextChanged", "TextChangedI", "TextChangedP"}, {
+  pattern = nav_md_file,
+  callback = update_extmark,
+  group = nav_mode_group,
+})
 
 -- Key mappings
-vim.keymap.set('n', conf.keymap.add, add_file_line, { noremap = true, silent = true })
-vim.keymap.set('n', conf.keymap.open_nav, open_nav_md, { noremap = true, silent = true })
+vim.keymap.set("n", conf.keymap.add, add_file_line, { noremap = true, silent = true })
+vim.keymap.set("n", conf.keymap.open_nav, switch_nav_md, { noremap = true, silent = true })
