@@ -16,6 +16,25 @@ Here is an example of `nav.md`
 - `src/utils.py:40`: important utils
 ```
 ]]
+local conf = {
+  keymap = {
+    ["nav_mode"] = {
+      next = "<tab>",
+      prev = "<s-tab>",
+      open = "<cr>",
+      _tmp_ = {
+        append_link = "a",
+      },
+    },
+    add = "<localleader>na",
+    open_nav = "<m-h>",
+  }
+}
+
+local M = {
+  last_entry = "",
+  active_keymap = {},
+}
 
 local api = vim.api
 local nav_md_file = "nav.md"
@@ -106,25 +125,53 @@ local function open_file_line()
   end
 end
 
+local function get_entry()
+  return string.format("`%s:%d`", vim.fn.expand('%:p'), vim.fn.line('.'))
+end
+
+local function write_entry(entry)
+  if entry == nil then
+    entry = M.last_entry
+  end
+  -- Open nav.md and append the new entry
+  local buf_exists = false
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    -- Convert vim.api.nvim_buf_get_name(buf) and nav_md_file to full path before comparing
+    local buf_name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ":p")
+    local nav_md_full_path = vim.fn.fnamemodify(nav_md_file, ":p")
+    if buf_name == nav_md_full_path then
+      buf_exists = true
+      break
+    end
+  end
+
+  if buf_exists then
+    -- If nav.md is already open in a buffer, update the buffer
+    local bufnr = vim.fn.bufnr(nav_md_file)
+    vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, {entry})
+    print("Added entry to nav.md buffer: " .. entry)
+  else
+    -- Otherwise, append to the file
+    local f = io.open(nav_md_file, "a")
+    if f then
+      f:write(entry .. "\n")
+      f:close()
+      print("Added entry to nav.md: " .. entry)
+    else
+      print("Failed to open nav.md")
+    end
+  end
+end
+
 -- Function to add a new file:line entry to nav.md
 local function add_file_line()
-  local file = vim.fn.expand('%:p')
-  local line = vim.fn.line('.')
-  local entry = string.format("`%s:%d`", file, line)
-  
-  -- Open nav.md and append the new entry
-  local f = io.open(nav_md_file, "a")
-  if f then
-    f:write(entry .. "\n")
-    f:close()
-    print("Added entry to nav.md: " .. entry)
-  else
-    print("Failed to open nav.md")
-  end
+  local entry = get_entry()
+  write_entry(entry)
 end
 
 -- Function to open nav.md
 local function open_nav_md()
+  M.last_entry = get_entry()
   if vim.fn.expand('%:t') == 'nav.md' then
     -- If we are already in nav.md, go to the previous file by pressing "<C-^>"
     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-^>", true, false, true), 'n', true)
@@ -133,11 +180,58 @@ local function open_nav_md()
   end
 end
 
+local function onetime_keymap(key, func, callback) 
+  local function _func()
+    vim.keymap.del('n', key, { noremap = true, silent = true, buffer=true })
+    M.active_keymap[key] = nil
+    func()
+    if callback ~= nil then
+      callback()
+    end
+  end
+  vim.keymap.set('n', key, _func, { noremap = true, silent = true, buffer=true })
+  M.active_keymap[key] = _func
+end
+
+local function render_winbar_text()
+  -- render all keymap in conf.keymap.nav_mode
+  -- TODO: only include active _tmp_ keymap in active_keymap and persistent key map
+  local title = "🎹:"
+
+  -- Include persistent keymaps
+  for name, key  in pairs(conf.keymap["nav_mode"]) do
+    if name ~= "_tmp_" then
+      title = title .. " " .. string.format("(%s)%s", key, name)
+    end
+  end
+
+  -- Include active temporary keymaps
+  for name, key  in pairs(conf.keymap["nav_mode"]._tmp_) do
+    for a_key, _ in pairs(M.active_keymap) do
+      if a_key == key then
+        title = title .. " " .. string.format("(%s)%s", key, name)
+      end
+    end
+  end
+
+  return title
+end
+
+local update_winbar_text = function()
+  vim.api.nvim_set_option_value("winbar", render_winbar_text(), { win = vim.api.nvim_get_current_win() })
+end
+
 -- Function to enter nav-mode
 local function enter_nav_mode()
-  vim.keymap.set('n', '<Tab>', navigate_to_next, { noremap = true, silent = true, buffer=true })
-  vim.keymap.set('n', '<S-Tab>', navigate_to_prev, { noremap = true, silent = true, buffer=true  })
-  vim.keymap.set('n', '<CR>', open_file_line, { noremap = true, silent = true, buffer=true  })
+  -- TODO: set previous file to M.last_entry
+  vim.keymap.set('n', conf.keymap["nav_mode"].next, navigate_to_next, { noremap = true, silent = true, buffer=true })
+  vim.keymap.set('n', conf.keymap["nav_mode"].prev, navigate_to_prev, { noremap = true, silent = true, buffer=true  })
+  vim.keymap.set('n', conf.keymap["nav_mode"].open, open_file_line, { noremap = true, silent = true, buffer=true  })
+
+  if M.last_entry ~= "" then
+    onetime_keymap(conf.keymap["nav_mode"]._tmp_.append_link, write_entry, update_winbar_text)
+  end
+  update_winbar_text()
   print("Entered nav-mode")
 end
 
@@ -160,5 +254,5 @@ vim.api.nvim_create_autocmd("BufLeave", {
 })
 
 -- Key mappings
-vim.keymap.set('n', '<localleader>na', add_file_line, { noremap = true, silent = true })
-vim.keymap.set('n', '<m-h>', open_nav_md, { noremap = true, silent = true })
+vim.keymap.set('n', conf.keymap.add, add_file_line, { noremap = true, silent = true })
+vim.keymap.set('n', conf.keymap.open_nav, open_nav_md, { noremap = true, silent = true })
