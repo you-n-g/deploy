@@ -26,3 +26,6 @@ vim.g.autoformat = false
 vim.cmd [[ autocmd FileType tex setlocal conceallevel=0 ]]
 
 -- vim.opt.expandtab = true
+
+-- disable relative line number by default
+opt.relativenumber = false
