@@ -107,8 +107,8 @@ for key, f in pairs({
   ["<A-Down>"] = function()
     win_change_height(-2)
   end,
-}) do
   vim.keymap.set("n", key, f, { desc = "Resize" .. key })
+}) do
 end
 
 -- TODO: ctrl+^ in insert mode into ctrl+^ in normal mode; To make it possible to switch buffer in insert mode

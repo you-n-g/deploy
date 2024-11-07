@@ -129,8 +129,8 @@ end
 
 
 -- Map a key to display the outline
-vim.keymap.set('n', '<localleader>lo', display_outline, { noremap = true, silent = true, desc = "Display Outline" })
-vim.keymap.set('n', '<localleader>ls', set_style, { noremap = true, silent = true, desc = "Set Buffer Style" })
+vim.keymap.set('n', '<localleader>oo', display_outline, { noremap = true, silent = true, desc = "Display Outline" })
+vim.keymap.set('n', '<localleader>os', set_style, { noremap = true, silent = true, desc = "Set Buffer Style" })
 
 -- Function to navigate to the next item in the outline
 local function navigate_next_item()
@@ -162,5 +162,5 @@ end
 -- TODO: navigate to same type
 
 -- Map keys to navigate to the next or previous item in the outline
-vim.keymap.set('n', ']l', navigate_next_item, { noremap = true, silent = true, desc = "Navigate to Next Outline Item" })
-vim.keymap.set('n', '[l', navigate_prev_item, { noremap = true, silent = true, desc = "Navigate to Previous Outline Item" })
+vim.keymap.set('n', ']o', navigate_next_item, { noremap = true, silent = true, desc = "Navigate to Next Outline Item" })
+vim.keymap.set('n', '[o', navigate_prev_item, { noremap = true, silent = true, desc = "Navigate to Previous Outline Item" })
