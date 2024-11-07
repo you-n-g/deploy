@@ -357,3 +357,8 @@
   description = "unset $DISPLAY; So some CLI tools will work more correctly without calling X server"
   command = "unset DISPLAY"
   output = ""
+
+[[snippets]]
+  description = "xytoy"
+  command = "git clone git@github.com:you-n-g/toy.git && make prerequisites && make dev"
+  output = ""

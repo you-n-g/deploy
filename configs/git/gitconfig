@@ -25,3 +25,8 @@ fzm = "!git ls-files -m --exclude-standard | fzf --print0 -m | xargs -0 -t -r gi
 	credentialStore = gpg
 [credential "https://dev.azure.com"]
 	useHttpPath = true
+[safe]
+	directory = /Data/home/msftubs/MSFT
+	directory = /home/msftubs/MSFT//.git
+	directory = /home/msftubs/ubs_sp500//.git
+	directory = /home/msftubs/ubs_sp500//.git

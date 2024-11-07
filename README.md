@@ -11,12 +11,12 @@ This repo will help you to deploy a friendly environment for a Python programmer
 # My Config/Dotfiles and Installation Scripts for Tools
 User could find the individual config and installation scripts below.
 
-| Tools     | Config/Dotfiles Path                               | Installation script                                                |
-|-----------|----------------------------------------------------|--------------------------------------------------------------------|
-| neovim    | [configs/lazynvim/](configs/lazynvim/)                     | [deploy_apps/nonauto/install_lazyvim.sh](deploy_apps/nonauto/install_lazyvim.sh)     |
-| zsh       | [configs/shell/rcfile.sh](configs/shell/rcfile.sh) | [deploy_apps/install_zsh.sh](deploy_apps/install_zsh.sh)           |
-| tmux      | [configs/tmux/](configs/tmux/)                     | [deploy_apps/install_tmux.sh](deploy_apps/install_tmux.sh)         |
-| miniconda | -                                                  | [deploy_apps/deploy_miniconda.sh](deploy_apps/deploy_miniconda.sh) |
+| Tools     | Config/Dotfiles Path                               | Installation script                                                              |
+|-----------|----------------------------------------------------|----------------------------------------------------------------------------------|
+| neovim    | [configs/lazynvim/](configs/lazynvim/)             | [deploy_apps/nonauto/install_lazyvim.sh](deploy_apps/nonauto/install_lazyvim.sh) |
+| zsh       | [configs/shell/rcfile.sh](configs/shell/rcfile.sh) | [deploy_apps/install_zsh.sh](deploy_apps/install_zsh.sh)                         |
+| tmux      | [configs/tmux/](configs/tmux/)                     | [deploy_apps/install_tmux.sh](deploy_apps/install_tmux.sh)                       |
+| miniconda | -                                                  | [deploy_apps/deploy_miniconda.sh](deploy_apps/deploy_miniconda.sh)               |
 
 # Environment
 It is mainly tested on ubuntu.
@@ -27,7 +27,7 @@ Ubuntu 18.04 or below is not supported now.
 # Installation
 I would like to install all the environment with a single command(This is experimental).
 
-```
+```bash
 sudo apt-get install -y git curl
 cd ~
 git clone https://github.com/you-n-g/deploy  # (Alternative) git clone git@github.com:you-n-g/deploy.git
