@@ -15,6 +15,10 @@ Here is an example of `nav.md`
 - `start.sh:30`:  the entrance of the project
 - `src/utils.py:40`: important utils
 ```
+
+TODOs:
+- [ ] Append to next line
+- [ ] Always use relative path
 ]]
 local conf = {
   keymap = {
@@ -141,30 +145,39 @@ local function write_entry(entry)
   end
   -- Open nav.md and append the new entry
   local buf_exists = false
-  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    -- Convert vim.api.nvim_buf_get_name(buf) and nav_md_file to full path before comparing
-    local buf_name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ":p")
-    local nav_md_full_path = vim.fn.fnamemodify(nav_md_file, ":p")
-    if buf_name == nav_md_full_path then
-      buf_exists = true
-      break
-    end
-  end
+  local cur_buf = vim.api.nvim_get_current_buf()
+  local cur_buf_name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(cur_buf), ":p")
+  local nav_md_full_path = vim.fn.fnamemodify(nav_md_file, ":p")
 
-  if buf_exists then
-    -- If nav.md is already open in a buffer, update the buffer
-    local bufnr = vim.fn.bufnr(nav_md_file)
-    vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { entry })
-    print("Added entry to nav.md buffer: " .. entry)
+  if cur_buf_name == nav_md_full_path then
+    -- If the current buffer is nav.md, append the entry at the current cursor position
+    local cursor_pos = vim.api.nvim_win_get_cursor(0)
+    vim.api.nvim_buf_set_lines(cur_buf, cursor_pos[1], cursor_pos[1], false, { entry })
+    print("Added entry to nav.md buffer at cursor position: " .. entry)
   else
-    -- Otherwise, append to the file
-    local f = io.open(nav_md_file, "a")
-    if f then
-      f:write(entry .. "\n")
-      f:close()
-      print("Added entry to nav.md: " .. entry)
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+      local buf_name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ":p")
+      if buf_name == nav_md_full_path then
+        buf_exists = true
+        break
+      end
+    end
+
+    if buf_exists then
+      -- If nav.md is already open in a buffer, update the buffer
+      local bufnr = vim.fn.bufnr(nav_md_file)
+      vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { entry })
+      print("Added entry to nav.md buffer: " .. entry)
     else
-      print("Failed to open nav.md")
+      -- Otherwise, append to the file
+      local f = io.open(nav_md_file, "a")
+      if f then
+        f:write(entry .. "\n")
+        f:close()
+        print("Added entry to nav.md: " .. entry)
+      else
+        print("Failed to open nav.md")
+      end
     end
   end
 end
