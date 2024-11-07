@@ -362,3 +362,13 @@
   description = "xytoy"
   command = "git clone git@github.com:you-n-g/toy.git && make prerequisites && make dev"
   output = ""
+
+[[snippets]]
+  description = "from sys to tmux clipboard"
+  command = "xsel --clipboard --output | tmux load-buffer -w -"
+  output = ""
+
+[[snippets]]
+  description = "from tmux to sys clipboard"
+  command = "tmux save-buffer - | xsel --clipboard --input"
+  output = ""

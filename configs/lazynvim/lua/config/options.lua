@@ -11,6 +11,7 @@ opt.fencs = "ucs-bom,utf-8,euc-cn,cp936,gb18030,latin1" -- to support gbk chines
 -- opt.gcr = "n-v-c:block,i-ci-ve:ver25,r-cr:hor20,o:hor50,a:blinkwait700-blinkoff400-blinkon250-Cursor/lCursor,sm:block-blinkwait175-blinkoff150-blinkon175"
 -- opt.gcr = "n-v-c-sm:block,ci-ve:ver25,r-cr-o:hor20,i:block-blinkwait700-blinkoff400-blinkon250-Cursor/lCursor"
 
+
 -- change the default shell to powershell if windows
 if vim.fn.has("win32") == 1 then
    -- https://www.reddit.com/r/neovim/comments/vpnhrl/how_do_i_make_neovim_use_powershell_for_external/
