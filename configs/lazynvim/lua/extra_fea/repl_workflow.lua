@@ -372,19 +372,23 @@ function PythonREPL:test()
   edit_before_send(cmd)
 end
 
-function PythonREPL:run_script()
+function PythonREPL:get_interpreter()
   local cmd = ""
   if config.goto_debug_when_fail then
     cmd = "python -m ipdb -c c "
   else
-    cmd = "python"
+    cmd = "python "
   end
-  cmd = cmd .. " " .. vim.fn.expand(self:get_path_symbol())
-  edit_before_send(cmd)
+  return cmd
+end
+
+
+function PythonREPL:run_script()
+  edit_before_send(self:get_interpreter() .. " " .. vim.fn.expand(self:get_path_symbol()))
 end
 
 function PythonREPL:run_func()
-  local cmd = self.interpreter .. " " .. vim.fn.expand(self:get_path_symbol()) .. " "
+  local cmd = self:get_interpreter() .. " " .. vim.fn.expand(self:get_path_symbol()) .. " "
   local func_name = get_current_function_name()
   -- NOTE: this is a hack for typer (the design is bad...)
   -- if `import typer` is included in the file, the replace the '_' with '-' in `cmd`

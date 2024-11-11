@@ -140,7 +140,8 @@ fi
 
 # # Outlines: Common config
 
-alias gitlog="git log --all --oneline --graph --decorate"
+alias gitlog="git log --all --oneline --graph --decorate # --reflog"
+alias gitlogs="git log --all --pretty=short --abbrev-commit --graph --decorate # --reflog"
 alias mux=tmuxinator
 alias mx=tmux
 export PATH="$HOME/deploy/helper_scripts/bin/:$HOME/bin/:$HOME/apps/nodejs/bin/:$PATH"
