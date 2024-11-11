@@ -39,11 +39,19 @@ local opts = { -- this is copy from static
 }
 
 return {
+  -- {
+  --   "rcarriga/nvim-notify",
+  --   -- opts = opts,
+  --   opts = {
+  --     top_down = false,
+  --   }
+  -- },
   {
-    "rcarriga/nvim-notify",
-    -- opts = opts,
+    "folke/snacks.nvim",
     opts = {
-      top_down = false,
-    }
+      notifier = {
+        top_down = false,
+      },
+    },
   },
 }

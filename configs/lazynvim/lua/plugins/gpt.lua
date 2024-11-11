@@ -171,6 +171,7 @@ local modules = {
         endpoint = cred.api_base, -- example: "https://<your-resource-name>.openai.azure.com"
         deployment = cred.azure_deployment, -- Azure deployment name (e.g., "gpt-4o", "my-gpt-4o-deployment")
       }
+      opts.hints = { enabled = false }   -- it is annoying due to conflict with simplegpt.nvim. I have to use <leader>uE to erase them
       vim.env.AZURE_OPENAI_API_KEY = cred.api_key
     end,
     -- if you want to build from source then do `make BUILD_FROM_SOURCE=true`

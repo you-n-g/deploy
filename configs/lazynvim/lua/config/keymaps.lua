@@ -16,7 +16,8 @@ end
 -- disable map("n", "<leader>L", Util.changelog, {desc = "LazyVim Changelog"})
 vim.keymap.del({"n"}, "<leader>L")
 
-vim.keymap.del({"t"}, "<esc><esc>")  -- We may enter vim in terminal mode. 
+-- vim.keymap.del({"t"}, "<esc><esc>")  -- We may enter vim in terminal mode. So we need to remove this keymap
+-- But when we update to new version. snaks.nvim use a different machanism
 
 -- 拷贝当前buffer的相对路径
 -- # TODO: yp for relative path, yP for absolute path. Please implement it with a for loop

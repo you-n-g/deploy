@@ -19,15 +19,16 @@ return {
       },
     },
   },
-  {
-      "otavioschwanck/arrow.nvim",
-      opts = {
-          show_icons = true,
-          -- leader_key = ';', -- Recommended to be a single key
-          leader_key = '<m-h>', -- Recommended to be a single key
-          buffer_leader_key = '<m-m>', -- Per Buffer Mappings
-      }
-  },
+  -- {
+  --     "otavioschwanck/arrow.nvim",
+  --     opts = {
+  --         show_icons = true,
+  --         -- leader_key = ';', -- Recommended to be a single key
+  --         leader_key = '<m-h>', -- Recommended to be a single key
+  --         buffer_leader_key = '<m-m>', -- Per Buffer Mappings
+  --     }
+  -- },
+
   -- {
   --   -- NOTE:
   --   -- I need more;
@@ -126,4 +127,9 @@ return {
   --   end,
   --   dependencies = { "nvim-lua/plenary.nvim"}
   -- },
+  {
+    url = "git@github.com:you-n-g/navigate-note.nvim",
+    config=true,
+    event = "VeryLazy", -- greatly boost the initial of neovim
+  }
 }
