@@ -240,7 +240,7 @@ function BaseREPL:launch_interpreter()
     print("No interpreter is set")
     return
   end
-  print("No interpreter supported...")
+  edit_before_send(self.interpreter)
 end
 
 function BaseREPL:test()
@@ -427,6 +427,10 @@ end
 local BashREPL = class("BashREPL", BaseREPL)
 BashREPL.interpreter = "bash"
 
+function BashREPL:launch_interpreter()
+  edit_before_send("zsh")
+end
+
 -- - Lua
 local LuaREPL = class("LuaREPL", BaseREPL)
 
@@ -469,6 +473,9 @@ local function REPLFactory()
     bash = BashREPL,
     lua = LuaREPL,
   }
+  if repl_map[ft] == nil then
+    return BashREPL.new() -- fall back to BashREPL by default
+  end
   return repl_map[ft].new()
 end
 
