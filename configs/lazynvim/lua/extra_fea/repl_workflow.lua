@@ -223,7 +223,8 @@ function BaseREPL:run_func()
     return
   end
   local cmd = self.interpreter .. " " .. vim.fn.expand(self:get_path_symbol()) .. " " .. get_current_function_name()
-  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+
+  edit_before_send(cmd)
 end
 
 function BaseREPL:run_script()

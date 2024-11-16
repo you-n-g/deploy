@@ -51,6 +51,7 @@ return {
     opts = {
       notifier = {
         top_down = false,
+        width = { min = 40, max = 0.8 },
       },
     },
   },

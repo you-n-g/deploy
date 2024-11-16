@@ -108,4 +108,12 @@ return {
   --   )
   -- end,
   -- },
+  { -- https://github.com/Saghen/blink.cmp/issues/44 to avoid error
+    "saghen/blink.cmp",
+    lazy = false,
+    dependencies = "rafamadriz/friendly-snippets",
+      -- use a release tag to download pre-built binaries
+    -- version = "v0.*",
+    version = "v0.5.1",
+  },
 }
