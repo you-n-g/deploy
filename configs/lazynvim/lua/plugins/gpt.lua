@@ -81,7 +81,7 @@ local modules = {
         actions_paths = { action_path },
       }
       if vim.fn.has("win32") ~= 1 then
-        require"extra_fea.utils".export_cred_env()
+        require("extra_fea.utils").export_cred_env()
       end
       require("chatgpt").setup(opts)
       -- config whick key with ["<leader><tab>"] = { name = "+tabs & windows" },
@@ -171,7 +171,7 @@ local modules = {
         endpoint = cred.api_base, -- example: "https://<your-resource-name>.openai.azure.com"
         deployment = cred.azure_deployment, -- Azure deployment name (e.g., "gpt-4o", "my-gpt-4o-deployment")
       }
-      opts.hints = { enabled = false }   -- it is annoying due to conflict with simplegpt.nvim. I have to use <leader>uE to erase them
+      opts.hints = { enabled = false } -- it is annoying due to conflict with simplegpt.nvim. I have to use <leader>uE to erase them
       vim.env.AZURE_OPENAI_API_KEY = cred.api_key
     end,
     -- if you want to build from source then do `make BUILD_FROM_SOURCE=true`
@@ -204,14 +204,14 @@ local modules = {
       },
       {
         -- Make sure to set this up properly if you have lazy=true
-        'MeanderingProgrammer/render-markdown.nvim',
+        "MeanderingProgrammer/render-markdown.nvim",
         opts = {
           file_types = { "markdown", "Avante" },
         },
         ft = { "markdown", "Avante" },
       },
     },
-  }
+  },
 }
 
 local extra_m = {
@@ -225,9 +225,11 @@ local extra_m = {
   },
   opts = {
     new_tab = true,
-    dialog = {
+    base_dialog = {
       -- I don't add `"<C-c>", "<esc>" ` due to that it can easily errorously quit the dialog
-      exit_keys = { "q" },
+      key_table = {
+        exit_keys = { "q" },
+      },
     },
     tpl_conf = {
       context_len = 20,

@@ -288,6 +288,10 @@ if [ "$pip_env" = "1" ]; then
     pipenv shell
 fi
 
+if [ "$pdm_env" = "1" ]; then
+    `pdm venv activate`
+fi
+
 
 function yxca() {
     conda activate $1
@@ -313,12 +317,12 @@ function pipenvd() {
 
 function pdma() {
     tmux setenv pdm_env 1  # this must come before
-    pdm run $SHELL
+    `pdm venv activate`
 }
 
 function pdmd() {
     tmux setenv -r pdm_env
-    exit
+    echo "Please restart the shell to deactivate the pdm environment"
 }
 
 
