@@ -51,7 +51,6 @@ local modules = {
   --  },
   {
     "jackMort/ChatGPT.nvim",
-    -- "you-n-g/ChatGPT.nvim",
     branch = "main",
     event = "VeryLazy",
     config = function()
@@ -97,6 +96,7 @@ local modules = {
     dependencies = {
       "MunifTanjim/nui.nvim",
       "nvim-lua/plenary.nvim",
+      "folke/trouble.nvim",
       "nvim-telescope/telescope.nvim",
     },
     keys = {
@@ -218,13 +218,22 @@ local extra_m = {
   -- dir = "~/deploy/tools.py/simplegpt.nvim/",
   url = "git@github.com:you-n-g/simplegpt.nvim",
   dependencies = {
-    "MunifTanjim/nui.nvim",
-    "nvim-lua/plenary.nvim",
-    "nvim-telescope/telescope.nvim",
-    "you-n-g/ChatGPT.nvim",
+    "you-n-g/jinja-engine.nvim",
+    {
+      "jackMort/ChatGPT.nvim",
+      -- Please check the detailed config above
+      -- event = "VeryLazy",
+      -- config = true,
+      -- dependencies = {
+      --   "MunifTanjim/nui.nvim",
+      --   "nvim-lua/plenary.nvim",
+      --   "folke/trouble.nvim",
+      --   "nvim-telescope/telescope.nvim",
+      -- },
+    },
   },
   opts = {
-    new_tab = true,
+    -- new_tab = true,
     base_dialog = {
       -- I don't add `"<C-c>", "<esc>" ` due to that it can easily errorously quit the dialog
       key_table = {

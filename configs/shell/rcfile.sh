@@ -326,6 +326,20 @@ function pdmd() {
 }
 
 
+function deploy_quant_libs() {
+  mkdir -p libs/
+  cd libs
+  pip install numpy
+  pip install --upgrade  cython
+  git clone https://github.com/microsoft/qlib.git
+  cd qlib/
+  pip install -e '.[dev]'
+  git clone https://you-n-g@dev.azure.com/you-n-g/qutils/_git/qutils
+  cd qutils/
+  pip install -e .
+}
+
+
 # # Outlines: 准备删掉的
 
 # ## Outlines: nnn

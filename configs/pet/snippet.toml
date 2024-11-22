@@ -285,7 +285,7 @@
 
 [[snippets]]
   description = "create new Python project from scaffold (suppose you have already create the github project)"
-  command = "git init && make prerequisites && pdm lock && make dev && git remote add origin git@github.com:you-n-g/<project>.git && git branch -M main && git add . && git commit -a -m \"Init from serious-scaffold-python.\" && git push -u origin main --no-verify"
+  command = "pip install pipx && git init && make prerequisites && pdm lock && make dev && git remote add origin git@github.com:you-n-g/<project>.git && git branch -M main && git add . && git commit -a -m \"Init from serious-scaffold-python.\" && git push -u origin main --no-verify"
   output = ""
 
 [[snippets]]

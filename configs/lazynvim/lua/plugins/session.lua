@@ -8,17 +8,18 @@ return {
       require("telescope").load_extension("persisted")
     end,
   },
-  {
-    "nvimdev/dashboard-nvim",
-    opts = function(_, opts)
-      table.insert(opts["config"]["center"], {
-        desc = "  Load Sessions",
-        -- group = "DiagnosticHint",
-        action = "Telescope persisted",
-        key = "S",
-      })
-    end
-  }
+  -- Now using "folke/snacks.nvim" for dashboard now (I don't use it often in linux. So I leave it disabled)
+  -- {
+  --   "nvimdev/dashboard-nvim",
+  --   opts = function(_, opts)
+  --     table.insert(opts["config"]["center"], {
+  --       desc = "  Load Sessions",
+  --       -- group = "DiagnosticHint",
+  --       action = "Telescope persisted",
+  --       key = "S",
+  --     })
+  --   end
+  -- }
   -- NOTE: dashboard.nvim is now the default LazyVim starter plugin.
   -- {
   --   "goolord/alpha-nvim",

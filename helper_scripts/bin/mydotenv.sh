@@ -1,5 +1,11 @@
 #!/bin/bash
 
+
+false << "EOF" > /dev/null
+A typical content in .conf.env
+export PYTHONPATH=<absolute path>
+EOF
+
 if [ -e '.conf.env' ]; then
   echo '`.conf.env` detected...'
   source .conf.env
