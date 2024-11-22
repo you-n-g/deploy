@@ -57,13 +57,47 @@ vim.keymap.set(
 vim.keymap.set("n", "<leader><tab>b", function()
   local bufnr = vim.api.nvim_get_current_buf()
 
-  vim.api.nvim_open_win(bufnr, true, {
+  local win_id = vim.api.nvim_open_win(bufnr, true, {
     relative = "editor",
     width = math.floor(0.99 * vim.o.columns),
     height = math.floor(0.99 * vim.o.lines),
     row = math.floor(0.1 * vim.o.lines),
     col = math.floor(0.1 * vim.o.columns),
     border = "single",
+  })
+
+  -- Function to synchronize the cursor position between two windows
+  local function synchronize_cursor()
+    -- Get the current window and buffer
+    local current_win = vim.api.nvim_get_current_win()
+    local current_buf = vim.api.nvim_get_current_buf()
+    -- Get the cursor position in the current window
+    local cursor_pos = vim.api.nvim_win_get_cursor(current_win)
+    -- Iterate over all windows
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+      -- Check if the window is displaying the same buffer and is not the current window
+      if win ~= current_win and vim.api.nvim_win_get_buf(win) == current_buf then
+        -- Set the cursor position in the other window
+        vim.api.nvim_win_set_cursor(win, cursor_pos)
+      end
+    end
+  end
+
+  -- Set up autocommand to synchronize the cursor position on cursor movement for the current buffer
+  local sync_cursor_augroup = vim.api.nvim_create_augroup("SyncCursor", { clear = true })
+  vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI"}, {
+    group = sync_cursor_augroup,
+    buffer = bufnr,
+    callback = synchronize_cursor,
+  })
+
+  -- TODO: remove the above autocmd if the newly opened floating window is closed
+  vim.api.nvim_create_autocmd("WinClosed", {
+    group = sync_cursor_augroup,
+    pattern = tostring(win_id),
+    callback = function()
+      vim.api.nvim_del_augroup_by_id(sync_cursor_augroup)
+    end,
   })
 end, { expr = false, noremap = true, desc = "Open cur buffer in float window" })
 
