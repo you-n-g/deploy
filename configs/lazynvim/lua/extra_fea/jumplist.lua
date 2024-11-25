@@ -87,7 +87,7 @@ vim.api.nvim_set_keymap("n", "<C-o>", "", {
 })
 
 -- Remap `c-i` to show jumps
-vim.api.nvim_set_keymap("n", "<C-i>", "", {
+vim.api.nvim_set_keymap("n", "<c-i>", "", {
   noremap = true,
   silent = true,
   callback = function()

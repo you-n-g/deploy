@@ -234,11 +234,17 @@ local extra_m = {
   },
   opts = {
     -- new_tab = true,
-    base_dialog = {
+    dialog = {
       -- I don't add `"<C-c>", "<esc>" ` due to that it can easily errorously quit the dialog
-      key_table = {
+      keymaps = {
         exit_keys = { "q" },
       },
+    },
+    keymaps = {
+      shortcuts = {
+        prefix = "<m-g>",
+      },
+      prefix = "<m-g><m-g>",
     },
     tpl_conf = {
       context_len = 20,

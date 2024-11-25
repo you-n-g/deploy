@@ -33,9 +33,18 @@ The neovim configuration is based on LazyVim and may be useful for Python users.
 - [Python-LSP](lua/plugins/nvim-lspconfig.lua)
   - Pyright, Full formatting and range formatting,
 
+# Usage
+## Maintainance
+- 默认的行为已经很好了，不要轻易调整(默认config变动，可能会花大量的时间测试)；调整时注明详细的原因
+
+## Debug
+- 注释掉所有plugins, 看看行为是否正常
+
 # Manual Tasks
 
+```bash
 # We should follow next steps
 # 1. https://github.com/enterprises/microsoft
 # 2. `:Copilot auth`, and then open https://github.com/login/device for authentication
 #   - sometimes it does not work (on my WSL of my borrowed equipment) due to unknown issues.
+```

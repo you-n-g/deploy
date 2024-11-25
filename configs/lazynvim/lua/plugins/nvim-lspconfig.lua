@@ -57,22 +57,6 @@ return {
     -- { "exclude": [ "**/__pycache__", "data/", "libs/", "intermediate/", "scripts/" ] }
   },
   {
-    "williamboman/mason.nvim",
-    opts = function(_, opts)
-      -- We origianlly want to install debugpy. But it seems not working...
-      for _, s in ipairs({}) do
-        table.insert(opts["ensure_installed"], s)
-      end
-    end,
-  },
-  {
-    "williamboman/mason-lspconfig.nvim",
-    -- opts = {
-    --   -- this does not work...
-    --   automatic_installation = { exclude = { "debugpy" } },
-    -- },
-  },
-  {
     "jay-babu/mason-nvim-dap.nvim",
     opts = {
       -- this does not work...
@@ -91,29 +75,13 @@ return {
       },
     },
   },
-  -- TODO: `conform.nvim` and `nvim-lint` are now the default formatters and linters in LazyVim.
-  -- {
-  --   -- "jose-elias-alvarez/null-ls.nvim", Plugin `jose-elias-alvarez/null-ls.nvim` was renamed to `nvimtools/none-ls.nvim`.
-  -- "nvimtools/none-ls.nvim",
-  -- opts = function(_, opts)
-  --   local nls = require("null-ls")
-  --   -- If we want to config more details, we can write an funciton return similar things...
-  --   -- https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/lua/null-ls/builtins/formatting/yapf.lua
-  --   print(opts["sources"])
-  --   table.insert(
-  --     opts["sources"],
-  --     nls.builtins.formatting.yapf.with({
-  --       extra_args = { "--style={based_on_style: google, column_limit: 120, indent_width: 4}" },
-  --     })
-  --   )
-  -- end,
+
+  -- { -- https://github.com/Saghen/blink.cmp/issues/44 to avoid error
+  --   "saghen/blink.cmp",
+  --   lazy = false,
+  --   dependencies = "rafamadriz/friendly-snippets",
+  --     -- use a release tag to download pre-built binaries
+  --   -- version = "v0.*",
+  --   version = "v0.5.1",
   -- },
-  { -- https://github.com/Saghen/blink.cmp/issues/44 to avoid error
-    "saghen/blink.cmp",
-    lazy = false,
-    dependencies = "rafamadriz/friendly-snippets",
-      -- use a release tag to download pre-built binaries
-    -- version = "v0.*",
-    version = "v0.5.1",
-  },
 }

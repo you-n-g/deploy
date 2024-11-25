@@ -372,3 +372,8 @@
   description = "from tmux to sys clipboard"
   command = "tmux save-buffer - | xsel --clipboard --input"
   output = ""
+
+[[snippets]]
+  description = "git log for orphan commits"
+  command = "git log --all --oneline --graph --decorate --reflog"
+  output = ""

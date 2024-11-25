@@ -33,7 +33,7 @@ return {
         {
           "hrsh7th/nvim-cmp",
           opts = function(_, opts)
-            -- enhance the <tab> for neogen
+            -- enhance the <tab> for neogen;
             local cmp = require("cmp")
             local mapping = {
               ["<tab>"] = cmp.mapping(function(fallback)
