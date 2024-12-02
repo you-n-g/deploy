@@ -2,6 +2,9 @@
 When we are in the terminal, map 'gf' to open the file under the cursor or selection.
 But do not replace the terminal window. Open it in the last window that is not a terminal.
 And then jump to that window.
+
+TODO:
+- [ ] Go to lines:
 ]]
 
 local M = {}
@@ -69,8 +72,6 @@ end
 function M.open_file_in_largest_non_terminal_win()
   local largest_win = get_largest_non_terminal_win()
   local file = vim.fn.expand('<cfile>')
-
-  require"snacks".debug("largest_win, file:", largest_win, file, vim.api.nvim_buf_get_option(0, 'buftype'))
 
   -- If a largest non-terminal window was found, open the file there
   if vim.api.nvim_buf_get_option(0, 'buftype') == 'terminal' and largest_win ~= nil  and file ~= '' then
