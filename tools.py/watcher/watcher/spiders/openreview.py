@@ -1,4 +1,5 @@
 import scrapy
+from abc import ABC, abstractmethod,  abstractproperty
 from functools import partial
 from watcher.items import OpenReviewPaper
 from urllib.parse import urlencode
@@ -135,16 +136,25 @@ def get_conf_uri(conf, year, venue, limit=1000, offset=0):
     return f"{base_url}?{query_string}"
 
 
-class OpenReviewFullSpider(scrapy.Spider):
-    name = "icml24"
-    get_list_uri = partial(get_conf_uri, "ICML", "2024")
+class OpenReviewFullSpider(scrapy.Spider, ABC):
+    # Please override the following
+    @abstractproperty
+    def name(self) -> str:
+        return "<not implement>"
+
+    @abstractmethod
+    def get_list_uri(self, venue, limit, offset) -> str:
+        return "<not implement>"
+
+    @abstractproperty
+    def venue_l(self) -> list[str]:
+        return []
 
     def start_requests(self, limit=50, offset=0):
         """
         We start from these pages
         """
-        venue_l = ["Oral", "Poster", "Spotlight"]
-        for venue in venue_l:
+        for venue in self.venue_l:
             uri = self.get_list_uri(venue=venue, limit=limit, offset=offset)
             yield scrapy.Request(url=uri,
                                  callback=self.parse_list,
@@ -184,3 +194,15 @@ class OpenReviewFullSpider(scrapy.Spider):
                 "venue": venue,
             }
             yield OpenReviewPaper(**data)
+
+class ICML24(OpenReviewFullSpider):
+    name = "icml24"
+    get_list_uri = partial(get_conf_uri, conf="ICML", year="2024")
+    venue_l = ["Oral", "Poster", "Spotlight"]
+
+
+class NIPSSpider24(OpenReviewFullSpider):
+    """52.4s"""
+    name = "nips24"
+    get_list_uri = partial(get_conf_uri, conf="NeurIPS", year="2024")
+    venue_l = ["oral", "poster", "spotlight"]  # lower case is necessray

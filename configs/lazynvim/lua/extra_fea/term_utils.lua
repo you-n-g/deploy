@@ -5,6 +5,7 @@ And then jump to that window.
 
 TODO:
 - [ ] Go to lines:
+  - goto fzf if failed.
 ]]
 
 local M = {}

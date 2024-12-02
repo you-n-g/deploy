@@ -7,7 +7,8 @@ DIRNAME = Path(__file__).absolute().resolve().parent
 import json
 
 def from_json():
-    p = DIRNAME.parent / 'watcher' / "openreview_w_tags.json"
+    # p = DIRNAME.parent / 'watcher' / "openreview_w_tags.json"
+    p = DIRNAME / "openreview_pool.json"
     if p.exists():
         with p.open("r") as f:
             return json.load(f)
