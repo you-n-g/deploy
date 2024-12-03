@@ -1,4 +1,7 @@
 #!/bin/sh
+false << "EOF" > /dev/null
+helper_scripts/bin/hc_openai.py azure
+EOF
 
 api_base=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 1p)
 azure_engine=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 2p)
@@ -39,10 +42,17 @@ azure_ad() {
 azure_aider() {
   # aider uses litellm
   # https://github.com/BerriAI/litellm
-  # () ad_token can be also supported
+  API_VERSION=2023-03-15-preview
   export AZURE_API_KEY=$api_key
   export AZURE_API_VERSION=$API_VERSION
   export AZURE_API_BASE=$api_base
+}
+
+azure_ad_aider() {
+  export AZURE_API_BASE=https://gcraoai9ncusspot.openai.azure.com/
+  export AZURE_API_VERSION=2024-08-01-preview
+  export AZURE_OPENAI_AD_TOKEN=$(hc_openai.py get-azure-ad-token)
+  export CHAT_MODEL=gpt-4_0125-Preview # you should specify it mannually
 }
 
 ${1:-azure}

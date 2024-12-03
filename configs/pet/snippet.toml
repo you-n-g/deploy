@@ -380,5 +380,5 @@
 
 [[snippets]]
   description = "aider start"
-  command = "aider --model azure/gpt-4o  --no-auto-commit"
+  command = "aider --model azure/$CHAT_MODEL  --no-auto-commit"
   output = ""

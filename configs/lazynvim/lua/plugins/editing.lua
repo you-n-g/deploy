@@ -134,4 +134,10 @@ return {
       -- vim.g.vimtex_parser_bib_backend = "bibtex"  -- default value is `lua`, All of them do not work for me.
     end,
   },
+  {
+    "sindrets/diffview.nvim",
+    keys = {
+      { "<leader>gd", [[<cmd>DiffviewOpen<cr>]], desc = "Open Diffview" },
+    }
+  }
 }
