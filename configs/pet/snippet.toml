@@ -377,3 +377,8 @@
   description = "git log for orphan commits"
   command = "git log --all --oneline --graph --decorate --reflog"
   output = ""
+
+[[snippets]]
+  description = "aider start"
+  command = "aider --model azure/gpt-4o  --no-auto-commit"
+  output = ""

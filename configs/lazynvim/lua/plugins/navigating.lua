@@ -119,7 +119,7 @@ return {
   -- },
 
   -- 有一种脱了裤子放屁的感觉...
-  -- { 
+  -- {
   --   "RutaTang/quicknote.nvim",
   --   config=function()
   --     -- you must call setup to let quicknote.nvim works correctly
@@ -129,13 +129,22 @@ return {
   -- },
   {
     url = "git@github.com:you-n-g/navigate-note.nvim",
-    config=true,
+    config = true,
     event = "VeryLazy", -- greatly boost the initial of neovim
-    opts={
-      context_line_count = {-- it would be total `2 * context_line_count - 1` lines
+    opts = {
+      context_line_count = { -- it would be total `2 * context_line_count - 1` lines
         -- tab = 5,
         -- vline = 2,
       },
-    }
-  }
+    },
+  },
+  {
+    "willothy/flatten.nvim",
+    -- config = true,
+    -- or pass configuration with
+    opts = { window = { open = "alternate" } },
+    -- Ensure that it runs first to minimize delay when opening file from terminal
+    lazy = false,
+    priority = 1001,
+  },
 }

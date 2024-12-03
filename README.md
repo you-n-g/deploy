@@ -1,6 +1,6 @@
 
 # Introduction
-This repo will help you to deploy a friendly environment for a Python programmer in your home directory. The following tools will be well-configured.
+This repository helps deploy a development environment tailored for Python programmers in their home directory. The following tools will be configured:
 - neovim
 - zsh
 - miniconda
@@ -9,7 +9,7 @@ This repo will help you to deploy a friendly environment for a Python programmer
 
 
 # My Config/Dotfiles and Installation Scripts for Tools
-User could find the individual config and installation scripts below.
+Users can find individual configuration and installation scripts below.
 
 | Tools     | Config/Dotfiles Path                               | Installation script                                                              |
 |-----------|----------------------------------------------------|----------------------------------------------------------------------------------|
@@ -25,7 +25,7 @@ Ubuntu 18.04 or below is not supported now.
 - mainly due to  [nodejs](deploy_apps/deploy_nodejs.sh)
 
 # Installation
-I would like to install all the environment with a single command(This is experimental).
+You can install the entire environment with a single command (experimental):
 
 ```bash
 sudo apt-get install -y git curl

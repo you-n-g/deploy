@@ -12,10 +12,11 @@ openai() {
 azure() {
   API_VERSION=2023-03-15-preview
 
-  # aider conversion (maybe default)
-  export AZURE_API_KEY=$api_key
-  export AZURE_API_VERSION=$API_VERSION
-  export AZURE_API_BASE=$api_base
+  # Default of openai-python
+  export OPENAI_API_VERSION=$API_VERSION
+  export AZURE_OPENAI_API_KEY=$api_key
+  export AZURE_OPENAI_ENDPOINT=$api_base
+  # export AZURE_OPENAI_AD_TOKEN=
 
   # ChatGPT.nvim convention
   # export OPENAI_API_TYPE='azure'
@@ -26,6 +27,22 @@ azure() {
   # export AZURE_OPENAI_API_KEY=$api_key
   # export OPENAI_API_VERSION=$API_VERSION
   # export AZURE_OPENAI_ENDPOINT=$api_base
+}
+
+azure_ad() {
+  export AZURE_OPENAI_ENDPOINT=https://gcraoai9ncusspot.openai.azure.com/
+  export OPENAI_API_VERSION=2024-08-01-preview
+  export AZURE_OPENAI_AD_TOKEN=$(hc_openai.py get-azure-ad-token)
+  export CHAT_MODEL=gpt-4_0125-Preview # you should specify it mannually
+}
+
+azure_aider() {
+  # aider uses litellm
+  # https://github.com/BerriAI/litellm
+  # () ad_token can be also supported
+  export AZURE_API_KEY=$api_key
+  export AZURE_API_VERSION=$API_VERSION
+  export AZURE_API_BASE=$api_base
 }
 
 ${1:-azure}
