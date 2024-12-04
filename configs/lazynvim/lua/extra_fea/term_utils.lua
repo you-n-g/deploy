@@ -89,4 +89,39 @@ end
 -- Map 'gf' in terminal mode to the function
 vim.keymap.set({'n', 'v'}, 'gf', '<cmd>lua require"extra_fea.term_utils".open_file_in_largest_non_terminal_win()<CR>', { noremap = true, silent = true })
 
+-- Function to copy the last command from the terminal
+function M.copy_last_terminal_command()
+  -- TODO: working on it.
+  local buf = vim.api.nvim_get_current_buf()
+  if vim.api.nvim_buf_get_option(buf, 'buftype') == 'terminal' then
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    -- Find the last line that starts with a command prompt pattern
+    local last_command = nil
+    for i = #lines, 1, -1 do
+      local line = lines[i]
+      if line:match("^%s*%$") then  -- Assuming the command prompt ends with '$'
+        last_command = lines[i + 1] or ""
+        break
+      end
+    end
+
+    if last_command and last_command ~= "" then
+      vim.fn.setreg('"', last_command)
+      print("Copied last command: " .. last_command)
+    else
+      print("No command found to copy.")
+    end
+  else
+    print("Not in a terminal buffer.")
+  end
+end
+
+-- Autocommand to set a buffer-local keymap for terminal buffers
+vim.api.nvim_create_autocmd('TermOpen', {
+  pattern = '*',
+  callback = function()
+    vim.api.nvim_buf_set_keymap(0, 'n', '<leader>c', '<cmd>lua require"extra_fea.term_utils".copy_last_terminal_command()<CR>', { noremap = true, silent = true })
+  end
+})
+
 return M

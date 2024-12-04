@@ -1,28 +1,7 @@
 -- it is based on toggleterm.nvim and vim-slime.
 local M = {}
 
--- util function
-local function class(className, super)
-  -- a lua class with initializer
-  -- 构建类
-  local clazz = { __cname = className, super = super }
-  if super then
-    -- 设置类的元表，此类中没有的，可以查找父类是否含有
-    setmetatable(clazz, { __index = super })
-  end
-  -- new 方法创建类对象
-  clazz.new = function(...)
-    -- 构造一个对象
-    local instance = {}
-    -- 设置对象的元表为当前类，这样，对象就可以调用当前类生命的方法了
-    setmetatable(instance, { __index = clazz })
-    if clazz.ctor then
-      clazz.ctor(instance, ...)
-    end
-    return instance
-  end
-  return clazz
-end
+class = require("simplegpt.utils").class
 
 -- get current buffer name
 function update_toggleterm_last_id()
@@ -466,7 +445,7 @@ function LuaREPL:run_script()
   dofile(vim.fn.expand(self:get_path_symbol()))
 end
 
-local function REPLFactory()
+function M.REPLFactory()
   local ft = vim.bo.filetype
   local repl_map = {
     python = PythonREPL,
@@ -475,51 +454,51 @@ local function REPLFactory()
     lua = LuaREPL,
   }
   if repl_map[ft] == nil then
-    return BashREPL.new() -- fall back to BashREPL by default
+    return BashREPL() -- fall back to BashREPL by default
   end
-  return repl_map[ft].new()
+  return repl_map[ft]()
 end
 
 -- General Keymaps
 
 vim.keymap.set("n", "<leader>rs", function()
-  REPLFactory():run_script()
+  M.REPLFactory():run_script()
 end, { desc = "Run script" })
 
 vim.keymap.set("n", "<leader>rf", function()
-  REPLFactory():run_func()
+  M.REPLFactory():run_func()
 end, { desc = "Run function" })
 
 vim.keymap.set("n", "<leader>rL", function()
-  REPLFactory():launch_interpreter()
+  M.REPLFactory():launch_interpreter()
 end, { desc = "Launch interpreter" })
 
 vim.keymap.set("n", "<leader>rt", function()
-  REPLFactory():test()
+  M.REPLFactory():test()
 end, { desc = "Run Test" })
 
 vim.keymap.set("n", "<leader>rdb", function()
-  REPLFactory():debug_breakpoint()
+  M.REPLFactory():debug_breakpoint()
 end, { desc = "Send break point" })
 
 vim.keymap.set("n", "<leader>rdd", function()
-  REPLFactory():start_db()
+  M.REPLFactory():start_db()
 end, { desc = "start ?db" })
 
 vim.keymap.set("n", "<leader>rdu", function()
-  REPLFactory():debug_unt()
+  M.REPLFactory():debug_unt()
 end, { desc = "until line" })
 
 vim.keymap.set({ "n", "v" }, "<leader>rdp", function()
-  REPLFactory():debug_print()
+  M.REPLFactory():debug_print()
 end, { desc = "print variable" })
 
 vim.keymap.set({ "n", "v" }, "<leader>rde", function()
-  REPLFactory():debug_explore()
+  M.REPLFactory():debug_explore()
 end, { desc = "explore object" })
 
 vim.keymap.set("n", "<leader>rdE", function()
-  REPLFactory():debug_explore("locals()")
+  M.REPLFactory():debug_explore("locals()")
 end, { desc = "explore locals()" })
 
 -- TODO: `configs/nvim/yx/plugins_conf.vim` for doc test

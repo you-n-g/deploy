@@ -1,6 +1,6 @@
 #!/bin/sh
 false << "EOF" > /dev/null
-helper_scripts/bin/hc_openai.py azure
+helper_scripts/bin/hc_openai.py azure --deployment=$CHAT_MODEL
 EOF
 
 api_base=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 1p)
@@ -46,6 +46,7 @@ azure_aider() {
   export AZURE_API_KEY=$api_key
   export AZURE_API_VERSION=$API_VERSION
   export AZURE_API_BASE=$api_base
+  export CHAT_MODEL=gpt-4o # you should specify it mannually
 }
 
 azure_ad_aider() {
