@@ -6,6 +6,7 @@ And then jump to that window.
 TODO:
 - [ ] Go to lines:
   - goto fzf if failed.
+- [ ] Add command to the terminal. Use prompt matching and <cr> to determine.
 ]]
 
 local M = {}
@@ -72,12 +73,32 @@ end
 
 function M.open_file_in_largest_non_terminal_win()
   local largest_win = get_largest_non_terminal_win()
+  -- Attempt to extract a file path and line number from the surrounding text
   local file = vim.fn.expand('<cfile>')
+  local line = nil
+  local current_line = vim.api.nvim_get_current_line()
+  -- Escape special characters in the file path for exact matching
+  local escaped_file = file:gsub("([^%w])", "%%%1")
+  local pattern = escaped_file .. "[^%d]*(%d+)"
+  local match_start, match_end = string.find(current_line, pattern)
+  if match_start and match_end then
+    line = tonumber(string.match(current_line, pattern))
+    -- Highlight the matched file path and line number temporarily
+    local ns_id = vim.api.nvim_create_namespace('')
+    local cur_buf = vim.api.nvim_get_current_buf()
+    vim.api.nvim_buf_add_highlight(cur_buf, ns_id, 'Search', vim.fn.line('.') - 1, match_start - 1, match_end)
+    vim.defer_fn(function()
+      vim.api.nvim_buf_clear_namespace(cur_buf, ns_id, 0, -1)
+    end, 500)  -- Highlight for 500 milliseconds
+  end
 
   -- If a largest non-terminal window was found, open the file there
   if vim.api.nvim_buf_get_option(0, 'buftype') == 'terminal' and largest_win ~= nil  and file ~= '' then
     vim.api.nvim_set_current_win(largest_win)
     vim.cmd('edit ' .. file)
+    if line then
+      vim.api.nvim_win_set_cursor(0, {line, 0})
+    end
   else
     -- Fallback to the original 'gf' behavior if no suitable window is found
     vim.cmd('normal! gf')
@@ -120,7 +141,7 @@ end
 vim.api.nvim_create_autocmd('TermOpen', {
   pattern = '*',
   callback = function()
-    vim.api.nvim_buf_set_keymap(0, 'n', '<leader>c', '<cmd>lua require"extra_fea.term_utils".copy_last_terminal_command()<CR>', { noremap = true, silent = true })
+    vim.api.nvim_buf_set_keymap(0, 'n', '<leader>C', '<cmd>lua require"extra_fea.term_utils".copy_last_terminal_command()<CR>', { noremap = true, silent = true })
   end
 })
 

@@ -3,36 +3,45 @@ map <local>ral to send two command to terminal
 key_shell.sh azure_aider
 aider --model azure/$CHAT_MODEL  --no-auto-commit
 aider = AiderREPL
+
+Related projects
+- https://github.com/aweis89/aider.nvim
 ]]
 --
 local repl = require"extra_fea/repl_workflow"
+local term_size = 12
 
 local repl_inst = repl.REPLFactory()
 
+local launch_cmd = [[key_shell.sh %s bash -c "aider --model azure/\$CHAT_MODEL --no-auto-commit --no-show-model-warnings --editor \"nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\\\"w\\\"); require\\\"snacks\\\".bufdelete()'\""]]
+-- local launch_cmd = [[key_shell.sh %s bash -c "aider --model azure/\$CHAT_MODEL --no-auto-commit --no-show-model-warnings --editor \"nvim --cmd 'let g:flatten_wait=1'\" "]]
+
 vim.keymap.set("n", "<leader>raL", function()
-  local cmds = {
-    "key_shell.sh azure_aider",
-    "aider --model azure/$CHAT_MODEL --no-auto-commit",
-  }
-  for _, cmd in ipairs(cmds) do
-    require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
-  end
+  -- local cmds = {
+  --   "key_shell.sh azure_aider",
+  --   "aider --model azure/$CHAT_MODEL --no-auto-commit",
+  -- }
+  -- for _, cmd in ipairs(cmds) do
+  --   require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+  -- end
+  require("toggleterm").exec(string.format(launch_cmd, "azure_aider"), tonumber(vim.g.toggleterm_last_id), term_size)
 end, { noremap = true, silent = true, desc = "Run azure_aider commands in terminal" })
 
 
 vim.keymap.set("n", "<leader>ral", function()
-  local cmds = {
-    "key_shell.sh azure_ad_aider",
-    "aider --model azure/$CHAT_MODEL --no-auto-commit --no-show-model-warnings",
-  }
-  for _, cmd in ipairs(cmds) do
-    require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
-  end
+  -- local cmds = {
+  --   "key_shell.sh azure_ad_aider",
+  --   "aider --model azure/$CHAT_MODEL --no-auto-commit --no-show-model-warnings",
+  -- }
+  -- for _, cmd in ipairs(cmds) do
+  --   require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+  -- end
+  require("toggleterm").exec(string.format(launch_cmd, "azure_ad_aider"), tonumber(vim.g.toggleterm_last_id), term_size)
 end, { noremap = true, silent = true, desc = "Run azure_ad_aider commands in terminal" })
 
 vim.keymap.set("n", "<leader>rar", function()
     local cmd = "/readonly " .. vim.fn.expand(repl_inst:get_path_symbol())
-    require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+    require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), term_size)
 end, { noremap = true, silent = true, desc = "Send current file to aider in read-only mode" })
 
 vim.keymap.set("n", "<leader>raa", function()
@@ -40,6 +49,12 @@ vim.keymap.set("n", "<leader>raa", function()
     "/add " .. vim.fn.expand(repl_inst:get_path_symbol()),
   }
   for _, cmd in ipairs(cmds) do
-    require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+    require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), term_size)
   end
 end, { noremap = true, silent = true, desc = "Add current file to aider" })
+
+vim.keymap.set("n", "<leader>rae", function()
+  -- NOTE: this depnends on the correctly setting
+  -- opts = { window = { open = "smart" } },
+  require("toggleterm").exec("/editor", tonumber(vim.g.toggleterm_last_id), term_size)
+end, { noremap = true, silent = true, desc = "/editor" })

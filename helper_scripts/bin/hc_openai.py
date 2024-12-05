@@ -3,6 +3,7 @@
 This file is used together with key_shell.sh
 It is used to check the usability of the OpenAI API.
 """
+import os
 from openai import AzureOpenAI
 import typer
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
@@ -11,7 +12,7 @@ app = typer.Typer()
 
 
 @app.command()
-def azure(deployment: str = "gpt-4o"):
+def azure(deployment: str | None = None):
     """
     Example function to demonstrate Azure OpenAI chat completion.
 
@@ -22,6 +23,8 @@ def azure(deployment: str = "gpt-4o"):
     Args:
         deployment_name (str): The name of the model deployment. Default is "gpt-4o".
     """
+    if deployment is None:
+        deployment = os.getenv("CHAT_MODEL", "gpt-4o")
     client = AzureOpenAI()
 
     response = client.chat.completions.create(model=deployment,

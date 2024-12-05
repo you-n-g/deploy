@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 false << "EOF" > /dev/null
 helper_scripts/bin/hc_openai.py azure --deployment=$CHAT_MODEL
 EOF
@@ -19,7 +19,7 @@ azure() {
   export OPENAI_API_VERSION=$API_VERSION
   export AZURE_OPENAI_API_KEY=$api_key
   export AZURE_OPENAI_ENDPOINT=$api_base
-  # export AZURE_OPENAI_AD_TOKEN=
+  export CHAT_MODEL=gpt-4o # you should specify it mannually
 
   # ChatGPT.nvim convention
   # export OPENAI_API_TYPE='azure'
@@ -58,4 +58,11 @@ azure_ad_aider() {
 
 ${1:-azure}
 
-$SHELL
+# Check if there are more than one argument
+if [ "$#" -gt 1 ]; then
+  # Print all arguments starting from the first one
+  "${@:2}"
+else
+  # Start an interactive shell session
+  exec $SHELL
+fi
