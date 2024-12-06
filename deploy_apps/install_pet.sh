@@ -8,9 +8,11 @@ mkdir -p $PET_PATH
 cd $PET_PATH
 
 
-NAME=pet_0.3.6_linux_amd64.tar.gz
+# VER=0.3.6
+VER=1.0.0
+NAME=pet_${VER}_linux_amd64.tar.gz
 
-wget https://github.com/knqyf263/pet/releases/download/v0.3.6/$NAME
+wget https://github.com/knqyf263/pet/releases/download/v$VER/$NAME
 
 tar xf $NAME
 

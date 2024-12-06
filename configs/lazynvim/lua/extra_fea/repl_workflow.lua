@@ -142,6 +142,8 @@ local config = {
   load_env = true, -- load_env before.
   doc_test = false,
   abs_path = true, -- should we use absolute path
+  aider_mode = false,
+  key_shell = "",  -- key_shell.sh azure|azure_ad|
 }
 
 --- Modify the command before sending it out
@@ -150,6 +152,10 @@ local function edit_before_send(cmd)
   -- modify the config based on config
   if config.load_env then
     cmd = "mydotenv.sh " .. cmd
+  end
+
+  if config.aider_mode then
+    cmd = "/run " .. cmd
   end
 
   -- involve human editing
@@ -181,10 +187,16 @@ vim.keymap.set("n", "<leader>rct", function()
 end, { desc = "Using doctest for testing." })
 
 vim.keymap.set("n", "<leader>rca", function()
-  --  toggle  config["edit_before_send"] between true and false
+  --  toggle  config["abs_path"] between true and false
   config["abs_path"] = not config["abs_path"]
   P(config["abs_path"])
 end, { desc = "Toggle Absolute Path." })
+
+vim.keymap.set("n", "<leader>rcm", function()
+  --  toggle  config["aider_mode"] between true and false
+  config["aider_mode"] = not config["aider_mode"]
+  P(config["aider_mode"])
+end, { desc = "Toggle Aider Mode." })
 
 vim.keymap.set("n", "<leader>rcl", function()
   --  toggle  config["edit_before_send"] between true and false

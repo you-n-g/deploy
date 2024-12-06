@@ -380,10 +380,10 @@
 
 [[snippets]]
   description = "aider start"
-  command = "key_shell.sh azure_ad_aider bash -c 'aider --model azure/$CHAT_MODEL --no-auto-commit --no-show-model-warnings'"
+  command = "key_shell.sh <cred=|_azure_ad_lite_||_azure_lite_|> bash -c 'aider --model azure/$CHAT_MODEL --no-auto-commit --no-show-model-warnings'"
   output = ""
 
 [[snippets]]
-  description = "key_shell.sh azure_ad hc_openai.py azure"
-  command = "health check for openai"
-  output = ""
+  description = "health check for openai & llm"
+  command = "key_shell.sh <cred=|_azure_ad_||_azure_||_azure_ad_lite_||_azure_lite_|> hc_llm.py <api=|_azure_||_azure-lite_|>"
+  output = "test ls"
