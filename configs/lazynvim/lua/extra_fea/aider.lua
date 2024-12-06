@@ -40,7 +40,7 @@ vim.keymap.set("n", "<leader>ral", function()
 end, { noremap = true, silent = true, desc = "Run azure_ad_aider commands in terminal" })
 
 vim.keymap.set("n", "<leader>rar", function()
-    local cmd = "/readonly " .. vim.fn.expand(repl_inst:get_path_symbol())
+    local cmd = "/read-only " .. vim.fn.expand(repl_inst:get_path_symbol())
     require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), term_size)
 end, { noremap = true, silent = true, desc = "Send current file to aider in read-only mode" })
 

@@ -37,7 +37,8 @@ azure_ad_api_02() {
 }
 
 azure_ad_api_select() {
-  azure_ad_api_02
+  azure_ad_api_01
+  # azure_ad_api_02  # 02 gpt-4o is always busy....
 }
 
 azure_key_api_select() {

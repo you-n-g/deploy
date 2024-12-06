@@ -6,6 +6,7 @@ rank:
     Methodologically, we have identified a framework with two key components: 'R' for proposing new ideas and 'D' for implementing them. We believe that the automatic evolution of R&D will lead to solutions of significant industrial value.
     """
     Please note that RL Agents are different from LLM-Agents. You are only interested in RL Agents if they are related to LLM-Agents. Pure RL-Agents are not your focus.
+    Our scope is broad, but we are beginning with data science R&D. Papers related to data science are considered highly relevant.
     You may start applying your project to the finance field, such as Quant.
     
 

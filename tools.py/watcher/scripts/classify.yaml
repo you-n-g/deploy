@@ -6,6 +6,7 @@ system: |-
   - RL: Reinforcement learning.
   - Multimodality: Multimodality involving text, vision, etc.
   - Robotic: Controlling a mechanical robot to perform tasks.
+  - Data Science: The paper primarily focuses on data science scenarios, such as those found in platforms like Kaggle.
 
   You should respond in JSON format with the tags and their corresponding reasons. If a tag applies to the paper, set "relevant" to True. For example:
   ```

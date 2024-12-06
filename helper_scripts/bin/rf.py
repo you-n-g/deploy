@@ -63,7 +63,7 @@ def reduce_memory_usage(df):
 
 class ReadFile:
     def _auto_load(self, path):
-        for f in [self._pkl, self._hdf]:
+        for f in [self._pkl, self._hdf, self._parquet]:
             try:
                 return f(path)
             except Exception as e:
@@ -72,6 +72,9 @@ class ReadFile:
     def _pkl(self, path):
         with Path(path).open("rb") as f:
             return pickle.load(f)
+
+    def _parquet(self, path):
+        return pd.read_parquet(path)
 
     def _inspect(self, obj, e=False):
         if e:
