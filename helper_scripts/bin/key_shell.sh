@@ -7,14 +7,12 @@ api_base=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 1p)
 azure_engine=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 2p)
 api_key=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 3p)
 
-# Shared keys
-openai() {
-  export OPENAI_API_KEY=sk-1234
-  export OPENAI_BASE_URL=http://127.0.0.1:4000
-  export CHAT_MODEL=gpt-4
-}
-
 # # Outlines: Credentials
+openai_key_api_01() {
+  OPENAI_API_KEY=sk-1234
+  OPENAI_BASE_URL=http://127.0.0.1:4000
+  CHAT_MODEL=gpt-4
+}
 
 azure_key_api_01() {
   API_VERSION=2023-03-15-preview
@@ -46,7 +44,6 @@ azure_ad_api_select() {
 azure_key_api_select() {
   azure_key_api_01
 }
-
 
 # # Outlines: Usage format
 
@@ -93,6 +90,21 @@ azure_ad_lite() {
   export AZURE_API_VERSION=$API_VERSION
   export AZURE_OPENAI_AD_TOKEN=$AD_TOKEN
   export CHAT_MODEL=$CHAT_MODEL # you should specify it mannually
+}
+
+# Shared keys
+openai() {
+  openai_key_api_01
+  export OPENAI_API_KEY=$OPENAI_API_KEY
+  export OPENAI_BASE_URL=$OPENAI_BASE_URL
+  export CHAT_MODEL=$CHAT_MODEL
+}
+
+openai_lite() {
+  openai_key_api_01
+  export OPENAI_API_KEY=$OPENAI_API_KEY
+  export OPENAI_API_BASE=$OPENAI_BASE_URL
+  export CHAT_MODEL=$CHAT_MODEL
 }
 
 # # Outlines: Extra alias and scenarios

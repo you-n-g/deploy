@@ -5,3 +5,11 @@ model_list:
       api_base: os.environ/AZURE_API_BASE
       api_version: os.environ/AZURE_API_VERSION
       azure_ad_token: os.environ/AZURE_OPENAI_AD_TOKEN
+
+# No luck
+# litellm_settings:
+#   success_callback: ["langfuse"]
+
+litellm_settings:
+  # callbacks: xytoy.llm.lite.proxy_handler_instance  it will not looking for package
+  callbacks: custom_callbacks.proxy_handler_instance  # but looking for a file related to the config

@@ -380,7 +380,7 @@
 
 [[snippets]]
   description = "aider start"
-  command = "key_shell.sh <cred=|_azure_ad_lite_||_azure_lite_|> bash -c 'aider --model azure/$CHAT_MODEL --no-auto-commit --no-show-model-warnings'"
+  command = "key_shell.sh <cred=|_openai_lite_||_azure_ad_lite_||_azure_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_azure/$CHAT_MODEL_|> --no-auto-commit --no-show-model-warnings'"
   output = ""
 
 [[snippets]]
