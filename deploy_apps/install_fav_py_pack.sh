@@ -103,7 +103,7 @@ setup_jupyter_asc() {
 
 # Function to handle OpenAI dependencies
 install_openai_deps() {
-  pip install openai azure-identity # support openai
+  pip install openai azure-identity litellm[proxy] # support openai
 }
 
 # Function to handle development dependencies

@@ -9,7 +9,9 @@ api_key=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 3p)
 
 # Shared keys
 openai() {
-  export OPENAI_API_KEY=$api_key
+  export OPENAI_API_KEY=sk-1234
+  export OPENAI_BASE_URL=http://127.0.0.1:4000
+  export CHAT_MODEL=gpt-4
 }
 
 # # Outlines: Credentials
@@ -100,6 +102,11 @@ azure_aider() {
 
 azure_ad_aider() {
   azure_ad_lite
+}
+
+lite_llm_proxy() {
+  # https://docs.litellm.ai/docs/providers/litellm_proxy
+  export LITELLM_PROXY_API_KEY=""
 }
 
 ${1:-azure}

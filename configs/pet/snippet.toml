@@ -385,5 +385,5 @@
 
 [[snippets]]
   description = "health check for openai & llm"
-  command = "key_shell.sh <cred=|_azure_ad_||_azure_||_azure_ad_lite_||_azure_lite_|> hc_llm.py <api=|_azure_||_azure-lite_|>"
-  output = "test ls"
+  command = "key_shell.sh <cred=|_azure_ad_||_azure_||_azure_ad_lite_||_azure_lite_||_openai_|> hc_llm.py <api=|_azure_||_azure-lite_||_native_|>"
+  output = ""

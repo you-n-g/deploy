@@ -13,7 +13,7 @@ local term_size = 12
 
 local repl_inst = repl.REPLFactory()
 
-local launch_cmd = [[key_shell.sh %s bash -c "aider --model azure/\$CHAT_MODEL --no-auto-commit --no-show-model-warnings --editor \"nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\\\"w\\\"); require\\\"snacks\\\".bufdelete()'\""]]
+local launch_cmd = [[key_shell.sh %s bash -c "aider --model azure/\$CHAT_MODEL --no-auto-commit --no-show-model-warnings --editor \"nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\\\"w\\\"); require\\\"snacks\\\".bufdelete()'\" --watch-files"]]
 -- local launch_cmd = [[key_shell.sh %s bash -c "aider --model azure/\$CHAT_MODEL --no-auto-commit --no-show-model-warnings --editor \"nvim --cmd 'let g:flatten_wait=1'\" "]]
 
 vim.keymap.set("n", "<leader>raL", function()

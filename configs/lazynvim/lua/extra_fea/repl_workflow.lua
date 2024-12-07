@@ -524,7 +524,7 @@ vim.keymap.set({ "n", "v", "o" }, "<leader>rr", function()
   -- P(start_pos)
   -- print("end:")
   -- P(end_pos)
-  REPLFactory():send_code()
+  M.REPLFactory():send_code()
 end, { desc = "Send Code to (R)un" })
 
 -- config

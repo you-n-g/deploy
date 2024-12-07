@@ -4,6 +4,7 @@ This file is used together with key_shell.sh
 It is used to check the usability of the OpenAI API.
 """
 import os
+from openai import Client
 from openai import AzureOpenAI
 from litellm import completion
 import typer
@@ -54,18 +55,38 @@ def azure_lite(deployment: str | None = None):
     if deployment is None:
         deployment = os.getenv("CHAT_MODEL", "gpt-4o")
 
-    response = completion(
-        model=f"azure/{deployment}",
-        messages=[{
-            "role": "system",
-            "content": "Assistant is a large language model trained by OpenAI."
-        }, {
-            "role": "user",
-            "content": "Who were the founders of Microsoft?"
-        }]
-    )
+    response = completion(model=f"azure/{deployment}",
+                          messages=[{
+                              "role": "system",
+                              "content": "Assistant is a large language model trained by OpenAI."
+                          }, {
+                              "role": "user",
+                              "content": "Who were the founders of Microsoft?"
+                          }])
 
     # Print the response in JSON format with indentation
+    print(response)
+
+
+@app.command()
+def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo")):
+    """
+    Function to demonstrate a native OpenAI API call.
+
+    Args:
+        model (str): The name of the model to use. Default is "gpt-3.5-turbo".
+    """
+    # openai.api_key = os.getenv("OPENAI_API_KEY")
+
+    client = Client()
+    response = client.chat.completions.create(model=model,
+                                              messages=[{
+                                                  "role": "system",
+                                                  "content": "Assistant is a large language model trained by OpenAI."
+                                              }, {
+                                                  "role": "user",
+                                                  "content": "Who were the founders of Microsoft?"
+                                              }])
     print(response)
 
 
