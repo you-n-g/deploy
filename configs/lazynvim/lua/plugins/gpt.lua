@@ -80,6 +80,16 @@ local modules = {
         actions_paths = { action_path },
       }
       if vim.fn.has("win32") ~= 1 then
+        local cred = require("extra_fea.utils").get_cred()
+        if cred.type == "azure" then
+          vim.env.OPENAI_API_TYPE = cred.type
+          vim.env.OPENAI_API_BASE = cred.api_base
+          vim.env.OPENAI_API_AZURE_ENGINE = cred.model
+          vim.env.OPENAI_API_KEY = cred.api_key
+        else
+          vim.env.OPENAI_API_KEY = cred.api_key
+          vim.env.OPENAI_API_HOST = cred.api_base
+        end
         require("extra_fea.utils").export_cred_env()
       end
       require("chatgpt").setup(opts)
@@ -166,13 +176,22 @@ local modules = {
     -- },
     opts = function(_, opts)
       local cred = require("extra_fea.utils").get_cred()
-      opts["provider"] = "azure"
-      opts["azure"] = {
-        endpoint = cred.api_base, -- example: "https://<your-resource-name>.openai.azure.com"
-        deployment = cred.azure_deployment, -- Azure deployment name (e.g., "gpt-4o", "my-gpt-4o-deployment")
-      }
+      if cred.type == "azure" then
+        opts["provider"] = "azure"
+        opts["azure"] = {
+          endpoint = cred.api_base, -- example: "https://<your-resource-name>.openai.azure.com"
+          deployment = cred.model, -- Azure deployment name (e.g., "gpt-4o", "my-gpt-4o-deployment")
+        }
+        vim.env.AZURE_OPENAI_API_KEY = cred.api_key
+      else
+        opts["provider"] = "openai"
+        opts["openai"] = {
+          endpoint = cred.api_base,
+          model = cred.model,
+        }
+        vim.env.OPENAI_API_KEY = cred.api_key
+      end
       opts.hints = { enabled = false } -- it is annoying due to conflict with simplegpt.nvim. I have to use <leader>uE to erase them
-      vim.env.AZURE_OPENAI_API_KEY = cred.api_key
     end,
     -- if you want to build from source then do `make BUILD_FROM_SOURCE=true`
     build = "make",

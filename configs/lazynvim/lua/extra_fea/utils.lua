@@ -55,25 +55,39 @@ end
 
 function M.get_cred()
   local fname = "gpt.gpg"
-  return {
-    api_base = string.gsub(vim.fn.system(
-      "gpg -q --decrypt " .. vim.fn.expand("$HOME") .. "/deploy/keys/" .. fname .. " | sed -n 1p"
-    ), "\n$", ""),
-    azure_deployment = string.gsub(vim.fn.system(
-      "gpg -q --decrypt " .. vim.fn.expand("$HOME") .. "/deploy/keys/" .. fname .. " | sed -n 2p"
-    ), "\n$", ""),
-    api_key = string.gsub(vim.fn.system(
-      "gpg -q --decrypt " .. vim.fn.expand("$HOME") .. "/deploy/keys/" .. fname .. " | sed -n 3p"
-    ), "\n$", ""),
-  }
+  -- local is_local_open = vim.fn.system("nc -z 127.0.0.1 4000") == 0
+  local is_local_open = vim.fn.system("curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4000") == "200"
+
+  if is_local_open then
+    return {
+      type = "openai",
+      api_base = "http://127.0.0.1:4000",
+      model = "gpt-4",
+      api_key = "sk-1234",
+    }
+  else
+    return {
+      type = "azure",
+      api_base = string.gsub(vim.fn.system(
+        "gpg -q --decrypt " .. vim.fn.expand("$HOME") .. "/deploy/keys/" .. fname .. " | sed -n 1p"
+      ), "\n$", ""),
+      model = string.gsub(vim.fn.system(
+        "gpg -q --decrypt " .. vim.fn.expand("$HOME") .. "/deploy/keys/" .. fname .. " | sed -n 2p"
+      ), "\n$", ""),
+      api_key = string.gsub(vim.fn.system(
+        "gpg -q --decrypt " .. vim.fn.expand("$HOME") .. "/deploy/keys/" .. fname .. " | sed -n 3p"
+      ), "\n$", ""),
+    }
+  end
 end
 
 function M.export_cred_env()
+  -- This is hard coded with ChatGPT.nvim
   -- this is designed for chatgpt.nvim
   local cred = require("extra_fea.utils").get_cred()
   vim.env.OPENAI_API_TYPE = 'azure'
   vim.env.OPENAI_API_BASE = cred.api_base
-  vim.env.OPENAI_API_AZURE_ENGINE = cred.azure_deployment
+  vim.env.OPENAI_API_AZURE_ENGINE = cred.model
   vim.env.OPENAI_API_KEY = cred.api_key
 end
 

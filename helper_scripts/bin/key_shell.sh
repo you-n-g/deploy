@@ -3,6 +3,8 @@ false <<"EOF" >/dev/null
 helper_scripts/bin/hc_llm.py azure --deployment=$CHAT_MODEL
 EOF
 
+DIR="$( cd "$(dirname "$(readlink -f "$0")")" || exit ; pwd -P )"
+
 api_base=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 1p)
 azure_engine=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 2p)
 api_key=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 3p)
@@ -11,7 +13,16 @@ api_key=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 3p)
 openai_key_api_01() {
   OPENAI_API_KEY=sk-1234
   OPENAI_BASE_URL=http://127.0.0.1:4000
-  CHAT_MODEL=gpt-4
+
+  if [ ! -e $DIR/litellm_proxy.env ]; then
+    echo "litellm_proxy.env not found; llm_proxy.sh may not be run"
+    exit 1
+  fi
+
+  # CHAT_MODEL=gpt-4o # avoid hardcode
+  source $DIR/litellm_proxy.env
+  CHAT_MODEL=$(python -c "print('$CHAT_MODEL'.split('/')[-1].split('_')[0])")
+  echo $CHAT_MODEL
 }
 
 azure_key_api_01() {
@@ -23,6 +34,7 @@ azure_key_api_01() {
 
 azure_ad_api_01() {
   CHAT_MODEL=gpt-4_0125-Preview
+  # gpt-4_0125-Preview(2m) gpt-4_turbo-2024-04-09(1k) gpt-4-32k_0613(1k)
   API_VERSION=2024-08-01-preview
   END_POINT=https://gcraoai9ncusspot.openai.azure.com/
   AD_TOKEN=$(hc_llm.py get-azure-ad-token)
@@ -30,15 +42,27 @@ azure_ad_api_01() {
 
 azure_ad_api_02() {
   CHAT_MODEL=gpt-4o_2024-05-13
-  # We have: gpt-4_1106-Preview gpt-4o_2024-05-13 gpt-35-turbo_1106
+  # CHAT_MODEL=gpt-4_1106-Preview
+  # We have: gpt-4_1106-Preview(5m) gpt-4o_2024-05-13(5m) gpt-35-turbo_1106 (10m)
+  API_VERSION=2024-08-01-preview
+  END_POINT=https://gcrgpt4aoai9spot.openai.azure.com/
+  AD_TOKEN=$(hc_llm.py get-azure-ad-token)
+}
+
+azure_ad_api_03() {
+  # CHAT_MODEL=gpt-4o_2024-05-13
+  # CHAT_MODEL=gpt-4_1106-Preview
+  CHAT_MODEL=gpt-40_2024-05-13
+  # We have: gpt-4_1106-Preview(0.5) gpt-4_0125-Preview(4m) gpt-4o_2024-05-13(5m)
   API_VERSION=2024-08-01-preview
   END_POINT=https://gcrgpt4aoai9spot.openai.azure.com/
   AD_TOKEN=$(hc_llm.py get-azure-ad-token)
 }
 
 azure_ad_api_select() {
-  azure_ad_api_01
-  # azure_ad_api_02  # 02 gpt-4o is always busy....
+  # azure_ad_api_01
+  azure_ad_api_02  # 02 gpt-4o is always busy....
+  # azure_ad_api_03  # 02 gpt-4o is always busy....
 }
 
 azure_key_api_select() {
@@ -89,7 +113,7 @@ azure_ad_lite() {
   export AZURE_API_BASE=$END_POINT
   export AZURE_API_VERSION=$API_VERSION
   export AZURE_OPENAI_AD_TOKEN=$AD_TOKEN
-  export CHAT_MODEL=$CHAT_MODEL # you should specify it mannually
+  export CHAT_MODEL=azure/$CHAT_MODEL # you should specify it mannually
 }
 
 # Shared keys
@@ -121,7 +145,7 @@ lite_llm_proxy() {
   export LITELLM_PROXY_API_KEY=""
 }
 
-${1:-azure}
+${1:-openai}
 
 # Check if there are more than one argument
 if [ "$#" -gt 1 ]; then
