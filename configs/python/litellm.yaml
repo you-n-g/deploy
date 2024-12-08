@@ -4,13 +4,15 @@ model_list:
       model: os.environ/CHAT_MODEL
       api_base: os.environ/AZURE_API_BASE
       api_version: os.environ/AZURE_API_VERSION
-      azure_ad_token: os.environ/AZURE_OPENAI_AD_TOKEN
+      # azure_ad_token: os.environ/AZURE_OPENAI_AD_TOKEN
+      # azure_ad_token: oidc/file/~/deploy/helper_scripts/bin/litellm_live_token
   - model_name: gpt-4o
     litellm_params:
       model: os.environ/CHAT_MODEL
       api_base: os.environ/AZURE_API_BASE
       api_version: os.environ/AZURE_API_VERSION
-      azure_ad_token: os.environ/AZURE_OPENAI_AD_TOKEN
+      # azure_ad_token: os.environ/AZURE_OPENAI_AD_TOKEN
+      # azure_ad_token: oidc/file/~/deploy/helper_scripts/bin/litellm_live_token
 
 # No luck
 # litellm_settings:
@@ -19,3 +21,4 @@ model_list:
 litellm_settings:
   # callbacks: xytoy.llm.lite.proxy_handler_instance  it will not looking for package
   callbacks: custom_callbacks.proxy_handler_instance  # but looking for a file related to the config
+  enable_azure_ad_token_refresh: true

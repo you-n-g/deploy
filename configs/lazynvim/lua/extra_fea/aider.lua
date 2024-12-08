@@ -9,21 +9,18 @@ local term_size = 12
 local repl_inst = repl.REPLFactory()
 
 local launch_cmd = [[key_shell.sh %s bash -c "aider --model \$CHAT_MODEL --weak-model \$CHAT_MODEL --no-auto-commit --no-show-model-warnings --editor \"nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\\\"w\\\"); require\\\"snacks\\\".bufdelete()'\" --watch-files"]]
--- local launch_cmd = [[key_shell.sh %s bash -c "aider --model \$CHAT_MODEL --weak-model \$CHAT_MODEL --no-auto-commit --no-show-model-warnings --editor \"nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\\\"w\\\"); require\\\"snacks\\\".bufdelete()'\" --watch-files"]]
--- local launch_cmd = [[key_shell.sh %s bash -c "aider --model \$CHAT_MODEL --weak-model \$CHAT_MODEL --no-auto-commit --no-show-model-warnings --editor \"nvim --cmd 'let g:flatten_wait=1'\" "]]
 
 vim.keymap.set("n", "<leader>raL", function()
   require("toggleterm").exec(string.format(launch_cmd, "azure_aider"), tonumber(vim.g.toggleterm_last_id), term_size)
 end, { noremap = true, silent = true, desc = "Run azure_aider commands in terminal" })
 
-
 vim.keymap.set("n", "<leader>ral", function()
   require("toggleterm").exec(string.format(launch_cmd, "openai_lite"), tonumber(vim.g.toggleterm_last_id), term_size)
-end, { noremap = true, silent = true, desc = "Run azure_ad_aider commands in terminal" })
+end, { noremap = true, silent = true, desc = "Run openai_lite commands in terminal" })
 
 vim.keymap.set("n", "<leader>rar", function()
-    local cmd = "/read-only " .. vim.fn.expand(repl_inst:get_path_symbol())
-    require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), term_size)
+  local cmd = "/read-only " .. vim.fn.expand(repl_inst:get_path_symbol())
+  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), term_size)
 end, { noremap = true, silent = true, desc = "Send current file to aider in read-only mode" })
 
 vim.keymap.set("n", "<leader>raa", function()
@@ -36,7 +33,20 @@ vim.keymap.set("n", "<leader>raa", function()
 end, { noremap = true, silent = true, desc = "Add current file to aider" })
 
 vim.keymap.set("n", "<leader>rae", function()
-  -- NOTE: this depnends on the correctly setting
+  -- NOTE: this depends on the correct setting
   -- opts = { window = { open = "smart" } },
   require("toggleterm").exec("/editor", tonumber(vim.g.toggleterm_last_id), term_size)
-end, { noremap = true, silent = true, desc = "/editor" })
+end, { noremap = true, silent = true, desc = "Open editor(/editor)" })
+
+-- For a file buffer (the buffer is related to a disk file, not some nofile buffer),
+-- run checktime when I enter it or before I want to change it.
+vim.api.nvim_create_autocmd({"BufEnter", "CursorHold", "FocusGained"}, {
+  pattern = "*",
+  callback = function()
+    if vim.fn.getbufvar(vim.fn.bufnr(), "&buftype") == "" then
+      -- This prevents the `checktime` command from running on non-file buffers (e.g., terminal buffers, help buffers).
+      vim.cmd("checktime")
+    end
+  end,
+  desc = "Run checktime when entering a buffer or before changing it"
+})
