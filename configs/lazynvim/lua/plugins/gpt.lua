@@ -90,7 +90,7 @@ local modules = {
           vim.env.OPENAI_API_KEY = cred.api_key
           vim.env.OPENAI_API_HOST = cred.api_base
         end
-        require("extra_fea.utils").export_cred_env()
+        -- require("extra_fea.utils").export_cred_env()
       end
       require("chatgpt").setup(opts)
       -- config whick key with ["<leader><tab>"] = { name = "+tabs & windows" },

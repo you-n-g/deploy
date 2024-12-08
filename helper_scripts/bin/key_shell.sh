@@ -116,7 +116,11 @@ azure_ad_lite() {
   export CHAT_MODEL=azure/$CHAT_MODEL # you should specify it mannually
 }
 
-# Shared keys
+azure_ad_default_lite() {
+  azure_ad_lite
+  unset AZURE_OPENAI_AD_TOKEN
+}
+
 openai() {
   openai_key_api_01
   export OPENAI_API_KEY=$OPENAI_API_KEY
