@@ -12,8 +12,9 @@ key_shell.sh azure_ad_lite bash -c "echo CHAT_MODEL=\$CHAT_MODEL"  > $DIR/litell
 # export AZURE_TENANT_ID=72f988bf-86f1-41af-91ab-2d7cd011db47
 # It may needs to read the code in Azure's default credential to know more about how to make it works
 
+PORT=${1:-4000}
 # https://docs.litellm.ai/docs/providers/litellm_proxy
-key_shell.sh azure_ad_lite litellm --config $DIR/../../configs/python/litellm.yaml  # --detailed_debug  # --debug
+key_shell.sh azure_ad_lite litellm --config $DIR/../../configs/python/litellm.yaml --port $PORT  # --detailed_debug  # --debug
 
 # logic:
 # llm_proxy => get proxy.env => openai model => vim openai config
