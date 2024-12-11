@@ -9,6 +9,9 @@ from openai import AzureOpenAI
 from litellm import completion
 import typer
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from pathlib import Path
+
+DIRNAME = Path(__file__).absolute().resolve().parent
 
 app = typer.Typer()
 
@@ -55,7 +58,7 @@ def azure_lite(deployment: str | None = None):
     if deployment is None:
         deployment = os.getenv("CHAT_MODEL", "gpt-4o")
 
-    response = completion(model=f"azure/{deployment}",
+    response = completion(model=f"{deployment}",
                           messages=[{
                               "role": "system",
                               "content": "Assistant is a large language model trained by OpenAI."
@@ -77,7 +80,7 @@ def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo")):
         model (str): The name of the model to use. Default is "gpt-3.5-turbo".
     """
     # openai.api_key = os.getenv("OPENAI_API_KEY")
-
+    print(f"{model=}")
     client = Client()
     response = client.chat.completions.create(model=model,
                                               messages=[{
@@ -91,13 +94,69 @@ def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo")):
 
 
 @app.command()
-def get_azure_ad_token():
+def get_azure_ad_token(print_token: bool = True):
     credential = DefaultAzureCredential()
     token_provider = get_bearer_token_provider(
         credential,
         "https://cognitiveservices.azure.com/.default",
     )
-    print(token_provider())
+    token = token_provider()
+    if print_token:
+        print(token)
+    return token
+
+
+import yaml
+from tqdm import tqdm
+from litellm import completion
+import pandas as pd  # Import pandas for data handling
+
+
+def load_model_names_and_params(yaml_file):
+    with open(yaml_file, 'r') as file:
+        config = yaml.safe_load(file)
+    return [(model['model_name'], model['litellm_params'])
+            for model in config['model_list']
+            if model['model_name'].startswith("uni_")]
+
+
+def check_model(model_name, error_log):
+    try:
+        native(model_name)
+        return True
+    except Exception as e:
+        error_log.append((model_name, str(e)))
+        return False
+
+
+@app.command()
+def check_all_model():
+    """
+    Health check does not support azure default token provider.
+    """
+    error_log = []
+    available_models = []
+    yaml_file = DIRNAME.parent.parent / 'configs/python/litellm.yaml'
+    model_data = load_model_names_and_params(yaml_file)
+
+    for model_name, _ in tqdm(model_data, desc="Checking model availability"):
+        available = check_model(model_name, error_log)
+        status = "available" if available else "unavailable"
+        print(f"Model {model_name} is {status}.")
+        if available:
+            available_models.append(model_name)
+
+    # Use pandas to print the final availability
+    df_available = pd.DataFrame(available_models, columns=['Available Models'])
+    df_errors = pd.DataFrame(error_log, columns=['Model Name', 'Error'])
+
+    if not df_available.empty:
+        print("\nSummary of Available Models:")
+        print(df_available.to_string(index=False))
+
+    if not df_errors.empty:
+        print("\nSummary of Errors:")
+        print(df_errors.to_string(index=False))
 
 
 if __name__ == "__main__":

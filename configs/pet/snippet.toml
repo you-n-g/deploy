@@ -1,389 +1,474 @@
-[[snippets]]
-  description = "grep cn"
+
+[[Snippets]]
+  Description = "grep cn"
+  Output = ""
+  Tag = []
   command = "rg '[\\p{Han}]'"
-  output = ""
 
-[[snippets]]
-  description = "conda create"
+[[Snippets]]
+  Description = "conda create"
+  Output = ""
+  Tag = []
   command = "conda create -y -n <env_name=XXX> python=<py_version=3.8>"
-  output = ""
 
-[[snippets]]
-  description = "rsync high freq used"
+[[Snippets]]
+  Description = "rsync high freq used"
+  Output = ""
+  Tag = []
   command = "rsync  -avzrP -e ssh XXX XXX  # z(compression) P(progress)"
-  output = ""
 
-[[snippets]]
-  description = "black format"
+[[Snippets]]
+  Description = "black format"
+  Output = ""
+  Tag = []
   command = "black .  -l 120"
-  output = ""
 
-[[snippets]]
-  description = "terminalizer record (fix sharing bug... https://www.terminalizer.com/view/a6b2320b5691 )"
+[[Snippets]]
+  Description = "terminalizer record (fix sharing bug... https://www.terminalizer.com/view/a6b2320b5691 )"
+  Output = ""
+  Tag = []
   command = "terminalizer record XXX -d zsh"
-  output = ""
 
-[[snippets]]
-  description = "process tree"
+[[Snippets]]
+  Description = "process tree"
+  Output = ""
+  Tag = []
   command = "pstree -pas"
-  output = ""
 
-[[snippets]]
-  description = "jupyter --ip 0.0.0.0"
+[[Snippets]]
+  Description = "jupyter --ip 0.0.0.0"
+  Output = ""
+  Tag = []
   command = "echo `hostname -I` && jupyter notebook --no-browser --port 9000 --ip 0.0.0.0"
-  output = ""
 
-[[snippets]]
-  description = "jupyter --ip `hostname -I | awk '{print $1}'`"
+[[Snippets]]
+  Description = "jupyter --ip `hostname -I | awk '{print $1}'`"
+  Output = ""
+  Tag = []
   command = "jupyter notebook --no-browser --port 9000 --ip `hostname -I | awk '{print $1}'` # You can not access 127.0.0.1 when binding hostname"
-  output = ""
 
-[[snippets]]
-  description = "tmux list pane"
+[[Snippets]]
+  Description = "tmux list pane"
+  Output = ""
+  Tag = []
   command = "tmux list-panes -a -F \"#{pane_pid} #{session_name}:#{window_index}:#{pane_index}\""
-  output = ""
 
-[[snippets]]
-  description = "py-spy record"
+[[Snippets]]
+  Description = "py-spy record"
+  Output = ""
+  Tag = []
   command = "py-spy record -o profile.svg -- <cmd>"
-  output = ""
 
-[[snippets]]
-  description = "git add me qlib"
+[[Snippets]]
+  Description = "git add me qlib"
+  Output = ""
+  Tag = []
   command = "git remote add me git@github.com:you-n-g/qlib.git"
-  output = ""
 
-[[snippets]]
-  description = "py-spy top"
+[[Snippets]]
+  Description = "py-spy top"
+  Output = ""
+  Tag = []
   command = "sudo env \"PATH=$PATH\"  py-spy top --pid"
-  output = ""
 
-[[snippets]]
-  description = "snakeviz"
+[[Snippets]]
+  Description = "snakeviz"
+  Output = ""
+  Tag = []
   command = "snakeviz -s -H `hostname -I | awk '{print $1}'` stats_out"
-  output = ""
 
-[[snippets]]
-  description = "py-spy dump"
+[[Snippets]]
+  Description = "py-spy dump"
+  Output = ""
+  Tag = []
   command = "sudo env \"PATH=$PATH\"  py-spy dump --pid"
-  output = ""
 
-[[snippets]]
-  description = "autossh proxy"
+[[Snippets]]
+  Description = "autossh proxy"
+  Output = ""
+  Tag = []
   command = "autossh -R 6489:127.0.0.1:6489 XXX # http proxy deployed locally, XXX configured in .ssh/config"
-  output = ""
 
-[[snippets]]
-  description = "fzf preview for output lines"
+[[Snippets]]
+  Description = "fzf preview for output lines"
+  Output = ""
+  Tag = []
   command = "fzf  --preview \"echo {} | bat -l  Python --style plain # --color=always\" --preview-window :wrap"
-  output = ""
 
-[[snippets]]
-  description = "tmux edit pane name"
+[[Snippets]]
+  Description = "tmux edit pane name"
+  Output = ""
+  Tag = []
   command = "printf '\\033]2;%s\\033\\\\' '<pane-name>'"
-  output = ""
 
-[[snippets]]
-  description = "tmux enable boarder (this will conflict with vim-slime)"
+[[Snippets]]
+  Description = "tmux enable boarder (this will conflict with vim-slime)"
+  Output = ""
+  Tag = []
   command = "tmux set pane-border-status top"
-  output = ""
 
-[[snippets]]
-  description = "for each dir git status"
+[[Snippets]]
+  Description = "for each dir git status"
+  Output = ""
+  Tag = []
   command = "for d in `ls` ; do  cd $d ; echo \"=================`pwd`\" ;  git status  ; cd .. ;  done"
-  output = ""
 
-[[snippets]]
-  description = "clone my style project"
+[[Snippets]]
+  Description = "clone my style project"
+  Output = ""
+  Tag = []
   command = "clone.py all <source env=online_V05> <target env=online_V06>  <source project path=/home/xiaoyang/repos/online3rd_projects/V05> <target project path=/home/xiaoyang/repos/online3rd_projects/V06>"
-  output = ""
 
-[[snippets]]
-  description = "conda clone"
+[[Snippets]]
+  Description = "conda clone"
+  Output = ""
+  Tag = []
   command = "conda create --name <env_name=online_V06>_gpu --clone <env_name=online_V06>"
-  output = ""
 
-[[snippets]]
-  description = "reload tmux config"
+[[Snippets]]
+  Description = "reload tmux config"
+  Output = ""
+  Tag = []
   command = "tmux source ~/.tmux.conf"
-  output = ""
 
-[[snippets]]
-  description = "start mlflow ui with long timeout"
+[[Snippets]]
+  Description = "start mlflow ui with long timeout"
+  Output = ""
+  Tag = []
   command = "GUNICORN_CMD_ARGS='--timeout 120'  mlflow ui -h `hostname -I | awk '{print $1}'` -p <port=5000>"
-  output = ""
 
-[[snippets]]
-  description = "initial the tmux session for coding"
+[[Snippets]]
+  Description = "initial the tmux session for coding"
+  Output = ""
+  Tag = []
   command = "tmux rename-window code ; tmux new-window -n code_shell ; tmux new-window -n ops ; tmux new-window -n ops_shell ; tmux new-window -n service"
-  output = ""
 
-[[snippets]]
-  description = "my repos"
+[[Snippets]]
+  Description = "my repos"
+  Output = ""
+  Tag = []
   command = "git clone git@ssh.dev.azure.com:v3/you-n-g/qutils/cluster_manager ; git clone git@ssh.dev.azure.com:v3/you-n-g/qutils/qutils"
-  output = ""
 
-[[snippets]]
-  description = "grep with ignore"
+[[Snippets]]
+  Description = "grep with ignore"
+  Output = ""
+  Tag = []
   command = "rg  --no-ignore --no-ignore-dot <grep_pattern=XXX> <grep_path=.>"
-  output = ""
 
-[[snippets]]
-  description = "clean jupyter output"
+[[Snippets]]
+  Description = "clean jupyter output"
+  Output = "Nothing"
+  Tag = []
   command = "ipynb_output_filter.py < <notebook=name.ipynb> > _yx_tmp  &&  mv _yx_tmp <notebook=name.ipynb> "
-  output = "Nothing"
 
-[[snippets]]
-  description = "add git ignore"
+[[Snippets]]
+  Description = "add git ignore"
+  Output = ""
+  Tag = []
   command = "cp ~/deploy/configs/git/py.gitignore .gitignore"
-  output = ""
 
-[[snippets]]
-  description = "Forward proxy"
+[[Snippets]]
+  Description = "Forward proxy"
+  Output = ""
+  Tag = []
   command = "ssh xiaoyang@us.afeyoung.icu -L0.0.0.0:6489:0.0.0.0:6489  -D 0.0.0.0:8964"
-  output = ""
 
-[[snippets]]
-  description = "agedu"
+[[Snippets]]
+  Description = "agedu"
+  Output = ""
+  Tag = []
   command = "agedu --auth none -f agedu.dat -w --address `hostname -I | awk '{print $1}'`:5432"
-  output = ""
 
-[[snippets]]
-  description = "install favorite package"
+[[Snippets]]
+  Description = "install favorite package"
+  Output = ""
+  Tag = []
   command = "bash ~/deploy/deploy_apps/install_fav_py_pack.sh"
-  output = ""
 
-[[snippets]]
-  description = "python minimal install after create conda env"
+[[Snippets]]
+  Description = "python minimal install after create conda env"
+  Output = ""
+  Tag = []
   command = "pip install ipdb ipython neovim fire yapf pylint black pipenv"
-  output = ""
 
-[[snippets]]
-  description = "conda remove"
+[[Snippets]]
+  Description = "conda remove"
+  Output = ""
+  Tag = []
   command = "conda remove --name <env_name=XXX> --all"
-  output = ""
 
-[[snippets]]
-  description = "view view file head"
+[[Snippets]]
+  Description = "view view file head"
+  Output = ""
+  Tag = []
   command = "head -n <top=50> <fname=600519.csv> | vim -"
-  output = ""
 
-[[snippets]]
-  description = "git clean all untracked data"
+[[Snippets]]
+  Description = "git clean all untracked data"
+  Output = ""
+  Tag = []
   command = "git clean -d -x -f"
-  output = ""
 
-[[snippets]]
-  description = "create qlib-based project"
+[[Snippets]]
+  Description = "create qlib-based project"
+  Output = ""
+  Tag = []
   command = "mkdir <name> && cd <name> && cp.py --name <name> --py_ver 3.8 all --inst_qlib"
-  output = ""
 
-[[snippets]]
-  description = "install my env"
+[[Snippets]]
+  Description = "install my env"
+  Output = ""
+  Tag = []
   command = "sudo apt-get install -y git curl &&  git clone https://github.com/you-n-g/deploy && cd deploy &&  ./deploy.sh  # make sure you can sudo without password"
-  output = ""
 
-[[snippets]]
-  description = "docker run, interactive, and remove example"
+[[Snippets]]
+  Description = "docker run, interactive, and remove example"
+  Output = ""
+  Tag = []
   command = "docker run -it --rm <img=kaggle/python:latest> /bin/bash"
-  output = ""
 
-[[snippets]]
-  description = "qlib pylint"
+[[Snippets]]
+  Description = "qlib pylint"
+  Output = ""
+  Tag = []
   command = "pylint --disable=C0104,C0114,C0115,C0116,C0301,C0302,C0411,C0413,C1802,R0201,R0401,R0801,R0902,R0903,R0911,R0912,R0913,R0914,R0915,R1720,W0105,W0123,W0201,W0511,W0613,W1113,W1514,E0401,E1121,C0103,C0209,R0402,R1705,R1710,R1725,R1735,W0102,W0212,W0221,W0223,W0231,W0237,W0612,W0621,W0622,W0703,W1309,E1102,E1136 --const-rgx='[a-z_][a-z0-9_]{2,30}$' qlib --init-hook \"import astroid; astroid.context.InferenceContext.max_inferred = 500\""
-  output = ""
 
-[[snippets]]
-  description = "set visible gpu/cuda device"
+[[Snippets]]
+  Description = "set visible gpu/cuda device"
+  Output = ""
+  Tag = []
   command = "export CUDA_VISIBLE_DEVICES=1,2"
-  output = ""
 
-[[snippets]]
-  description = "add qlib remote repo"
+[[Snippets]]
+  Description = "add qlib remote repo"
+  Output = ""
+  Tag = []
   command = "git remote add <user> https://github.com/<user>/qlib ; git fetch <user> <branch=main>  && git checkout <user>/<branch=main>"
-  output = ""
 
-[[snippets]]
-  description = "git ignore change of specific file (Ref https://stackoverflow.com/a/1753078)"
+[[Snippets]]
+  Description = "git ignore change of specific file (Ref https://stackoverflow.com/a/1753078)"
+  Output = ""
+  Tag = []
   command = "git update-index --assume-unchanged <file list>"
-  output = ""
 
-[[snippets]]
-  description = "neovim without any config:w"
+[[Snippets]]
+  Description = "neovim without any config:w"
+  Output = ""
+  Tag = []
   command = "vim -u NONE -U NONE -N -i NONE"
-  output = ""
 
-[[snippets]]
-  description = "start with only lua config"
+[[Snippets]]
+  Description = "start with only lua config"
+  Output = ""
+  Tag = []
   command = "vim -u ~/deploy/configs/nvim/init_debug_lua.vim -U NONE -N -i NONE"
-  output = ""
 
-[[snippets]]
-  description = "fast attach docker"
+[[Snippets]]
+  Description = "fast attach docker"
+  Output = ""
+  Tag = []
   command = "docker exec -it `docker ps -l --format '{{.Names}}'` bash"
-  output = ""
 
-[[snippets]]
-  description = "git commit & skip precommit"
+[[Snippets]]
+  Description = "git commit & skip precommit"
+  Output = ""
+  Tag = []
   command = "git commit --no-verify  -v"
-  output = ""
 
-[[snippets]]
-  description = "Clear PageCache only"
+[[Snippets]]
+  Description = "Clear PageCache only"
+  Output = ""
+  Tag = []
   command = "sudo su  -c \"sync; echo 1 > /proc/sys/vm/drop_caches\""
-  output = ""
 
-[[snippets]]
-  description = "sudo reserve most env variables"
+[[Snippets]]
+  Description = "sudo reserve most env variables"
+  Output = ""
+  Tag = []
   command = "sudo -E env \"PATH=$PATH\""
-  output = ""
 
-[[snippets]]
-  description = "fast install torch"
+[[Snippets]]
+  Description = "fast install torch"
+  Output = ""
+  Tag = []
   command = "pip install light-the-torch && ltt install torch"
-  output = ""
 
-[[snippets]]
-  description = "Jupyter no password"
+[[Snippets]]
+  Description = "Jupyter no password"
+  Output = ""
+  Tag = []
   command = " --NotebookApp.token='' --NotebookApp.password=''"
-  output = ""
 
-[[snippets]]
-  description = "jupyter ascending prefix"
+[[Snippets]]
+  Description = "jupyter ascending prefix"
+  Output = ""
+  Tag = []
   command = "export JUPYTER_ASCENDING_EXECUTE_PORT=9000 # vim  # space+rx space+ren"
-  output = ""
 
-[[snippets]]
-  description = "cd into lazy vim"
+[[Snippets]]
+  Description = "cd into lazy vim"
+  Output = ""
+  Tag = []
   command = "cd ~/.local/share/nvim/lazy/LazyVim"
-  output = ""
 
-[[snippets]]
-  description = "ascending suite (jupyter and vim)"
+[[Snippets]]
+  Description = "ascending suite (jupyter and vim)"
+  Output = "This should  be 0.0.0.0 instead of ip address to enable local vim access"
+  Tag = []
   command = "_JPORT=9011 ; JUPYTER_ASCENDING_EXECUTE_PORT=$_JPORT jupyter notebook --no-browser --port $_JPORT --ip 0.0.0.0  --NotebookApp.token='' --NotebookApp.password='' # JUPYTER_ASCENDING_EXECUTE_PORT=$_JPORT vim"
-  output = "This should  be 0.0.0.0 instead of ip address to enable local vim access"
 
-[[snippets]]
-  description = "jupyter ascending make pair"
+[[Snippets]]
+  Description = "jupyter ascending make pair"
+  Output = ""
+  Tag = []
   command = "python -m jupyter_ascending.scripts.make_pair --base <project=jupyter>"
-  output = ""
 
-[[snippets]]
-  description = "create a project from Python project template based on copier"
+[[Snippets]]
+  Description = "create a project from Python project template based on copier"
+  Output = ""
+  Tag = []
   command = "copier copy gh:serious-scaffold/ss-python <project_path>  # pipx install copier==9.3.1 # you must install the right version of copier"
-  output = ""
 
-[[snippets]]
-  description = "Prompt"
+[[Snippets]]
+  Description = "Prompt"
+  Output = ""
+  Tag = []
   command = "fix grammars & typos"
-  output = ""
 
-[[snippets]]
-  description = "Disable precommit like --no-verify (https://github.com/typicode/husky/issues/346) ; but I found both HUSKY_SKIP_HOOKS=1 and export HUSKY=0 don't work"
+[[Snippets]]
+  Description = "Disable precommit like --no-verify (https://github.com/typicode/husky/issues/346) ; but I found both HUSKY_SKIP_HOOKS=1 and export HUSKY=0 don't work"
+  Output = ""
+  Tag = []
   command = "--no-verify"
-  output = ""
 
-[[snippets]]
-  description = "create new Python project from scaffold (suppose you have already create the github project)"
+[[Snippets]]
+  Description = "create new Python project from scaffold (suppose you have already create the github project)"
+  Output = ""
+  Tag = []
   command = "pip install pipx && git init && make prerequisites && pdm lock && make dev && git remote add origin git@github.com:you-n-g/<project>.git && git branch -M main && git add . && git commit -a -m \"Init from serious-scaffold-python.\" && git push -u origin main --no-verify"
-  output = ""
 
-[[snippets]]
-  description = "add user with only rsa keys"
+[[Snippets]]
+  Description = "add user with only rsa keys"
+  Output = ""
+  Tag = []
   command = "sudo adduser <username> --disabled-password && sudo su <username> -c 'mkdir -p ~/.ssh/ && chmod 700 ~/.ssh/ && touch ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys'"
-  output = ""
 
-[[snippets]]
-  description = "cd onedrive in windows WSL"
+[[Snippets]]
+  Description = "cd onedrive in windows WSL"
+  Output = ""
+  Tag = []
   command = "ONEDRIVE_PATH=$(cmd.exe /c echo %onedriveconsumer% 2> /dev/null | sed -e 's/C:/\\\\mnt\\\\c/g' | sed -e 's/\\\\/\\//g' | tr -d \"\\r\") ; cd $ONEDRIVE_PATH"
-  output = ""
 
-[[snippets]]
-  description = "Python pretty print"
+[[Snippets]]
+  Description = "Python pretty print"
+  Output = ""
+  Tag = []
   command = "__import__(\"pprint\").pprint("
-  output = ""
 
-[[snippets]]
-  description = "use gdb to attach to python program"
+[[Snippets]]
+  Description = "use gdb to attach to python program"
+  Output = ""
+  Tag = []
   command = "sudo `which gdb` python <pid>"
-  output = ""
 
-[[snippets]]
-  description = "cprofile profiling debuggging"
+[[Snippets]]
+  Description = "cprofile profiling debuggging"
+  Output = ""
+  Tag = []
   command = "python -m cProfile -s <sort_filed=time> -o <out_file=stat_out> <script=script.py>"
-  output = ""
 
-[[snippets]]
-  description = "download with http.server in Python"
+[[Snippets]]
+  Description = "download with http.server in Python"
+  Output = ""
+  Tag = []
   command = "python -m http.server --bind `hostname -I | awk '{print $1}'`"
-  output = ""
 
-[[snippets]]
-  description = "add python path (only export &  same line command works)"
+[[Snippets]]
+  Description = "add python path (only export &  same line command works)"
+  Output = ""
+  Tag = []
   command = "export PYTHONPATH=$PYTHONPATH ; python -c 'import sys; print(sys.path)'"
-  output = ""
 
-[[snippets]]
-  description = "run docker"
+[[Snippets]]
+  Description = "run docker"
+  Output = ""
+  Tag = []
   command = "docker run -it --rm <image=XXX_Repo:XXX_tag> /bin/bash"
-  output = ""
 
-[[snippets]]
-  description = "build sphinx and watch changes"
+[[Snippets]]
+  Description = "build sphinx and watch changes"
+  Output = ""
+  Tag = []
   command = "sphinx-autobuild docs docs/_build/html  --host `hostname -I | awk '{print $1}'` --watch ."
-  output = ""
 
-[[snippets]]
-  description = "remove pre-commmit when pushing"
+[[Snippets]]
+  Description = "remove pre-commmit when pushing"
+  Output = ""
+  Tag = []
   command = "pre-commit uninstall --hook-type pre-push"
-  output = ""
 
-[[snippets]]
-  description = "vim git sign show diff files"
+[[Snippets]]
+  Description = "vim git sign show diff files"
+  Output = ""
+  Tag = []
   command = "Gitsigns diffthis ~1"
-  output = ""
 
-[[snippets]]
-  description = "vim git sign show change base commit"
+[[Snippets]]
+  Description = "vim git sign show change base commit"
+  Output = ""
+  Tag = []
   command = "Gitsigns change_base ~1"
-  output = ""
 
-[[snippets]]
-  description = "export source"
+[[Snippets]]
+  Description = "export source"
+  Output = ""
+  Tag = []
   command = "export $(grep -v '^#' <env-file=.env> | xargs)"
-  output = ""
 
-[[snippets]]
-  description = "unset $DISPLAY; So some CLI tools will work more correctly without calling X server"
+[[Snippets]]
+  Description = "unset $DISPLAY; So some CLI tools will work more correctly without calling X server"
+  Output = ""
+  Tag = []
   command = "unset DISPLAY"
-  output = ""
 
-[[snippets]]
-  description = "xytoy"
+[[Snippets]]
+  Description = "xytoy"
+  Output = ""
+  Tag = []
   command = "git clone git@github.com:you-n-g/toy.git && make prerequisites && make dev"
-  output = ""
 
-[[snippets]]
-  description = "from sys to tmux clipboard"
+[[Snippets]]
+  Description = "from sys to tmux clipboard"
+  Output = ""
+  Tag = []
   command = "xsel --clipboard --output | tmux load-buffer -w -"
-  output = ""
 
-[[snippets]]
-  description = "from tmux to sys clipboard"
+[[Snippets]]
+  Description = "from tmux to sys clipboard"
+  Output = ""
+  Tag = []
   command = "tmux save-buffer - | xsel --clipboard --input"
-  output = ""
 
-[[snippets]]
-  description = "git log for orphan commits"
+[[Snippets]]
+  Description = "git log for orphan commits"
+  Output = ""
+  Tag = []
   command = "git log --all --oneline --graph --decorate --reflog"
-  output = ""
 
-[[snippets]]
-  description = "aider start"
+[[Snippets]]
+  Description = "aider start"
+  Output = ""
+  Tag = []
   command = "key_shell.sh <cred=|_openai_lite_||_azure_ad_lite_||_azure_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> --no-auto-commit --no-show-model-warnings'"
-  output = ""
 
-[[snippets]]
-  description = "health check for openai & llm"
+[[Snippets]]
+  Description = "health check for openai & llm"
+  Output = ""
+  Tag = []
   command = "key_shell.sh <cred=|_azure_ad_||_azure_||_azure_ad_lite_||_azure_lite_||_openai_|> hc_llm.py <api=|_azure_||_azure-lite_||_native_|>"
-  output = ""
+
+[[Snippets]]
+  Description = "launch litellm proxy"
+  Output = ""
+  Tag = []
+  command = "SELECT_CRED=<cred=|_azure_ad_default_lite_||_azure_lite_|> EXTRA_ARG=\"<EXTRA_ARG=|__||_--model gpt-4o_|>\" llm_proxy.sh"

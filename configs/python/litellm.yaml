@@ -1,18 +1,89 @@
+unique_backend:
+  uni_dyn_params: &uni_dyn_params
+    model: os.environ/CHAT_MODEL
+    api_base: os.environ/AZURE_API_BASE
+    api_version: os.environ/AZURE_API_VERSION
+    api_key: os.environ/AZURE_API_KEY
+    azure_ad_token: os.environ/AZURE_OPENAI_AD_TOKEN
+    # azure_ad_token: oidc/file/~/deploy/helper_scripts/bin/litellm_live_token
+  uni_gcraoai9ncusspot_gpt-4_0125-Preview: &uni_gcraoai9ncusspot_gpt-4_0125-Preview
+    model: azure/gpt-4_0125-Preview
+    api_base: https://gcraoai9ncusspot.openai.azure.com/
+    api_version: 2024-08-01-preview
+  uni_gcraoai9ncusspot_gpt-4_turbo-2024-04-09: &uni_gcraoai9ncusspot_gpt-4_turbo-2024-04-09
+    model: azure/gpt-4_turbo-2024-04-09
+    api_base: https://gcraoai9ncusspot.openai.azure.com/
+    api_version: 2024-08-01-preview
+  uni_gcraoai9ncusspot_gpt-4-32k_0613: &uni_gcraoai9ncusspot_gpt-4-32k_0613
+    model: azure/gpt-4-32k_0613
+    api_base: https://gcraoai9ncusspot.openai.azure.com/
+    api_version: 2024-08-01-preview
+  uni_gcrgpt4aoai9spot_gpt-4o_2024-05-13: &uni_gcrgpt4aoai9spot_gpt-4o_2024-05-13
+    model: azure/gpt-4o_2024-05-13
+    api_base: https://gcrgpt4aoai9spot.openai.azure.com/
+    api_version: 2024-08-01-preview
+  uni_gcrgpt4aoai9spot_gpt-4_1106-Preview: &uni_gcrgpt4aoai9spot_gpt-4_1106-Preview
+    model: azure/gpt-4_1106-Preview
+    api_base: https://gcrgpt4aoai9spot.openai.azure.com/
+    api_version: 2024-08-01-preview
+  uni_gcrgpt4aoai9spot_gpt-35-turbo_1106: &uni_gcrgpt4aoai9spot_gpt-35-turbo_1106
+    model: azure/gpt-35-turbo_1106
+    api_base: https://gcrgpt4aoai9spot.openai.azure.com/
+    api_version: 2024-08-01-preview
+
 model_list:
-  # - model_name: gpt-4
-  #   litellm_params:
-  #     model: os.environ/CHAT_MODEL
-  #     api_base: os.environ/AZURE_API_BASE
-  #     api_version: os.environ/AZURE_API_VERSION
-  #     # azure_ad_token: os.environ/AZURE_OPENAI_AD_TOKEN
-  #     # azure_ad_token: oidc/file/~/deploy/helper_scripts/bin/litellm_live_token
+  - model_name: gpt-4
+    litellm_params:
+      <<: *uni_dyn_params
   - model_name: gpt-4o
     litellm_params:
-      model: os.environ/CHAT_MODEL
-      api_base: os.environ/AZURE_API_BASE
-      api_version: os.environ/AZURE_API_VERSION
-      # azure_ad_token: os.environ/AZURE_OPENAI_AD_TOKEN
-      # azure_ad_token: oidc/file/~/deploy/helper_scripts/bin/litellm_live_token
+      <<: *uni_dyn_params
+
+  # More specific model (normally you should access this)
+  # https://gcraoai9ncusspot.openai.azure.com/
+  - model_name: gpt-4-0125
+    litellm_params:
+      <<: *uni_gcraoai9ncusspot_gpt-4_0125-Preview
+  - model_name: gpt-4-turbo-2024-04-09
+    litellm_params:
+      <<: *uni_gcraoai9ncusspot_gpt-4_turbo-2024-04-09
+  - model_name: gpt-4-32k-0613
+    litellm_params:
+      <<: *uni_gcraoai9ncusspot_gpt-4-32k_0613
+  # https://gcrgpt4aoai9spot.openai.azure.com/
+  - model_name: gpt-4o-2024-05-13
+    litellm_params:
+      <<: *uni_gcrgpt4aoai9spot_gpt-4o_2024-05-13
+  - model_name: gpt-4-1106
+    litellm_params:
+      <<: *uni_gcrgpt4aoai9spot_gpt-4_1106-Preview
+  - model_name: gpt-35-turbo_1106
+    litellm_params:
+      <<: *uni_gcrgpt4aoai9spot_gpt-35-turbo_1106
+
+  ## You should not access this in normal case!!!
+  # for testing the unique backend
+  - model_name: uni_gcraoai9ncusspot_gpt-4_0125-Preview
+    litellm_params:
+      <<: *uni_gcraoai9ncusspot_gpt-4_0125-Preview
+  - model_name: uni_gcraoai9ncusspot_gpt-4_turbo-2024-04-09
+    litellm_params:
+      <<: *uni_gcraoai9ncusspot_gpt-4_turbo-2024-04-09
+  - model_name: uni_gcraoai9ncusspot_gpt-4-32k_0613
+    litellm_params:
+      <<: *uni_gcraoai9ncusspot_gpt-4-32k_0613
+  - model_name: uni_gcrgpt4aoai9spot_gpt-4o_2024-05-13
+    litellm_params:
+      <<: *uni_gcrgpt4aoai9spot_gpt-4o_2024-05-13
+  - model_name: uni_gcrgpt4aoai9spot_gpt-4_1106-Preview
+    litellm_params:
+      <<: *uni_gcrgpt4aoai9spot_gpt-4_1106-Preview
+  - model_name: uni_gcrgpt4aoai9spot_gpt-35-turbo_1106
+    litellm_params:
+      <<: *uni_gcrgpt4aoai9spot_gpt-35-turbo_1106
+  - model_name: uni_dyn_params
+    litellm_params:
+      <<: *uni_dyn_params
 
 # No luck
 # litellm_settings:

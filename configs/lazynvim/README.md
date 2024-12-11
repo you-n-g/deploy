@@ -23,6 +23,7 @@
 - [ ] strip spaces in selection in vim (to better apply GPT to specific scope)
 - [ ] [Auto-Import can be invoke actively](https://github.com/neovim/nvim-lspconfig/issues/1122), [Another](https://neovim.discourse.group/t/how-can-i-trigger-the-auto-import/636)
 - [X] Try documentation generation, sometimes doge-gen does not work well.. https://github.com/danymat/neogen
+- [ ] renaming folder in neotree in Python project: https://github.com/alexpasmantier/pymple.nvim
 
 
 
