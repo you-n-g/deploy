@@ -6,6 +6,7 @@ unique_backend:
     api_key: os.environ/AZURE_API_KEY
     azure_ad_token: os.environ/AZURE_OPENAI_AD_TOKEN
     # azure_ad_token: oidc/file/~/deploy/helper_scripts/bin/litellm_live_token
+  # gcraoai9ncusspot
   uni_gcraoai9ncusspot_gpt-4_0125-Preview: &uni_gcraoai9ncusspot_gpt-4_0125-Preview
     model: azure/gpt-4_0125-Preview
     api_base: https://gcraoai9ncusspot.openai.azure.com/
@@ -18,6 +19,7 @@ unique_backend:
     model: azure/gpt-4-32k_0613
     api_base: https://gcraoai9ncusspot.openai.azure.com/
     api_version: 2024-08-01-preview
+  # gcrgpt4aoai9spot
   uni_gcrgpt4aoai9spot_gpt-4o_2024-05-13: &uni_gcrgpt4aoai9spot_gpt-4o_2024-05-13
     model: azure/gpt-4o_2024-05-13
     api_base: https://gcrgpt4aoai9spot.openai.azure.com/
@@ -30,14 +32,34 @@ unique_backend:
     model: azure/gpt-35-turbo_1106
     api_base: https://gcrgpt4aoai9spot.openai.azure.com/
     api_version: 2024-08-01-preview
+  # gcrgpt4aoai5c: gpt-35-turbo_0301 (120k), gpt-4o_2024-08-06(25k), gpt-4o-mini_2024-07-18(1000k)
+  uni_gcrgpt4aoai5c_gpt-35-turbo_0301: &uni_gcrgpt4aoai5c_gpt-35-turbo_0301
+    model: azure/gpt-35-turbo_0301
+    api_base: https://gcrgpt4aoai5c.openai.azure.com/
+    api_version: 2024-08-01-preview
+  uni_gcrgpt4aoai5c_gpt-4o_2024-08-06: &uni_gcrgpt4aoai5c_gpt-4o_2024-08-06
+    model: azure/gpt-4o_2024-08-06
+    api_base: https://gcrgpt4aoai5c.openai.azure.com/
+    api_version: 2024-08-01-preview
+  uni_gcrgpt4aoai5c_gpt-4o-mini_2024-07-18: &uni_gcrgpt4aoai5c_gpt-4o-mini_2024-07-18
+    model: azure/gpt-4o-mini_2024-07-18
+    api_base: https://gcrgpt4aoai5c.openai.azure.com/
+    api_version: 2024-08-01-preview
+  # gcrgpt4aoai5:  gpt-4-32k_0613 (10k),  gpt-4o_2024-08-06 (25k) gpt-4o-mini_2024-07-18 (1000k)
+  uni_gcrgpt4aoai5_gpt-4-32k_0613: &uni_gcrgpt4aoai5_gpt-4-32k_0613
+    model: azure/gpt-4-32k_0613
+    api_base: https://gcrgpt4aoai5.openai.azure.com/
+    api_version: 2024-08-01-preview
+  uni_gcrgpt4aoai5_gpt-4o_2024-08-06: &uni_gcrgpt4aoai5_gpt-4o_2024-08-06
+    model: azure/gpt-4o_2024-08-06
+    api_base: https://gcrgpt4aoai5.openai.azure.com/
+    api_version: 2024-08-01-preview
+  uni_gcrgpt4aoai5_gpt-4o-mini_2024-07-18: &uni_gcrgpt4aoai5_gpt-4o-mini_2024-07-18
+    model: azure/gpt-4o-mini_2024-07-18
+    api_base: https://gcrgpt4aoai5.openai.azure.com/
+    api_version: 2024-08-01-preview
 
 model_list:
-  - model_name: gpt-4
-    litellm_params:
-      <<: *uni_dyn_params
-  - model_name: gpt-4o
-    litellm_params:
-      <<: *uni_dyn_params
 
   # More specific model (normally you should access this)
   # https://gcraoai9ncusspot.openai.azure.com/
@@ -57,9 +79,76 @@ model_list:
   - model_name: gpt-4-1106
     litellm_params:
       <<: *uni_gcrgpt4aoai9spot_gpt-4_1106-Preview
-  - model_name: gpt-35-turbo_1106
+  - model_name: gpt-35-turbo-1106
     litellm_params:
       <<: *uni_gcrgpt4aoai9spot_gpt-35-turbo_1106
+
+  # gcrgpt4aoai5c
+  - model_name: gpt-35-turbo-0301
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5c_gpt-35-turbo_0301
+  - model_name: gpt-4o-2024-08-06
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5c_gpt-4o_2024-08-06
+  - model_name: gpt-4o-mini-2024-07-18
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5c_gpt-4o-mini_2024-07-18
+  # gcrgpt4aoai5
+  - model_name: gpt-4-32k-0613
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5_gpt-4-32k_0613
+  - model_name: gpt-4o-2024-08-06
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5_gpt-4o_2024-08-06
+  - model_name: gpt-4o-mini-2024-07-18
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5_gpt-4o-mini_2024-07-18
+
+  ## Ensemble of APIS;  If you don't care about the model version. Please Use this
+  # Ensemble for gpt-4
+  - model_name: gpt-4
+    litellm_params:
+      <<: *uni_gcrgpt4aoai9spot_gpt-4_1106-Preview
+  - model_name: gpt-4
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5_gpt-4-32k_0613
+  # Ensemble for gpt-4-turbo
+  - model_name: gpt-4-turbo
+    litellm_params:
+      <<: *uni_gcraoai9ncusspot_gpt-4_turbo-2024-04-09
+  # Ensemble for gpt-4-32k
+  - model_name: gpt-4-32k
+    litellm_params:
+      <<: *uni_gcraoai9ncusspot_gpt-4-32k_0613
+  - model_name: gpt-4-32k
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5_gpt-4-32k_0613
+  # Ensemble for gpt-4o-mini
+  - model_name: gpt-4o-mini
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5c_gpt-4o-mini_2024-07-18
+  - model_name: gpt-4o-mini
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5_gpt-4o-mini_2024-07-18
+  # Ensemble for gpt-35-turbo
+  - model_name: gpt-35-turbo
+    litellm_params:
+      <<: *uni_gcrgpt4aoai9spot_gpt-35-turbo_1106
+  - model_name: gpt-35-turbo
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5c_gpt-35-turbo_0301
+  # Ensemble for gpt-4o
+  - model_name: gpt-4o
+    litellm_params:
+      <<: *uni_gcrgpt4aoai9spot_gpt-4o_2024-05-13
+  - model_name: gpt-4o
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5c_gpt-4o_2024-08-06
+  - model_name: gpt-4o
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5_gpt-4o_2024-08-06
+
+
 
   ## You should not access this in normal case!!!
   # for testing the unique backend
@@ -81,9 +170,38 @@ model_list:
   - model_name: uni_gcrgpt4aoai9spot_gpt-35-turbo_1106
     litellm_params:
       <<: *uni_gcrgpt4aoai9spot_gpt-35-turbo_1106
-  - model_name: uni_dyn_params
+  # gcrgpt4aoai5c
+  - model_name: uni_gcrgpt4aoai5c_gpt-35-turbo_0301
     litellm_params:
-      <<: *uni_dyn_params
+      <<: *uni_gcrgpt4aoai5c_gpt-35-turbo_0301
+  - model_name: uni_gcrgpt4aoai5c_gpt-4o_2024-08-06
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5c_gpt-4o_2024-08-06
+  - model_name: uni_gcrgpt4aoai5c_gpt-4o-mini_2024-07-18
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5c_gpt-4o-mini_2024-07-18
+  # gcrgpt4aoai5
+  - model_name: uni_gcrgpt4aoai5_gpt-4-32k_0613
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5_gpt-4-32k_0613
+  - model_name: uni_gcrgpt4aoai5_gpt-4o_2024-08-06
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5_gpt-4o_2024-08-06
+  - model_name: uni_gcrgpt4aoai5_gpt-4o-mini_2024-07-18
+    litellm_params:
+      <<: *uni_gcrgpt4aoai5_gpt-4o-mini_2024-07-18
+
+  # dynamic
+  # - model_name: gpt-4
+  #   litellm_params:
+  #     <<: *uni_dyn_params
+  # - model_name: gpt-4o
+  #   litellm_params:
+  #     <<: *uni_dyn_params
+  #
+  # - model_name: uni_dyn_params
+  #   litellm_params:
+  #     <<: *uni_dyn_params
 
 # No luck
 # litellm_settings:
