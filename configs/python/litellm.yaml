@@ -58,6 +58,19 @@ unique_backend:
     model: azure/gpt-4o-mini_2024-07-18
     api_base: https://gcrgpt4aoai5.openai.azure.com/
     api_version: 2024-08-01-preview
+  # gcraoai9wus3spot
+  uni_gcraoai9wus3spot_gpt-4_1106-Preview: &uni_gcraoai9wus3spot_gpt-4_1106-Preview
+    model: azure/gpt-4_1106-Preview
+    api_base: https://gcraoai9wus3spot.openai.azure.com/
+    api_version: 2024-08-01-preview
+  uni_gcraoai9wus3spot_gpt-4_0125-Preview: &uni_gcraoai9wus3spot_gpt-4_0125-Preview
+    model: azure/gpt-4_0125-Preview
+    api_base: https://gcraoai9wus3spot.openai.azure.com/
+    api_version: 2024-08-01-preview
+  uni_gcraoai9wus3spot_gpt-4o_2024-05-13: &uni_gcraoai9wus3spot_gpt-4o_2024-05-13
+    model: azure/gpt-4o_2024-05-13
+    api_base: https://gcraoai9wus3spot.openai.azure.com/
+    api_version: 2024-08-01-preview
 
 model_list:
 
@@ -82,6 +95,16 @@ model_list:
   - model_name: gpt-35-turbo-1106
     litellm_params:
       <<: *uni_gcrgpt4aoai9spot_gpt-35-turbo_1106
+  # https://gcraoai9wus3spot.openai.azure.com/
+  - model_name: gpt-4-1106
+    litellm_params:
+      <<: *uni_gcraoai9wus3spot_gpt-4_1106-Preview
+  - model_name: gpt-4-0125
+    litellm_params:
+      <<: *uni_gcraoai9wus3spot_gpt-4_0125-Preview
+  - model_name: gpt-4o-2024-05-13
+    litellm_params:
+      <<: *uni_gcraoai9wus3spot_gpt-4o_2024-05-13
 
   # gcrgpt4aoai5c
   - model_name: gpt-35-turbo-0301
@@ -112,6 +135,12 @@ model_list:
   - model_name: gpt-4
     litellm_params:
       <<: *uni_gcrgpt4aoai5_gpt-4-32k_0613
+  - model_name: gpt-4
+    litellm_params:
+      <<: *uni_gcraoai9wus3spot_gpt-4_1106-Preview
+  - model_name: gpt-4
+    litellm_params:
+      <<: *uni_gcraoai9wus3spot_gpt-4_0125-Preview
   # Ensemble for gpt-4-turbo
   - model_name: gpt-4-turbo
     litellm_params:
@@ -147,7 +176,9 @@ model_list:
   - model_name: gpt-4o
     litellm_params:
       <<: *uni_gcrgpt4aoai5_gpt-4o_2024-08-06
-
+  - model_name: gpt-4o
+    litellm_params:
+      <<: *uni_gcraoai9wus3spot_gpt-4o_2024-05-13
 
 
   ## You should not access this in normal case!!!
@@ -180,7 +211,7 @@ model_list:
   - model_name: uni_gcrgpt4aoai5c_gpt-4o-mini_2024-07-18
     litellm_params:
       <<: *uni_gcrgpt4aoai5c_gpt-4o-mini_2024-07-18
-  # gcrgpt4aoai5
+  # gcrgpt4aoai5 unique point
   - model_name: uni_gcrgpt4aoai5_gpt-4-32k_0613
     litellm_params:
       <<: *uni_gcrgpt4aoai5_gpt-4-32k_0613
@@ -190,7 +221,16 @@ model_list:
   - model_name: uni_gcrgpt4aoai5_gpt-4o-mini_2024-07-18
     litellm_params:
       <<: *uni_gcrgpt4aoai5_gpt-4o-mini_2024-07-18
-
+  # gcraoai9wus3spot unique point
+  - model_name: uni_gcraoai9wus3spot_gpt-4_1106-Preview
+    litellm_params:
+      <<: *uni_gcraoai9wus3spot_gpt-4_1106-Preview
+  - model_name: uni_gcraoai9wus3spot_gpt-4_0125-Preview
+    litellm_params:
+      <<: *uni_gcraoai9wus3spot_gpt-4_0125-Preview
+  - model_name: uni_gcraoai9wus3spot_gpt-4o_2024-05-13
+    litellm_params:
+      <<: *uni_gcraoai9wus3spot_gpt-4o_2024-05-13
   # dynamic
   # - model_name: gpt-4
   #   litellm_params:
@@ -199,9 +239,9 @@ model_list:
   #   litellm_params:
   #     <<: *uni_dyn_params
   #
-  # - model_name: uni_dyn_params
-  #   litellm_params:
-  #     <<: *uni_dyn_params
+  - model_name: uni_dyn_params
+    litellm_params:
+      <<: *uni_dyn_params
 
 # No luck
 # litellm_settings:

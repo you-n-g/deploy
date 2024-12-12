@@ -56,7 +56,7 @@ azure_ad_api_03() {
   # CHAT_MODEL=gpt-4_1106-Preview
   # CHAT_MODEL=gpt-4_0125-Preview
   CHAT_MODEL=gpt-4o_2024-05-13
-  # We have: gpt-4_1106-Preview(0.5) gpt-4_0125-Preview(4m) gpt-4o_2024-05-13(5m)
+  # We have: gpt-4_1106-Preview(0.5m) gpt-4_0125-Preview(4m) gpt-4o_2024-05-13(5m)
   API_VERSION=2024-08-01-preview
   END_POINT=https://gcraoai9wus3spot.openai.azure.com/
   AD_TOKEN=$(hc_llm.py get-azure-ad-token)

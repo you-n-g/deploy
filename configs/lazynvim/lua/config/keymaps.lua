@@ -14,7 +14,7 @@ for _, key in ipairs({ "<A-j>", "<A-k>" }) do
 end
 
 -- In addition to normal mode.
-vim.keymap.set("t", "<C-k>", "<C-\\><C-n><C-w>k", { desc = "Go to Upper Window", remap = true })
+vim.keymap.set("t", "<C-k>", "<C-\\><C-n><C-w>k", { desc = "Go to Upper Window(term)", remap = true })
 
 -- disable map("n", "<leader>L", Util.changelog, {desc = "LazyVim Changelog"})
 vim.keymap.del({"n"}, "<leader>L")
