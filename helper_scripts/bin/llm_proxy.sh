@@ -27,3 +27,6 @@ key_shell.sh $SELECT_CRED litellm $EXTRA_ARG --config $DIR/../../configs/python/
 # https://github.com/BerriAI/litellm/issues/4417
 # due to the issue above, we may need to use relaunch to restart the service.
 # - client_ttl: 120 may not work as expected.
+# You can fix it by
+# - `pip install 'litellm[proxy]'`
+# - `pip install git+https://github.com/you-n-g/litellm@fix/support_api_key_on_default`

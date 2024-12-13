@@ -8,7 +8,7 @@ local term_size = 12
 
 local repl_inst = repl.REPLFactory()
 
-local launch_cmd = [[key_shell.sh %s bash -c "aider --model \$CHAT_MODEL --weak-model \$CHAT_MODEL --no-auto-commit --no-show-model-warnings --editor \"nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\\\"w\\\"); require\\\"snacks\\\".bufdelete()'\" --watch-files"]]
+local launch_cmd = [[key_shell.sh %s bash -c "aider --model \$CHAT_MODEL --weak-model \$CHAT_MODEL --no-auto-commit --no-show-model-warnings --editor \"nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\\\"w\\\"); require\\\"snacks\\\".bufdelete()'\" --watch-files --subtree-only"]]
 
 vim.keymap.set("n", "<leader>raL", function()
   require("toggleterm").exec(string.format(launch_cmd, "azure_aider"), tonumber(vim.g.toggleterm_last_id), term_size)

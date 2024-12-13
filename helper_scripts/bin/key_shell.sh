@@ -30,10 +30,12 @@ azure_key_api_01() {
   API_KEY=$api_key
   ENDPOINT=$api_base
   CHAT_MODEL=gpt-4o # you should specify it mannually
+  export EXP_MODEL=gpt-4o
 }
 
 azure_ad_api_01() {
   CHAT_MODEL=gpt-4_0125-Preview
+  export EXP_MODEL=gpt-4
   # CHAT_MODEL=gpt-4_turbo-2024-04-09
   # CHAT_MODEL=gpt-4-32k_0613
   # gpt-4_0125-Preview(2m) gpt-4_turbo-2024-04-09(1k) gpt-4-32k_0613(1k)
@@ -44,6 +46,7 @@ azure_ad_api_01() {
 
 azure_ad_api_02() {
   CHAT_MODEL=gpt-4o_2024-05-13
+  export EXP_MODEL=gpt-4o
   # CHAT_MODEL=gpt-4_1106-Preview
   # CHAT_MODEL=gpt-35-turbo_1106
   # We have: gpt-4_1106-Preview(5m) gpt-4o_2024-05-13(5m) gpt-35-turbo_1106 (10m)
@@ -56,6 +59,7 @@ azure_ad_api_03() {
   # CHAT_MODEL=gpt-4_1106-Preview
   # CHAT_MODEL=gpt-4_0125-Preview
   CHAT_MODEL=gpt-4o_2024-05-13
+  export EXP_MODEL=gpt-4o
   # We have: gpt-4_1106-Preview(0.5m) gpt-4_0125-Preview(4m) gpt-4o_2024-05-13(5m)
   API_VERSION=2024-08-01-preview
   END_POINT=https://gcraoai9wus3spot.openai.azure.com/

@@ -43,3 +43,9 @@ snippet jsonld "json load and dump"
 	        with p.open("r") as f:
 	            return json.load(f)
 	    return default
+
+snippet richtrace "rich traceback"
+	from rich.console import Console
+	from rich.traceback import install
+	console = Console(color_system=None) # Create a console that does not use color
+	install(console=console, show_locals=True, code_width=128)  # , max_frames=5  # , extra_lines=0

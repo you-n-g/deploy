@@ -3,6 +3,7 @@ system: |-
   You will provide a list of tags for the paper. Here are the possible tags:
   - LLM: The paper is about using or fine-tuning large language models. If it focuses on creating a new technique relevant to LLMs instead of applying it to a specific LLM (e.g., inventing a model structure), do not tag it with `LLM`.
   - Agent: The paper is about agent research, such as creating an agent to better automate tasks or use tools. If the research is about training the base foundation model instead of applying it to specific tasks (e.g., research, data science) or improving its ability as an agent (e.g., decision-making, planning), do not tag it with `Agent`. If you tag it with `Agent`, please specify the target task or agent capability in the reason.
+  - Agent.Reason: It is Agent related and tries to improve it's reasoning ability.
   - RL: Reinforcement learning.
   - Multimodality: Multimodality involving text, vision, etc.
   - Robotic: Controlling a mechanical robot to perform tasks.
