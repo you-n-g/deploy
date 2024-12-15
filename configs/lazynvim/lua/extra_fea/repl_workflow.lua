@@ -142,7 +142,13 @@ M.config = {
   load_env = true, -- load_env before.
   doc_test = false,
   abs_path = true, -- should we use absolute path
-  aider_mode = false,
+  -- aider_mode configures the mode for aiding development by altering command behavior.
+  -- It can be set to:
+  -- "" (empty string) for the default mode,
+  -- "/test" to prepend commands with a testing directive,
+  -- "/run" to prepend commands with a runtime directive.
+  -- The default value is "".
+  aider_mode = "",  -- default mode, can switch between "", "/test" , "/run"
   key_shell = "",  -- key_shell.sh azure|azure_ad|
 }
 
@@ -154,8 +160,8 @@ local function edit_before_send(cmd)
     cmd = "mydotenv.sh " .. cmd
   end
 
-  if M.config.aider_mode then
-    cmd = "/run " .. cmd
+  if M.config.aider_mode ~= false then
+    cmd = M.config.aider_mode .. " " .. cmd
   end
 
   -- involve human editing
@@ -193,11 +199,13 @@ vim.keymap.set("n", "<leader>rca", function()
 end, { desc = "Toggle Absolute Path." })
 
 function M.toggle_aider_mode(target)
-  if target == nil then
-    --  toggle  M.config["aider_mode"] between true and false
-    M.config["aider_mode"] = not M.config["aider_mode"]
-  else
+  if target ~= nil then
     M.config["aider_mode"] = target
+  else
+    local modes = {"", "/test", "/run"}
+    local current_mode = M.config["aider_mode"]
+    local next_index = ((vim.tbl_index(modes, current_mode) or 0) % #modes) + 1
+    M.config["aider_mode"] = modes[next_index]
   end
   P(M.config["aider_mode"])
 end

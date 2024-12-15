@@ -18,10 +18,10 @@ local launch_cmd = [[key_shell.sh %s bash -c "aider --model \$CHAT_MODEL --weak-
 vim.keymap.set("n", "<leader>raL", function()
   repl.config.aider_mode = true
   require("toggleterm").exec("git checkout -B aider && " .. string.format(launch_cmd, "openai_lite", vim.fn.expand("%")), tonumber(vim.g.toggleterm_last_id), term_size)
-end, { noremap = true, silent = true, desc = "Run azure_aider commands in terminal" })
+end, { noremap = true, silent = true, desc = "Run azure_aider commands in terminal(git support)" })
 
 vim.keymap.set("n", "<leader>ral", function()
-  repl.toggle_aider_mode(true)
+  repl.toggle_aider_mode("/test")
   -- repl.config.aider_mode = true
   require("toggleterm").exec(string.format(launch_cmd, "openai_lite", "--no-auto-commit " .. vim.fn.expand("%")), tonumber(vim.g.toggleterm_last_id), term_size)
 end, { noremap = true, silent = true, desc = "Run openai_lite commands in terminal(with current file)" })
