@@ -71,7 +71,7 @@ local function get_largest_non_terminal_win()
   return largest_win
 end
 
-function M.open_file_in_largest_non_terminal_win()
+function M.open_file_in_largest_non_terminal_win(force)
   local largest_win = get_largest_non_terminal_win()
   -- Attempt to extract a file path and line number from the surrounding text
   local file = vim.fn.expand('<cfile>')
@@ -93,7 +93,8 @@ function M.open_file_in_largest_non_terminal_win()
   end
 
   -- If a largest non-terminal window was found, open the file there
-  if vim.api.nvim_buf_get_option(0, 'buftype') == 'terminal' and largest_win ~= nil  and file ~= '' then
+  local buftype = vim.api.nvim_buf_get_option(0, 'buftype')
+  if force == true or buftype == 'terminal' and largest_win ~= nil  and file ~= '' then
     vim.api.nvim_set_current_win(largest_win)
     vim.cmd('edit ' .. file)
     if line then
@@ -109,6 +110,7 @@ end
 
 -- Map 'gf' in terminal mode to the function
 vim.keymap.set({'n', 'v'}, 'gf', '<cmd>lua require"extra_fea.term_utils".open_file_in_largest_non_terminal_win()<CR>', { noremap = true, silent = true })
+vim.keymap.set({'n', 'v'}, 'gF', '<cmd>lua require"extra_fea.term_utils".open_file_in_largest_non_terminal_win(true)<CR>', { noremap = true, silent = true })
 
 -- Function to copy the last command from the terminal
 function M.copy_last_terminal_command()
@@ -135,6 +137,20 @@ function M.copy_last_terminal_command()
   else
     print("Not in a terminal buffer.")
   end
+end
+
+-- This is for better showing the results for editing
+-- Map Alt+m in terminal to perform a sequence of actions
+vim.api.nvim_set_keymap('t', '<M-m>', '<cmd>lua require"extra_fea.term_utils".send_keys_in_terminal()<CR>', { noremap = true, silent = true })
+
+-- In addition to normal mode.
+-- terminal usually come at button or right
+vim.keymap.set("t", "<C-k>", "<C-\\><C-n><C-w>k", { desc = "Go to Upper Window(term)", remap = true })
+vim.keymap.set("t", "<C-h>", "<C-\\><C-n><C-w>h", { desc = "Go to Upper Window(term)", remap = true })
+
+function M.send_keys_in_terminal()
+  local keys = vim.api.nvim_replace_termcodes('<CR><C-\\><C-n><leader><Tab>b ', true, true, true)
+  vim.fn.feedkeys(keys, 't')
 end
 
 -- Autocommand to set a buffer-local keymap for terminal buffers

@@ -13,9 +13,6 @@ for _, key in ipairs({ "<A-j>", "<A-k>" }) do
   vim.keymap.del({ "n", "i", "v" }, key)
 end
 
--- In addition to normal mode.
-vim.keymap.set("t", "<C-k>", "<C-\\><C-n><C-w>k", { desc = "Go to Upper Window(term)", remap = true })
-
 -- disable map("n", "<leader>L", Util.changelog, {desc = "LazyVim Changelog"})
 vim.keymap.del({"n"}, "<leader>L")
 
@@ -68,8 +65,10 @@ vim.keymap.set("n", "<leader><tab>b", function()
     col = math.floor(0.1 * vim.o.columns),
     border = "single",
   })
+  -- for the open window's terminal mode, map the <c-w>q to <c-\><c-n><c-w>q
+  vim.keymap.set("t", "<C-w>q", "<C-\\><C-n><C-w>q", { desc = "Close terminal window" })
 
-  -- Function to synchronize the cursor position between two windows
+  -- Function to synchronize the cursor position between two windowskkk
   local function synchronize_cursor()
     -- Get the current window and buffer
     local current_win = vim.api.nvim_get_current_win()
@@ -94,12 +93,22 @@ vim.keymap.set("n", "<leader><tab>b", function()
     callback = synchronize_cursor,
   })
 
-  -- TODO: remove the above autocmd if the newly opened floating window is closed
+  -- Map <C-w>q to close the terminal window only for the floating window
+  vim.api.nvim_create_autocmd("WinEnter", {
+    group = sync_cursor_augroup,
+    pattern = tostring(win_id),
+    callback = function()
+      vim.keymap.set("t", "<C-w>q", "<C-\\><C-n><C-w>q", { buffer = bufnr, desc = "Close terminal window" })
+    end,
+  })
+
+  -- Remove the keymap and autocmds when the floating window is closed
   vim.api.nvim_create_autocmd("WinClosed", {
     group = sync_cursor_augroup,
     pattern = tostring(win_id),
     callback = function()
       vim.api.nvim_del_augroup_by_id(sync_cursor_augroup)
+      vim.keymap.del("t", "<C-w>q", { buffer = bufnr })
     end,
   })
 end, { expr = false, noremap = true, desc = "Open cur buffer in float window" })

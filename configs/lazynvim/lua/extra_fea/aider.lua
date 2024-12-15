@@ -3,20 +3,28 @@ Related projects
 - https://github.com/aweis89/aider.nvim
 ]]
 --
-local repl = require"extra_fea/repl_workflow"
+local repl = require"extra_fea.repl_workflow"
 local term_size = 12
 
 local repl_inst = repl.REPLFactory()
 
-local launch_cmd = [[key_shell.sh %s bash -c "aider --model \$CHAT_MODEL --weak-model \$CHAT_MODEL --no-auto-commit --no-show-model-warnings --editor \"nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\\\"w\\\"); require\\\"snacks\\\".bufdelete()'\" --watch-files --subtree-only"]]
+local launch_cmd = [[key_shell.sh %s bash -c "aider --model \$CHAT_MODEL --weak-model \$CHAT_MODEL --no-show-model-warnings --editor \"nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\\\"w\\\"); require\\\"snacks\\\".bufdelete()'\" --watch-files --subtree-only %s"]]
+
+-- It is not frequently used now
+-- vim.keymap.set("n", "<leader>raL", function()
+--   require("toggleterm").exec(string.format(launch_cmd, "azure_aider"), tonumber(vim.g.toggleterm_last_id), term_size)
+-- end, { noremap = true, silent = true, desc = "Run azure_aider commands in terminal" })
 
 vim.keymap.set("n", "<leader>raL", function()
-  require("toggleterm").exec(string.format(launch_cmd, "azure_aider"), tonumber(vim.g.toggleterm_last_id), term_size)
+  repl.config.aider_mode = true
+  require("toggleterm").exec("git checkout -B aider && " .. string.format(launch_cmd, "openai_lite", vim.fn.expand("%")), tonumber(vim.g.toggleterm_last_id), term_size)
 end, { noremap = true, silent = true, desc = "Run azure_aider commands in terminal" })
 
 vim.keymap.set("n", "<leader>ral", function()
-  require("toggleterm").exec(string.format(launch_cmd, "openai_lite"), tonumber(vim.g.toggleterm_last_id), term_size)
-end, { noremap = true, silent = true, desc = "Run openai_lite commands in terminal" })
+  repl.toggle_aider_mode(true)
+  -- repl.config.aider_mode = true
+  require("toggleterm").exec(string.format(launch_cmd, "openai_lite", "--no-auto-commit " .. vim.fn.expand("%")), tonumber(vim.g.toggleterm_last_id), term_size)
+end, { noremap = true, silent = true, desc = "Run openai_lite commands in terminal(with current file)" })
 
 vim.keymap.set("n", "<leader>rar", function()
   local cmd = "/read-only " .. vim.fn.expand(repl_inst:get_path_symbol())

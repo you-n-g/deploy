@@ -136,7 +136,7 @@ end
 M.get_current_function_name = get_current_function_name
 
 -- Configs
-local config = {
+M.config = {
   edit_before_send = false,
   goto_debug_when_fail = false,
   load_env = true, -- load_env before.
@@ -149,17 +149,17 @@ local config = {
 --- Modify the command before sending it out
 ---@param cmd 
 local function edit_before_send(cmd)
-  -- modify the config based on config
-  if config.load_env then
+  -- modify the M.config based on M.config
+  if M.config.load_env then
     cmd = "mydotenv.sh " .. cmd
   end
 
-  if config.aider_mode then
+  if M.config.aider_mode then
     cmd = "/run " .. cmd
   end
 
   -- involve human editing
-  if config.edit_before_send then
+  if M.config.edit_before_send then
     vim.ui.input({ prompt = "Edit before sending", default = cmd }, function(input)
       require("toggleterm").exec(input, tonumber(vim.g.toggleterm_last_id), 12)
     end)
@@ -169,39 +169,45 @@ local function edit_before_send(cmd)
 end
 
 vim.keymap.set("n", "<leader>rce", function()
-  --  toggle  config["edit_before_send"] between true and false
-  config["edit_before_send"] = not config["edit_before_send"]
-  P(config["edit_before_send"])
+  --  toggle  M.config["edit_before_send"] between true and false
+  M.config["edit_before_send"] = not M.config["edit_before_send"]
+  P(M.config["edit_before_send"])
 end, { desc = "edit before send." })
 
 vim.keymap.set("n", "<leader>rcd", function()
-  --  toggle  config["edit_before_send"] between true and false
-  config["goto_debug_when_fail"] = not config["goto_debug_when_fail"]
-  P(config["goto_debug_when_fail"])
+  --  toggle  M.config["edit_before_send"] between true and false
+  M.config["goto_debug_when_fail"] = not M.config["goto_debug_when_fail"]
+  P(M.config["goto_debug_when_fail"])
 end, { desc = "go to debug when exception." })
 
 vim.keymap.set("n", "<leader>rct", function()
-  --  toggle  config["edit_before_send"] between true and false
-  config["doc_test"] = not config["doc_test"]
-  P(config["doc_test"])
+  --  toggle  M.config["edit_before_send"] between true and false
+  M.config["doc_test"] = not M.config["doc_test"]
+  P(M.config["doc_test"])
 end, { desc = "Using doctest for testing." })
 
 vim.keymap.set("n", "<leader>rca", function()
-  --  toggle  config["abs_path"] between true and false
-  config["abs_path"] = not config["abs_path"]
-  P(config["abs_path"])
+  --  toggle  M.config["abs_path"] between true and false
+  M.config["abs_path"] = not M.config["abs_path"]
+  P(M.config["abs_path"])
 end, { desc = "Toggle Absolute Path." })
 
-vim.keymap.set("n", "<leader>rcm", function()
-  --  toggle  config["aider_mode"] between true and false
-  config["aider_mode"] = not config["aider_mode"]
-  P(config["aider_mode"])
-end, { desc = "Toggle Aider Mode." })
+function M.toggle_aider_mode(target)
+  if target == nil then
+    --  toggle  M.config["aider_mode"] between true and false
+    M.config["aider_mode"] = not M.config["aider_mode"]
+  else
+    M.config["aider_mode"] = target
+  end
+  P(M.config["aider_mode"])
+end
+
+vim.keymap.set("n", "<leader>rcm", M.toggle_aider_mode, { desc = "Toggle Aider Mode." })
 
 vim.keymap.set("n", "<leader>rcl", function()
-  --  toggle  config["edit_before_send"] between true and false
-  config["load_env"] = not config["load_env"]
-  P(config["load_env"])
+  --  toggle  M.config["edit_before_send"] between true and false
+  M.config["load_env"] = not M.config["load_env"]
+  P(M.config["load_env"])
 end, { desc = "Toggle load env before sending." })
 
 -- Base class and methods
@@ -246,7 +252,7 @@ end
 
 function BaseREPL:get_path_symbol()
   -- send key <c-c><c-c> by default
-  if config.abs_path then
+  if M.config.abs_path then
     return "%:p"
   else
     return "%"
@@ -350,7 +356,7 @@ end
 function PythonREPL:test()
   -- nnoremap <silent>  <leader>psT :SlimeSend0 "pytest -s --pdb --disable-warnings --doctest-modules ".expand("%:p")."::".luaeval("get_pytest_doctest_module()").".".luaeval('require("yx/plugs/run_func").get_current_function_name(true)')."\n"<CR>
   local cmd = ""
-  if config.doc_test then
+  if M.config.doc_test then
     cmd = "pytest -s --pdb --disable-warnings --doctest-modules "
       .. vim.fn.expand("%:p")
       .. "::"
@@ -366,7 +372,7 @@ end
 
 function PythonREPL:get_interpreter()
   local cmd = ""
-  if config.goto_debug_when_fail then
+  if M.config.goto_debug_when_fail then
     cmd = "python -m ipdb -c c "
   else
     cmd = "python "
@@ -527,7 +533,7 @@ vim.keymap.set({ "n", "v", "o" }, "<leader>rr", function()
   M.REPLFactory():send_code()
 end, { desc = "Send Code to (R)un" })
 
--- config
+-- M.config
 -- coroutine may be helpful: https://github.com/stevearc/dressing.nvim/discussions/70
 
 return M

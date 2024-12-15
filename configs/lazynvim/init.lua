@@ -8,7 +8,8 @@ local function load_extra_feature()
   local features = vim.fn.glob(feature_dir .. "/*.lua", true, true)
 
   for _, plugin in ipairs(features) do
-    require(dir_name .. "." .. vim.fn.fnamemodify(plugin, ":t:r"))
+    local m = require(dir_name .. "." .. vim.fn.fnamemodify(plugin, ":t:r"))
+    -- print(dir_name .. "." .. vim.fn.fnamemodify(plugin, ":t:r"), m)
   end
 end
 
