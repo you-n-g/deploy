@@ -26,8 +26,12 @@ return {
       winopts = {
         width = 0.99,
         height = 0.99,
+        preview = {
+          vertical = "up:45%",
+          layout = "vertical",
+        },
       },
-    }
+    },
   },
   -- {
   --     "otavioschwanck/arrow.nvim",

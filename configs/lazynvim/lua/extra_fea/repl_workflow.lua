@@ -198,13 +198,24 @@ vim.keymap.set("n", "<leader>rca", function()
   P(M.config["abs_path"])
 end, { desc = "Toggle Absolute Path." })
 
+-- Helper function to find the index of a value in a table
+local function find_index(tbl, value)
+  for i, v in ipairs(tbl) do
+    if v == value then
+      return i
+    end
+  end
+  return nil
+end
+
+
 function M.toggle_aider_mode(target)
   if target ~= nil then
     M.config["aider_mode"] = target
   else
     local modes = {"", "/test", "/run"}
     local current_mode = M.config["aider_mode"]
-    local next_index = ((vim.tbl_index(modes, current_mode) or 0) % #modes) + 1
+    local next_index = ((find_index(modes, current_mode) or 0) % #modes) + 1
     M.config["aider_mode"] = modes[next_index]
   end
   P(M.config["aider_mode"])

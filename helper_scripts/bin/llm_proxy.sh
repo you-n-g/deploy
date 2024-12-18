@@ -9,6 +9,10 @@ SELECT_CRED=${SELECT_CRED:-azure_ad_default_lite}
 
 echo $SELECT_CRED
 
+# new
+export AZURE_SCOPE=api://trapi/.default
+export AZURE_CREDENTIAL=AzureCliCredential
+
 #Where the default model be placed
 key_shell.sh $SELECT_CRED bash -c "echo CHAT_MODEL=\$CHAT_MODEL" >$DIR/litellm_proxy.env
 # key_shell.sh $SELECT_CRED bash -c "echo AZURE_API_BASE=\$AZURE_API_BASE"
@@ -18,7 +22,8 @@ key_shell.sh $SELECT_CRED bash -c "echo CHAT_MODEL=\$CHAT_MODEL" >$DIR/litellm_p
 # TODO: make sure the jobs start by '&' is stoped
 
 # https://docs.litellm.ai/docs/providers/litellm_proxy
-key_shell.sh $SELECT_CRED litellm $EXTRA_ARG --config $DIR/../../configs/python/litellm.yaml --port $PORT --detailed_debug # --debug
+# key_shell.sh $SELECT_CRED `which litellm` $EXTRA_ARG --config $DIR/../../configs/python/litellm.yaml --port $PORT --detailed_debug # --debug
+key_shell.sh $SELECT_CRED `which litellm` $EXTRA_ARG --config $DIR/../../configs/python/litellm.trapi.yaml --port $PORT --detailed_debug # --debug
 
 # logic:
 # llm_proxy => get proxy.env => openai model => vim openai config
@@ -29,4 +34,4 @@ key_shell.sh $SELECT_CRED litellm $EXTRA_ARG --config $DIR/../../configs/python/
 # - client_ttl: 120 may not work as expected.
 # You can fix it by
 # - `pip install 'litellm[proxy]'`
-# - `pip install git+https://github.com/you-n-g/litellm@fix/support_api_key_on_default`
+# - `pip install git+https://github.com/you-n-g/litellm@feat/add_more_credential`

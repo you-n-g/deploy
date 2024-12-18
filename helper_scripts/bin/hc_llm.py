@@ -112,12 +112,13 @@ from litellm import completion
 import pandas as pd  # Import pandas for data handling
 
 
-def load_model_names_and_params(yaml_file):
+def load_model_names_and_params(yaml_file, startswith):
     with open(yaml_file, 'r') as file:
         config = yaml.safe_load(file)
     return [(model['model_name'], model['litellm_params'])
             for model in config['model_list']
-            if model['model_name'].startswith("uni_")]
+            if model['model_name'].startswith(startswith)
+    ]
 
 
 def check_model(model_name, error_log):
@@ -130,14 +131,14 @@ def check_model(model_name, error_log):
 
 
 @app.command()
-def check_all_model():
+def check_all_model(fname="litellm.yaml", startswith="uni_"):
     """
     Health check does not support azure default token provider.
     """
     error_log = []
     available_models = []
-    yaml_file = DIRNAME.parent.parent / 'configs/python/litellm.yaml'
-    model_data = load_model_names_and_params(yaml_file)
+    yaml_file = DIRNAME.parent.parent / f'configs/python/{fname}'
+    model_data = load_model_names_and_params(yaml_file, startswith)
 
     for model_name, _ in tqdm(model_data, desc="Checking model availability"):
         available = check_model(model_name, error_log)
