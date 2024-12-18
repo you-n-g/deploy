@@ -19,6 +19,16 @@ return {
       },
     },
   },
+  {
+    "ibhagwan/fzf-lua",
+    opts = {
+      -- "default-title",
+      winopts = {
+        width = 0.99,
+        height = 0.99,
+      },
+    }
+  },
   -- {
   --     "otavioschwanck/arrow.nvim",
   --     opts = {
