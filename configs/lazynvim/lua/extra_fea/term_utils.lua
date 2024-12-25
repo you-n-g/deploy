@@ -7,6 +7,7 @@ TODO:
 - [ ] Go to lines:
   - goto fzf if failed.
 - [ ] Add command to the terminal. Use prompt matching and <cr> to determine.
+- [ ] Support rdagent.oai.llm_utils:_create_chat_completion_inner_function:728 - Response
 ]]
 
 local M = {}

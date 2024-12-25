@@ -137,7 +137,8 @@ return {
   {
     "sindrets/diffview.nvim",
     keys = {
-      { "<leader>gd", [[<cmd>DiffviewOpen HEAD^<cr>]], desc = "Open Diffview" },
+      -- { "<leader>gd", [[<cmd>DiffviewOpen HEAD^<cr>]], desc = "Open Diffview" }, -- this can replace by the navigating on the first commit in DiffviewFileHistory.
+      { "<leader>gd", [[<cmd>DiffviewOpen<cr>]], desc = "Open Diffview" },
       { "<leader>gH", [[<cmd>DiffviewFileHistory<cr>]], desc = "Diffview File History" },
     }
   }

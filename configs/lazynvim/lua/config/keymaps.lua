@@ -113,6 +113,21 @@ vim.keymap.set("n", "<leader><tab>b", function()
   })
 end, { expr = false, noremap = true, desc = "Open cur buffer in float window" })
 
+vim.keymap.set("n", "<leader><tab><leader>", function()
+  -- Check if the current buffer is associated with a file
+  if vim.fn.expand("%") == "" then
+    -- If not, open a new tab with an existing buffer that is associated with a file
+    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+      if vim.api.nvim_buf_is_loaded(bufnr) and vim.fn.bufname(bufnr) ~= "" then
+        vim.cmd("tab split | b" .. bufnr)
+        return
+      end
+    end
+  end
+  -- If the current buffer is associated with a file, open a new tab with the current buffer
+  vim.cmd("tab split")
+end, { expr = false, noremap = true, desc = "Open new tab; but with current buffer or an existing buffer with a file" })
+
 vim.api.nvim_set_keymap(
   "n",
   "<leader>sA",

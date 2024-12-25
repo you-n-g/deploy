@@ -47,7 +47,7 @@ return {
       -- },
     },
     -- pyink is a python formatter based on black
-    opts = {servers = { pyright = {} } },  --  `nvim-lspconfig.opts.autoformat` is deprecated. Please use `vim.g.autoformat` instead
+    opts = { servers = { pyright = {} } }, --  `nvim-lspconfig.opts.autoformat` is deprecated. Please use `vim.g.autoformat` instead
     -- mason will automatically load the lsp server
 
     -- TIPS:
@@ -68,12 +68,19 @@ return {
   },
   {
     "stevearc/conform.nvim",
-    -- set max line length to 120 will work in install_lazyvim.sh: 
+    -- set max line length to 120 will work in install_lazyvim.sh:
     opts = {
       formatters_by_ft = {
         ["python"] = { "yapf" },
+        -- ["json"] = { "prettier" },
+        ["_"] = { "prettierd" },  -- i don't know why prettier is not working
       },
     },
+
+    -- debug FAQ:
+    -- Goto :ConformInfo
+    -- find "stevearc/conform.nvim", and add formmaters_by_ft
+    -- Install the formatter with Mason(check if optional)
   },
 
   -- { -- https://github.com/Saghen/blink.cmp/issues/44 to avoid error
