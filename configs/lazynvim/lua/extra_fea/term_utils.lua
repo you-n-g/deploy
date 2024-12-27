@@ -8,6 +8,7 @@ TODO:
   - goto fzf if failed.
 - [ ] Add command to the terminal. Use prompt matching and <cr> to determine.
 - [ ] Support rdagent.oai.llm_utils:_create_chat_completion_inner_function:728 - Response
+  - from current/gitroot/src
 ]]
 
 local M = {}
@@ -50,7 +51,7 @@ local M = {}
 --   end
 -- })
 
-local function get_largest_non_terminal_win()
+function M.get_largest_non_terminal_win()
   -- Get a list of all windows
   local wins = vim.api.nvim_list_wins()
   local largest_win = nil
@@ -71,6 +72,36 @@ local function get_largest_non_terminal_win()
   end
   return largest_win
 end
+
+-- Function to append the current line to the largest non-terminal buffer
+function M.append_current_line_to_largest_buf()
+  local largest_win = M.get_largest_non_terminal_win()
+  if largest_win then
+    local current_line = vim.api.nvim_get_current_line()
+    local buf = vim.api.nvim_win_get_buf(largest_win)
+    local cursor_pos = vim.api.nvim_win_get_cursor(largest_win)
+    vim.api.nvim_buf_set_lines(buf, cursor_pos[1] - 1, cursor_pos[1] - 1, false, {current_line})
+    print("Appended to buffer in window: " .. largest_win)
+  else
+    print("No suitable window found.")
+  end
+end
+
+local append_to_largest_buf_enabled = false
+
+function M.toggle_append_to_largest_buf()
+  append_to_largest_buf_enabled = not append_to_largest_buf_enabled
+  if append_to_largest_buf_enabled then
+    vim.api.nvim_buf_set_keymap(0, 't', '<CR>', '<cmd>lua require"extra_fea.term_utils".append_current_line_to_largest_buf()<CR><CR>', { noremap = true, silent = true })
+    print("Append to largest buffer feature enabled.")
+  else
+    vim.api.nvim_buf_del_keymap(0, 't', '<CR>')
+    print("Append to largest buffer feature disabled.")
+  end
+end
+
+-- Map a key to toggle the feature
+vim.api.nvim_set_keymap('n', '<leader>ta', '<cmd>lua require"extra_fea.term_utils".toggle_append_to_largest_buf()<CR>', { noremap = true, silent = true })
 
 function M.open_file_in_largest_non_terminal_win(force)
   local largest_win = get_largest_non_terminal_win()
@@ -113,7 +144,6 @@ end
 vim.keymap.set({'n', 'v'}, 'gf', '<cmd>lua require"extra_fea.term_utils".open_file_in_largest_non_terminal_win()<CR>', { noremap = true, silent = true })
 vim.keymap.set({'n', 'v'}, 'gF', '<cmd>lua require"extra_fea.term_utils".open_file_in_largest_non_terminal_win(true)<CR>', { noremap = true, silent = true })
 
--- Function to copy the last command from the terminal
 function M.copy_last_terminal_command()
   -- TODO: working on it.
   local buf = vim.api.nvim_get_current_buf()

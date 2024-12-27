@@ -84,13 +84,12 @@ if __name__ == "__main__":
     tag_data = load_and_process_tag_data()
 
     merged_data = merge_tag_to_rank(rank_data, tag_data)
+
     print(merged_data)
     # print(merged_data.columns)
     focus_df = merged_data[~merged_data["tag/Agent.Reason"].isna() & ~merged_data["tag/LLM"].isna()]
     print(focus_df)
     focus_df.to_excel(DIRNAME / "data_rank.agent.reason.xlsx")
 
-    # Apply the sanitization to the entire DataFrame
-    df = pd.DataFrame(merged_data)
-    # df = df.applymap(sanitize_for_excel)
-    # df.to_excel(DIRNAME / "data_rank.xlsx")
+    focus_df = merged_data[(merged_data["venue_x"] == "oral") &  ~merged_data["tag/Agent"].isna() & ~merged_data["tag/LLM"].isna()]
+    focus_df.to_excel(DIRNAME / "data_rank.agent.xlsx")
