@@ -14,7 +14,7 @@ for _, key in ipairs({ "<A-j>", "<A-k>" }) do
 end
 
 -- disable map("n", "<leader>L", Util.changelog, {desc = "LazyVim Changelog"})
-vim.keymap.del({"n"}, "<leader>L")
+vim.keymap.del({ "n" }, "<leader>L")
 
 -- vim.keymap.del({"t"}, "<esc><esc>")  -- We may enter vim in terminal mode. So we need to remove this keymap
 -- But when we update to new version. snaks.nvim use a different machanism
@@ -22,18 +22,18 @@ vim.keymap.del({"n"}, "<leader>L")
 -- 拷贝当前buffer的相对路径
 -- # TODO: yp for relative path, yP for absolute path. Please implement it with a for loop
 local function copy_relative_path()
-  for _, reg in ipairs({ "\"", "1", "+" }) do
+  for _, reg in ipairs({ '"', "1", "+" }) do
     vim.fn.setreg(reg, vim.fn.expand("%"))
   end
-  print("Relative path: " .. vim.fn.getreg("\""))
+  print("Relative path: " .. vim.fn.getreg('"'))
 end
 
 -- Function to copy the absolute path
 local function copy_absolute_path()
-  for _, reg in ipairs({ "\"", "1", "+" }) do
+  for _, reg in ipairs({ '"', "1", "+" }) do
     vim.fn.setreg(reg, vim.fn.expand("%:p"))
   end
-  print("Absolute path: " .. vim.fn.getreg("\""))
+  print("Absolute path: " .. vim.fn.getreg('"'))
 end
 
 -- Keymap for copying the relative path
@@ -51,7 +51,6 @@ vim.keymap.set(
   copy_absolute_path,
   { expr = false, noremap = true, desc = "Copy absolute path to the clipboard" }
 )
-
 
 -- this is usually useful when check the content in small window
 vim.keymap.set("n", "<leader><tab>b", function()
@@ -87,7 +86,7 @@ vim.keymap.set("n", "<leader><tab>b", function()
 
   -- Set up autocommand to synchronize the cursor position on cursor movement for the current buffer
   local sync_cursor_augroup = vim.api.nvim_create_augroup("SyncCursor", { clear = true })
-  vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI"}, {
+  vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
     group = sync_cursor_augroup,
     buffer = bufnr,
     callback = synchronize_cursor,
@@ -141,7 +140,6 @@ vim.api.nvim_set_keymap(
   -- We prefer this grep_string when we fail to sG/g
 )
 
-
 -- change the window size of current window
 -- The <C-up> and <C-down> are overridden by vim-visual-multi. But I can't disable it... So I have to resize it here.
 local function win_change_width(n)
@@ -182,12 +180,11 @@ vim.keymap.set("i", "<C-^>", "<esc><C-^>a", { noremap = true, desc = "Switch buf
 --   "<leader>ci",
 --   [[exi<c-r>-]], { expr = false, noremap = true, desc = "Trigger Auto Import" })
 
-
 -- Function to clear all extmarks in the current buffer
 local function clear_all_extmarks()
   local bufnr = vim.api.nvim_get_current_buf()
   -- -1 means clear all namespaces
-  for _, ns in ipairs{ "avante_selection", "avante_cursor" } do
+  for _, ns in ipairs({ "avante_selection", "avante_cursor" }) do
     vim.api.nvim_buf_clear_namespace(bufnr, vim.api.nvim_create_namespace(ns), 0, -1)
   end
   print("Cleared all extmarks in the current buffer")
@@ -199,4 +196,12 @@ vim.keymap.set(
   "<leader>uE",
   clear_all_extmarks,
   { expr = false, noremap = true, desc = "Clear all avante extmarks in the current buffer" }
+)
+
+-- Keymap for path completion in insert mode using fzf-lua
+vim.keymap.set(
+  "i",
+  "<C-x><C-f>",
+  "<cmd>lua require('fzf-lua').complete_path()<CR>",
+  { noremap = true, silent = true, desc = "Path completion with fzf-lua" }
 )

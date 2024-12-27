@@ -152,14 +152,19 @@ return {
       },
     },
   },
-  {
-    "willothy/flatten.nvim",
-    -- config = true,
-    -- or pass configuration with
-    -- opts = { window = { open = "alternate" } },
-    opts = { window = { open = "smart" } },
-    -- Ensure that it runs first to minimize delay when opening file from terminal
-    lazy = false,
-    priority = 1001,
-  },
+  -- It conflicts with https://github.com/jbyuki/one-small-step-for-vimkind?tab=readme-ov-file#flattennvim
+  -- FIXME: nest_if_no_args = true, don't solve this issue
+  -- {
+  --   "willothy/flatten.nvim",
+  --   -- config = true,
+  --   -- or pass configuration with
+  --   -- opts = { window = { open = "alternate" } },
+  --   opts = {
+  --     window = { open = "smart" },
+  --     nest_if_no_args = true,
+  --   },
+  --   -- Ensure that it runs first to minimize delay when opening file from terminal
+  --   lazy = false,
+  --   priority = 1001,
+  -- },
 }

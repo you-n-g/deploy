@@ -1,0 +1,1 @@
+{"t": "You are an expert in diverse directions.\nWe have a file with content:\n```{{filetype}} \n{{content}}\n```\n我们会问你一些问题(可能是用拼音)，尽量用中文回答这些问题。\n{{q-}}"}

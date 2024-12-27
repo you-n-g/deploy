@@ -250,6 +250,7 @@ local extra_m = {
       --   "nvim-telescope/telescope.nvim",
       -- },
     },
+    "ibhagwan/fzf-lua",
   },
   opts = {
     -- new_tab = true,
@@ -264,7 +265,16 @@ local extra_m = {
         prefix = "<m-g>",
       },
       prefix = "<m-g><m-g>",
+      custom_shortcuts = {
+        ["<m-g>Q"] = {
+          mode = { "n", "v" },
+          tpl = "question_cn.json",
+          target = "popup",
+          opts = { noremap = true, silent = true, desc = "Use custom template" },
+        },
+      },
     },
+    custom_template_path = "~/deploy/configs/lazynvim/data/tpl/",
     tpl_conf = {
       context_len = 20,
     },

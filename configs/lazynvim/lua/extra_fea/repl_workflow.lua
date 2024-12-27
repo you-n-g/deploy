@@ -1,3 +1,13 @@
+--[[
+Difference from normal repl
+- It will base on your current script
+  - when run whole scripts, run the correct runner
+  - open the correct interpreter
+  - block sending: e.g. %paste for Python,  # %% for jupyter
+- more custmization with strong assumption
+  - command prefix dotenv.
+  - run a specific function of the script (assumption about fire/typer)
+]]
 -- it is based on toggleterm.nvim and vim-slime.
 local M = {}
 

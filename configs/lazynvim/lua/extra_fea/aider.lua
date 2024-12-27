@@ -1,6 +1,9 @@
 --[[
 Related projects
 - https://github.com/aweis89/aider.nvim
+
+TODO:
+- `<alt>/` to enter into aider terminal in insert mode and press `/`
 ]]
 --
 local repl = require"extra_fea.repl_workflow"
@@ -40,6 +43,20 @@ vim.keymap.set("n", "<leader>raa", function()
     require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), term_size)
   end
 end, { noremap = true, silent = true, desc = "Add current file to aider" })
+
+vim.keymap.set("n", "<leader>raA", function()
+  local buffers = vim.fn.getbufinfo({buflisted = 1})
+  local file_list = {}
+  for _, buf in ipairs(buffers) do
+    if buf.listed == 1 and buf.hidden == 0 and (buf.variables.buftype or "" == "") then
+      table.insert(file_list, vim.fn.expand(buf.name))
+    end
+  end
+  if #file_list > 0 then
+    local cmd = "/add " .. table.concat(file_list, " ")
+    require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), term_size)
+  end
+end, { noremap = true, silent = true, desc = "Add all file buffers to aider" })
 
 vim.keymap.set("n", "<leader>rae", function()
   -- NOTE: this depends on the correct setting
