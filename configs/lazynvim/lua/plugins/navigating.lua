@@ -150,6 +150,10 @@ return {
         -- tab = 5,
         -- vline = 2,
       },
+      -- link_surround = {
+      --   left = "{{",
+      --   right = "}}"
+      -- }
     },
   },
   -- It conflicts with https://github.com/jbyuki/one-small-step-for-vimkind?tab=readme-ov-file#flattennvim

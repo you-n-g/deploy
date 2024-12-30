@@ -269,8 +269,14 @@ local extra_m = {
         ["<m-g>Q"] = {
           mode = { "n", "v" },
           tpl = "question_cn.json",
+          target = "chat",
+          opts = { noremap = true, silent = true, desc = "Questions for article" },
+        },
+        ["<m-g>D"] = {
+          mode = { "n", "v" },
+          tpl = "dictionary_en2cn.json",
           target = "popup",
-          opts = { noremap = true, silent = true, desc = "Use custom template" },
+          opts = { noremap = true, silent = true, desc = "dictionary_en2cn" },
         },
       },
     },

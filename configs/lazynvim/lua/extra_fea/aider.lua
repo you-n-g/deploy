@@ -46,9 +46,11 @@ end, { noremap = true, silent = true, desc = "Add current file to aider" })
 
 vim.keymap.set("n", "<leader>raA", function()
   local buffers = vim.fn.getbufinfo({buflisted = 1})
+  -- require"snacks".debug(buffers)
   local file_list = {}
   for _, buf in ipairs(buffers) do
-    if buf.listed == 1 and buf.hidden == 0 and (buf.variables.buftype or "" == "") then
+    -- `and buf.hidden == 0` is not a good indicator
+    if buf.listed == 1 and (buf.variables.buftype or "" == "") then
       table.insert(file_list, vim.fn.expand(buf.name))
     end
   end

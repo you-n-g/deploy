@@ -56,3 +56,26 @@ echo '- 用vnc登录到本地 127.0.0.1 不需要密码'
 
 # ref
 # 本教程参考了: https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-vnc-on-ubuntu-16-04
+
+
+# About fonts... It does not work....
+#
+# FONT_PATH=~/apps/data/fonts
+# mkdir -p $FONT_PATH
+# cd $FONT_PATH
+#
+# wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/JetBrainsMono.zip
+#
+# unzip JetBrainsMono.zip
+#
+# cat << "EOF" > ~/.Xresources
+# XTerm*faceName: /home/xiaoyang/apps/data/fonts/JetBrainsMonoNerdFontMono-Regular.ttf
+# XTerm*faceSize: 12
+# EOF
+# xrdb -merge ~/.Xresources
+#
+# xset +fp /home/xiaoyang/apps/data/fonts/
+# xset fp rehash
+#
+# vncserver -kill :1
+# vncserver
