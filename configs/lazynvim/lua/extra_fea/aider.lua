@@ -19,16 +19,32 @@ local launch_cmd = [[key_shell.sh %s myaider %s]]
 --   require("toggleterm").exec(string.format(launch_cmd, "azure_aider"), tonumber(vim.g.toggleterm_last_id), term_size)
 -- end, { noremap = true, silent = true, desc = "Run azure_aider commands in terminal" })
 
+local function run_aider(git_support, auto_commit)
+  repl.toggle_aider_mode("/test")
+
+  local current_file = vim.fn.expand("%")
+  local extra_args = "--lint-cmd 'lua: luacheck --globals vim -- '" .. " " .. current_file
+  
+  if not auto_commit then
+    extra_args = "--no-auto-commit " .. extra_args
+  end
+  
+  local cmd = string.format(launch_cmd, "openai_lite", extra_args)
+  
+  if git_support then
+    cmd = "git checkout -B aider && " .. cmd
+  end
+  
+  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), nil, nil, "vertical")
+end
+
 vim.keymap.set("n", "<leader>raL", function()
-  repl.config.aider_mode = true
-  require("toggleterm").exec("git checkout -B aider && " .. string.format(launch_cmd, "openai_lite", vim.fn.expand("%")), tonumber(vim.g.toggleterm_last_id), nil, nil, "vertical")
+  run_aider(true, true)
 end, { noremap = true, silent = true, desc = "Run azure_aider commands in terminal(git support)" })
 
 vim.keymap.set("n", "<leader>ral", function()
-  repl.toggle_aider_mode("/test")
-  -- repl.config.aider_mode = true
-  require("toggleterm").exec(string.format(launch_cmd, "openai_lite", "--no-auto-commit " .. vim.fn.expand("%")), tonumber(vim.g.toggleterm_last_id), nil, nil, "vertical")
-end, { noremap = true, silent = true, desc = "Run openai_lite commands in terminal(with current file)" })
+  run_aider(false, false)
+end, { noremap = true, silent = true, desc = "Run openai_lite commands in terminal (with current file)" })
 
 vim.keymap.set("n", "<leader>rar", function()
   local cmd = "/read-only " .. vim.fn.expand(repl_inst:get_path_symbol())

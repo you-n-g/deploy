@@ -144,7 +144,7 @@ alias gitlog="git log --all --oneline --graph --decorate # --reflog"
 alias gitlogs="git log --all --pretty=short --abbrev-commit --graph --decorate # --reflog"
 alias mux=tmuxinator
 alias mx=tmux
-export PATH="$HOME/deploy/helper_scripts/bin/:$HOME/bin/:$HOME/apps/nodejs/bin/:$PATH"
+export PATH="$HOME/deploy/helper_scripts/bin/:$HOME/bin/:$HOME/apps/nodejs/bin/:$HOME/.luarocks/bin/:$PATH"
 export PATH="$PATH:$HOME/.local/bin"  # this is for pipx
 export MANPATH="$HOME/.local/share/man/:$MANPATH"
 export EDITOR=`which vim`

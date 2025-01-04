@@ -459,22 +459,28 @@
   Description = "aider start"
   Output = ""
   Tag = []
-  command = "key_shell.sh <cred=|_openai_lite_||_azure_ad_lite_||_azure_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> --no-auto-commit --no-show-model-warnings'"
+  command = "key_shell.sh <cred=|_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> --no-auto-commit --no-show-model-warnings'"
 
 [[Snippets]]
   Description = "aider command"
   Output = ""
   Tag = []
-  command = "key_shell.sh <cred=|_openai_lite_||_azure_ad_lite_||_azure_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> -m \"<command=/commit>\"'"
+  command = "key_shell.sh <cred=|_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> -m \"<command=/commit>\"'"
 
 [[Snippets]]
   Description = "health check for openai & llm"
   Output = ""
   Tag = []
-  command = "key_shell.sh <cred=|_azure_ad_||_azure_||_azure_ad_lite_||_azure_lite_||_openai_|> hc_llm.py <api=|_azure_||_azure-lite_||_native_|>"
+  command = "key_shell.sh <cred=|_azure_ad_||_azure_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_||_openai_|> hc_llm.py <api=|_azure_||_litellm_||_native_|>"
 
 [[Snippets]]
   Description = "launch litellm proxy"
   Output = ""
   Tag = []
   command = "SELECT_CRED=<cred=|_azure_ad_default_lite_||_azure_lite_|> EXTRA_ARG=\"<EXTRA_ARG=|__||_--model gpt-4o_|>\" llm_proxy.sh"
+
+[[Snippets]]
+  Description = "nvim-based CLI/CMD"
+  Output = ""
+  Tag = []
+  command = "nvim --cmd \":terminal\" --cmd \":lua vim.api.nvim_feedkeys('i', 'n', false)\""

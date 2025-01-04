@@ -48,9 +48,9 @@ def azure(deployment: str | None = None):
 
 
 @app.command()
-def azure_lite(deployment: str | None = None):
+def litellm(deployment: str | None = None):
     """
-    Function to demonstrate LiteLLM API calling for Azure OpenAI.
+    Function to demonstrate LiteLLM API calling for calling models
 
     Args:
         deployment (str): The name of the model deployment. Default is "gpt-4o".

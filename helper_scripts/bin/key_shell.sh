@@ -9,6 +9,15 @@ api_base=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 1p)
 azure_engine=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 2p)
 api_key=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 3p)
 
+# source the stdout from $(gpg -q --decrypt $HOME/deploy/keys/general.gpg)
+if [ -f $HOME/deploy/keys/general.gpg ]; then
+  eval "$(gpg -q --decrypt $HOME/deploy/keys/general.gpg)"
+else
+  echo "general.gpg not found; unable to source environment variables"
+  exit 1
+fi
+
+
 # # Outlines: Credentials
 openai_key_api_01() {
   OPENAI_API_KEY=sk-1234
@@ -140,6 +149,11 @@ openai_lite() {
   export OPENAI_API_KEY=$OPENAI_API_KEY
   export OPENAI_API_BASE=$OPENAI_BASE_URL
   export CHAT_MODEL=$CHAT_MODEL
+}
+
+deepseek_lite() {
+  export DEEPSEEK_API_KEY=$DEEPSEEK_API_KEY
+  export CHAT_MODEL=deepseek/deepseek-chat
 }
 
 # # Outlines: Extra alias and scenarios

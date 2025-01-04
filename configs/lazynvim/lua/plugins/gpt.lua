@@ -272,11 +272,23 @@ local extra_m = {
           target = "chat",
           opts = { noremap = true, silent = true, desc = "Questions for article" },
         },
-        ["<m-g>D"] = {
-          mode = { "n", "v" },
-          tpl = "dictionary_en2cn.json",
+        -- ["<m-g>D"] = {
+        --   mode = { "n", "v" },
+        --   tpl = "dictionary_en2cn.json",
+        --   target = "popup",
+        --   opts = { noremap = true, silent = true, desc = "dictionary_en2cn" },
+        -- },
+        -- ["<localleader>st"] = {
+        --   mode = { "v" },
+        --   tpl = "converter.json",
+        --   target = "diff",
+        --   opts = { noremap = true, silent = true, desc = "Convert between YAML & JSON" },
+        -- },
+        ["<m-g>t"] = {
+          mode = { "t"},
+          tpl = "terminal.json",
           target = "popup",
-          opts = { noremap = true, silent = true, desc = "dictionary_en2cn" },
+          opts = { noremap = true, silent = true, desc = "Terminal Command" },
         },
       },
     },

@@ -9,7 +9,7 @@ cd $PET_PATH
 
 
 # VER=0.3.6
-VER=1.0.0
+VER=1.0.1
 NAME=pet_${VER}_linux_amd64.tar.gz
 
 wget https://github.com/knqyf263/pet/releases/download/v$VER/$NAME
