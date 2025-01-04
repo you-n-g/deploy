@@ -5,13 +5,15 @@ Related projects
 TODO:
 - `<alt>/` to enter into aider terminal in insert mode and press `/`
 ]]
---
 local repl = require"extra_fea.repl_workflow"
 local term_size = 12
 
 local repl_inst = repl.REPLFactory()
 
--- local launch_cmd = [[key_shell.sh %s bash -c "aider --model \$CHAT_MODEL --weak-model \$CHAT_MODEL --no-show-model-warnings --editor \"nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\\\"w\\\"); require\\\"snacks\\\".bufdelete()'\" --watch-files --subtree-only %s"]]
+-- local launch_cmd = [[key_shell.sh %s bash -c "aider --model \$CHAT_MODEL --weak-model \$CHAT_MODEL
+--   --no-show-model-warnings --editor \"nvim --cmd 'let g:flatten_wait=1'
+--   --cmd 'cnoremap wq lua vim.cmd(\\\"w\\\"); require\\\"snacks\\\".bufdelete()'\""
+--   --watch-files --subtree-only %s"]]
 local launch_cmd = [[key_shell.sh %s myaider %s]]
 
 -- It is not frequently used now
@@ -19,31 +21,32 @@ local launch_cmd = [[key_shell.sh %s myaider %s]]
 --   require("toggleterm").exec(string.format(launch_cmd, "azure_aider"), tonumber(vim.g.toggleterm_last_id), term_size)
 -- end, { noremap = true, silent = true, desc = "Run azure_aider commands in terminal" })
 
-local function run_aider(git_support, auto_commit)
+local function run_aider(new_branch_mode)
   repl.toggle_aider_mode("/test")
 
   local current_file = vim.fn.expand("%")
   local extra_args = "--lint-cmd 'lua: luacheck --globals vim -- '" .. " " .. current_file
-  
-  if not auto_commit then
+  if not new_branch_mode then
     extra_args = "--no-auto-commit " .. extra_args
   end
-  
-  local cmd = string.format(launch_cmd, "openai_lite", extra_args)
-  
-  if git_support then
+
+  local model = vim.fn.system("tmux show-env llm_aider | cut -d= -f2"):gsub("%s+", "")
+  if model == "" or model:match("^unknown") or model:match("^-") then
+    model = "openai_lite"  -- default value if llm_aider is not set or invalid
+  end
+  local cmd = string.format(launch_cmd, model, extra_args)
+  if new_branch_mode then
     cmd = "git checkout -B aider && " .. cmd
   end
-  
   require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), nil, nil, "vertical")
 end
 
 vim.keymap.set("n", "<leader>raL", function()
-  run_aider(true, true)
+  run_aider(true)
 end, { noremap = true, silent = true, desc = "Run azure_aider commands in terminal(git support)" })
 
 vim.keymap.set("n", "<leader>ral", function()
-  run_aider(false, false)
+  run_aider(false)
 end, { noremap = true, silent = true, desc = "Run openai_lite commands in terminal (with current file)" })
 
 vim.keymap.set("n", "<leader>rar", function()

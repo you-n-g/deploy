@@ -484,3 +484,9 @@
   Output = ""
   Tag = []
   command = "nvim --cmd \":terminal\" --cmd \":lua vim.api.nvim_feedkeys('i', 'n', false)\""
+
+[[Snippets]]
+  Description = "set/remove tmux session default aider llm backend"
+  Output = ""
+  Tag = []
+  command = "tmux set-env <cred=|_llm_aider deepseek_lite_||_-r llm_aider_|>"
