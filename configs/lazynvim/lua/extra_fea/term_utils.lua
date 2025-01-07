@@ -104,7 +104,7 @@ end
 vim.api.nvim_set_keymap('n', '<leader>ta', '<cmd>lua require"extra_fea.term_utils".toggle_append_to_largest_buf()<CR>', { noremap = true, silent = true })
 
 function M.open_file_in_largest_non_terminal_win(force)
-  local largest_win = get_largest_non_terminal_win()
+  local largest_win = M.get_largest_non_terminal_win()
   -- Attempt to extract a file path and line number from the surrounding text
   local file = vim.fn.expand('<cfile>')
   local line = nil
