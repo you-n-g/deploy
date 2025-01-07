@@ -284,12 +284,12 @@ local extra_m = {
         --   target = "diff",
         --   opts = { noremap = true, silent = true, desc = "Convert between YAML & JSON" },
         -- },
-        ["<m-g>t"] = {
-          mode = { "t"},
-          tpl = "terminal.json",
-          target = "popup",
-          opts = { noremap = true, silent = true, desc = "Terminal Command" },
-        },
+        -- ["<m-g>t"] = {
+        --   mode = { "t"},
+        --   tpl = "terminal.json",
+        --   target = "popup",
+        --   opts = { noremap = true, silent = true, desc = "Terminal Command" },
+        -- },
       },
     },
     custom_template_path = "~/deploy/configs/lazynvim/data/tpl/",
