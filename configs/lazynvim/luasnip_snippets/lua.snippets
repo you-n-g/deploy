@@ -1,0 +1,9 @@
+snippet kmdebug "set keymap to debug"
+	vim.keymap.set(
+		{"n", "v", "o", "i", "c", "s", "t"},
+		"<localleader>d",
+		function ()
+			require"snacks".debug()
+		end,
+		{ expr = false, noremap = true, desc = "DEBUG" }
+	)
