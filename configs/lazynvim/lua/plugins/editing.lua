@@ -20,7 +20,6 @@ return {
     },
   },
   -- NOTE:
-
   -- {
   --   "kkoomen/vim-doge",
   --   build = ":call doge#install()", -- <cr> is not required
@@ -35,38 +34,39 @@ return {
     "danymat/neogen",
     dependencies = {
         "nvim-treesitter/nvim-treesitter",
-        {
-          "hrsh7th/nvim-cmp",
-          opts = function(_, opts)
-            -- enhance the <tab> for neogen;
-            local cmp = require("cmp")
-            local mapping = {
-              ["<tab>"] = cmp.mapping(function(fallback)
-                local neogen = require("neogen")
-                if neogen.jumpable() then
-                  neogen.jump_next()
-                else
-                  fallback()
-                end
-              end, {
-                "i",
-                "s",
-              }),
-              ["<S-tab>"] = cmp.mapping(function(fallback)
-                local neogen = require("neogen")
-                if neogen.jumpable(true) then
-                  neogen.jump_prev()
-                else
-                  fallback()
-                end
-              end, {
-                "i",
-                "s",
-              }),
-            }
-            opts.mapping = vim.tbl_extend("error", opts.mapping, mapping)
-          end,
-        },
+        -- NOTE: lazy.nvim deprecated nvim-cmp
+        -- {
+        --   "hrsh7th/nvim-cmp",
+        --   opts = function(_, opts)
+        --     -- enhance the <tab> for neogen;
+        --     local cmp = require("cmp")
+        --     local mapping = {
+        --       ["<tab>"] = cmp.mapping(function(fallback)
+        --         local neogen = require("neogen")
+        --         if neogen.jumpable() then
+        --           neogen.jump_next()
+        --         else
+        --           fallback()
+        --         end
+        --       end, {
+        --         "i",
+        --         "s",
+        --       }),
+        --       ["<S-tab>"] = cmp.mapping(function(fallback)
+        --         local neogen = require("neogen")
+        --         if neogen.jumpable(true) then
+        --           neogen.jump_prev()
+        --         else
+        --           fallback()
+        --         end
+        --       end, {
+        --         "i",
+        --         "s",
+        --       }),
+        --     }
+        --     opts.mapping = vim.tbl_extend("error", opts.mapping, mapping)
+        --   end,
+        -- },
     },
     config = true,
     -- Uncomment next line if you want to follow only stable versions
@@ -75,15 +75,16 @@ return {
       { "<leader>cD", [[<cmd>lua require('neogen').generate({ annotation_convention = { python = 'numpydoc' } })<cr>]], desc = "Generating Docs" },
     },
   },
-  {
-    "zbirenbaum/copilot.lua",
-    keys = {
-      { "<c-]>", [[<cmd>lua require("copilot.panel").open()<cr>]], mode = { "n", "i" }, desc = "Open Copilot Penel" },
-      { "<leader>]]", [[<cmd>lua require("copilot.panel").jump_next()<cr>]], mode = { "n" }, desc = "Next Suggestion" },
-      { "<leader>][", [[<cmd>lua require("copilot.panel").jump_prev()<cr>]], mode = { "n" }, desc = "Prev Suggestion" },
-      { "<leader>]<cr>", [[<cmd>lua require("copilot.panel").accept()<cr>]], mode = { "n" }, desc = "Accept Suggestion" },
-    },
-  },
+  -- NOTE: We have extra in copilot.lua; this become redundant
+  -- {
+  --   "zbirenbaum/copilot.lua",
+  --   keys = {
+  --     { "<c-]>", [[<cmd>lua require("copilot.panel").open()<cr>]], mode = { "n", "i" }, desc = "Open Copilot Penel" },
+  --     { "<leader>]]", [[<cmd>lua require("copilot.panel").jump_next()<cr>]], mode = { "n" }, desc = "Next Suggestion" },
+  --     { "<leader>][", [[<cmd>lua require("copilot.panel").jump_prev()<cr>]], mode = { "n" }, desc = "Prev Suggestion" },
+  --     { "<leader>]<cr>", [[<cmd>lua require("copilot.panel").accept()<cr>]], mode = { "n" }, desc = "Accept Suggestion" },
+  --   },
+  -- },
   {
     "lervag/vimtex",
     -- NOTE: cheatsheets
