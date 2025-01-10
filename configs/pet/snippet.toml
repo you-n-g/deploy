@@ -490,3 +490,9 @@
   Output = ""
   Tag = []
   command = "tmux set-env <cred=|_llm_aider deepseek_lite_||_-r llm_aider_|>"
+
+[[Snippets]]
+  Description = "remove color in the content"
+  Output = ""
+  Tag = []
+  command = "sed -r 's/\\x1B\\[[0-9;]*[mK]//g' <file=typescript> > <file>_no_color"
