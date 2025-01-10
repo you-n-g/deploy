@@ -12,11 +12,14 @@
 直接DEBUG neovim instance in lua
 - 主要思路来自 https://github.com/jbyuki/one-small-step-for-vimkind/blob/main/doc/osv.txt#L44
 - 先开一个instance `<leader>daL` 开启server (如果没有的话，就`:lua require"osv".launch({port=8086})`)
-  - 后来改成 <leader>dL
+  - 后来改成 `<leader>dL`
 - 再开第二个个instance
   - 打开相关代码`<leader>db`设置断点 
   - continue run `<leader>dc` (选择attach到 neovim instance 8086)
 - 操作第一个instance，触发第二个instance设定的断点
+
+DEBUG 一些异常的行为
+- 按键开始还按期望行为， 然后失灵: `<space>sk` 看看keymapping的变化(同一个key可能会有很多种映射)
 
 # 还希望要的功能
 - [X] fast wrap (类似 https://github.com/jiangmiao/auto-pairs), 但是 "echasnovski/mini.pairs" 没有提供类似的功能

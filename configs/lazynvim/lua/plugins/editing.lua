@@ -3,8 +3,10 @@ return {
   -- 1. Multiple quote pairing is not supported in the future (https://github.com/echasnovski/mini.nvim/discussions/255)
   -- 2. fast wrap is not supported
   { "echasnovski/mini.pairs", enabled = false },
+
   -- instead an alternative is used
   -- - https://github.com/jiangmiao/auto-pairs may be another alternative
+  -- NOTE: But it confliction with blink.nvim on <cr>
   -- { "windwp/nvim-autopairs", event = "VeryLazy", config = true },
   {
     "windwp/nvim-autopairs",
@@ -14,8 +16,11 @@ return {
         pattern = [=[[%'%"%>%]%)%}%,%.%:%=]]=],
         use_virt_lines = false,  -- The vertual line will overlap with the code auto completion.
       },
+      map_cr = false, -- this greatly conflict with blink.nvim
     },
   },
+  -- NOTE:
+
   -- {
   --   "kkoomen/vim-doge",
   --   build = ":call doge#install()", -- <cr> is not required

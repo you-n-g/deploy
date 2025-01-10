@@ -105,10 +105,10 @@ return {
     -- s不是删除然后立马插入，而是进入到一个selecting模式
     -- 选取了多行后 \\c 可以创建多个normal模式的光标，\\a可以创建多个extend模式的光标
     -- - <C-up>  <C-down> 之类的功能也能达到类似的效果，目前和和kitty的transparency的功能冲突了
-    --
     -- 有用的功能: https://github.com/mg979/vim-visual-multi/blob/master/doc/vm-tutorial
+    --
     -- - 在<c-n>时， \\w 可以切换是否要boundary,  \\c 可以切换是否要 case-sensitive
-    -- - 在visual mode 选择cursor时，m是一个标记操作符， mG 代表从当前标记到结尾
+    -- - 在visual mode 选择cursor时，m是一个标记操作符(mark)，后面可以接位置， mG 代表从当前标记到结尾
     --
     -- 优势
     -- - 和用macro记录改一波再应用到别的位置作对比，
@@ -170,7 +170,10 @@ return {
     },
     config=true,
   },
+  -- Following Colorizer is not working
   -- {
   --   "powerman/vim-plugin-AnsiEsc"
-  -- }
+  -- },
+  -- {"chrisbra/Colorizer"},
+  -- {"berdandy/ansiesc.vim'"},
 }

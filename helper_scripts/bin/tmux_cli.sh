@@ -14,7 +14,7 @@
 
 # tmux new-window -n 'ExtermanlConsole'  "mydotenv.sh $@" # will not work directly.
 # tmux new-window -n ExtermanlConsole "mydotenv.sh bash a.sh"  # success
-CMD_ARRAY=("mydotenv.sh" "$@")
+CMD_ARRAY=("mydotenv.sh" "script" "-c" "$*" "tmux_cli_log")
 # echo "${CMD_ARRAY[@]}" > arg.log
 tmux new-window -n ExtermanlConsole "${CMD_ARRAY[@]}" # success with bash a.sh
 # NOTE: please refer to `cheatsheets/language/shell/syntax.sh` for more details
