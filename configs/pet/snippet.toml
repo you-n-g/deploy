@@ -495,4 +495,5 @@
   Description = "remove color in the content"
   Output = ""
   Tag = []
-  command = "sed -r 's/\\x1B\\[[0-9;]*[mK]//g' <file=typescript> > <file>_no_color"
+  # command = "sed -r 's/\\x1B\\[[0-9;]*[mK]//g' <file=typescript> > <file>_no_color"
+  command = "cat <file=typescript> | ansi2txt > <file>_no_color"

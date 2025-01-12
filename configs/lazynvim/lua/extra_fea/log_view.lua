@@ -15,12 +15,43 @@ local patterns = {
   -- { regex = "function%s+(%w+)", type = "Function" },
   -- { regex = "local%s+function%s+(%w+)", type = "Local Function" },
   -- { regex = "local%s+(%w+)%s*=", type = "Local Variable" },
-  { regex = "Role:system", type = "❓system message" },
-  { regex = "- Response:", type = "💬response message" },
+  -- Contents
+  { regex = "Role:system", type = "    ❓system message" },
+  { regex = "- Response:", type = "    💬response message" },
+  { regex = "self.workspace_path", type="    👾Code Workspace"},
+  -- control
+  { regex = "Implementing: ", type="  🛠️Implementing"},
+  { regex = "loop_index=", type="♾️ Loop:"},
 }
 
 -- Cache for outlines
 local outline_cache = {}
+
+
+-- Find and highlight the focused outline line based on current cursor position
+local function find_focused_outline_line(outline, current_line, bufnr)
+  local last_item, last_idx, focus_line
+  -- Clear all existing highlights first
+  vim.api.nvim_buf_clear_namespace(bufnr, -1, 0, -1)
+  
+  if outline[1].line <= current_line then
+    for idx, item in ipairs(outline) do
+      last_item = item
+      last_idx = idx
+      if item.line > current_line and idx - 2 >= 0 then
+        vim.api.nvim_buf_add_highlight(bufnr, -1, 'Visual', idx - 2, 0, -1)
+        focus_line = idx - 2
+        break
+      end
+    end
+  end
+  if last_item ~= nil and last_item.line <= current_line then
+    vim.api.nvim_buf_add_highlight(bufnr, -1, 'Visual', last_idx - 1, 0, -1)
+    focus_line = last_idx - 1
+  end
+  return focus_line
+end
+
 
 -- Function to create the outline
 local function create_outline()
@@ -52,6 +83,8 @@ end
 
 -- Function to display the outline in a floating window
 local function display_outline()
+  local cur_win_id = vim.api.nvim_get_current_win()
+  local cur_bufnr = vim.api.nvim_get_current_buf()
   local outline = create_outline()  -- TODO: do it in the background
   local lines = {}
   local line_map = {}
@@ -64,36 +97,43 @@ local function display_outline()
 
   -- Highlight the section line in the outline where the cursor is
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
+  local focus_line = find_focused_outline_line(outline, current_line, bufnr)
 
-  local last_item, last_idx, focus_line
-  if outline[1].line <= current_line then
-    for idx, item in ipairs(outline) do
-      last_item = item
-      last_idx = idx
-      if item.line > current_line and idx - 2 >= 0 then
-        vim.api.nvim_buf_add_highlight(bufnr, -1, 'Visual', idx - 2, 0, -1)
-        focus_line = idx - 2
-        break
-      end
+  -- Setup cursor tracking to update highlights
+  local group = vim.api.nvim_create_augroup('OutlineHighlight', {})
+  vim.api.nvim_create_autocmd('CursorMoved', {
+    group = group,
+    buffer = cur_bufnr,
+    callback = function()
+      -- Get current cursor position and update highlight
+      local current_line = vim.api.nvim_win_get_cursor(cur_win_id)[1]
+      find_focused_outline_line(outline, current_line, bufnr)
     end
-  end
-  if last_item ~= nil and last_item.line <= current_line then
-    vim.api.nvim_buf_add_highlight(bufnr, -1, 'Visual', last_idx - 1, 0, -1)
-    focus_line = last_idx - 1
-  end
+  })
+
+  -- Clean up when buffer is closed
+  vim.api.nvim_create_autocmd('BufWipeout', {
+    group = group,
+    buffer = bufnr,
+    callback = function()
+      vim.api.nvim_del_augroup_by_id(group)
+    end
+  })
 
   local width = 50
-  local height = #lines
-  local opts = {
-    relative = 'editor',
-    width = width,
-    height = height,
-    col = (vim.o.columns - width) / 2,
-    row = (vim.o.lines - height) / 2,
-    style = 'minimal',
-    border = 'rounded',
-  }
-  local win_id = vim.api.nvim_open_win(bufnr, true, opts)
+  -- Create a vertical split on the left side
+  vim.cmd('vsplit')
+  local win_id = vim.api.nvim_get_current_win()
+  vim.api.nvim_win_set_buf(win_id, bufnr)
+  
+  -- Set window width
+  vim.api.nvim_win_set_width(win_id, width)
+  
+  -- Set window options
+  vim.wo[win_id].number = false
+  vim.wo[win_id].relativenumber = false
+  vim.wo[win_id].wrap = false
+  vim.wo[win_id].signcolumn = 'no'
 
   if focus_line then
     vim.api.nvim_win_set_cursor(0, {focus_line + 1, 0}) -- navigate to the focused line
@@ -109,8 +149,13 @@ local function display_outline()
       local cursor = vim.api.nvim_win_get_cursor(win_id)
       local line = line_map[cursor[1]]
       if line then
-        vim.api.nvim_win_close(win_id, true)
-        vim.api.nvim_win_set_cursor(0, {line, 0})
+        -- vim.api.nvim_win_close(win_id, true)
+        vim.api.nvim_win_set_cursor(cur_win_id, {line, 0})
+        -- Move cursor to top of window in the correct window
+        vim.api.nvim_win_call(cur_win_id, function()
+          vim.cmd('normal! zt')
+        end)
+        find_focused_outline_line(outline, line, bufnr)
       end
     end,
   })
