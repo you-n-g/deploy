@@ -7,7 +7,7 @@ DIR="$(
 PORT=${1:-4000}
 SELECT_CRED=${SELECT_CRED:-azure_ad_default_lite}
 
-echo $SELECT_CRED
+echo "$SELECT_CRED"
 
 # new
 export AZURE_SCOPE=api://trapi/.default

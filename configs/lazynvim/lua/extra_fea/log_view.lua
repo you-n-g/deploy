@@ -9,6 +9,8 @@ Cheatsheets
   - `cat V02.log | ansi2txt  > V02.plain.log`
 ]]
 
+local M = {}
+
 
 -- Define the regular expressions for the elements you want to match
 local patterns = {
@@ -19,9 +21,10 @@ local patterns = {
   { regex = "Role:system", type = "    ❓system message" },
   { regex = "- Response:", type = "    💬response message" },
   { regex = "self.workspace_path", type="    👾Code Workspace"},
+  { regex = "Task Name: [%w%s]+", type = "      📝 Task Name"},
   -- control
   { regex = "Implementing: ", type="  🛠️Implementing"},
-  { regex = "loop_index=", type="♾️ Loop:"},
+  { regex = "loop_index=%d*, step_index=%d*, step_name=[%w_]+", type = "♾️ Loop:"},
 }
 
 -- Cache for outlines
@@ -82,7 +85,7 @@ local function create_outline()
 end
 
 -- Function to display the outline in a floating window
-local function display_outline()
+function M.display_outline()
   local cur_win_id = vim.api.nvim_get_current_win()
   local cur_bufnr = vim.api.nvim_get_current_buf()
   local outline = create_outline()  -- TODO: do it in the background
@@ -120,7 +123,17 @@ local function display_outline()
     end
   })
 
-  local width = 50
+  -- Calculate maximum width of outline content
+  local max_width = 0
+  for _, line in ipairs(lines) do
+    max_width = math.max(max_width, #line)
+  end
+  -- Get current window width and calculate max allowed width
+  local win_width = vim.api.nvim_win_get_width(0)
+  local max_allowed = math.floor(win_width * 0.5)
+  -- Add some padding and minimum width, but don't exceed half screen width
+  local width = math.min(math.max(max_width + 2, 30), max_allowed)
+
   -- Create a vertical split on the left side
   vim.cmd('vsplit')
   local win_id = vim.api.nvim_get_current_win()
@@ -162,7 +175,11 @@ local function display_outline()
 end
 
 
-local function  set_style()
+-- Define highlight groups
+vim.api.nvim_set_hl(0, 'LogTimestamp', { fg = '#FFA500', bold = true })
+vim.api.nvim_set_hl(0, 'LogHeadingPattern', { fg = '#00FF00', bold = true })
+
+function M.set_style()
   local bufnr = vim.api.nvim_get_current_buf()
   vim.bo[bufnr].modifiable = false
   vim.bo[bufnr].readonly = true
@@ -170,12 +187,39 @@ local function  set_style()
   -- Saving large logfiles is time consuming
   vim.api.nvim_buf_set_option(bufnr, 'wrap', false)
   vim.api.nvim_buf_set_option(bufnr, 'buftype', 'nofile')
+
+  -- Add timestamp highlighting
+  vim.api.nvim_buf_clear_namespace(bufnr, -1, 0, -1)
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  
+  -- Highlight all patterns
+  for i, line in ipairs(lines) do
+    -- Timestamps
+    local ts = string.match(line, '%d%d%d%d%-%d%d%-%d%d %d%d:%d%d:%d%d%.%d%d%d')
+    if ts then
+      local start = string.find(line, ts, nil, true)
+      if start then
+        vim.api.nvim_buf_add_highlight(bufnr, -1, 'LogTimestamp', i-1, start-1, start+#ts-1)
+      end
+    end
+
+    -- Pattern matches
+    for _, pattern in ipairs(patterns) do
+      local match = string.match(line, pattern.regex)
+      if match then
+        local start = string.find(line, match, nil, true)
+        if start then
+          vim.api.nvim_buf_add_highlight(bufnr, -1, 'LogHeadingPattern', i-1, start-1, start+#match-1)
+        end
+      end
+    end
+  end
 end
 
 
 -- Map a key to display the outline
-vim.keymap.set('n', '<localleader>oo', display_outline, { noremap = true, silent = true, desc = "Display Outline" })
-vim.keymap.set('n', '<localleader>os', set_style, { noremap = true, silent = true, desc = "Set Buffer Style" })
+vim.keymap.set('n', '<localleader>oo', M.display_outline, { noremap = true, silent = true, desc = "Display Outline" })
+vim.keymap.set('n', '<localleader>os', M.set_style, { noremap = true, silent = true, desc = "Set Buffer Style" })
 
 -- Function to navigate to the next item in the outline
 local function navigate_next_item()
@@ -209,3 +253,5 @@ end
 -- Map keys to navigate to the next or previous item in the outline
 vim.keymap.set('n', ']o', navigate_next_item, { noremap = true, silent = true, desc = "Navigate to Next Outline Item" })
 vim.keymap.set('n', '[o', navigate_prev_item, { noremap = true, silent = true, desc = "Navigate to Previous Outline Item" })
+
+return M
