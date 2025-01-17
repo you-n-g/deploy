@@ -200,9 +200,16 @@ vim.keymap.set(
 )
 
 -- Keymap for path completion in insert mode using fzf-lua
-vim.keymap.set(
-  "i",
-  "<C-x><C-f>",
-  "<cmd>lua require('fzf-lua').complete_path()<CR>",
-  { noremap = true, silent = true, desc = "Path completion with fzf-lua" }
-)
+
+-- NOTE: this does not work
+-- vim.keymap.set({ "n", "v", "i" }, "<C-x><C-f>", function()
+--   require("fzf-lua").complete_path()
+-- end, { silent = true, desc = "Fuzzy complete path" })
+
+-- NOTE: this works
+vim.keymap.set({ "i" }, "<C-x><C-f>", function()
+  require("fzf-lua").complete_file({
+    cmd = "rg --files",
+    winopts = { preview = { hidden = true } },
+  })
+end, { silent = true, desc = "Fuzzy complete file" })

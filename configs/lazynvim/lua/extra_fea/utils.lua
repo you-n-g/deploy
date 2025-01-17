@@ -56,7 +56,13 @@ end
 function M.get_cred()
   local fname = "gpt.gpg"
   -- local is_local_open = vim.fn.system("nc -z 127.0.0.1 4000") == 0
-  local is_local_open = vim.fn.system("curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4000") == "200"
+  local is_local_open = false
+
+  local vim_cred = vim.fn.system("tmux show-env -g vim_cred | cut -d= -f2"):gsub("%s+", "")
+  if vim_cred == "local" then
+    -- by default local is disabled
+    is_local_open = vim.fn.system("curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4000") == "200"
+  end
 
   if is_local_open then
     return {

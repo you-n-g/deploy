@@ -502,3 +502,9 @@
   Output = ""
   Tag = []
   command = "vim typescript_no_color -c \"lua require'extra_fea.log_view'.set_style()\" -c \"lua require'extra_fea.log_view'.display_outline()\""
+
+[[Snippets]]
+  Description = "set vim cred"
+  Output = ""
+  Tag = []
+  command = "tmux set-env -g <cred=|_vim_cred local_||_-r vim_cred_|>"

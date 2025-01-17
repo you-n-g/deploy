@@ -5,7 +5,7 @@
 # sh is not supported due to [[]]
 # if sh is not supported, it can be replaced as a simpler expression
 # if [[ "\$0" = *"bash" ]] || [[ "\$0" = *"zsh" ]]; then
-snippet dir "get the directory folder for cur scripts "
+snippet dirs "get the directory folder(shell supported)"
 		BASE_NAME="\$(basename -- "\$0")"
 		case "\$BASE_NAME" in
 			-bash|bash|-zsh|zsh|-sh|sh)
@@ -16,6 +16,9 @@ snippet dir "get the directory folder for cur scripts "
 				DIR="\$( cd "\$(dirname "\$(readlink -f "\$0")")" || exit ; pwd -P )"
 				;;
 		esac
+
+snippet dir "get the directory folder for cur scripts"
+		DIR="\$( cd "\$(dirname "\$(readlink -f "\$0")")" || exit ; pwd -P )"
 
 snippet ife "if file exists"
 		if [ -e ${1:filename} ]; then
