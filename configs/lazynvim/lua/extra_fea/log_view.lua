@@ -21,7 +21,8 @@ local patterns = {
   { regex = "Role:system", type = "    ❓system message" },
   { regex = "- Response:", type = "    💬response message" },
   { regex = "self.workspace_path", type="    👾Code Workspace"},
-  { regex = "Task Name: [%w%s]+", type = "      📝 Task Name"},
+  { regex = "^Task Name: [%w%s_]+", type = "      📝 Task Name"},
+  { regex = "^name: [%w_]+", type = "      📝 Task Name"},
   -- control
   { regex = "Implementing: ", type="  🛠️Implementing"},
   { regex = "loop_index=%d*, step_index=%d*, step_name=[%w_]+", type = "♾️ Loop:"},
@@ -36,7 +37,8 @@ local function find_focused_outline_line(outline, current_line, bufnr)
   local last_item, last_idx, focus_line
   -- Clear all existing highlights first
   vim.api.nvim_buf_clear_namespace(bufnr, -1, 0, -1)
-  
+
+  -- 1) highlight the outline item where the cursor is
   if outline[1].line <= current_line then
     for idx, item in ipairs(outline) do
       last_item = item
@@ -51,6 +53,19 @@ local function find_focused_outline_line(outline, current_line, bufnr)
   if last_item ~= nil and last_item.line <= current_line then
     vim.api.nvim_buf_add_highlight(bufnr, -1, 'Visual', last_idx - 1, 0, -1)
     focus_line = last_idx - 1
+  end
+
+  -- 2) make sure the highlighted line is visible
+  if focus_line then
+    local win_id = vim.fn.bufwinid(bufnr) -- Get the window ID for the buffer
+    if win_id ~= -1 then -- Check if the buffer is displayed in a window
+      local top_line = vim.fn.line('w0', win_id)
+      local bottom_line = vim.fn.line('w$', win_id)
+      if focus_line + 1 < top_line or focus_line + 1 > bottom_line then
+        vim.api.nvim_win_set_cursor(win_id, {focus_line + 1, 0})
+        -- vim.api.nvim_command('normal! zz') -- Center the line in the window
+      end
+    end
   end
   return focus_line
 end
