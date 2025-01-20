@@ -9,7 +9,8 @@
 -- vim.keymap.set("v", "<A-j>", ":m '>+1<cr>gv=gv", { desc = "Move down" })
 -- vim.keymap.set("v", "<A-k>", ":m '<-2<cr>gv=gv", { desc = "Move up" })
 -- unmap the keymaps above. The esc will behave same like alt, which will trigger a lot of wrong combinations
--- NOTE: It seems that VSCODE does not have this issue. Maybe it is just a issue of MobaXterm.  The keymaps is useful for snippets like aider.
+-- NOTE: It seems that VSCODE does not have this issue. Maybe it is just a issue of
+-- MobaXterm. The keymaps is useful for snippets like aider.
 -- for _, key in ipairs({ "<A-j>", "<A-k>" }) do
 --   vim.keymap.del({ "n", "i", "v" }, key)
 -- end
@@ -65,8 +66,6 @@ vim.keymap.set("n", "<leader><tab>b", function()
     col = math.floor(0.1 * vim.o.columns),
     border = "single",
   })
-  -- for the open window's terminal mode, map the <c-w>q to <c-\><c-n><c-w>q
-  vim.keymap.set("t", "<C-w>q", "<C-\\><C-n><C-w>q", { desc = "Close terminal window" })
 
   -- Function to synchronize the cursor position between two windowskkk
   local function synchronize_cursor()
@@ -93,24 +92,28 @@ vim.keymap.set("n", "<leader><tab>b", function()
     callback = synchronize_cursor,
   })
 
-  -- Map <C-w>q to close the terminal window only for the floating window
-  vim.api.nvim_create_autocmd("WinEnter", {
-    group = sync_cursor_augroup,
-    pattern = tostring(win_id),
-    callback = function()
-      vim.keymap.set("t", "<C-w>q", "<C-\\><C-n><C-w>q", { buffer = bufnr, desc = "Close terminal window" })
-    end,
-  })
-
-  -- Remove the keymap and autocmds when the floating window is closed
-  vim.api.nvim_create_autocmd("WinClosed", {
-    group = sync_cursor_augroup,
-    pattern = tostring(win_id),
-    callback = function()
-      vim.api.nvim_del_augroup_by_id(sync_cursor_augroup)
-      vim.keymap.del("t", "<C-w>q", { buffer = bufnr })
-    end,
-  })
+  -- -- for the open window's terminal mode, map the <c-w>q to <c-\><c-n><c-w>q
+  -- vim.keymap.set("t", "<C-w>q", "<C-\\><C-n><C-w>q", { desc = "Close terminal window" })
+  -- NOTE: we don't need this any more if we can use <M-x> in terminal mode.
+  -- -- Map <C-w>q to close the terminal window only for the floating window
+  -- vim.api.nvim_create_autocmd("WinEnter", {
+  --   group = sync_cursor_augroup,
+  --   pattern = tostring(win_id),
+  --   callback = function()
+  --     vim.keymap.set("t", "<C-w>q", "<C-\\><C-n><C-w>q", { buffer = bufnr, desc = "Close terminal window" })
+  --   end,
+  -- })
+  --
+  -- -- Remove the keymap and autocmds when the floating window is closed
+  -- vim.api.nvim_create_autocmd("WinClosed", {
+  --   group = sync_cursor_augroup,
+  --   pattern = tostring(win_id),
+  --   callback = function()
+  --     vim.api.nvim_del_augroup_by_id(sync_cursor_augroup)
+  --     -- skip if the keymap does not exist
+  --     pcall(vim.keymap.del, "t", "<C-w>q", { buffer = bufnr })
+  --   end,
+  -- })
 end, { expr = false, noremap = true, desc = "Open cur buffer in float window" })
 
 vim.keymap.set("n", "<leader><tab><leader>", function()
@@ -134,7 +137,8 @@ vim.api.nvim_set_keymap(
   -- `only_sort_text=true` will only search text without filename
   -- https://github.com/nvim-telescope/telescope.nvim/issues/564
   -- [[:Telescope grep_string only_sort_text=true<cr>]],
-  [[:lua require'telescope.builtin'.grep_string{ shorten_path = true, word_match = "-w", only_sort_text = false, search = '' }<cr>]],
+  [[:lua require'telescope.builtin'.grep_string{
+  shorten_path = true, word_match = "-w", only_sort_text = false, search = '' }<cr>]],
   { expr = false, noremap = true, desc = "Search All!" }
   -- NOTE:
   -- <leader>sg/G uses live_grep, which will strictly search the word and not fuzzy enough.
