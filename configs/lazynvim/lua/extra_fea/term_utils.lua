@@ -230,7 +230,7 @@ function M.max_toggle_in_terminal()
 
   -- Open terminal in a new window
   -- TODO: dependencies on the external keymaps.
-  local keys = vim.api.nvim_replace_termcodes("<CR><C-\\><C-n><leader><Tab>b ", true, true, true)
+  local keys = vim.api.nvim_replace_termcodes("<C-\\><C-n><leader><Tab>b ", true, true, true)
   vim.fn.feedkeys(keys, "t")
 
   -- Get the newly created window

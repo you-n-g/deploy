@@ -104,6 +104,9 @@ setup_jupyter_asc() {
 # Function to handle OpenAI dependencies
 install_openai_deps() {
   pip install openai azure-identity litellm[proxy] # support openai
+  pip install aider-chat
+  # To support my proxy server
+  pip install git+https://github.com/you-n-g/litellm@feat/add_more_credential
 }
 
 # Function to handle development dependencies
