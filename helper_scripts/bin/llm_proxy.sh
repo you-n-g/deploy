@@ -23,7 +23,8 @@ key_shell.sh $SELECT_CRED bash -c "echo CHAT_MODEL=\$CHAT_MODEL" >$DIR/litellm_p
 
 # https://docs.litellm.ai/docs/providers/litellm_proxy
 # key_shell.sh $SELECT_CRED `which litellm` $EXTRA_ARG --config $DIR/../../configs/python/litellm.yaml --port $PORT --detailed_debug # --debug
-key_shell.sh $SELECT_CRED `which litellm` $EXTRA_ARG --config $DIR/../../configs/python/litellm.trapi.yaml --port $PORT --detailed_debug # --debug
+PYTHONIOENCODING=utf-8 key_shell.sh $SELECT_CRED `which litellm` $EXTRA_ARG --config $DIR/../../configs/python/litellm.trapi.yaml --port $PORT --detailed_debug # --debug
+# It may raise coding error without `PYTHONIOENCODING=utf-8`
 
 # logic:
 # llm_proxy => get proxy.env => openai model => vim openai config

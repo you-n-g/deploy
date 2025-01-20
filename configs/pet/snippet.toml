@@ -508,3 +508,9 @@
   Output = ""
   Tag = []
   command = "tmux set-env -g <cred=|_vim_cred local_||_-r vim_cred_|>"
+
+[[Snippets]]
+  Description = "browser, www, internet"
+  Output = ""
+  Tag = []
+  command = "docker run -it --rm browsh/browsh"

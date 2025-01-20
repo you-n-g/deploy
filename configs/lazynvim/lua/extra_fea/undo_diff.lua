@@ -21,7 +21,7 @@ local Layout = require("nui.layout")
 
 M.DiffPopup = utils.class("DiffPopup")
 
-function M.DiffPopup:ctor(...)
+function M.DiffPopup:ctor()
   self.orig_popup = nil -- the answer content
   self.undo_popup = nil -- the original content
   self.nui_obj = nil -- the nui object
@@ -30,12 +30,21 @@ end
 
 function M.DiffPopup:quit()
   -- Quit the dialog window
-  -- vim.cmd("q")
   self.nui_obj:unmount()
-  -- self.nui_obj:hide()
+  -- Restore focus to original buffer's window
+  if self.context and self.context.current_bufnr then
+    local winid = vim.fn.bufwinid(self.context.current_bufnr)
+    if winid ~= -1 then  -- -1 means buffer not visible in any window
+      vim.api.nvim_set_current_win(winid)
+    else
+      vim.api.nvim_set_current_buf(self.context.current_bufnr)
+    end
+  end
 end
 
 function M.DiffPopup:build(context)
+  -- Store context for later restoration
+  self.context = context
   -- answer prompt
   local orig_popup = Popup({
     enter = true,
@@ -127,14 +136,12 @@ end
 -- return the undo content of current buf
 local function get_undo_content()
   local current_bufnr = vim.api.nvim_get_current_buf()
-  local content = {}
-
   -- Save current position
   local saved_pos = vim.api.nvim_win_get_cursor(0)
 
   -- Perform undo and capture the content
   vim.cmd("silent undo")
-  content = vim.api.nvim_buf_get_lines(current_bufnr, 0, -1, false)
+  local content = vim.api.nvim_buf_get_lines(current_bufnr, 0, -1, false)
 
   -- Redo to revert the undo for the user
   vim.cmd("silent redo")
