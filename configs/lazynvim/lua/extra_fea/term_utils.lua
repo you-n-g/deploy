@@ -13,7 +13,8 @@ TODO:
 
 local M = {}
 
--- NOTE: Deprecated: we don't need to record where we are from. We only need to open it in the largest non-terminal window.
+-- NOTE: Deprecated: we don't need to record where we are from.
+-- We only need to open it in the largest non-terminal window.
 -- local last_non_terminal_win = nil
 -- function M.open_file_in_last_non_terminal_window()
 --   -- Get the current window and buffer
@@ -77,9 +78,11 @@ function M.append_current_line_to_largest_buf()
   local largest_win = M.get_largest_non_terminal_win()
   if largest_win ~= nil then
     local current_line = vim.api.nvim_get_current_line()
+    local cursor_col = vim.api.nvim_win_get_cursor(0)[2]
+    local line_up_to_cursor = current_line:sub(1, cursor_col)
     local buf = vim.api.nvim_win_get_buf(largest_win)
     local cursor_pos = vim.api.nvim_win_get_cursor(largest_win)
-    vim.api.nvim_buf_set_lines(buf, cursor_pos[1] - 1, cursor_pos[1] - 1, false, { current_line })
+    vim.api.nvim_buf_set_lines(buf, cursor_pos[1] - 1, cursor_pos[1] - 1, false, { line_up_to_cursor })
     print("Appended to buffer in window: " .. largest_win)
   else
     print("No suitable window found.")
@@ -89,16 +92,18 @@ end
 -- Store enabled state per buffer
 local append_to_largest_buf_enabled = {}
 
-function M.toggle_append_to_largest_buf()
+function M.toggle_append_to_largest_buf(enable, silent)
   local buf = vim.api.nvim_get_current_buf()
   local buftype = vim.api.nvim_buf_get_option(buf, "buftype")
 
   if buftype ~= "terminal" then
-    print("This feature only works in terminal buffers.")
+    if not silent then
+      print("This feature only works in terminal buffers.")
+    end
     return
   end
 
-  append_to_largest_buf_enabled[buf] = not append_to_largest_buf_enabled[buf]
+  append_to_largest_buf_enabled[buf] = enable or not append_to_largest_buf_enabled[buf]
 
   local key = '<M-x>'
   if append_to_largest_buf_enabled[buf] then
@@ -109,10 +114,14 @@ function M.toggle_append_to_largest_buf()
       '<cmd>lua require"extra_fea.term_utils".append_current_line_to_largest_buf()<CR><CR>',
       { noremap = true, silent = true }
     )
-    print("Append to largest buffer feature enabled for this terminal.")
+    if not silent then
+      print("Append to largest buffer feature enabled for this terminal.")
+    end
   else
     vim.api.nvim_buf_del_keymap(buf, "t", key)
-    print("Append to largest buffer feature disabled for this terminal.")
+    if not silent then
+      print("Append to largest buffer feature disabled for this terminal.")
+    end
   end
 end
 
@@ -123,6 +132,15 @@ vim.api.nvim_set_keymap(
   '<cmd>lua require"extra_fea.term_utils".toggle_append_to_largest_buf()<CR>',
   { noremap = true, silent = true }
 )
+
+-- Enable append feature when creating terminal buffers
+vim.api.nvim_create_autocmd("TermOpen", {
+  pattern = "*",
+  callback = function()
+    require("extra_fea.term_utils").toggle_append_to_largest_buf(true, true)
+  end,
+})
+
 
 function M.open_file_in_largest_non_terminal_win(force)
   local largest_win = M.get_largest_non_terminal_win()
@@ -159,7 +177,9 @@ function M.open_file_in_largest_non_terminal_win(force)
   end
 end
 
--- vim.api.nvim_set_keymap('n', 'gf', '<cmd>lua require"extra_fea.term_utils".open_file_in_last_non_terminal_window()<CR>', { noremap = true, silent = true })
+-- vim.api.nvim_set_keymap('n', 'gf',
+--   '<cmd>lua require"extra_fea.term_utils".open_file_in_last_non_terminal_window()<CR>',
+--   { noremap = true, silent = true })
 
 -- Map 'gf' in terminal mode to the function
 vim.keymap.set(
