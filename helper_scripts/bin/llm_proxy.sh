@@ -6,6 +6,7 @@ DIR="$(
 )"
 PORT=${1:-4000}
 SELECT_CRED=${SELECT_CRED:-azure_ad_default_lite}
+CONF=${CONF:-litellm.trapi.yaml}
 
 echo "$SELECT_CRED"
 
@@ -22,8 +23,9 @@ key_shell.sh $SELECT_CRED bash -c "echo CHAT_MODEL=\$CHAT_MODEL" >$DIR/litellm_p
 # TODO: make sure the jobs start by '&' is stoped
 
 # https://docs.litellm.ai/docs/providers/litellm_proxy
-# key_shell.sh $SELECT_CRED `which litellm` $EXTRA_ARG --config $DIR/../../configs/python/litellm.yaml --port $PORT --detailed_debug # --debug
-PYTHONIOENCODING=utf-8 key_shell.sh $SELECT_CRED `which litellm` $EXTRA_ARG --config $DIR/../../configs/python/litellm.trapi.yaml --port $PORT --detailed_debug # --debug
+set -x
+PYTHONIOENCODING=utf-8 key_shell.sh $SELECT_CRED `which litellm` $EXTRA_ARG --config $DIR/../../configs/python/$CONF --port $PORT --detailed_debug # --debug
+set +x
 # It may raise coding error without `PYTHONIOENCODING=utf-8`
 
 # logic:
