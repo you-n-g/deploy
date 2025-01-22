@@ -194,13 +194,27 @@ end
 vim.api.nvim_set_hl(0, 'LogTimestamp', { fg = '#FFA500', bold = true })
 vim.api.nvim_set_hl(0, 'LogHeadingPattern', { fg = '#00FF00', bold = true })
 
+
 function M.set_style()
+  -- Private function to clean ANSI escape sequences and carriage returns from buffer lines
+  local function clean_ansi_lines(bufnr)
+    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    local cleaned_lines = {}
+    for _, line in ipairs(lines) do
+      local cleaned = line:gsub('\x1b%[[%d;?]*[mKGhl]', ''):gsub('\r', '')
+      table.insert(cleaned_lines, cleaned)
+    end
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, cleaned_lines)
+  end
   local bufnr = vim.api.nvim_get_current_buf()
+
+  clean_ansi_lines(bufnr)
+
   vim.bo[bufnr].modifiable = false
   vim.bo[bufnr].readonly = true
   -- make it read only and prevent saving to disk
   -- Saving large logfiles is time consuming
-  vim.api.nvim_buf_set_option(bufnr, 'wrap', false)
+  -- vim.api.nvim_buf_set_option(bufnr, 'wrap', false)  -- Seems not necessary now.
   vim.api.nvim_buf_set_option(bufnr, 'buftype', 'nofile')
 
   -- Add timestamp highlighting
