@@ -9,6 +9,8 @@ REPO_PATH=$(
 
 cd $REPO_PATH
 
+sudo bash -c "echo -e '\$nrconf{kernelhints} = -1;\n\$nrconf{restart} = \"l\";' > /etc/needrestart/conf.d/99mychanges.conf"  # disble popups
+
 CHEATSHEET_URI=https://github.com/you-n-g/cheatsheets
 while getopts ":s" opt; do
 	case $opt in
@@ -83,6 +85,8 @@ chmod a+x ./deploy_apps/*
 ./deploy_apps/nonauto/install_lazyvim.sh deploy
 
 sudo ./deploy_apps/set_code.sh
+
+sudo rm /etc/needrestart/conf.d/99mychanges.conf
 
 cat <<EOF
 Maybe the following things should be done mannually

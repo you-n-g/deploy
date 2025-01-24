@@ -140,11 +140,11 @@ local function get_undo_content()
   local saved_pos = vim.api.nvim_win_get_cursor(0)
 
   -- Perform undo and capture the content
-  vim.cmd("silent undo")
+  pcall(vim.cmd, "silent undo")
   local content = vim.api.nvim_buf_get_lines(current_bufnr, 0, -1, false)
 
   -- Redo to revert the undo for the user
-  vim.cmd("silent redo")
+  pcall(vim.cmd, "silent redo")
 
   -- Restore cursor position
   vim.api.nvim_win_set_cursor(0, saved_pos)

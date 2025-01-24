@@ -30,3 +30,7 @@ vim.cmd [[ autocmd FileType tex setlocal conceallevel=0 ]]
 
 -- disable relative line number by default
 opt.relativenumber = false
+
+-- Set swap file directory to be near the original file location
+-- It will be easier to clean swap file
+opt.directory = '.'

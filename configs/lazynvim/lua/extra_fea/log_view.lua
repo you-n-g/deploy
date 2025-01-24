@@ -75,7 +75,6 @@ end
 local function create_outline()
   local bufnr = vim.api.nvim_get_current_buf()
   local filepath = vim.api.nvim_buf_get_name(bufnr)
-  
   -- Check if the outline is already cached
   if outline_cache[filepath] then
     return outline_cache[filepath]
@@ -124,8 +123,8 @@ function M.display_outline()
     buffer = cur_bufnr,
     callback = function()
       -- Get current cursor position and update highlight
-      local current_line = vim.api.nvim_win_get_cursor(cur_win_id)[1]
-      find_focused_outline_line(outline, current_line, bufnr)
+      local cursor_line = vim.api.nvim_win_get_cursor(cur_win_id)[1]
+      find_focused_outline_line(outline, cursor_line, bufnr)
     end
   })
 
@@ -153,10 +152,8 @@ function M.display_outline()
   vim.cmd('vsplit')
   local win_id = vim.api.nvim_get_current_win()
   vim.api.nvim_win_set_buf(win_id, bufnr)
-  
   -- Set window width
   vim.api.nvim_win_set_width(win_id, width)
-  
   -- Set window options
   vim.wo[win_id].number = false
   vim.wo[win_id].relativenumber = false
@@ -220,7 +217,6 @@ function M.set_style()
   -- Add timestamp highlighting
   vim.api.nvim_buf_clear_namespace(bufnr, -1, 0, -1)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-  
   -- Highlight all patterns
   for i, line in ipairs(lines) do
     -- Timestamps
@@ -243,6 +239,16 @@ function M.set_style()
       end
     end
   end
+  -- Add gf mapping to open paths in new tab
+  vim.keymap.set('n', 'gf', function()
+    local path = vim.fn.expand('<cfile>')
+    if vim.fn.filereadable(path) == 1 or vim.fn.isdirectory(path) == 1 then
+      vim.cmd('tabnew ' .. path)
+    else
+      vim.notify('File or directory not found: ' .. path, vim.log.levels.WARN)
+    end
+  end, { buffer = true, desc = "Open file under cursor in new tab" })
+
 end
 
 
@@ -281,6 +287,10 @@ end
 
 -- Map keys to navigate to the next or previous item in the outline
 vim.keymap.set('n', ']o', navigate_next_item, { noremap = true, silent = true, desc = "Navigate to Next Outline Item" })
-vim.keymap.set('n', '[o', navigate_prev_item, { noremap = true, silent = true, desc = "Navigate to Previous Outline Item" })
+vim.keymap.set('n', '[o', navigate_prev_item, {
+  noremap = true,
+  silent = true,
+  desc = "Navigate to Previous Outline Item"
+})
 
 return M
