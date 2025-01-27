@@ -12,11 +12,14 @@ if [ -e '.conf.env' ]; then
 fi
 
 MY_ENV=${MY_ENV:-.env}
+# EXTRA_DOTENV_ARGS is another considered environment variable.
+# for example: `-f .another.env`
 
 if [ -e $MY_ENV ]; then
   echo "loading ${MY_ENV}..."
   if command -v dotenv &> /dev/null; then
-    dotenv -f $MY_ENV run -- "$@"
+    echo dotenv -f $MY_ENV $EXTRA_DOTENV_ARGS run -- "$@"
+    dotenv -f $MY_ENV $EXTRA_DOTENV_ARGS run -- "$@"
     # `--override` is the default option; we don't have to add it
   else
     echo "dotenv is not installed. Please install it (e.g. \`pip install python-dotenv\`) to use this script."

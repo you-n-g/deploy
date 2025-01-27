@@ -18,12 +18,10 @@ local launch_cmd = [[key_shell.sh %s myaider %s]]
 
 -- It is not frequently used now
 -- vim.keymap.set("n", "<leader>raL", function()
---   require("toggleterm").exec(string.format(launch_cmd, "azure_aider"), tonumber(vim.g.toggleterm_last_id), term_size)
+--   require("toggleterm").exec(string.format(launch_cmd, "azure_aider"), repl.get_toggleterm_last_id(), term_size)
 -- end, { noremap = true, silent = true, desc = "Run azure_aider commands in terminal" })
 
 local function run_aider(new_branch_mode)
-  repl.toggle_aider_mode("/test")
-
   local current_file = vim.fn.expand("%")
   local extra_args = "--lint-cmd 'lua: luacheck --globals vim -- '" .. " " .. current_file
   if not new_branch_mode then
@@ -38,7 +36,8 @@ local function run_aider(new_branch_mode)
   if new_branch_mode then
     cmd = "git checkout -B aider && " .. cmd
   end
-  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), nil, nil, "vertical")
+  require("toggleterm").exec(cmd, repl.get_toggleterm_last_id(), nil, nil, "vertical")
+  repl.toggle_aider_mode("/test", repl.get_toggleterm_last_id())
 end
 
 vim.keymap.set("n", "<leader>raL", function()
@@ -51,7 +50,7 @@ end, { noremap = true, silent = true, desc = "Run openai_lite commands in termin
 
 vim.keymap.set("n", "<leader>rar", function()
   local cmd = "/read-only " .. vim.fn.expand(repl_inst:get_path_symbol())
-  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), term_size)
+  require("toggleterm").exec(cmd, repl.get_toggleterm_last_id(), term_size)
 end, { noremap = true, silent = true, desc = "Send current file to aider in read-only mode" })
 
 vim.keymap.set("n", "<leader>raa", function()
@@ -59,7 +58,7 @@ vim.keymap.set("n", "<leader>raa", function()
     "/add " .. vim.fn.expand(repl_inst:get_path_symbol()),
   }
   for _, cmd in ipairs(cmds) do
-    require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), term_size)
+    require("toggleterm").exec(cmd, repl.get_toggleterm_last_id(), term_size)
   end
 end, { noremap = true, silent = true, desc = "Add current file to aider" })
 
@@ -75,14 +74,14 @@ vim.keymap.set("n", "<leader>raA", function()
   end
   if #file_list > 0 then
     local cmd = "/add " .. table.concat(file_list, " ")
-    require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), term_size)
+    require("toggleterm").exec(cmd, repl.get_toggleterm_last_id(), term_size)
   end
 end, { noremap = true, silent = true, desc = "Add all file buffers to aider" })
 
 vim.keymap.set("n", "<leader>rae", function()
   -- NOTE: this depends on the correct setting
   -- opts = { window = { open = "smart" } },
-  require("toggleterm").exec("/editor", tonumber(vim.g.toggleterm_last_id), term_size)
+  require("toggleterm").exec("/editor", repl.get_toggleterm_last_id(), term_size)
 end, { noremap = true, silent = true, desc = "Open editor(/editor)" })
 
 -- For a file buffer (the buffer is related to a disk file, not some nofile buffer),
@@ -96,4 +95,13 @@ vim.api.nvim_create_autocmd({"BufEnter", "CursorHold", "FocusGained"}, {
     end
   end,
   desc = "Run checktime when entering a buffer or before changing it"
+})
+
+vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
+  pattern = ".aider.*",
+  callback = function()
+    vim.bo.readonly = true
+    vim.bo.modifiable = false
+  end,
+  desc = "Make .aider.* files read-only"
 })

@@ -18,9 +18,15 @@ function update_toggleterm_last_id()
   local name = vim.api.nvim_buf_get_name(0)
   -- if name ends with pattern "#\d", then set \d to variable i
   if string.match(name, "#%d$") then
-    vim.g.toggleterm_last_id = string.match(name, "#(%d)$")
+    vim.g.toggleterm_last_id = tonumber(string.match(name, "#(%d)$"))
   end
 end
+
+
+function M.get_toggleterm_last_id()
+  return vim.g.toggleterm_last_id or 1
+end
+
 
 vim.api.nvim_exec(
   [[
@@ -62,11 +68,11 @@ local function sendContent()
 
   local mode = vim.api.nvim_get_mode().mode
   if mode == "n" then
-    vim.cmd(string.format([[ToggleTermSendCurrentLine %s]], vim.g.toggleterm_last_id or ""))
+    vim.cmd(string.format([[ToggleTermSendCurrentLine %s]], M.get_toggleterm_last_id()))
   elseif mode == "V" or mode == "v" then
     -- run command ToggleTermSendVisualSelection in visual mode
     vim.api.nvim_feedkeys(
-      string.format(":ToggleTermSendVisualSelection %s\n", vim.g.toggleterm_last_id or ""),
+      string.format(":ToggleTermSendVisualSelection %s\n", M.get_toggleterm_last_id()),
       "n",
       true
     )
@@ -158,7 +164,7 @@ M.config = {
   -- "/test" to prepend commands with a testing directive,
   -- "/run" to prepend commands with a runtime directive.
   -- The default value is "".
-  aider_mode = "",  -- default mode, can switch between "", "/test" , "/run"
+  -- term_mode = "",  -- default mode, can switch between "", "/test" , "/run"
   key_shell = "",  -- key_shell.sh azure|azure_ad|
 }
 
@@ -170,17 +176,20 @@ local function edit_before_send(cmd)
     cmd = "mydotenv.sh " .. cmd
   end
 
-  if M.config.aider_mode ~= false then
-    cmd = M.config.aider_mode .. " " .. cmd
+  -- Get terminal-specific mode if available
+  local term_id = M.get_toggleterm_last_id()
+  local term_mode = M.config.term_modes and M.config.term_modes[term_id]
+  if term_mode and term_mode ~= "" then
+    cmd = term_mode .. " " .. cmd
   end
 
   -- involve human editing
   if M.config.edit_before_send then
     vim.ui.input({ prompt = "Edit before sending", default = cmd }, function(input)
-      require("toggleterm").exec(input, tonumber(vim.g.toggleterm_last_id), 12)
+      require("toggleterm").exec(input, M.get_toggleterm_last_id(), 12)
     end)
   else
-    require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+    require("toggleterm").exec(cmd, M.get_toggleterm_last_id(), 12)
   end
 end
 
@@ -219,16 +228,25 @@ local function find_index(tbl, value)
 end
 
 
-function M.toggle_aider_mode(target)
+function M.toggle_aider_mode(target, term_id)
+  -- Get or initialize terminal-specific mode
+  term_id = term_id or M.get_toggleterm_last_id()
+  local term_mode = M.config.term_modes and M.config.term_modes[term_id] or ""
+  
   if target ~= nil then
-    M.config["aider_mode"] = target
+    -- Initialize term_modes table if needed
+    M.config.term_modes = M.config.term_modes or {}
+    M.config.term_modes[term_id] = target
   else
     local modes = {"", "/test", "/run"}
-    local current_mode = M.config["aider_mode"]
-    local next_index = ((find_index(modes, current_mode) or 0) % #modes) + 1
-    M.config["aider_mode"] = modes[next_index]
+    local next_index = ((find_index(modes, term_mode) or 0) % #modes) + 1
+    -- Initialize term_modes table if needed
+    M.config.term_modes = M.config.term_modes or {}
+    M.config.term_modes[term_id] = modes[next_index]
   end
-  P(M.config["aider_mode"])
+
+  -- Update global config with current terminal's mode
+  P(M.config.term_modes[term_id])
 end
 
 vim.keymap.set("n", "<leader>rcm", M.toggle_aider_mode, { desc = "Toggle Aider Mode." })
@@ -296,7 +314,7 @@ function BaseREPL:debug_breakpoint()
   -- construct the command
   local cmd = string.format("b %s:%d", file_path, line_number)
   -- send the command to the terminal
-  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+  require("toggleterm").exec(cmd, M.get_toggleterm_last_id(), 12)
 end
 
 function BaseREPL:debug_unt()
@@ -304,7 +322,7 @@ function BaseREPL:debug_unt()
   -- construct the command
   local cmd = string.format("unt %d", line_number)
   -- send the command to the terminal
-  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+  require("toggleterm").exec(cmd, M.get_toggleterm_last_id(), 12)
 end
 
 function BaseREPL:debug_explore(var)
@@ -324,7 +342,7 @@ function BaseREPL:debug_print()
     cur_content = require("extra_fea.utils").get_visual_selection_content()
   end
   local cmd = string.format("p %s", cur_content)
-  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+  require("toggleterm").exec(cmd, M.get_toggleterm_last_id(), 12)
 end
 
 function BaseREPL:start_db()
@@ -447,7 +465,7 @@ function PythonREPL:debug_explore(var)
   end
   local cmd = string.format('__import__("objexplore").explore(%s)', cur_content)
   -- send the command to the terminal
-  require("toggleterm").exec(cmd, tonumber(vim.g.toggleterm_last_id), 12)
+  require("toggleterm").exec(cmd, M.get_toggleterm_last_id(), 12)
 end
 
 -- - Bash
