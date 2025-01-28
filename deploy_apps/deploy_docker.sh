@@ -57,6 +57,8 @@ sudo systemctl restart docker
 
 # 之后就可以这样跑GPU的镜像了 (需要本地的cuda版本满足镜像的要求)
 # sudo docker run --gpus all --rm -it gcr.io/kaggle-gpu-images/python /bin/bash
+# sudo docker run --gpus all --rm -it gcr.io/kaggle-gpu-images/python nvidia-smi
+# docker run --gpus all --rm -it nvidia/cuda:latest nvidia-smi  # another answer... But it does not work.
 # - 默认的 kaggle/python:latest 是CPU版本的
 # - 如果跳过了上面的步骤，启动docker的时候会出现， `unknown flag: --gpu`
 

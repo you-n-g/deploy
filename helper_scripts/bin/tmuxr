@@ -1,0 +1,51 @@
+#!/bin/bash
+false << "EOF" > /dev/null
+usage:
+  cat commands | tmux_paral.sh pool 3
+
+# this will send each line as a command to create a new window in a session named "pool". But the parallelism is 3 (We have most 3 window at the same time.).
+EOF
+# Parse input parameters using getopts
+# Provide default values for session name and parallelism
+session_name="tmux_pool"
+parallelism=3
+
+while getopts "s:p:" opt; do
+  case $opt in
+    s) session_name="$OPTARG" ;;
+    p) parallelism="$OPTARG" ;;
+    *) echo "Usage: $0 -s session_name -p parallelism" >&2; exit 1 ;;
+  esac
+done
+
+# Shift to remove parsed options from the positional parameters
+shift $((OPTIND -1))
+
+# Validate required parameters
+if [ -z "$session_name" ] || [ -z "$parallelism" ]; then
+  echo "Usage: $0 -s session_name -p parallelism" >&2
+  exit 1
+fi
+
+# Create the session if it does not exist
+if ! tmux has-session -t "$session_name" 2>/dev/null; then
+  tmux new-session -d -s "$session_name" -n "__placeholder__"
+fi
+# Close it if it is created by the script.
+
+# Count the initial window number in the session
+initial_window_count=$(tmux list-windows -t "$session_name" 2>/dev/null | wc -l)
+
+# Read each line from stdin to create commands
+while IFS= read -r command; do
+  # Ensure the new window number is less than the specified parallelism
+  while [ $(tmux list-windows -t "$session_name" 2>/dev/null | wc -l) -ge $((initial_window_count + parallelism)) ]; do
+    sleep 1
+  done
+  tmux new-window -t "$session_name" "$command"
+done < /dev/stdin
+
+# Close the __placeholder__ window if it exists
+if tmux list-windows -t "$session_name" | grep -q "__placeholder__"; then
+  tmux kill-window -t "$session_name:__placeholder__"
+fi
