@@ -154,7 +154,8 @@ M.get_current_function_name = get_current_function_name
 -- Configs
 M.config = {
   edit_before_send = false,
-  goto_debug_when_fail = false,
+  -- 
+  debug_mode = "",
   load_env = true, -- load_env before.
   doc_test = false,
   abs_path = true, -- should we use absolute path
@@ -167,6 +168,16 @@ M.config = {
   -- term_mode = "",  -- default mode, can switch between "", "/test" , "/run"
   key_shell = "",  -- key_shell.sh azure|azure_ad|
 }
+
+-- Helper function to find the index of a value in a table
+local function find_index(tbl, value)
+  for i, v in ipairs(tbl) do
+    if v == value then
+      return i
+    end
+  end
+  return nil
+end
 
 --- Modify the command before sending it out
 ---@param cmd 
@@ -200,10 +211,13 @@ vim.keymap.set("n", "<leader>rce", function()
 end, { desc = "edit before send." })
 
 vim.keymap.set("n", "<leader>rcd", function()
-  --  toggle  M.config["edit_before_send"] between true and false
-  M.config["goto_debug_when_fail"] = not M.config["goto_debug_when_fail"]
-  P(M.config["goto_debug_when_fail"])
-end, { desc = "go to debug when exception." })
+  -- Toggle M.config["debug_mode"] through the modes in mode_l
+  local mode_l = {"", "pdb", "dap"}
+  local current_mode = M.config["debug_mode"]
+  local next_index = ((find_index(mode_l, current_mode) or 0) % #mode_l) + 1
+  M.config["debug_mode"] = mode_l[next_index]
+  P(M.config["debug_mode"])
+end, { desc = "Toggle debug mode." })
 
 vim.keymap.set("n", "<leader>rct", function()
   --  toggle  M.config["edit_before_send"] between true and false
@@ -216,16 +230,6 @@ vim.keymap.set("n", "<leader>rca", function()
   M.config["abs_path"] = not M.config["abs_path"]
   P(M.config["abs_path"])
 end, { desc = "Toggle Absolute Path." })
-
--- Helper function to find the index of a value in a table
-local function find_index(tbl, value)
-  for i, v in ipairs(tbl) do
-    if v == value then
-      return i
-    end
-  end
-  return nil
-end
 
 
 function M.toggle_aider_mode(target, term_id)
@@ -419,8 +423,10 @@ end
 
 function PythonREPL:get_interpreter()
   local cmd = ""
-  if M.config.goto_debug_when_fail then
+  if M.config.debug_mode == "pdb" then
     cmd = "python -m ipdb -c c "
+  elseif M.config.debug_mode == "dap" then
+    cmd = "python -m debugpy --listen 0.0.0.0:5678 --wait-for-client "
   else
     cmd = "python "
   end

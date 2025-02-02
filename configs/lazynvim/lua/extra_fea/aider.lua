@@ -36,6 +36,7 @@ local function run_aider(new_branch_mode)
   if new_branch_mode then
     cmd = "git checkout -B aider && " .. cmd
   end
+
   require("toggleterm").exec(cmd, repl.get_toggleterm_last_id(), nil, nil, "vertical")
   repl.toggle_aider_mode("/test", repl.get_toggleterm_last_id())
 end
