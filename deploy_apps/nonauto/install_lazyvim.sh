@@ -69,8 +69,9 @@ install_or_update_neovim_app() {
   pip install debugpy  # this will used by nvim-dap
 
   # generate a redable unique string based on datetime
-  NAME="nvim-latest-$(date +%Y%m%d%H%M%S)"
-  curl -L -o ~/bin/$NAME https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
+  # NAME="nvim-latest-$(date +%Y%m%d%H%M%S)"
+  NAME="nvim-stable-$(date +%Y%m%d%H%M%S)"
+  curl -L -o ~/bin/$NAME https://github.com/neovim/neovim/releases/download/stable/nvim-linux-x86_64.appimage
   chmod a+x ~/bin/$NAME
   for target in vim nvim; do
     if [ -e ~/bin/$target ] ; then
