@@ -26,6 +26,8 @@ local patterns = {
   -- control
   { regex = "Implementing: ", type="  🛠️Implementing"},
   { regex = "loop_index=%d*, step_index=%d*, step_name=[%w_]+", type = "♾️ Loop:"},
+  -- - Handle content like `Start Loop 9, Step 4: record` (the line sometimes cover)
+  { regex = "Start Loop %d+, Step %d+: [%w_]+", type = "♾️ Loop:" },
 }
 
 -- Cache for outlines

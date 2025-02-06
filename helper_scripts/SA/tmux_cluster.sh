@@ -1,6 +1,8 @@
 #!/bin/sh
 
 create_panes() {
+  # Usage: bash ~/deploy/helper_scripts/SA/tmux_cluster.sh create_panes {a,b,c,d}.afeyoung.icu
+
   # 1) we create a new tmux window for current session
   tmux new-window
 

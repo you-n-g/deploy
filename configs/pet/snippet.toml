@@ -501,7 +501,7 @@
   Description = "use vim to view log"
   Output = ""
   Tag = []
-  command = "vim <file=|_typescript_||_typescript.debug_|> -c \"lua require'extra_fea.log_view'.set_style()\" -c \"lua require'extra_fea.log_view'.display_outline()\""
+  command = "vim <file=|_typescript_||_typescript.debug_||__|> -c \"lua require'extra_fea.log_view'.set_style()\" -c \"lua require'extra_fea.log_view'.display_outline()\""
 
 [[Snippets]]
   Description = "set vim cred"

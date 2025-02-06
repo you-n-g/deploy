@@ -14,6 +14,7 @@ fi
 MY_ENV=${MY_ENV:-.env}
 # EXTRA_DOTENV_ARGS is another considered environment variable.
 # for example: `-f .another.env`
+# NOTE: It only use the last .env
 
 if [ -e $MY_ENV ]; then
   echo "loading ${MY_ENV}..."
