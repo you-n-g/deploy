@@ -1,5 +1,5 @@
-
 [[Snippets]]
+
   Description = "grep cn"
   Output = ""
   Tag = []
@@ -486,10 +486,17 @@
   command = "nvim --cmd \":terminal\" --cmd \":lua vim.api.nvim_feedkeys('i', 'n', false)\""
 
 [[Snippets]]
-  Description = "set/remove tmux session default aider llm backend"
+  Description = "set tmux session default aider llm backend"
   Output = ""
   Tag = []
-  command = "tmux set-env <cred=|_llm_aider deepseek_lite_||_-r llm_aider_|>"
+  command = "tmux set-env llm_aider <cred=|_deepseek_lite_||_deepseek_closeai_lite_||_anthropic_closeai_lite_||_openai_closeai_lite_o3_mini_|>"
+  # o3-mini is fast and ranks good on the benchmark.
+
+[[Snippets]]
+  Description = "remove tmux session default aider llm backend"
+  Output = ""
+  Tag = []
+  command = "tmux set-env -r llm_aider"
 
 [[Snippets]]
   Description = "remove color in the content"
@@ -501,7 +508,7 @@
   Description = "use vim to view log"
   Output = ""
   Tag = []
-  command = "vim <file=|_typescript_||_typescript.debug_||__|> -c \"lua require'extra_fea.log_view'.set_style()\" -c \"lua require'extra_fea.log_view'.display_outline()\""
+  command = "vim -n <file=|_typescript_||_typescript.debug_||__|> -c \"lua require'extra_fea.log_view'.set_style()\" -c \"lua require'extra_fea.log_view'.display_outline()\""
 
 [[Snippets]]
   Description = "set vim cred"
@@ -520,3 +527,9 @@
   Output = ""
   Tag = []
   command = "find . -name '*.swp' -exec rm {} \\;"
+
+[[Snippets]]
+  Description = "kill process on a specifc port"
+  Output = ""
+  Tag = []
+  command = "lsof -t -i:<port=|_5678_||_38888_|> | xargs kill -9"

@@ -148,24 +148,27 @@ function M.open_file_in_largest_non_terminal_win(force)
   local file = vim.fn.expand("<cfile>")
   local line = nil
   local current_line = vim.api.nvim_get_current_line()
-  -- Escape special characters in the file path for exact matching
-  local escaped_file = file:gsub("([^%w])", "%%%1")
-  local pattern = escaped_file .. "[^%d]*(%d+)"
-  local match_start, match_end = string.find(current_line, pattern)
-  if match_start and match_end then
-    line = tonumber(string.match(current_line, pattern))
-    -- Highlight the matched file path and line number temporarily
-    local ns_id = vim.api.nvim_create_namespace("")
-    local cur_buf = vim.api.nvim_get_current_buf()
-    vim.api.nvim_buf_add_highlight(cur_buf, ns_id, "Search", vim.fn.line(".") - 1, match_start - 1, match_end)
-    vim.defer_fn(function()
-      vim.api.nvim_buf_clear_namespace(cur_buf, ns_id, 0, -1)
-    end, 500) -- Highlight for 500 milliseconds
-  end
 
   -- If a largest non-terminal window was found, open the file there
-  local buftype = vim.api.nvim_buf_get_option(0, "buftype")
-  if force == true or buftype == "terminal" and largest_win ~= nil and file ~= "" then
+  local buftype = vim.bo.buftype
+  if largest_win ~= nil and (force == true or buftype == "terminal" and file ~= "") then
+    -- 1. Goto the file and highlight it.
+    -- Escape special characters in the file path for exact matching
+    local escaped_file = file:gsub("([^%w])", "%%%1")
+    local pattern = escaped_file .. "[^%d]*(%d+)"
+    local match_start, match_end = string.find(current_line, pattern)
+    if match_start and match_end then
+      line = tonumber(string.match(current_line, pattern))
+      -- Highlight the matched file path and line number temporarily
+      local ns_id = vim.api.nvim_create_namespace("")
+      local cur_buf = vim.api.nvim_get_current_buf()
+      vim.api.nvim_buf_add_highlight(cur_buf, ns_id, "Search", vim.fn.line(".") - 1, match_start - 1, match_end)
+      vim.defer_fn(function()
+        vim.api.nvim_buf_clear_namespace(cur_buf, ns_id, 0, -1)
+      end, 500) -- Highlight for 500 milliseconds
+    end
+
+    -- 2. goto the file.
     vim.api.nvim_set_current_win(largest_win)
     vim.cmd("edit " .. file)
     if line then

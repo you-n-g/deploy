@@ -87,6 +87,8 @@ azure_key_api_select() {
 
 # # Outlines: Usage format
 
+# naming convention: underlying_protocol + sources + interface_protocol + model
+
 azure() {
   azure_key_api_select
   # Default of openai-python
@@ -149,6 +151,27 @@ openai_lite() {
   export OPENAI_API_KEY=$OPENAI_API_KEY
   export OPENAI_API_BASE=$OPENAI_BASE_URL
   export CHAT_MODEL=$CHAT_MODEL
+}
+deepseek_closeai_lite() {
+  # export OPENAI_API_KEY=$CLOSEAI_API_KEY
+  # export OPENAI_API_BASE=https://api.openai-proxy.org/v1
+  # export CHAT_MODEL=deepseek-chat
+
+  export DEEPSEEK_API_KEY=$CLOSEAI_API_KEY
+  export DEEPSEEK_API_BASE=https://api.openai-proxy.org/v1
+  export CHAT_MODEL=deepseek/deepseek-chat
+}
+
+anthropic_closeai_lite() {
+  export ANTHROPIC_API_KEY=$CLOSEAI_API_KEY
+  export ANTHROPIC_API_BASE=https://api.openai-proxy.org/anthropic
+  export CHAT_MODEL=anthropic/claude-3-5-sonnet-latest
+}
+
+openai_closeai_lite_o3_mini() {
+  export OPENAI_API_KEY=$CLOSEAI_API_KEY
+  export OPENAI_API_BASE=https://api.openai-proxy.org/v1
+  export CHAT_MODEL=o3-mini
 }
 
 deepseek_lite() {
