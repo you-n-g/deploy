@@ -271,6 +271,25 @@ model_list:
   - model_name: gpt-35-turbo
     litellm_params:
       <<: *gpt-35-turbo_0301_msra
+# To be formatted.
+# gcr/shared/openai	o3-mini_2025-01-31	o3-mini	2025-01-31	200	60	Modern Auth
+  - model_name: o3-mini_2025-01-31
+    litellm_params: &o3-mini_2025-01-31_gcr
+      model: azure/o3-mini_2025-01-31
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2024-12-01-preview"
+  - model_name: o3-mini
+    litellm_params:
+      <<: *o3-mini_2025-01-31_gcr
+# msra/shared/openai	o3-mini_2025-01-31	o3-mini	2025-01-31	100	60	Modern Auth
+  - model_name: o3-mini_2025-01-31
+    litellm_params: &o3-mini_2025-01-31_msra
+      model: azure/o3-mini_2025-01-31
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2024-12-01-preview"
+  - model_name: o3-mini
+    litellm_params:
+      <<: *o3-mini_2025-01-31_msra
 
 litellm_settings:
   # callbacks: xytoy.llm.lite.proxy_handler_instance  it will not looking for package

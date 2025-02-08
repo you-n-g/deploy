@@ -471,7 +471,7 @@
   Description = "health check for openai & llm"
   Output = ""
   Tag = []
-  command = "key_shell.sh <cred=|_azure_ad_||_azure_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_||_openai_|> hc_llm.py <api=|_azure_||_litellm_||_native_|>"
+  command = "key_shell.sh <cred=|_azure_ad_||_azure_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_||_openai_o3_mini_||_openai_|> hc_llm.py <api=|_azure_||_litellm_||_native_|>"
 
 [[Snippets]]
   Description = "launch litellm proxy"
@@ -489,7 +489,7 @@
   Description = "set tmux session default aider llm backend"
   Output = ""
   Tag = []
-  command = "tmux set-env llm_aider <cred=|_deepseek_lite_||_deepseek_closeai_lite_||_anthropic_closeai_lite_||_openai_closeai_lite_o3_mini_|>"
+  command = "tmux set-env llm_aider <cred=|_deepseek_lite_||_deepseek_closeai_lite_||_anthropic_closeai_lite_||_openai_closeai_lite_o3_mini_||_openai_lite_o3_mini_|>"
   # o3-mini is fast and ranks good on the benchmark.
 
 [[Snippets]]
@@ -526,7 +526,7 @@
   Description = "clean vim's swap files."
   Output = ""
   Tag = []
-  command = "find . -name '*.swp' -exec rm {} \\;"
+  command = "find . -name '*.swp' -exec rm {} \\\\;"
 
 [[Snippets]]
   Description = "kill process on a specifc port"

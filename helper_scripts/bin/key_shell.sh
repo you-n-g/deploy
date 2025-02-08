@@ -146,12 +146,27 @@ openai() {
   export CHAT_MODEL=$CHAT_MODEL
 }
 
+openai_o3_mini() {
+  openai_key_api_01
+  export OPENAI_API_KEY=$OPENAI_API_KEY
+  export OPENAI_BASE_URL=$OPENAI_BASE_URL
+  export CHAT_MODEL=o3-mini
+}
+
 openai_lite() {
   openai_key_api_01
   export OPENAI_API_KEY=$OPENAI_API_KEY
   export OPENAI_API_BASE=$OPENAI_BASE_URL
   export CHAT_MODEL=$CHAT_MODEL
 }
+
+openai_lite_o3_mini() {
+  openai_key_api_01
+  export OPENAI_API_KEY=$OPENAI_API_KEY
+  export OPENAI_API_BASE=$OPENAI_BASE_URL
+  export CHAT_MODEL=o3-mini
+}
+
 deepseek_closeai_lite() {
   # export OPENAI_API_KEY=$CLOSEAI_API_KEY
   # export OPENAI_API_BASE=https://api.openai-proxy.org/v1
