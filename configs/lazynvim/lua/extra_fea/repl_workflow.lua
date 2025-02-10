@@ -166,11 +166,12 @@ M.config = {
   -- "/run" to prepend commands with a runtime directive.
   -- The default value is "".
   -- term_mode = "",  -- default mode, can switch between "", "/test" , "/run"
+  -- term_modes is a placeholder to switch mode in terminal level
   key_shell = "",  -- key_shell.sh azure|azure_ad|
 }
 
 -- Helper function to find the index of a value in a table
-local function find_index(tbl, value)
+function M.find_index(tbl, value)
   for i, v in ipairs(tbl) do
     if v == value then
       return i
@@ -214,7 +215,7 @@ vim.keymap.set("n", "<leader>rcd", function()
   -- Toggle M.config["debug_mode"] through the modes in mode_l
   local mode_l = {"", "pdb", "dap"}
   local current_mode = M.config["debug_mode"]
-  local next_index = ((find_index(mode_l, current_mode) or 0) % #mode_l) + 1
+  local next_index = ((M.find_index(mode_l, current_mode) or 0) % #mode_l) + 1
   M.config["debug_mode"] = mode_l[next_index]
   P(M.config["debug_mode"])
 end, { desc = "Toggle debug mode." })
@@ -231,29 +232,6 @@ vim.keymap.set("n", "<leader>rca", function()
   P(M.config["abs_path"])
 end, { desc = "Toggle Absolute Path." })
 
-
-function M.toggle_aider_mode(target, term_id)
-  -- Get or initialize terminal-specific mode
-  term_id = term_id or M.get_toggleterm_last_id()
-  local term_mode = M.config.term_modes and M.config.term_modes[term_id] or ""
-  
-  if target ~= nil then
-    -- Initialize term_modes table if needed
-    M.config.term_modes = M.config.term_modes or {}
-    M.config.term_modes[term_id] = target
-  else
-    local modes = {"", "/test", "/run"}
-    local next_index = ((find_index(modes, term_mode) or 0) % #modes) + 1
-    -- Initialize term_modes table if needed
-    M.config.term_modes = M.config.term_modes or {}
-    M.config.term_modes[term_id] = modes[next_index]
-  end
-
-  -- Update global config with current terminal's mode
-  P(M.config.term_modes[term_id])
-end
-
-vim.keymap.set("n", "<leader>rcm", M.toggle_aider_mode, { desc = "Toggle Aider Mode." })
 
 vim.keymap.set("n", "<leader>rcl", function()
   --  toggle  M.config["edit_before_send"] between true and false
