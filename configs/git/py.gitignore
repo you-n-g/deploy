@@ -5,10 +5,16 @@ __pycache__/
 *.ipynb
 .ipynb_checkpoints
 
+# data related
 *.pkl
 *.hd5
 *.csv
+*.xlsx
+*.json
 
+# Dev related
+*.log
+*.swp
 .env
 .vim
 .nvimrc
