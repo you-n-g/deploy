@@ -21,6 +21,31 @@ local launch_cmd = [[key_shell.sh %s myaider %s]]
 --   require("toggleterm").exec(string.format(launch_cmd, "azure_aider"), repl.get_toggleterm_last_id(), term_size)
 -- end, { noremap = true, silent = true, desc = "Run azure_aider commands in terminal" })
 
+
+local function toggle_aider_mode(target, term_id)
+  -- Get or initialize terminal-specific mode
+  term_id = term_id or repl.get_toggleterm_last_id()
+  local term_mode = repl.config.term_modes and repl.config.term_modes[term_id] or ""
+
+  if target ~= nil then
+    -- Initialize term_modes table if needed
+    repl.config.term_modes = repl.config.term_modes or {}
+    repl.config.term_modes[term_id] = target
+  else
+    local modes = {"", "/test", "/run"}
+    local next_index = ((repl.find_index(modes, term_mode) or 0) % #modes) + 1
+    -- Initialize term_modes table if needed
+    repl.config.term_modes = repl.config.term_modes or {}
+    repl.config.term_modes[term_id] = modes[next_index]
+  end
+
+  -- Update global config with current terminal's mode
+  P(repl.config.term_modes[term_id])
+end
+
+vim.keymap.set("n", "<leader>ram", toggle_aider_mode, { desc = "Toggle Aider Mode." })
+
+
 local function run_aider(new_branch_mode)
   local current_file = vim.fn.expand("%")
   local extra_args = "--lint-cmd 'lua: luacheck --globals vim -- '" .. " " .. current_file
@@ -38,7 +63,7 @@ local function run_aider(new_branch_mode)
   end
 
   require("toggleterm").exec(cmd, repl.get_toggleterm_last_id(), nil, nil, "vertical")
-  repl.toggle_aider_mode("/test", repl.get_toggleterm_last_id())
+  toggle_aider_mode("/test", repl.get_toggleterm_last_id())
 end
 
 vim.keymap.set("n", "<leader>raL", function()
@@ -84,6 +109,7 @@ vim.keymap.set("n", "<leader>rae", function()
   -- opts = { window = { open = "smart" } },
   require("toggleterm").exec("/editor", repl.get_toggleterm_last_id(), term_size)
 end, { noremap = true, silent = true, desc = "Open editor(/editor)" })
+
 
 -- For a file buffer (the buffer is related to a disk file, not some nofile buffer),
 -- run checktime when I enter it or before I want to change it.
