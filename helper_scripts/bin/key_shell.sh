@@ -177,6 +177,13 @@ deepseek_closeai_lite() {
   export CHAT_MODEL=deepseek/deepseek-chat
 }
 
+
+deepseek_sf_lite() {
+  export DEEPSEEK_API_KEY=$SF_API_KEY
+  export DEEPSEEK_API_BASE=https://api.siliconflow.cn/v1
+  export CHAT_MODEL=deepseek/deepseek-ai/DeepSeek-V3
+}
+
 anthropic_closeai_lite() {
   export ANTHROPIC_API_KEY=$CLOSEAI_API_KEY
   export ANTHROPIC_API_BASE=https://api.openai-proxy.org/anthropic

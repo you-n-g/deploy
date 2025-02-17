@@ -1,7 +1,7 @@
 #!/bin/bash
 false << "EOF" > /dev/null
 usage:
-  cat commands | tmux_paral.sh -s pool -p 3
+  cat commands | tmuxr -s pool -p 3
 
 # this will send each line as a command to create a new window in a session named "pool". But the parallelism is 3 (We have most 3 window at the same time.).
 EOF

@@ -4,6 +4,8 @@ DIR="$( cd "$(dirname "$(readlink -f "$0")")" || exit ; pwd -P )"
 
 cd $DIR
 
+bash ./install_homebrew.sh
+
 # bash install_cargo.sh
 # source "$HOME/.cargo/env"
 # cargo install jless

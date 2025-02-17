@@ -1,8 +1,9 @@
 #!/bin/sh
-# /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+# If Homebrew is already installed, skip download
 
-mkdir ~/homebrew && curl -L https://github.com/Homebrew/brew/tarball/master | tar xz --strip 1 -C ~/homebrew
-ln -s ~/homebrew/bin/brew /home/xiaoyang/bin/
+if [ ! -d ~/homebrew ]; then
+  mkdir ~/homebrew && curl -L https://github.com/Homebrew/brew/tarball/master | tar xz --strip 1 -C ~/homebrew
+  ln -s ~/homebrew/bin/brew /home/xiaoyang/bin/
+fi
 
 /home/xiaoyang/homebrew/bin/brew update
-
