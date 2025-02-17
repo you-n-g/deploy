@@ -22,6 +22,7 @@ DEBUG 一些异常的行为
 - 按键开始还按期望行为， 然后失灵: `<space>sk` 看看keymapping的变化(同一个key可能会有很多种映射)
 
 # 还希望要的功能
+- [ ] LSP in other documents. `https://github.com/jmbuhr/otter.nvim`
 - [X] fast wrap (类似 https://github.com/jiangmiao/auto-pairs), 但是 "echasnovski/mini.pairs" 没有提供类似的功能
 - [ ] strip spaces in selection in vim (to better apply GPT to specific scope)
 - [ ] [Auto-Import can be invoke actively](https://github.com/neovim/nvim-lspconfig/issues/1122), [Another](https://neovim.discourse.group/t/how-can-i-trigger-the-auto-import/636)

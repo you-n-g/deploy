@@ -29,6 +29,7 @@ interactive_term() {
   # Get the list of pane IDs in the specified window
   PANES=$(tmux list-panes -t "${SESSION_NAME}:${WINDOW_INDEX}" -F "#{pane_id}")
 
+
   echo "Enter commands to send to all panes. Type 'exit' to quit."
 
   while true; do
@@ -42,6 +43,8 @@ interactive_term() {
 
     # Loop through each pane and send the input
     for PANE in $PANES; do
+      # unsync to avoid duplicated input.
+      tmux set-window-option -t "${SESSION_NAME}:${WINDOW_INDEX}" synchronize-panes off
       tmux send-keys -t "$PANE" "$INPUT" C-m
     done
   done

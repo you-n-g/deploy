@@ -160,8 +160,18 @@ local plugins = {
       },
       { "<leader>dO", function() require("dap").step_out() end, desc = "Step Out" },
       { "<leader>do", function() require("dap").step_over() end, desc = "Step Over" },
+      { "<leader>db", "<cmd>lua require('persistent-breakpoints.api').toggle_breakpoint()<cr>", mode = "n", desc = "Toggle Persistent Breakpoint" } -- NOTE: I have to set into in dap to override db
     },
-  }
+    dependencies = {
+      {
+        "Weissle/persistent-breakpoints.nvim",
+        opts = {
+          load_breakpoints_event = { "BufReadPost" },
+        },
+        lazy=false,  -- otherwise, the breakpoint will not trigger when load buffer.
+      }
+    },
+  },
 }
 
 if true then
