@@ -82,20 +82,22 @@ clear_docker() {
 }
 
 move_docker() { 
+  data_dir=${1:-/data/docker/}
+
   # Stop Docker service
   sudo systemctl stop docker
 
   # Create the new Docker data directory
-  sudo mkdir -p /data/docker
+  sudo mkdir -p $data_dir
 
   # Move existing Docker data to the new directory
-  sudo rsync -aP /var/lib/docker/ /data/docker/
+  sudo rsync -aP /var/lib/docker/ $data_dir
 
   # Backup the old Docker data directory
   sudo mv /var/lib/docker /var/lib/docker.bak
 
   # Create a symbolic link to the new Docker data directory
-  sudo ln -s /data/docker /var/lib/docker
+  sudo ln -s $data_dir /var/lib/docker
 
   # Start Docker service
   sudo systemctl start docker
