@@ -3,8 +3,8 @@
 set -x
 # TODO: we have one thing you have to confirm
 
-if [ `whoami` != root ] && ! groups `whoami` | grep -q '\bdocker\b'; then
-  echo "Please run this script as root or as a user in the docker group"
+if [ `whoami` != root ] && ! groups `whoami` | grep -q '\bsudo\b'; then
+  echo "Please run this script as root or as a user in the sudo group"
   exit 1
 fi
 
@@ -93,11 +93,18 @@ move_docker() {
   # Move existing Docker data to the new directory
   sudo rsync -aP /var/lib/docker/ $data_dir
 
-  # Backup the old Docker data directory
+  # Backup the old Docker data directory```
+
   sudo mv /var/lib/docker /var/lib/docker.bak
 
-  # Create a symbolic link to the new Docker data directory
-  sudo ln -s $data_dir /var/lib/docker
+  # Update Docker daemon configuration to use the new data directory
+  # TODO: verify its correctness.
+  sudo mkdir -p /etc/docker
+  if [ -f /etc/docker/daemon.json ]; then
+    sudo jq '. + {"data-root": "'$data_dir'"}' /etc/docker/daemon.json | sudo tee /etc/docker/daemon.json > /dev/null
+  else
+    echo "{\"data-root\": \"$data_dir\"}" | sudo tee /etc/docker/daemon.json > /dev/null
+  fi
 
   # Start Docker service
   sudo systemctl start docker
