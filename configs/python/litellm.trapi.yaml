@@ -295,6 +295,7 @@ litellm_settings:
   # callbacks: xytoy.llm.lite.proxy_handler_instance  it will not looking for package
   callbacks: custom_callbacks.proxy_handler_instance  # but looking for a file related to the config
   enable_azure_ad_token_refresh: true
+  drop_params: true  # to be compatible with models like o1
 
 router_settings:
   client_ttl: 300
