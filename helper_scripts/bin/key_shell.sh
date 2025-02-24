@@ -167,6 +167,14 @@ openai_lite_o3_mini() {
   export CHAT_MODEL=o3-mini
 }
 
+openai_lite_o1_preview() {
+  # It does not support streaming mode!!!
+  openai_key_api_01
+  export OPENAI_API_KEY=$OPENAI_API_KEY
+  export OPENAI_API_BASE=$OPENAI_BASE_URL
+  export CHAT_MODEL=o1-preview
+}
+
 deepseek_closeai_lite() {
   # export OPENAI_API_KEY=$CLOSEAI_API_KEY
   # export OPENAI_API_BASE=https://api.openai-proxy.org/v1

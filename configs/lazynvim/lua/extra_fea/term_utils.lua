@@ -91,6 +91,7 @@ end
 
 -- Store enabled state per buffer
 local append_to_largest_buf_enabled = {}
+local append_key = '<M-x>'
 
 function M.toggle_append_to_largest_buf(enable, silent)
   local buf = vim.api.nvim_get_current_buf()
@@ -105,12 +106,11 @@ function M.toggle_append_to_largest_buf(enable, silent)
 
   append_to_largest_buf_enabled[buf] = enable or not append_to_largest_buf_enabled[buf]
 
-  local key = '<M-x>'
   if append_to_largest_buf_enabled[buf] then
     vim.api.nvim_buf_set_keymap(
       buf,
       "t",
-      key,
+      append_key,
       '<cmd>lua require"extra_fea.term_utils".append_current_line_to_largest_buf()<CR><CR>',
       { noremap = true, silent = true }
     )
@@ -118,7 +118,7 @@ function M.toggle_append_to_largest_buf(enable, silent)
       print("Append to largest buffer feature enabled for this terminal.")
     end
   else
-    vim.api.nvim_buf_del_keymap(buf, "t", key)
+    vim.api.nvim_buf_del_keymap(buf, "t", append_key)
     if not silent then
       print("Append to largest buffer feature disabled for this terminal.")
     end
@@ -130,7 +130,7 @@ vim.api.nvim_set_keymap(
   "n",
   "<leader>ta",
   '<cmd>lua require"extra_fea.term_utils".toggle_append_to_largest_buf()<CR>',
-  { noremap = true, silent = true }
+  { noremap = true, silent = true, desc=string.format("Toggle Term Append(%s)", append_key) }
 )
 
 -- Enable append feature when creating terminal buffers

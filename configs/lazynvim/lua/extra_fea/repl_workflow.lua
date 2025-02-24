@@ -405,6 +405,27 @@ function PythonREPL:get_interpreter()
     cmd = "python -m ipdb -c c "
   elseif M.config.debug_mode == "dap" then
     cmd = "python -m debugpy --listen 0.0.0.0:5678 --wait-for-client "
+    -- Start nvim-dap and connect to 127.0.0.1:5678 in 2 seconds using existing config.
+    local dap = require('dap')
+    vim.defer_fn(function()
+
+      if vim.fn.expand("%") == "" then
+        -- If not, open a new tab with an existing buffer that is associated with a file
+        for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+          if vim.api.nvim_buf_is_loaded(bufnr) and vim.fn.bufname(bufnr) ~= "" then
+            -- If the buffer is not associated with a file, open a new tab without switching to the buffer
+            vim.cmd("tab split | b" .. bufnr)
+            return
+          end
+        end
+      end
+      -- If the current buffer is associated with a file, open a new tab with the current buffer
+      vim.cmd("tab split")
+
+      dap.continue()
+      -- vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("3<cr><cr>", true, false, true), "i", false) -- Too fast pressing may result in errors..
+      vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("3", true, false, true), "i", false)
+    end, 1000)
   else
     cmd = "python "
   end

@@ -532,4 +532,4 @@
   Description = "kill process on a specifc port"
   Output = ""
   Tag = []
-  command = "lsof -t -i:<port=|_5678_||_38888_|> | xargs kill -9"
+  command = "lsof -t -i:<port=|_5678_||_38888_|> | xargs -r kill -9"

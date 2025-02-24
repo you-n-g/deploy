@@ -192,6 +192,7 @@ local modules = {
         vim.env.OPENAI_API_KEY = cred.api_key
       end
       opts.hints = { enabled = false } -- it is annoying due to conflict with simplegpt.nvim. I have to use <leader>uE to erase them
+      opts.auto_suggestions_provider = opts["provider"]
     end,
     -- if you want to build from source then do `make BUILD_FROM_SOURCE=true`
     build = "make",

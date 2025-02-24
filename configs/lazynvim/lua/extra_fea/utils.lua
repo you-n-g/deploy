@@ -5,8 +5,7 @@
 function P(...)
   local args = { ... }
   for i, v in ipairs(args) do
-    print("Arg:", i)
-    print(vim.inspect(v))
+    print(string.format("Arg %d: %s", i, vim.inspect(v)))
   end
 end
 

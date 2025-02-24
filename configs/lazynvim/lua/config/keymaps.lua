@@ -123,11 +123,7 @@ vim.keymap.set("n", "<leader><tab><leader>", function()
     for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
       if vim.api.nvim_buf_is_loaded(bufnr) and vim.fn.bufname(bufnr) ~= "" then
         -- If the buffer is not associated with a file, open a new tab without switching to the buffer
-        if vim.bo[bufnr].buftype == "nofile" then
-          vim.cmd("tab split")
-        else
-          vim.cmd("tab split | b" .. bufnr)
-        end
+        vim.cmd("tab split | b" .. bufnr)
         return
       end
     end

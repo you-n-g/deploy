@@ -11,4 +11,5 @@ if [ -z "$WEAK_MODEL" ]; then
   WEAK_MODEL="$CHAT_MODEL"
 fi
 
-aider --model "$CHAT_MODEL" --weak-model "$WEAK_MODEL" --no-show-model-warnings --editor "nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\"w\"); require\"snacks\".bufdelete()'" --watch-files --subtree-only --no-auto-commit "$@"
+aider --model "$CHAT_MODEL" --weak-model "$WEAK_MODEL" --editor-model "$CHAT_MODEL" --architect --no-show-model-warnings --editor "nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\"w\"); require\"snacks\".bufdelete()'" --watch-files --subtree-only --no-auto-commit "$@"
+# I found architect mode will make it more accurate.
