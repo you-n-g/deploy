@@ -28,7 +28,7 @@ CFG_PATH=fuse_connection.cfg
 DATA_PATH=./blob_nfs
 
 # https://stackoverflow.com/a/34531699
-while getopts ":c:" opt; do
+while getopts ":c:d:" opt; do
     case $opt in
         c)
         CFG_PATH=$OPTARG

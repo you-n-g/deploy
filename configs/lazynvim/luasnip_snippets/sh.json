@@ -67,14 +67,6 @@
     "description": "Outlines",
     "body": "# ## Outlines: ${1:header}"
   },
-  "pypdb": {
-    "prefix": "pypdb",
-    "description": "add pdb module and continue",
-    "body": "python -m ipdb -c c ",
-    "luasnip": {
-      "autotrigger": true
-    }
-  },
   "cudav": {
     "prefix": "cudav",
     "description": "Cuda Visible Device",

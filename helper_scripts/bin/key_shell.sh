@@ -183,6 +183,7 @@ deepseek_closeai_lite() {
   export DEEPSEEK_API_KEY=$CLOSEAI_API_KEY
   export DEEPSEEK_API_BASE=https://api.openai-proxy.org/v1
   export CHAT_MODEL=deepseek/deepseek-chat
+  # export CHAT_MODEL=deepseek/deepseek-reasoner
 }
 
 

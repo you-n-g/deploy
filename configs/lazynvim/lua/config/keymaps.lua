@@ -11,9 +11,10 @@
 -- unmap the keymaps above. The esc will behave same like alt, which will trigger a lot of wrong combinations
 -- NOTE: It seems that VSCODE does not have this issue. Maybe it is just a issue of
 -- MobaXterm. The keymaps is useful for snippets like aider.
--- for _, key in ipairs({ "<A-j>", "<A-k>" }) do
---   vim.keymap.del({ "n", "i", "v" }, key)
--- end
+for _, key in ipairs({ "<A-j>", "<A-k>" }) do
+  -- vim.keymap.del({ "n", "i", "v" }, key)
+  vim.keymap.del({ "i", "v" }, key) -- normal mode is useless and tend to trigger wrong operations.
+end
 
 -- disable map("n", "<leader>L", Util.changelog, {desc = "LazyVim Changelog"})
 vim.keymap.del({ "n" }, "<leader>L")

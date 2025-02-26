@@ -88,6 +88,8 @@ snippet tplexp "templates for experiments"
 	
 	\$1 "\${@:2}"  # pass the remain pawrameters
 
-
 autosnippet pydap "Python DAP Config"
 	python -m debugpy --listen 0.0.0.0:5678 --wait-for-client 
+
+autosnippet pypdb "add pdb module and continue"
+	python -m ipdb -c c 
