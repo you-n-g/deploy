@@ -4,6 +4,10 @@ usage:
   cat commands | tmuxr -s pool -p 3
 
 # this will send each line as a command to create a new window in a session named "pool". But the parallelism is 3 (We have most 3 window at the same time.).
+
+Known Issues:
+- You may retart your tmux session if permission error occurs.
+
 EOF
 # Parse input parameters using getopts
 # Provide default values for session name and parallelism

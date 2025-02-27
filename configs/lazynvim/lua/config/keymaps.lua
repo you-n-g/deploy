@@ -13,7 +13,7 @@
 -- MobaXterm. The keymaps is useful for snippets like aider.
 for _, key in ipairs({ "<A-j>", "<A-k>" }) do
   -- vim.keymap.del({ "n", "i", "v" }, key)
-  vim.keymap.del({ "i", "v" }, key) -- normal mode is useless and tend to trigger wrong operations.
+  vim.keymap.del({ "n" }, key) -- normal mode is useless and tend to trigger wrong operations.
 end
 
 -- disable map("n", "<leader>L", Util.changelog, {desc = "LazyVim Changelog"})
