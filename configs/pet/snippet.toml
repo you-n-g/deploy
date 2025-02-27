@@ -1,5 +1,5 @@
-[[Snippets]]
 
+[[Snippets]]
   Description = "grep cn"
   Output = ""
   Tag = []
@@ -490,7 +490,6 @@
   Output = ""
   Tag = []
   command = "tmux set-env llm_aider <cred=|_deepseek_lite_||_deepseek_closeai_lite_||_anthropic_closeai_lite_||_openai_closeai_lite_o3_mini_||_openai_lite_o3_mini_|>"
-  # o3-mini is fast and ranks good on the benchmark.
 
 [[Snippets]]
   Description = "remove tmux session default aider llm backend"
@@ -533,3 +532,15 @@
   Output = ""
   Tag = []
   command = "lsof -t -i:<port=|_5678_||_38888_|> | xargs -r kill -9"
+
+[[Snippets]]
+  Description = "append information to simplegpt"
+  Output = ""
+  Tag = []
+  command = "cr <url=|_https://docs.litellm.ai/docs/_||__|> >> .sgpt.md"
+
+[[Snippets]]
+  Description = "backup simplegpt prompt"
+  Output = ""
+  Tag = []
+  command = "mv .sgpt{,.`date +%F`}.md"
