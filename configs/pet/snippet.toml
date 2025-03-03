@@ -270,6 +270,12 @@
   command = "docker exec -it `docker ps -l --format '{{.Names}}'` bash"
 
 [[Snippets]]
+  Description = "fast remove docker"
+  Output = ""
+  Tag = []
+  command = "docker rm -f `docker ps -l --format '{{.Names}}'`"
+
+[[Snippets]]
   Description = "git commit & skip precommit"
   Output = ""
   Tag = []
@@ -544,3 +550,9 @@
   Output = ""
   Tag = []
   command = "mv .sgpt{,.`date +%F`}.md"
+
+[[Snippets]]
+  Description = "get ip addresss"
+  Output = ""
+  Tag = []
+  command = "curl cip.cc"

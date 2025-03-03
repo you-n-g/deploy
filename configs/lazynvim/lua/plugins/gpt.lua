@@ -175,6 +175,15 @@ local modules = {
     --   -- add any opts here
     -- },
     opts = function(_, opts)
+      -- opts["vendors"] = {
+      --   ollama = {
+      --     __inherited_from = "openai",
+      --     api_key_name = "",
+      --     endpoint = "http://127.0.0.1:11434/v1",
+      --     -- model = "deepseek-coder:33b",
+      --     model = "qwen2.5-coder:32b",
+      --   },
+      -- }
       local cred = require("extra_fea.utils").get_cred()
       if cred.type == "azure" then
         opts["provider"] = "azure"
@@ -193,6 +202,9 @@ local modules = {
       end
       opts.hints = { enabled = false } -- it is annoying due to conflict with simplegpt.nvim. I have to use <leader>uE to erase them
       opts.auto_suggestions_provider = opts["provider"]
+
+      -- opts["provider"] = "ollama"
+      -- opts.auto_suggestions_provider = "ollama"
     end,
     -- if you want to build from source then do `make BUILD_FROM_SOURCE=true`
     build = "make",

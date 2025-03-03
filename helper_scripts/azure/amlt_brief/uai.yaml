@@ -1,0 +1,5 @@
+identity: 
+  type: system_assigned,user_assigned
+  user_assigned_identities: 
+   '/subscriptions/e033d461-1923-44a7-872b-78f1d35a86dd/resourceGroups/RDAgentAPP/providers/Microsoft.ManagedIdentity/userAssignedIdentities/RDAgent_MI': {} 
+primary_user_assigned_identity: /subscriptions/e033d461-1923-44a7-872b-78f1d35a86dd/resourceGroups/RDAgentAPP/providers/Microsoft.ManagedIdentity/userAssignedIdentities/RDAgent_MI

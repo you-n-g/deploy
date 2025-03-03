@@ -46,15 +46,17 @@ return {
       require("toggleterm").setup(opts)
       -- config will override automatically setup(opts).
       for _, mode in pairs({ "i", "v", "n", "t" }) do
-        for i = 1, 4 do
+        for i = 1, 5 do
           -- vim.api.nvim_set_keymap(mode, "<c-"..tostring(i)..">", "<cmd>ToggleTerm "..tostring(i).."<cr>", {expr = true, noremap = true})
-          vim.api.nvim_set_keymap(
-            mode,
-            "<F" .. tostring(i) .. ">",
-            "<cmd>ToggleTerm " .. tostring(i) .. "<cr>",
-            { expr = false, noremap = true }
-          )
-          -- expr = false 非常重要； 不然就会触发 vim mapping 的  <expr> 机制， 导致先用vim命令执行一遍， 再把结果作为map的目标
+          for _, lhs in ipairs({"<F" .. tostring(i) .. ">", "<localleader>" .. tostring(i)}) do
+            vim.api.nvim_set_keymap(
+              mode,
+              lhs,
+              "<cmd>ToggleTerm " .. tostring(i) .. "<cr>",
+              { expr = false, noremap = true }
+            )
+            -- expr = false 非常重要； 不然就会触发 vim mapping 的  <expr> 机制， 导致先用vim命令执行一遍， 再把结果作为map的目标
+          end
         end
       end
       vim.api.nvim_set_keymap("t", "<c-w>w", "<c-\\><c-n><c-w><c-w>", { expr = false, noremap = true })
