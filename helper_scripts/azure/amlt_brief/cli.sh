@@ -50,5 +50,16 @@ submit_task() {
   # use command like `amlt ssh <experiment name like loving-glowworm>` to login onto the server
 }
 
+ssh_job() {
+  # Fetch the most recently submitted job
+  latest_job=$(amlt list --most-recent 1 -c EXPERIMENT_NAME | tail -n 1)
+  if [ -z "$latest_job" ]; then
+    echo "No recent job found."
+  else
+    echo "Most recent job submitted: $latest_job"
+    amlt ssh $latest_job
+  fi
+}
+
 
 ${1:-submit_task}

@@ -17,7 +17,7 @@ code:
 storage:
   shared_datastore:
     storage_account_name: epeastus
-    container_name: cov19
+    container_name: rdagent
     mount_dir: /data/Blob_EastUS
 
 env_defaults:

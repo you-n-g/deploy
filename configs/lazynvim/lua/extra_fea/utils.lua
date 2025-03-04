@@ -67,7 +67,8 @@ function M.get_cred()
     return {
       type = "openai",
       api_base = "http://127.0.0.1:4000",
-      model = "gpt-4",
+      -- model = "gpt-4o",
+      model = "o3-mini",
       api_key = "sk-1234",
     }
   else
