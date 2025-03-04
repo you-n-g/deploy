@@ -28,7 +28,10 @@ git config --global credential.credentialStore gpg
 
 sudo apt-get install -y pass
 
-# `gpg --gen-key` to create a key
-# command like `pass init "xiaoyang <xiaoyang@microsoft.com>"`
+# `gpg --full-generate-key` to create a key (so you can chooose never expire)
+# command like `pass init 89DD4FD084B0FC3A1CEAAF06EAC1EE2C2C654DCA`
+# - https://unix.stackexchange.com/a/53932 thinks `pass init "xiaoyang <xiaoyang@microsoft.com>"` is wrong.
 # then you can clone devops repository
-# you can use `gpg -d  <path to *.gpg>` to use the credential.
+# Show your cridential
+# - pass show git/https/dev.azure.com/you-n-g/xiaoyang@microsoft.com
+#   - you can use `gpg -d  <path to *.gpg>` to use the credential.
