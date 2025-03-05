@@ -153,6 +153,13 @@ openai_o3_mini() {
   export CHAT_MODEL=o3-mini
 }
 
+openai_o1() {
+  openai_key_api_01
+  export OPENAI_API_KEY=$OPENAI_API_KEY
+  export OPENAI_BASE_URL=$OPENAI_BASE_URL
+  export CHAT_MODEL=o1
+}
+
 openai_lite() {
   openai_key_api_01
   export OPENAI_API_KEY=$OPENAI_API_KEY
