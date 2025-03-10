@@ -7,8 +7,10 @@ target:
   workspace_name: RD-Agent
 
 environment:
-  registry: singularitybase.azurecr.io
-  image: base/job/pytorch/acpt-2.2.1-py3.10-cuda12.1:20240312T225111416
+  # registry: singularitybase.azurecr.io
+  # image: base/job/pytorch/acpt-2.2.1-py3.10-cuda12.1:20240312T225111416
+  registry: rdagentappregistry.azurecr.io
+  image: rd-agent-mle:latest
 
 code:
   # local directory of the code. this will be uploaded to the server.
@@ -42,4 +44,4 @@ jobs:
     - nvidia-smi
     - pip install openai azure-identity
     - export RSLEX_DNS_RESOLUTION_CONCURRENCY=1000
-    - sleep 2000
+    - sleep 4000

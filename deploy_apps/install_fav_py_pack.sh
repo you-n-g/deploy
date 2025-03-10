@@ -113,6 +113,7 @@ install_openai_deps() {
 install_dev_deps() {
   pip install neovim pynvim
   pip install autopep8 better_exceptions ipython-autotime fire pylint debugpy objexplore nose ipdbplugin typer
+  pip install libtmux  # for tmux_fzf
   if [[ ! -e ~/.pdbrc.py ]]; then
     ln -s ~/deploy/configs/python/pdbrc.py ~/.pdbrc.py
   fi
