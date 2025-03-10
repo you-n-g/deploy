@@ -72,16 +72,22 @@ def litellm(deployment: str | None = None):
 
 
 @app.command()
-def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo")):
+def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo"), json_mode: bool = False):
     """
     Function to demonstrate a native OpenAI API call.
 
     Args:
         model (str): The name of the model to use. Default is "gpt-3.5-turbo".
+        json_mode (bool): If True, the response will be in JSON format. Default is False.
+                          It is usually to test if a model support json mode.
+                          If supported, it will raise exception.
     """
     # openai.api_key = os.getenv("OPENAI_API_KEY")
     print(f"{model=}")
     client = Client()
+    kwargs = {}
+    if json_mode:
+        kwargs['response_format'] = {"type": "json_object"}
     response = client.chat.completions.create(model=model,
                                               messages=[{
                                                   "role": "system",
@@ -89,7 +95,8 @@ def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo")):
                                               }, {
                                                   "role": "user",
                                                   "content": "Who were the founders of Microsoft?"
-                                              }])
+                                              }],
+                                              **kwargs)
     print(response)
 
 
