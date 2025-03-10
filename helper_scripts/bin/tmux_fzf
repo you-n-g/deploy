@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+import libtmux
+import subprocess
+
+# Temporary storage for pane contents
+pane_map = {}
+
+# Initialize the server
+server = libtmux.Server()
+
+# Iterate over each session
+for session in server.sessions:
+    # Iterate over each window in the session
+    for window in session.windows:
+        # Iterate over each pane in the window
+        for pane in window.panes:
+            # Capture the content of the pane
+            pane_content = pane.capture_pane()
+            pane_id = f'{session.name}:{window.index}.{pane.index}'
+
+            for line in pane_content:
+                pane_map[line.rstrip()] = pane_id
+
+# Use fzf to select a line and get the corresponding pane identifier
+fzf_input = '\n'.join(pane_map.keys())
+selected_content = subprocess.check_output(['fzf'], input=fzf_input.encode()).decode().rstrip()
+
+selected_pane = pane_map.get(selected_content, '')
+
+# for keys in pane_map.keys():
+#     # print(keys)
+#     # if keys.startswith(selected_content[:5]):
+#     #     print(keys)
+#     if "pane_map" in keys:
+#         print(repr(keys))
+
+# print(repr(selected_content))
+print(repr(selected_pane))
+
+# # Jump to the selected pane
+# if selected_pane:
+#     session_name, window_pane = selected_pane.split(':')
+#     window_index, pane_index = map(int, window_pane.split('.'))
+#     session = server.find_where({'session_name': session_name})  # deprecated error
+#     window = session.windows[window_index]
+#     pane = window.panes[pane_index]
+#     # session = server.sessions.get(session_name=session_name)
+#     # window = session.windows.get(window_index=window_index)
+#     # pane = window.panes[pane_index]
+#     pane.select()  # does not work.
