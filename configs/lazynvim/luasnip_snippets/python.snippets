@@ -63,3 +63,18 @@ snippet typercli "add as typer command"
 	
 	if __name__ == "__main__":
 	    app()
+
+snippet pydanticmy "pydantic model"
+	from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+	class Settings(BaseSettings):
+	    """Project specific settings."""
+	
+	    name: str = "sanlian"
+	    """the name of target folder"""
+	
+	    model_config = SettingsConfigDict(
+	        env_prefix="ASSET_",
+	        # extra="allow", # Does it allow extrasettings
+	    )
