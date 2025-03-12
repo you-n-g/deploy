@@ -26,6 +26,11 @@ __pycache__/
 
 # special software
 mlruns/
+.amltconfig
 
 tags
 /data
+
+# vim
+*.swo
+*.swn

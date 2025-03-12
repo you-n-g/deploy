@@ -395,8 +395,9 @@ function PythonREPL:test()
   else
     cmd = "pytest -s --pdb --disable-warnings " .. vim.fn.expand("%:p") .. "::" .. get_current_function_name(true)
   end
+  local interpret = self:get_interpreter()
   -- interact with user to edit `cmd`
-  edit_before_send(cmd)
+  edit_before_send(interpret .. " -m " .. cmd)
 end
 
 function PythonREPL:get_interpreter()

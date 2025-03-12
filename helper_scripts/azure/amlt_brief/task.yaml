@@ -1,4 +1,4 @@
-description: RD-Agent-test
+description: RD-Agent-MLE
 
 target:
   service: sing
@@ -29,7 +29,7 @@ env_defaults:
 jobs:
   - name: test_v100_32g_GPUs${GPUS}
     identity: managed
-    tags: [Project_Name:Industry_Foundation_Models_Data_Science_Copilot,ProjectID:PRJ-0582-A42,Experiment:Scaling_GTL]  # TODO: we may change the tag for our RD-Agent
+    tags: [Project_Name:RD-Agent]
     submit_args: 
       env:
         _AZUREML_SINGULARITY_JOB_UAI: "/subscriptions/e033d461-1923-44a7-872b-78f1d35a86dd/resourceGroups/RDAgentAPP/providers/Microsoft.ManagedIdentity/userAssignedIdentities/RDAgent_MI"
@@ -42,6 +42,5 @@ jobs:
     - pwd
     - df -h
     - nvidia-smi
-    - pip install openai azure-identity
     - export RSLEX_DNS_RESOLUTION_CONCURRENCY=1000
     - sleep 4000

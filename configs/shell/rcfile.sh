@@ -229,6 +229,8 @@ export PATH="$GOPATH/bin/:$PATH"
 # If the / is full, some command like pip install may fail. So we change the tmpdir to home directly
 export TMPDIR=~/tmp/
 
+export GPG_TTY=$(tty)  # for microsoft pull to use gpg to save 
+
 
 # # Outlines: tools
 

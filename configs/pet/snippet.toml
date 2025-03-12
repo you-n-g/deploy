@@ -267,7 +267,7 @@
   Description = "fast attach docker"
   Output = ""
   Tag = []
-  command = "docker exec -it `docker ps -l --format '{{.Names}}'` bash"
+  command = "docker exec -it `docker ps --filter 'status=running' -l --format '{{.Names}}'` bash"
 
 [[Snippets]]
   Description = "fast remove docker"
