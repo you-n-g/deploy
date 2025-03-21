@@ -39,3 +39,6 @@ sudo apt-get install -y pass
 #   - you can use `gpg -d  <path to *.gpg>` to use the credential.
 # FAQ:
 # - No Authentication popups. Just run  `GPG_TTY=$(tty); export GPG_TTY`
+# - following information in git repo seems necessary:
+#   - [credential "https://dev.azure.com"]
+#   - 	useHttpPath = true

@@ -43,6 +43,11 @@ install_lazyvim() {
 	ln -s "$TARGET" ~/.config/nvim
 }
 
+docker_mount() {
+  # It does not work. The FUSE is not supported in dokcer
+  docker run -it --rm -v `which nvim`:/root/nvim -v $HOME/.config/nvim:/root/.config/nvim:ro  -v $HOME/.local/share/nvim:/root/.local/share/nvim:ro -v $HOME/.local/state/nvim:/root/.local/state/nvim:ro -v $HOME/.cache/nvim/:/root/.cache/nvim:ro  gcr.io/kaggle-gpu-images/python  /bin/bash
+}
+
 install_lazygit() {
 	APP_DIR="$HOME/apps/lazygit"
 	mkdir -p $APP_DIR

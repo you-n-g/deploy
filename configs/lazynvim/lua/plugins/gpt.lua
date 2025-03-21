@@ -278,6 +278,7 @@ local extra_m = {
         prefix = "<m-g>",
       },
       prefix = "<m-g><m-g>",
+      resume_dialog = { suffix = "<m-g>" },
       custom_shortcuts = {
         ["<m-g>Q"] = {
           mode = { "n", "v" },

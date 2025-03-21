@@ -29,6 +29,8 @@ DEBUG 一些异常的行为
 - [X] Try documentation generation, sometimes doge-gen does not work well.. https://github.com/danymat/neogen
 - [ ] renaming folder in neotree in Python project: https://github.com/alexpasmantier/pymple.nvim
 
+- [ ] Attach to a docker dap-server: maybe we can replace the project prefix or creating link?
+
 
 
 # Introduction

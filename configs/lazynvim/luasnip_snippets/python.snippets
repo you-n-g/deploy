@@ -78,3 +78,9 @@ snippet pydanticmy "pydantic model"
 	        env_prefix="ASSET_",
 	        # extra="allow", # Does it allow extrasettings
 	    )
+
+snippet explorelocals "explore local variables"
+	__import__("objexplore").explore(locals())
+
+snippet reprlibmy "use reprlib to display the object"
+	__repr = __import__("reprlib").Repr(); __repr.maxother=100; print(__repr.repr(${0:obj}))

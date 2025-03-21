@@ -556,3 +556,9 @@
   Output = ""
   Tag = []
   command = "curl cip.cc"
+
+[[Snippets]]
+  Description = "creaet tmux panes"
+  Output = ""
+  Tag = []
+  command = "bash ~/deploy/helper_scripts/SA/tmux_cluster.sh create_panes"
