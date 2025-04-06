@@ -48,24 +48,25 @@ def azure(deployment: str | None = None):
 
 
 @app.command()
-def litellm(deployment: str | None = None, system_role: str = "system"):
+def litellm(model: str | None = None, system_role: str = "system"):
     """
     Function to demonstrate LiteLLM API calling for calling models
 
     Args:
-        deployment (str): The name of the model deployment. Default is "gpt-4o".
+        model (str): The name of the model. Default is "gpt-4o".
     """
-    if deployment is None:
-        deployment = os.getenv("CHAT_MODEL", "gpt-4o")
+    if model is None:
+        model = os.getenv("CHAT_MODEL", "gpt-4o")
 
-    response = completion(model=f"{deployment}",
+    response = completion(model=f"{model}",
                           messages=[{
                               "role": system_role,
                               "content": "Assistant is a large language model trained by OpenAI."
                           }, {
                               "role": "user",
                               "content": "Who were the founders of Microsoft?"
-                          }])
+                          }],
+                          reasoning_effort=None)
 
     # Print the response in JSON format with indentation
     print(response)
@@ -97,6 +98,22 @@ def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo"), json_mode: boo
                                                   "content": "Who were the founders of Microsoft?"
                                               }],
                                               **kwargs)
+    print(response)
+
+
+@app.command()
+def embedding(model: str = os.getenv("EMBEDDING_MODEL", "text-embedding-ada-002")):
+    """
+    Function to test embedding generation using OpenAI API.
+
+    Args:
+        model (str): The name of the embedding model to use. Default is "text-embedding-ada-002".
+    """
+    client = Client()
+    response = client.embeddings.create(model=model, input="OpenAI provides tools for developers.")
+    
+    # Print the embedding vector
+    print("Embedding Vector:")
     print(response)
 
 

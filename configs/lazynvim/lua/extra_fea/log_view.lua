@@ -18,8 +18,12 @@ local patterns = {
   -- { regex = "local%s+function%s+(%w+)", type = "Local Function" },
   -- { regex = "local%s+(%w+)%s*=", type = "Local Variable" },
   -- Contents
-  { regex = "Role:system", type = "    ❓system message" },
+  -- { regex = "Role:system", type = "    ❓system message" },
+  { regex = "^Role:system", type = "    ❓system/user/prev message" },
+  { regex = "^Role:user", type = "    ❓system/user/prev message" },
+  { regex = "^Role:assistant", type = "    ❓system/user/prev message" },
   { regex = "- Response:", type = "    💬response message" },
+  { regex = "- assistant:", type = "    💬response message" },
   { regex = "self.workspace_path", type="    👾Code Workspace"},
   { regex = "^Task Name: [%w%s_]+", type = "      📝 Task Name"},
   { regex = "^name: [%w_]+", type = "      📝 Task Name"},

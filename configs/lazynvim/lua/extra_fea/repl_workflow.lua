@@ -275,8 +275,26 @@ function BaseREPL:test()
 end
 
 function BaseREPL:send_code()
+  local mode = vim.api.nvim_get_mode().mode
+  local content
+  if mode == "n" then
+    -- In normal mode, get the current line
+    local row = vim.fn.getpos(".")[2]
+    content = vim.api.nvim_buf_get_lines(0, row - 1, row, false)[1]
+  elseif mode == "v" or mode == "V" or mode == "\\<C-v>" then
+    -- In visual mode, get the selected content
+    content = require("extra_fea.utils").get_visual_selection_content()
+  end
+  if content then
+    local lines = vim.split(content, "\n")
+    if #lines == 1 and M.config.load_env then
+      content = "mydotenv.sh " .. content
+    end
+    require("toggleterm").exec(content, M.get_toggleterm_last_id(), 12)
+  end
+
   -- send key <c-c><c-c> by default
-  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<c-c><c-c>", true, true, true), "n", false)
+  -- vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<c-c><c-c>", true, true, true), "n", false)
 end
 
 function BaseREPL:get_path_symbol()
@@ -534,6 +552,7 @@ end
 
 -- General Keymaps
 
+-- - shortcuts for run scripts in shell.
 vim.keymap.set("n", "<leader>rs", function()
   M.REPLFactory():run_script()
 end, { desc = "Run script" })
@@ -550,6 +569,7 @@ vim.keymap.set("n", "<leader>rt", function()
   M.REPLFactory():test()
 end, { desc = "Run Test" })
 
+-- - shortcuts for run code in REPL
 vim.keymap.set("n", "<leader>rdb", function()
   M.REPLFactory():debug_breakpoint()
 end, { desc = "Send break point" })
