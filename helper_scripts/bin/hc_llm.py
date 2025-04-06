@@ -48,7 +48,7 @@ def azure(deployment: str | None = None):
 
 
 @app.command()
-def litellm(deployment: str | None = None):
+def litellm(deployment: str | None = None, system_role: str = "system"):
     """
     Function to demonstrate LiteLLM API calling for calling models
 
@@ -60,7 +60,7 @@ def litellm(deployment: str | None = None):
 
     response = completion(model=f"{deployment}",
                           messages=[{
-                              "role": "system",
+                              "role": system_role,
                               "content": "Assistant is a large language model trained by OpenAI."
                           }, {
                               "role": "user",
@@ -72,7 +72,7 @@ def litellm(deployment: str | None = None):
 
 
 @app.command()
-def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo"), json_mode: bool = False):
+def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo"), json_mode: bool = False, system_role: str = "system"):
     """
     Function to demonstrate a native OpenAI API call.
 
@@ -90,7 +90,7 @@ def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo"), json_mode: boo
         kwargs['response_format'] = {"type": "json_object"}
     response = client.chat.completions.create(model=model,
                                               messages=[{
-                                                  "role": "system",
+                                                  "role": system_role,
                                                   "content": "Assistant is a large language model trained by OpenAI."
                                               }, {
                                                   "role": "user",
