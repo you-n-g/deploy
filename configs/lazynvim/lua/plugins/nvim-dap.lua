@@ -164,6 +164,7 @@ local plugins = {
     },
     dependencies = {
       {
+        -- ls ~/.local/share/nvim/nvim_checkpoints/
         "Weissle/persistent-breakpoints.nvim",
         opts = {
           load_breakpoints_event = { "BufReadPost" },

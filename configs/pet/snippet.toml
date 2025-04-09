@@ -471,7 +471,7 @@
   Description = "aider command"
   Output = ""
   Tag = []
-  command = "key_shell.sh <cred=|_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> -m \"<command=/commit>\"'"
+  command = "key_shell.sh <cred=|_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> -m \"<command=/commit>\"'"
 
 [[Snippets]]
   Description = "health check for openai & llm"

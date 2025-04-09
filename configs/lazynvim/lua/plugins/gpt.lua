@@ -86,6 +86,8 @@ local modules = {
           vim.env.OPENAI_API_BASE = cred.api_base
           vim.env.OPENAI_API_AZURE_ENGINE = cred.model
           vim.env.OPENAI_API_KEY = cred.api_key
+          -- vim.env.OPENAI_API_AZURE_ENGINE = "o3-mini" -- cred.model
+          -- vim.env.OPENAI_API_AZURE_VERSION = "2024-12-01-preview"
         else
           vim.env.OPENAI_API_KEY = cred.api_key
           vim.env.OPENAI_API_HOST = cred.api_base
