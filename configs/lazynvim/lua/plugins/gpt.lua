@@ -186,12 +186,13 @@ local modules = {
       --     model = "qwen2.5-coder:32b",
       --   },
       -- }
-      local cred = require("extra_fea.utils").get_cred()
+      local cred = require("extra_fea.utils").get_cred("gpt-o4-mini.gpg")
       if cred.type == "azure" then
         opts["provider"] = "azure"
         opts["azure"] = {
           endpoint = cred.api_base, -- example: "https://<your-resource-name>.openai.azure.com"
           deployment = cred.model, -- Azure deployment name (e.g., "gpt-4o", "my-gpt-4o-deployment")
+          temperature = 1, -- this is used with gpt-reasoning models
         }
         vim.env.AZURE_OPENAI_API_KEY = cred.api_key
       else
@@ -254,7 +255,8 @@ local extra_m = {
   dependencies = {
     "you-n-g/jinja-engine.nvim",
     {
-      "jackMort/ChatGPT.nvim",
+      "yetone/avante.nvim",
+      -- "jackMort/ChatGPT.nvim",
       -- Please check the detailed config above
       -- event = "VeryLazy",
       -- config = true,

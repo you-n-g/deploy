@@ -52,8 +52,11 @@ function M.get_visual_selection_content()
   return table.concat(lines, "\n")
 end
 
-function M.get_cred()
-  local fname = "gpt.gpg"
+function M.get_cred(fname)
+  if fname == nil then
+    fname = "gpt.gpg"
+  end
+  -- local fname = "gpt-o4-mini.gpg"
   -- local is_local_open = vim.fn.system("nc -z 127.0.0.1 4000") == 0
   local is_local_open = false
 

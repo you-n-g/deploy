@@ -108,6 +108,16 @@ azure() {
   # export AZURE_OPENAI_ENDPOINT=$api_base
 }
 
+azure_o4_mini() {
+  api_base=$(gpg -q --decrypt $HOME/deploy/keys/gpt-o4-mini.gpg | sed -n 1p)
+  azure_engine=$(gpg -q --decrypt $HOME/deploy/keys/gpt-o4-mini.gpg | sed -n 2p)
+  api_key=$(gpg -q --decrypt $HOME/deploy/keys/gpt-o4-mini.gpg | sed -n 3p)
+  export OPENAI_API_VERSION="2024-12-01-preview"
+  export AZURE_OPENAI_API_KEY=$api_key
+  export AZURE_OPENAI_ENDPOINT=$api_base
+  export CHAT_MODEL=$azure_engine # you should specify it mannually
+}
+
 azure_lite() {
   azure_key_api_select
   # aider uses litellm
