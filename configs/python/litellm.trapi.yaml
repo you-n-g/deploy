@@ -308,6 +308,127 @@ model_list:
   - model_name: o1
     litellm_params:
       <<: *o1_2024-12-17_msra
+  # added on 2025-4-21
+  ## - MSRA
+  # msra/shared/openai	gpt-4.5-preview_2025-02-27	gpt-4.5-preview	2025-02-27	2	60	Modern Auth
+  - model_name: gpt-4.5-preview_2025-02-27
+    litellm_params: &gpt-4-5-preview_2025-02-27_msra
+      model: azure/gpt-4.5-preview_2025-02-27
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2025-02-27"
+  - model_name: gpt-4.5-preview
+    litellm_params:
+      <<: *gpt-4-5-preview_2025-02-27_msra
+
+  # msra/shared/openai	gpt-4.1_2025-04-14	gpt-4.1	2025-04-14	750	60	Modern Auth
+  - model_name: gpt-4.1_2025-04-14
+    litellm_params: &gpt-4-1_2025-04-14_msra
+      model: azure/gpt-4.1_2025-04-14
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2025-04-14"
+  - model_name: gpt-4.1
+    litellm_params:
+      <<: *gpt-4-1_2025-04-14_msra
+  # msra/shared/openai	gpt-4.1-nano_2025-04-14	gpt-4.1-nano	2025-04-14	750	60	Modern Auth
+  - model_name: gpt-4.1-nano_2025-04-14
+    litellm_params: &gpt-4-1-nano_2025-04-14_msra
+      model: azure/gpt-4.1-nano_2025-04-14
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2025-04-14"
+  - model_name: gpt-4.1-nano
+    litellm_params:
+      <<: *gpt-4-1-nano_2025-04-14_msra
+
+  # msra/shared/openai	gpt-4.1-mini_2025-04-14	gpt-4.1-mini	2025-04-14	758	60	Modern Auth
+  - model_name: gpt-4.1-mini_2025-04-14
+    litellm_params: &gpt-4-1-mini_2025-04-14_msra
+      model: azure/gpt-4.1-mini_2025-04-14
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2025-04-14"
+  - model_name: gpt-4.1-mini
+    litellm_params:
+      <<: *gpt-4-1-mini_2025-04-14_msra
+
+  # msra/shared/openai	o4-mini_2025-04-16	o4-mini	2025-04-16	1000	60	Modern Auth
+  - model_name: o4-mini_2025-04-16
+    litellm_params: &o4-mini_2025-04-16_msra
+      model: azure/o4-mini_2025-04-16
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2025-04-16"
+  - model_name: o4-mini
+    litellm_params:
+      <<: *o4-mini_2025-04-16_msra
+
+  # msra/shared/openai	o3_2025-04-16	o3	2025-04-16	1000	60	Modern Auth
+  - model_name: o3_2025-04-16
+    litellm_params: &o3_2025-04-16_msra
+      model: azure/o3_2025-04-16
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2025-04-16"
+  - model_name: o3
+    litellm_params:
+      <<: *o3_2025-04-16_msra
+
+  ## - GCR
+  # gcr/shared/openai	gpt-4.5-preview_2025-02-27	gpt-4.5-preview	2025-02-27	1	60	Modern Auth
+  - model_name: gpt-4.5-preview_2025-02-27
+    litellm_params: &gpt-4-5-preview_2025-02-27_gcr
+      model: azure/gpt-4.5-preview_2025-02-27
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2025-02-27"
+  - model_name: gpt-4.5-preview
+    litellm_params:
+      <<: *gpt-4-5-preview_2025-02-27_gcr
+
+  # gcr/shared/openai	gpt-4.1_2025-04-14	gpt-4.1	2025-04-14	8	60	Modern Auth
+  - model_name: gpt-4.1_2025-04-14
+    litellm_params: &gpt-4-1_2025-04-14_gcr
+      model: azure/gpt-4.1_2025-04-14
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2025-04-14"
+  - model_name: gpt-4.1
+    litellm_params:
+      <<: *gpt-4-1_2025-04-14_gcr
+
+  # gcr/shared/openai	gpt-4.1-nano_2025-04-14	gpt-4.1-nano	2025-04-14	750	60	Modern Auth
+  - model_name: gpt-4.1-nano_2025-04-14
+    litellm_params: &gpt-4-1-nano_2025-04-14_gcr
+      model: azure/gpt-4.1-nano_2025-04-14
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2025-04-14"
+  - model_name: gpt-4.1-nano
+    litellm_params:
+      <<: *gpt-4-1-nano_2025-04-14_gcr
+
+  # gcr/shared/openai	gpt-4.1-mini_2025-04-14	gpt-4.1-mini	2025-04-14	750	60	Modern Auth
+  - model_name: gpt-4.1-mini_2025-04-14
+    litellm_params: &gpt-4-1-mini_2025-04-14_gcr
+      model: azure/gpt-4.1-mini_2025-04-14
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2025-04-14"
+  - model_name: gpt-4.1-mini
+    litellm_params:
+      <<: *gpt-4-1-mini_2025-04-14_gcr
+
+  # gcr/shared/openai	o4-mini_2025-04-16	o4-mini	2025-04-16	750	60	Modern Auth
+  - model_name: o4-mini_2025-04-16
+    litellm_params: &o4-mini_2025-04-16_gcr
+      model: azure/o4-mini_2025-04-16
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2025-04-16"
+  - model_name: o4-mini
+    litellm_params:
+      <<: *o4-mini_2025-04-16_gcr
+
+  # gcr/shared/openai	o3_2025-04-16	o3	2025-04-16	750	60	Modern Auth
+  - model_name: o3_2025-04-16
+    litellm_params: &o3_2025-04-16_gcr
+      model: azure/o3_2025-04-16
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2025-04-16"
+  - model_name: o3
+    litellm_params:
+      <<: *o3_2025-04-16_gcr
 
 litellm_settings:
   # callbacks: xytoy.llm.lite.proxy_handler_instance  it will not looking for package
