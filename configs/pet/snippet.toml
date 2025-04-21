@@ -562,3 +562,9 @@
   Output = ""
   Tag = []
   command = "bash ~/deploy/helper_scripts/SA/tmux_cluster.sh create_panes"
+
+[[Snippets]]
+  Description = "remove nvim persistent checkpoints"
+  Output = ""
+  Tag = []
+  command = "rm ~/.local/share/nvim/nvim_checkpoints/*"

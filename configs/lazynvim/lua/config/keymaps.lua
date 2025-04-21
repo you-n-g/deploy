@@ -191,9 +191,10 @@ vim.keymap.set("i", "<C-^>", "<esc><C-^>a", { noremap = true, desc = "Switch buf
 local function clear_all_extmarks()
   local bufnr = vim.api.nvim_get_current_buf()
   -- -1 means clear all namespaces
-  for _, ns in ipairs({ "avante_selection", "avante_cursor" }) do
-    vim.api.nvim_buf_clear_namespace(bufnr, vim.api.nvim_create_namespace(ns), 0, -1)
-  end
+  -- for _, ns in ipairs({ "avante_selection", "avante_cursor" }) do
+  --   vim.api.nvim_buf_clear_namespace(bufnr, vim.api.nvim_create_namespace(ns), 0, -1)
+  -- end
+  vim.api.nvim_buf_clear_namespace(bufnr, -1, 0, -1)
   print("Cleared all extmarks in the current buffer")
 end
 
