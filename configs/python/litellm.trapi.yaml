@@ -315,7 +315,7 @@ model_list:
     litellm_params: &gpt-4-5-preview_2025-02-27_msra
       model: azure/gpt-4.5-preview_2025-02-27
       api_base: https://trapi.research.microsoft.com/msra/shared
-      api_version: "2025-02-27"
+      api_version: "2024-12-01-preview"
   - model_name: gpt-4.5-preview
     litellm_params:
       <<: *gpt-4-5-preview_2025-02-27_msra
@@ -325,7 +325,7 @@ model_list:
     litellm_params: &gpt-4-1_2025-04-14_msra
       model: azure/gpt-4.1_2025-04-14
       api_base: https://trapi.research.microsoft.com/msra/shared
-      api_version: "2025-04-14"
+      api_version: "2024-12-01-preview"
   - model_name: gpt-4.1
     litellm_params:
       <<: *gpt-4-1_2025-04-14_msra
@@ -334,7 +334,7 @@ model_list:
     litellm_params: &gpt-4-1-nano_2025-04-14_msra
       model: azure/gpt-4.1-nano_2025-04-14
       api_base: https://trapi.research.microsoft.com/msra/shared
-      api_version: "2025-04-14"
+      api_version: "2024-12-01-preview"
   - model_name: gpt-4.1-nano
     litellm_params:
       <<: *gpt-4-1-nano_2025-04-14_msra
@@ -344,7 +344,7 @@ model_list:
     litellm_params: &gpt-4-1-mini_2025-04-14_msra
       model: azure/gpt-4.1-mini_2025-04-14
       api_base: https://trapi.research.microsoft.com/msra/shared
-      api_version: "2025-04-14"
+      api_version: "2024-12-01-preview"
   - model_name: gpt-4.1-mini
     litellm_params:
       <<: *gpt-4-1-mini_2025-04-14_msra
@@ -354,7 +354,7 @@ model_list:
     litellm_params: &o4-mini_2025-04-16_msra
       model: azure/o4-mini_2025-04-16
       api_base: https://trapi.research.microsoft.com/msra/shared
-      api_version: "2025-04-16"
+      api_version: "2024-12-01-preview"
   - model_name: o4-mini
     litellm_params:
       <<: *o4-mini_2025-04-16_msra
@@ -364,7 +364,7 @@ model_list:
     litellm_params: &o3_2025-04-16_msra
       model: azure/o3_2025-04-16
       api_base: https://trapi.research.microsoft.com/msra/shared
-      api_version: "2025-04-16"
+      api_version: "2024-12-01-preview"
   - model_name: o3
     litellm_params:
       <<: *o3_2025-04-16_msra
@@ -375,7 +375,7 @@ model_list:
     litellm_params: &gpt-4-5-preview_2025-02-27_gcr
       model: azure/gpt-4.5-preview_2025-02-27
       api_base: https://trapi.research.microsoft.com/gcr/shared
-      api_version: "2025-02-27"
+      api_version: "2024-12-01-preview"
   - model_name: gpt-4.5-preview
     litellm_params:
       <<: *gpt-4-5-preview_2025-02-27_gcr
@@ -385,7 +385,7 @@ model_list:
     litellm_params: &gpt-4-1_2025-04-14_gcr
       model: azure/gpt-4.1_2025-04-14
       api_base: https://trapi.research.microsoft.com/gcr/shared
-      api_version: "2025-04-14"
+      api_version: "2024-12-01-preview"
   - model_name: gpt-4.1
     litellm_params:
       <<: *gpt-4-1_2025-04-14_gcr
@@ -395,7 +395,7 @@ model_list:
     litellm_params: &gpt-4-1-nano_2025-04-14_gcr
       model: azure/gpt-4.1-nano_2025-04-14
       api_base: https://trapi.research.microsoft.com/gcr/shared
-      api_version: "2025-04-14"
+      api_version: "2024-12-01-preview"
   - model_name: gpt-4.1-nano
     litellm_params:
       <<: *gpt-4-1-nano_2025-04-14_gcr
@@ -405,7 +405,7 @@ model_list:
     litellm_params: &gpt-4-1-mini_2025-04-14_gcr
       model: azure/gpt-4.1-mini_2025-04-14
       api_base: https://trapi.research.microsoft.com/gcr/shared
-      api_version: "2025-04-14"
+      api_version: "2024-12-01-preview"
   - model_name: gpt-4.1-mini
     litellm_params:
       <<: *gpt-4-1-mini_2025-04-14_gcr
@@ -415,7 +415,7 @@ model_list:
     litellm_params: &o4-mini_2025-04-16_gcr
       model: azure/o4-mini_2025-04-16
       api_base: https://trapi.research.microsoft.com/gcr/shared
-      api_version: "2025-04-16"
+      api_version: "2024-12-01-preview"
   - model_name: o4-mini
     litellm_params:
       <<: *o4-mini_2025-04-16_gcr
@@ -425,7 +425,7 @@ model_list:
     litellm_params: &o3_2025-04-16_gcr
       model: azure/o3_2025-04-16
       api_base: https://trapi.research.microsoft.com/gcr/shared
-      api_version: "2025-04-16"
+      api_version: "2024-12-01-preview"
   - model_name: o3
     litellm_params:
       <<: *o3_2025-04-16_gcr
