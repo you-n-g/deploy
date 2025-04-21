@@ -186,7 +186,11 @@ local modules = {
       --     model = "qwen2.5-coder:32b",
       --   },
       -- }
-      local cred = require("extra_fea.utils").get_cred("gpt-o4-mini.gpg")
+      -- local cred = require("extra_fea.utils").get_cred("gpt-o4-mini.1.gpg")
+      -- local cred = require("extra_fea.utils").get_cred("gpt-o3-mini.1.gpg")
+      -- local cred = require("extra_fea.utils").get_cred("gpt-o4-mini.gpg")
+      local cred = require("extra_fea.utils").get_cred("gpt-4.1.gpg")
+      -- local cred = require("extra_fea.utils").get_cred()
       if cred.type == "azure" then
         opts["provider"] = "azure"
         opts["azure"] = {
@@ -194,6 +198,13 @@ local modules = {
           deployment = cred.model, -- Azure deployment name (e.g., "gpt-4o", "my-gpt-4o-deployment")
           temperature = 1, -- this is used with gpt-reasoning models
         }
+        if cred.model == "gpt-4o" then
+          opts["azure"].max_tokens = 3000
+        end
+        if cred.model == "4o-mini" then
+          opts["azure"].temperature = 1 -- this is used with gpt-reasoning models
+          opts["azure"].reasoning_effort = "low"
+        end
         vim.env.AZURE_OPENAI_API_KEY = cred.api_key
       else
         opts["provider"] = "openai"

@@ -36,9 +36,12 @@ EOF
     # 后来发现 pure 似乎不能用 antigen 安装了
     # antigen bundle sindresorhus/pure
 
-    antigen theme denysdovhan/spaceship-prompt
+    # antigen theme denysdovhan/spaceship-prompt
     # TODO: 后面对spaceship-prompt 做做加速
     # echo $SPACESHIP_PROMPT_ORDER
+    # NOTE: 这个会导致vim下，出现显示不出来的错误
+
+    antigen theme romkatv/powerlevel10k
 
     antigen bundle paoloantinori/hhighlighter
     # hhighlighter
@@ -71,6 +74,10 @@ EOF
 
     export SPACESHIP_PROMPT_ORDER=(time user dir host git package node docker venv conda dotnet exec_time battery jobs exit_code char)
     # TODO: vi_mode  pyenv can't be displayed correctly now..
+
+    # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+    P10K_CONF=~/deploy/configs/shell/p10k.zsh
+    [[ ! -f $P10K_CONF ]] || source $P10K_CONF
 
     # shrink path
     # export PROMPT='${ret_status} %{$fg[cyan]%}$(shrink_path -l -t) %{$reset_color%}'

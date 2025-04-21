@@ -25,3 +25,5 @@ fzm = "!git ls-files -m --exclude-standard | fzf --print0 -m | xargs -0 -t -r gi
 	credentialStore = gpg
 [credential "https://dev.azure.com"]
 	useHttpPath = true
+[safe]
+	directory = /data/userdata/v-jianwan/kaggle_data/zip_files
