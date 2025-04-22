@@ -15,7 +15,7 @@ export AZURE_SCOPE=api://trapi/.default
 export AZURE_CREDENTIAL=AzureCliCredential
 
 #Where the default model be placed
-key_shell.sh $SELECT_CRED bash -c "echo CHAT_MODEL=\$CHAT_MODEL" >$DIR/litellm_proxy.env
+# key_shell.sh $SELECT_CRED bash -c "echo CHAT_MODEL=\$CHAT_MODEL" >$DIR/litellm_proxy.env
 # key_shell.sh $SELECT_CRED bash -c "echo AZURE_API_BASE=\$AZURE_API_BASE"
 # key_shell.sh $SELECT_CRED bash -c "echo CHAT_MODEL=\$CHAT_MODEL"
 

@@ -352,6 +352,7 @@ function deploy_quant_libs() {
 # # Outlines: For apps
 
 AIDER_CHECK_UPDATE=False
+AIDER_SHOW_RELEASE_NOTES=False
 
 # # Outlines: 准备删掉的
 

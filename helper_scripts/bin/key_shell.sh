@@ -23,15 +23,16 @@ openai_key_api_01() {
   OPENAI_API_KEY=sk-1234
   OPENAI_BASE_URL=http://ep14.213428.xyz:4000
 
-  if [ ! -e $DIR/litellm_proxy.env ]; then
-    echo "litellm_proxy.env not found; llm_proxy.sh may not be run"
-    exit 1
-  fi
-
-  # CHAT_MODEL=gpt-4o # avoid hardcode
-  source $DIR/litellm_proxy.env
-  CHAT_MODEL=$(python -c "print('$CHAT_MODEL'.split('/')[-1].split('_')[0])")
-  echo use $CHAT_MODEL from litellm_proxy
+  # if [ ! -e $DIR/litellm_proxy.env ]; then
+  #   echo "litellm_proxy.env not found; llm_proxy.sh may not be run"
+  #   exit 1
+  # fi
+  #
+  # # CHAT_MODEL=gpt-4o # avoid hardcode
+  # source $DIR/litellm_proxy.env
+  # CHAT_MODEL=$(python -c "print('$CHAT_MODEL'.split('/')[-1].split('_')[0])")
+  # echo use $CHAT_MODEL from litellm_proxy
+  CHAT_MODEL=gpt-4o
 }
 
 azure_key_api_01() {
