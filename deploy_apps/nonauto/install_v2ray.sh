@@ -8,7 +8,8 @@ mkdir -p $APP_PATH
 cd $APP_PATH
 
 sudo apt-get install unzip
-wget https://github.com/v2ray/v2ray-core/releases/download/v4.27.0/v2ray-linux-64.zip
+# wget https://github.com/v2ray/v2ray-core/releases/download/v5.22.0/v2ray-linux-64.zip
+wget https://github.com/v2fly/v2ray-core/releases/download/v5.22.0/v2ray-linux-64.zip
 unzip  v2ray-linux-64.zip
 
 if which python > /dev/null; then
