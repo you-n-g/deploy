@@ -83,6 +83,7 @@ chmod a+x ./deploy_apps/*
 ./keys/deploy.sh
 ./tools.py/install.sh
 ./deploy_apps/nonauto/install_lazyvim.sh deploy
+./deploy_apps/install_fd.sh
 
 sudo ./deploy_apps/set_code.sh
 

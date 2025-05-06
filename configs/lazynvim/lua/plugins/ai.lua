@@ -264,6 +264,8 @@ local modules = {
     -- - https://www.reddit.com/r/neovim/comments/1cq9fpp/supermaven_vs_codeium/
     -- - https://www.reddit.com/r/ChatGPTCoding/comments/1du7m6s/supermaven_10_with_1_million_token_context_window/
     -- - https://processwire.com/talk/topic/30101-looking-for-an-ai-assistant-for-code-consider-supermaven/
+    -- Cons:
+    -- - Already join cursor: https://www.cursor.com/en/blog/supermaven
     "supermaven-inc/supermaven-nvim",
     -- config = function()
     --   require("supermaven-nvim").setup({})
@@ -273,6 +275,18 @@ local modules = {
         suggestion_color = "#ffaaaa",
         cterm = 244,
       }
+    },
+    dependencies = {
+      {
+        "saghen/blink.cmp",
+        opts = {
+          completion = {
+            ghost_text = {
+              enabled = false, -- We leave the ghost text for supermaven.
+            },
+          },
+        },
+      },
     },
   },
 }

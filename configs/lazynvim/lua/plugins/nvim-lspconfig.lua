@@ -56,16 +56,24 @@ return {
     -- pyrightconfig.json:
     -- { "exclude": [ "**/__pycache__", "data/", "libs/", "intermediate/", "scripts/" ] }
   },
-  {
-    "jay-babu/mason-nvim-dap.nvim",
-    opts = {
-      -- this does not work...
-      -- automatic_installation = false, --{ exclude = { "debugpy" } },
-      -- automatic_installation = false, -- this works
-      automatic_installation = { exclude = { "python" } }, -- this works;  It disable auto-config python and enable the config of "mfussenegger/nvim-dap-python" in "lua/plugins/nvim-dap.lua"
-      -- So, it is language specific.
-    },
-  },
+  -- I found if comment the following line, the debugpy will install automatically...
+  -- {
+  --   "jay-babu/mason-nvim-dap.nvim",
+  --   opts = {
+  --     -- this does not work...
+  --     -- automatic_installation = false, --{ exclude = { "debugpy" } },
+  --     -- automatic_installation = false, -- this works
+  --     -- automatic_installation = {
+  --     --   exclude = { "python" },
+  --     -- },
+  --     -- this works;  It disable auto-config python and enable the config of "mfussenegger/nvim-dap-python" in "lua/plugins/nvim-dap.lua"
+  --     -- So, it is language specific.
+  --     -- But i found that part does not take effect now after I simplify the code.
+  --     ensure_installed = { "debugpy" },
+  --     -- otherwise, you will get error like "Mason package path not found for debugpy"
+  --     -- https://github.com/LazyVim/LazyVim/issues/4039#issuecomment-2228009536
+  --   },
+  -- },
   {
     "stevearc/conform.nvim",
     -- set max line length to 120 will work in install_lazyvim.sh:
