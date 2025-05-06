@@ -8,5 +8,6 @@ return {
     ---@module 'render-markdown'
     ---@type render.md.UserConfig
     opts = {},
-  }
+  },
+  { "nvzone/showkeys", cmd = "ShowkeysToggle" },
 }

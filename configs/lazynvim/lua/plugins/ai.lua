@@ -258,6 +258,23 @@ local modules = {
       },
     },
   },
+  { -- I use this plugin just for its bleeding fast auto-completion
+    -- I don't use the config in LazyNvim due to binding it with completion plugins does not work well.
+    -- Comparison on reddit:
+    -- - https://www.reddit.com/r/neovim/comments/1cq9fpp/supermaven_vs_codeium/
+    -- - https://www.reddit.com/r/ChatGPTCoding/comments/1du7m6s/supermaven_10_with_1_million_token_context_window/
+    -- - https://processwire.com/talk/topic/30101-looking-for-an-ai-assistant-for-code-consider-supermaven/
+    "supermaven-inc/supermaven-nvim",
+    -- config = function()
+    --   require("supermaven-nvim").setup({})
+    -- end,
+    opts = {
+      color = {
+        suggestion_color = "#ffaaaa",
+        cterm = 244,
+      }
+    },
+  },
 }
 
 local extra_m = {

@@ -153,7 +153,8 @@ return {
       -- link_surround = {
       --   left = "{{",
       --   right = "}}"
-      -- }
+      -- },
+      enable_block = true,
     },
   },
   -- It conflicts with https://github.com/jbyuki/one-small-step-for-vimkind?tab=readme-ov-file#flattennvim

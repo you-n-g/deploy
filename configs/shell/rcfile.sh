@@ -353,6 +353,7 @@ function deploy_quant_libs() {
 
 export AIDER_CHECK_UPDATE=False
 export AIDER_SHOW_RELEASE_NOTES=False
+export AIDER_GITIGNORE=False
 
 # # Outlines: 准备删掉的
 
