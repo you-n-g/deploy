@@ -147,6 +147,14 @@ vim.api.nvim_set_keymap(
   -- We prefer this grep_string when we fail to sG/g
 )
 
+vim.keymap.set(
+  "n",
+  "<leader>sB",
+  "<cmd>FzfLua lines<cr>",
+  { noremap = true, desc = "Search buffer lines (all buffers)" }
+)
+
+
 -- change the window size of current window
 -- The <C-up> and <C-down> are overridden by vim-visual-multi. But I can't disable it... So I have to resize it here.
 local function win_change_width(n)

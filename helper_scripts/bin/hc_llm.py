@@ -73,7 +73,7 @@ def litellm(model: str | None = None, system_role: str = "system"):
 
 
 @app.command()
-def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo"), json_mode: bool = False, system_role: str = "system"):
+def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo"), json_mode: bool = False, system_role: str = "system", stream: bool = True):
     """
     Function to demonstrate a native OpenAI API call.
 
@@ -89,16 +89,36 @@ def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo"), json_mode: boo
     kwargs = {}
     if json_mode:
         kwargs['response_format'] = {"type": "json_object"}
-    response = client.chat.completions.create(model=model,
-                                              messages=[{
-                                                  "role": system_role,
-                                                  "content": "Assistant is a large language model trained by OpenAI."
-                                              }, {
-                                                  "role": "user",
-                                                  "content": "Who were the founders of Microsoft?"
-                                              }],
-                                              **kwargs)
-    print(response)
+    if stream:
+        response = client.chat.completions.create(model=model,
+                                                messages=[{
+                                                    "role": system_role,
+                                                    "content": "Assistant is a large language model trained by OpenAI."
+                                                }, {
+                                                    "role": "user",
+                                                    "content": "Who were the founders of Microsoft?"
+                                                }],
+                                                **kwargs)
+        print(response)
+    else:
+        # use streaming to print the streaming output (synchronously, not async)
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{
+                "role": system_role,
+                "content": "Assistant is a large language model trained by OpenAI."
+            }, {
+                "role": "user",
+                "content": "Who were the founders of Microsoft?"
+            }],
+            stream=True,
+            **kwargs
+        )
+        for chunk in response:
+            if hasattr(chunk.choices[0].delta, "content") and chunk.choices[0].delta.content:
+                print(chunk.choices[0].delta.content, end="", flush=True)
+        print()  # for newline after streaming output
+
 
 
 @app.command()
