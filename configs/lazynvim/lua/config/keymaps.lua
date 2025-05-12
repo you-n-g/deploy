@@ -225,6 +225,7 @@ vim.keymap.set(
 vim.keymap.set({ "i" }, "<C-x><C-f>", function()
   require("fzf-lua").complete_file({
     cmd = "rg --files",
-    winopts = { preview = { hidden = true } },
+    -- Show preview window for file content while searching
+    winopts = { preview = { hidden = false } },
   })
 end, { silent = true, desc = "Fuzzy complete file" })

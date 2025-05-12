@@ -100,7 +100,7 @@ move_docker() {
   # Update Docker daemon configuration to use the new data directory
   # TODO: verify its correctness.
   sudo mkdir -p /etc/docker
-  if [ -f /etc/docker/daemon.json ]; then
+  if [ -s /etc/docker/daemon.json ]; then
     sudo jq '. + {"data-root": "'$data_dir'"}' /etc/docker/daemon.json | sudo tee /etc/docker/daemon.json > /dev/null
   else
     echo "{\"data-root\": \"$data_dir\"}" | sudo tee /etc/docker/daemon.json > /dev/null

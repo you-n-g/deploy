@@ -32,6 +32,8 @@ return {
         },
       },
     },
+    -- shortcuts:
+    -- - shift + <up/down> to scroll up/down in the content preview.
   },
   -- {
   --     "otavioschwanck/arrow.nvim",

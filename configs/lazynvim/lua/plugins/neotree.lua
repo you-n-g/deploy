@@ -1,3 +1,4 @@
+
 local function copy_path(type)
   local function _copy(state)
       local node = state.tree:get_node()
@@ -35,6 +36,7 @@ return {
 
       -- Add some extra features.
       -- opts.commands = vim.tbl_extend("force", opts.commands, {""})  -- to make it a named function.
+      opts.window.mappings["Y"] = nil
       -- NOTE:
       -- `Y` is already mapped to copy_file_name, So we don't need to override it.
       -- But it does not work on my case. So I create a more comprehensive solution.
