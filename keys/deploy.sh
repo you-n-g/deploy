@@ -18,6 +18,8 @@ install_gpg() {
 
   # reload gpg
   gpgconf --kill gpg-agent
+  # https://unix.stackexchange.com/a/669628
+  # - say:  `systemctl --user mask gpg-agent` would solve the hanging problem.
   gpg-agent --daemon
   # gpg -d keys/gpt.gpg
 }

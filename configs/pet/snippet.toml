@@ -528,7 +528,7 @@
   command = "docker run -it --rm browsh/browsh"
 
 [[Snippets]]
-  Description = "clean vim's swap files."
+  Description = "clean/remove vim's swap files."
   Output = ""
   Tag = []
   command = "find . -name '*.swp' -exec rm {} \\\\;"
