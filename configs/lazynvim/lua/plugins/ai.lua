@@ -332,6 +332,15 @@ local extra_m = {
           target = "chat",
           opts = { noremap = true, silent = true, desc = "Questions for article" },
         },
+        ["<m-g>R"] = {  -- gr will conflict with goto reference in LSP.
+          mode = { "n", "v" },
+          tpl = "complete_writing_replace.json",
+          target = "diff",
+          reg = {
+            r = "No extra explanations. No block quotes. Output only the rewritten text. Maintain prefix spaces and indentations.",
+          },
+          opts = { noremap = true, silent = true, desc = "(R)ewrite Text in Diff" },
+        },
         -- ["<m-g>D"] = {
         --   mode = { "n", "v" },
         --   tpl = "dictionary_en2cn.json",

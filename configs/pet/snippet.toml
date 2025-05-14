@@ -568,3 +568,9 @@
   Output = ""
   Tag = []
   command = "rm ~/.local/share/nvim/nvim_checkpoints/*"
+
+[[Snippets]]
+  Description = "exclude folders to make pyright faster"
+  Output = ""
+  Tag = []
+  command = "echo '{ \"exclude\": [ \"amlt_project\" ] }' > pyrightconfig.json"

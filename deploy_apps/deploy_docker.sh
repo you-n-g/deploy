@@ -82,6 +82,10 @@ clear_docker() {
 }
 
 move_docker() { 
+  # NOTE: this function may involve following errors:
+  # - Image corruption: when I restart the docker image, it may results in running error.
+  #   - I think it will cause the disorder of the docker images.
+
   data_dir=${1:-/data/docker/}
 
   # Stop Docker service
