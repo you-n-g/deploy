@@ -81,7 +81,7 @@
   Description = "py-spy dump"
   Output = ""
   Tag = []
-  command = "sudo env \"PATH=$PATH\"  py-spy dump --pid"
+  command = "<pre=|_sudo env \"PATH=$PATH\"_||__|>  py-spy dump --pid"
 
 [[Snippets]]
   Description = "autossh proxy"
@@ -267,13 +267,13 @@
   Description = "fast attach docker"
   Output = ""
   Tag = []
-  command = "docker exec -it `docker ps --filter 'status=running' -l --format '{{.Names}}'` bash"
+  command = "docker exec -it <cid=|_`docker ps --filter 'status=running' -l --format '{{.Names}}'`_||__|> bash"
 
 [[Snippets]]
   Description = "fast remove docker"
   Output = ""
   Tag = []
-  command = "docker rm -f `docker ps -l --format '{{.Names}}'`"
+  command = "# docker rm -f `docker ps -l --format '{{.Names}}'`"
 
 [[Snippets]]
   Description = "git commit & skip precommit"
@@ -520,6 +520,12 @@
   Output = ""
   Tag = []
   command = "tmux set-env -g <cred=|_vim_cred local_||_-r vim_cred_|>"
+
+[[Snippets]]
+  Description = "set default LLM model (session level instead of global)"
+  Output = ""
+  Tag = []
+  command = "tmux set-env <cred=|_llm_model gpt-4.1_||_llm_model o4-mini_||_llm_model gpt-4o_||_-r llm_model_|>"
 
 [[Snippets]]
   Description = "browser, www, internet"

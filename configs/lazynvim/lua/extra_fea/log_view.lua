@@ -27,6 +27,8 @@ local patterns = {
   { regex = "self.workspace_path", type="    👾Code Workspace"},
   { regex = "^Task Name: [%w%s_]+", type = "      📝 Task Name"},
   { regex = "^name: [%w_]+", type = "      📝 Task Name"},
+  -- Add matching line: Match exactly a line padded with spaces containing only "Run Info"
+  { regex = " Run Info ", type = "    🚩 Run Info"},
   -- control
   { regex = "Implementing: ", type="  🛠️Implementing"},
   { regex = "loop_index=%d*, step_index=%d*, step_name=[%w_]+", type = "♾️ Loop:"},
@@ -41,8 +43,11 @@ local outline_cache = {}
 -- Find and highlight the focused outline line based on current cursor position
 local function find_focused_outline_line(outline, current_line, bufnr)
   local last_item, last_idx, focus_line
-  -- Clear all existing highlights first
-  vim.api.nvim_buf_clear_namespace(bufnr, -1, 0, -1)
+  -- Use a dedicated namespace for our highlights to avoid clearing others
+  local ns_id = vim.api.nvim_create_namespace('log_outline_visual')
+
+  -- Clear all existing highlights in our namespace first
+  vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
 
   -- 1) highlight the outline item where the cursor is
   if outline[1].line <= current_line then
@@ -50,14 +55,14 @@ local function find_focused_outline_line(outline, current_line, bufnr)
       last_item = item
       last_idx = idx
       if item.line > current_line and idx - 2 >= 0 then
-        vim.api.nvim_buf_add_highlight(bufnr, -1, 'Visual', idx - 2, 0, -1)
+        vim.api.nvim_buf_add_highlight(bufnr, ns_id, 'Visual', idx - 2, 0, -1)
         focus_line = idx - 2
         break
       end
     end
   end
   if last_item ~= nil and last_item.line <= current_line then
-    vim.api.nvim_buf_add_highlight(bufnr, -1, 'Visual', last_idx - 1, 0, -1)
+    vim.api.nvim_buf_add_highlight(bufnr, ns_id, 'Visual', last_idx - 1, 0, -1)
     focus_line = last_idx - 1
   end
 
@@ -190,6 +195,22 @@ function M.display_outline()
       end
     end,
   })
+
+  -- I has to be at the end of the function, otherwise, style will not take effect.
+  -- -- Highlight text like "loop_index=...", "step_index=...", "step_name=...", etc. for the outline buffer
+  for idx, line in ipairs(lines) do
+    for pat, hlgroup in pairs({
+      ["loop_index=%d+"]       = "LogTimestamp",
+      ["step_index=%d+"]       = "LogTimestamp",
+      ["Start Loop %d+, Step %d+"] = "LogTimestamp",
+    }) do
+      local from, to = string.find(line, pat)
+      if from and to then
+        vim.api.nvim_buf_add_highlight(bufnr, -1, hlgroup, idx-1, from-1, to)
+      end
+    end
+  end
+  -- -- END highlight for items like "loop_index=1, step_index=1" for bufnr
 end
 
 

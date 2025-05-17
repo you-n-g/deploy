@@ -56,7 +56,7 @@ function M.get_cred(fname)
   if fname == nil then
     fname = "gpt.gpg"
   end
-  -- local fname = "gpt-o4-mini.gpg"
+  -- local fname = "gpt-o4-mini.1.gpg"  -- this is my personal key with most of models.
   -- local is_local_open = vim.fn.system("nc -z 127.0.0.1 4000") == 0
   local is_local_open = false
 
@@ -88,6 +88,19 @@ function M.get_cred(fname)
       ), "\n$", ""),
     }
   end
+end
+
+function M.get_llm_model()
+  -- get llm_model from tmux env, return "" if not set or invalid
+  local llm_model = nil
+  local llm_env_out = vim.fn.system("tmux show-env llm_model 2>/dev/null")
+  if type(llm_env_out) == "string" then
+    local val = llm_env_out:match("^llm_model=(.*)")
+    if val then
+      llm_model = val:gsub("%s+", "")
+    end
+  end
+  return llm_model
 end
 
 function M.export_cred_env()

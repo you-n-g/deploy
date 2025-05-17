@@ -17,22 +17,22 @@ app = typer.Typer()
 
 
 @app.command()
-def azure(deployment: str | None = None):
+def azure(model: str | None = None):
     """
     Example function to demonstrate Azure OpenAI chat completion.
 
     .. code-block:: shell
 
-        hc_llm.py azure --deployment=$CHAT_MODEL
+        hc_llm.py azure --model=$CHAT_MODEL
 
     Args:
-        deployment_name (str): The name of the model deployment. Default is "gpt-4o".
+        deployment_name (str): The name of the model model. Default is "gpt-4o".
     """
-    if deployment is None:
-        deployment = os.getenv("CHAT_MODEL", "gpt-4o")
+    if model is None:
+        model = os.getenv("CHAT_MODEL", "gpt-4o")
     client = AzureOpenAI()
 
-    response = client.chat.completions.create(model=deployment,
+    response = client.chat.completions.create(model=model,
                                               messages=[{
                                                   "role": "system",
                                                   "content": "Assistant is a large language model trained by OpenAI."
