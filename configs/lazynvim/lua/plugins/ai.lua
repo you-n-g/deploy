@@ -366,6 +366,7 @@ local modules = {
   --     })
   --   end
   -- },
+
   { -- I use this plugin just for its bleeding fast auto-completion
     -- I don't use the config in LazyNvim due to binding it with completion plugins does not work well.
     -- Comparison on reddit:
@@ -383,7 +384,7 @@ local modules = {
         suggestion_color = "#ffaaaa",
         cterm = 244,
       },
-      ignore_filetypes = { cpp = true },
+      ignore_filetypes = { bigfile=true },
     },
     dependencies = {
       {
@@ -393,6 +394,9 @@ local modules = {
             ghost_text = {
               enabled = false, -- We leave the ghost text for supermaven.
             },
+           menu = {
+             direction_priority = { 'n', 's' }, -- make the menu appear above  current has higher priority incase of multiple line auto-completion experience
+           },
           },
         },
       },
@@ -400,7 +404,65 @@ local modules = {
     -- Alternatives:
     -- - codeium/windsurf
   },
+
+  -- NOTE: nearly perfect. Just a little slower than supermaven.
+  -- Advantage:
+  -- - Better inline completion. It is real insertion, instead of just replace the whole remaining line.
+  -- - More switchable choices.
+  -- - More shortcuts like accept line.
+  -- {
+  --   "monkoose/neocodeium",
+  --   event = "VeryLazy",
+  --   config = function()
+  --     local neocodeium = require("neocodeium")
+  --     neocodeium.setup()
+  --     -- Keymaps to match windsuf/codeium.nvim default AI accept keys
+  --     vim.keymap.set("i", "<Tab>", function()
+  --         -- use `neocodeium.visible()` to check if we should accept the suggestion or fallback to normal <TAB>
+  --         if require("neocodeium").visible() then
+  --           require("neocodeium").accept()
+  --         else
+  --           vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Tab>", true, false, true), "n", false)
+  --         end
+  --     end)
+  --     vim.keymap.set("i", "<C-l>", function()
+  --         require("neocodeium").accept_line()
+  --     end)
+  --     vim.keymap.set("i", "<C-j>", function()
+  --         require("neocodeium").accept_word()
+  --     end)
+  --     vim.keymap.set("i", "<M-]>", function()
+  --         require("neocodeium").cycle_or_complete()
+  --     end)
+  --     vim.keymap.set("i", "<M-[>", function()
+  --         require("neocodeium").cycle_or_complete(-1)
+  --     end)
+  --     -- Optionally clear the virtual text with <C-c>, like windsuf
+  --     vim.keymap.set("i", "<C-c>", function()
+  --         require("neocodeium").clear()
+  --     end)
+  --     -- Set the highlight group for NeoCodeiumSuggestion like the commented config in supermaven.
+  --     vim.api.nvim_set_hl(0, "NeoCodeiumSuggestion", { fg = "#ffaaaa", ctermfg = 244, italic = true }) -- match supermaven suggestion color
+  --
+  --   end,
+  --   dependencies = {
+  --     {
+  --       "saghen/blink.cmp",
+  --       opts = {
+  --         completion = {
+  --           ghost_text = {
+  --             enabled = false, -- We leave the ghost text for supermaven.
+  --           },
+  --           menu = {
+  --             direction_priority = { 'n', 's' },
+  --           },
+  --         },
+  --       },
+  --     },
+  --   },
+  -- },
 }
+
 
 local extra_m = {
   -- dir = "~/deploy/tools.py/simplegpt.nvim/",
