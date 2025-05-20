@@ -27,3 +27,5 @@ fzm = "!git ls-files -m --exclude-standard | fzf --print0 -m | xargs -0 -t -r gi
 	useHttpPath = true
 [safe]
 	directory = *
+[credential "https://git.overleaf.com"]
+	provider = generic

@@ -510,7 +510,7 @@ local extra_m = {
           tpl = "complete_writing_replace.json",
           target = "diff",
           reg = {
-            r = "No extra explanations. No block quotes. Output only the rewritten text. Maintain prefix spaces and indentations.",
+            f = "No extra explanations. No block quotes. Output only the rewritten text. Maintain prefix spaces and indentations.",  -- NOTE: can't import due to recurive import
           },
           opts = { noremap = true, silent = true, desc = "(R)ewrite Text in Diff" },
         },

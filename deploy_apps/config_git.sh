@@ -30,7 +30,7 @@ sudo apt-get install -y pass
 
 # `gpg --list-keys` show current gpg key.
 # `gpg --full-generate-key` to create a key (so you can chooose never expire)
-# command like `pass init 89DD4FD084B0FC3A1CEAAF06EAC1EE2C2C654DCA`
+# command like `pass init 89DD4FD084B0FC3A1CEAAF06EAC1EE2C2C654DCA` (the key is from gpg --list-keys)
 # - https://unix.stackexchange.com/a/53932 thinks `pass init "xiaoyang <xiaoyang@microsoft.com>"` is wrong.
 # - `cat  ~/.password-store/.gpg-id` you will know how you initialize it.
 # then you can clone devops repository
