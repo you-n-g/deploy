@@ -50,42 +50,42 @@ local modules = {
   --      },
   --  },
 
-  -- it does not work with reasoning models.
-  {
-    "robitx/gp.nvim",
-    event = "VeryLazy",
-    config = function()
-        local cred = require("extra_fea.utils").get_cred("gpt-4.1.gpg")
-        -- local model = require("extra_fea.utils").get_llm_model() or cred.model
-        local model = cred.model
-        local conf = {
-          providers = {
-              -- For customization, refer to Install > Configuration in the Documentation/Readme
-            azure = {
-              disable = false,
-              endpoint = cred.api_base .. "/openai/deployments/{{model}}/chat/completions?api-version=2025-01-01-preview",
-              secret = cred.api_key,
-            },
-          },
-          default_chat_agent = "gpt-4.1-ChatBot",
-          agents = {
-            {
-              provider = "azure",
-              name = "gpt-4.1-ChatBot",
-              chat = true,
-              command = false,
-              -- string with model name or table with model name and parameters
-              model = { model = model, temperature = 1.1, top_p = 1 },
-              -- system prompt (use this to specify the persona/role of the AI)
-              system_prompt = require("gp.defaults").chat_system_prompt,
-            },
-          }
-        }
-        require("gp").setup(conf)
-
-        -- Setup shortcuts here (see Usage > Shortcuts in the Documentation/Readme)
-    end,
-  },
+  -- it does not work with reasoning models.   Now we have simplegpt.nvim's buffer support.
+  -- {
+  --   "robitx/gp.nvim",
+  --   event = "VeryLazy",
+  --   config = function()
+  --       local cred = require("extra_fea.utils").get_cred("gpt-4.1.gpg")
+  --       -- local model = require("extra_fea.utils").get_llm_model() or cred.model
+  --       local model = cred.model
+  --       local conf = {
+  --         providers = {
+  --             -- For customization, refer to Install > Configuration in the Documentation/Readme
+  --           azure = {
+  --             disable = false,
+  --             endpoint = cred.api_base .. "/openai/deployments/{{model}}/chat/completions?api-version=2025-01-01-preview",
+  --             secret = cred.api_key,
+  --           },
+  --         },
+  --         default_chat_agent = "gpt-4.1-ChatBot",
+  --         agents = {
+  --           {
+  --             provider = "azure",
+  --             name = "gpt-4.1-ChatBot",
+  --             chat = true,
+  --             command = false,
+  --             -- string with model name or table with model name and parameters
+  --             model = { model = model, temperature = 1.1, top_p = 1 },
+  --             -- system prompt (use this to specify the persona/role of the AI)
+  --             system_prompt = require("gp.defaults").chat_system_prompt,
+  --           },
+  --         }
+  --       }
+  --       require("gp").setup(conf)
+  --
+  --       -- Setup shortcuts here (see Usage > Shortcuts in the Documentation/Readme)
+  --   end,
+  -- },
 
   -- {
   --   "jackMort/ChatGPT.nvim",
@@ -386,6 +386,7 @@ local modules = {
       },
       ignore_filetypes = { bigfile=true },
     },
+    event = "VeryLazy",
     dependencies = {
       {
         "saghen/blink.cmp",
