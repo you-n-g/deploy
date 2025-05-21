@@ -256,7 +256,7 @@ local modules = {
             endpoint = cred.api_base,
             deployment = "o4-mini",
             temperature = 1,
-            reasoning_effort = "low"
+            -- reasoning_effort = "low"  -- Now I use it for chatting, so it don't have to be low.
           }
         }
       else
@@ -538,6 +538,9 @@ local extra_m = {
     custom_template_path = "~/deploy/configs/lazynvim/data/tpl/",
     tpl_conf = {
       context_len = 20,
+    },
+    buffer_chat = {
+      provider = "azure-o4-mini"
     },
   },
   event = "VeryLazy", -- greatly boost the initial of neovim
