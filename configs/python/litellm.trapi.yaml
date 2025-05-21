@@ -37,15 +37,6 @@ model_list:
   - model_name: gpt-4-32k
     litellm_params:
       <<: *gpt-4-32k_0613
-# gcr/shared/openai	gpt-4_1106-Preview	gpt-4	1106-Preview	5510	10	Modern Auth
-  - model_name: gpt-4_1106-Preview
-    litellm_params: &gpt-4_1106-Preview
-      model: azure/gpt-4_1106-Preview
-      api_base: https://trapi.research.microsoft.com/gcr/shared
-      api_version: "2024-10-21"
-  - model_name: gpt-4
-    litellm_params:
-      <<: *gpt-4_1106-Preview
 # gcr/shared/openai	gpt-35-turbo_1106	gpt-35-turbo	1106	10120	10	Modern Auth
   - model_name: gpt-35-turbo_1106
     litellm_params: &gpt-35-turbo_1106
@@ -55,15 +46,6 @@ model_list:
   - model_name: gpt-35-turbo
     litellm_params:
       <<: *gpt-35-turbo_1106
-# gcr/shared/openai	gpt-35-turbo-16k_0613	gpt-35-turbo-16k	0613	120	10	Modern Auth
-  - model_name: gpt-35-turbo-16k_0613
-    litellm_params: &gpt-35-turbo-16k_0613
-      model: azure/gpt-35-turbo-16k_0613
-      api_base: https://trapi.research.microsoft.com/gcr/shared
-      api_version: "2024-10-21"
-  - model_name: gpt-35-turbo-16k
-    litellm_params:
-      <<: *gpt-35-turbo-16k_0613
 # gcr/shared/openai	gpt-35-turbo-instruct_0914	gpt-35-turbo-instruct	0914	120	10	Modern Auth
   - model_name: gpt-35-turbo-instruct_0914
     litellm_params: &gpt-35-turbo-instruct_0914
@@ -73,24 +55,6 @@ model_list:
   - model_name: gpt-35-turbo-instruct
     litellm_params:
       <<: *gpt-35-turbo-instruct_0914
-# gcr/shared/openai	babbage-002_1	babbage-002	1	120	10	Modern Auth
-  - model_name: babbage-002_1
-    litellm_params: &babbage-002_1
-      model: azure/babbage-002_1
-      api_base: https://trapi.research.microsoft.com/gcr/shared
-      api_version: "2024-10-21"
-  - model_name: babbage-002
-    litellm_params:
-      <<: *babbage-002_1
-# gcr/shared/openai	davinci-002_1	davinci-002	1	120	10	Modern Auth
-  - model_name: davinci-002_1
-    litellm_params: &davinci-002_1
-      model: azure/davinci-002_1
-      api_base: https://trapi.research.microsoft.com/gcr/shared
-      api_version: "2024-10-21"
-  - model_name: davinci-002
-    litellm_params:
-      <<: *davinci-002_1
 # gcr/shared/openai	text-embedding-ada-002_2	text-embedding-ada-002	2	120	10	Modern Auth
   - model_name: text-embedding-ada-002_2
     litellm_params: &text-embedding-ada-002_2
@@ -100,15 +64,6 @@ model_list:
   - model_name: text-embedding-ada-002
     litellm_params:
       <<: *text-embedding-ada-002_2
-# gcr/shared/openai	gpt-4_vision-preview	gpt-4	vision-preview	15	60	Modern Auth
-  - model_name: gpt-4_vision-preview
-    litellm_params: &gpt-4_vision-preview
-      model: azure/gpt-4_vision-preview
-      api_base: https://trapi.research.microsoft.com/gcr/shared
-      api_version: "2024-10-21"
-  - model_name: gpt-4
-    litellm_params:
-      <<: *gpt-4_vision-preview
 # gcr/shared/openai	gpt-4o_2024-08-06	gpt-4o	2024-08-06	100	10	Modern Auth
   - model_name: gpt-4o_2024-08-06
     litellm_params: &gpt-4o_2024-08-06
@@ -136,15 +91,6 @@ model_list:
   - model_name: o1-mini
     litellm_params:
       <<: *o1-mini_2024-09-12
-# gcr/shared/openai	o1-preview_2024-09-12	o1-preview	2024-09-12	167	60	Modern Auth
-  - model_name: o1-preview_2024-09-12
-    litellm_params: &o1-preview_2024-09-12
-      model: azure/o1-preview_2024-09-12
-      api_base: https://trapi.research.microsoft.com/gcr/shared
-      api_version: "2024-10-21"
-  - model_name: o1-preview
-    litellm_params:
-      <<: *o1-preview_2024-09-12
 # gcr/shared/openai	gpt-4_0314	gpt-4	0314	2	10	Modern Auth
   - model_name: gpt-4_0314
     litellm_params: &gpt-4_0314
@@ -190,15 +136,6 @@ model_list:
   - model_name: gpt-4-32k
     litellm_params:
       <<: *gpt-4-32k_0613_msra
-# msra/shared/openai	gpt-4_1106-Preview	gpt-4	1106-Preview	5520	10	Modern Auth
-  - model_name: gpt-4_1106-Preview
-    litellm_params: &gpt-4_1106-Preview_msra
-      model: azure/gpt-4_1106-Preview
-      api_base: https://trapi.research.microsoft.com/msra/shared
-      api_version: "2024-10-21"
-  - model_name: gpt-4
-    litellm_params:
-      <<: *gpt-4_1106-Preview_msra
 # msra/shared/openai	gpt-35-turbo_1106	gpt-35-turbo	1106	10240	10	Modern Auth
   - model_name: gpt-35-turbo_1106
     litellm_params: &gpt-35-turbo_1106_msra
@@ -208,15 +145,6 @@ model_list:
   - model_name: gpt-35-turbo
     litellm_params:
       <<: *gpt-35-turbo_1106_msra
-# msra/shared/openai	gpt-4_vision-preview	gpt-4	vision-preview	30	60	Modern Auth
-  - model_name: gpt-4_vision-preview
-    litellm_params: &gpt-4_vision-preview_msra
-      model: azure/gpt-4_vision-preview
-      api_base: https://trapi.research.microsoft.com/msra/shared
-      api_version: "2024-10-21"
-  - model_name: gpt-4
-    litellm_params:
-      <<: *gpt-4_vision-preview_msra
 # msra/shared/openai	gpt-4o_2024-08-06	gpt-4o	2024-08-06	2070	60	Modern Auth
   - model_name: gpt-4o_2024-08-06
     litellm_params: &gpt-4o_2024-08-06_msra
@@ -235,15 +163,6 @@ model_list:
   - model_name: gpt-4o-mini
     litellm_params:
       <<: *gpt-4o-mini_2024-07-18_msra
-# msra/shared/openai	o1-preview_2024-09-12	o1-preview	2024-09-12	184	60	Modern Auth
-  - model_name: o1-preview_2024-09-12
-    litellm_params: &o1-preview_2024-09-12_msra
-      model: azure/o1-preview_2024-09-12
-      api_base: https://trapi.research.microsoft.com/msra/shared
-      api_version: "2024-10-21"
-  - model_name: o1-preview
-    litellm_params:
-      <<: *o1-preview_2024-09-12_msra
 # msra/shared/openai	o1-mini_2024-09-12	o1-mini	2024-09-12	115	60	Modern Auth
   - model_name: o1-mini_2024-09-12
     litellm_params: &o1-mini_2024-09-12_msra
@@ -429,6 +348,43 @@ model_list:
   - model_name: o3
     litellm_params:
       <<: *o3_2025-04-16_gcr
+  # Add on 2025-5-21 based on email
+  # gcr/preview/openai	gpt-4o_2024-05-13	gpt-4o	2024-05-13	No Fixed Limits	No Fixed Limits	Modern Auth
+  - model_name: gpt-4o_2024-05-13
+    litellm_params: &gpt-4o_2024-05-13_gcr
+      model: azure/gpt-4o_2024-05-13
+      api_base: https://trapi.research.microsoft.com/gcr/preview
+      api_version: "2024-10-21"
+  - model_name: gpt-4o
+    litellm_params:
+      <<: *gpt-4o_2024-05-13_gcr
+  # gcr/shared/openai	gpt-4o_2024-11-20	gpt-4o	2024-11-20	300	10	Modern Auth
+  - model_name: gpt-4o_2024-11-20
+    litellm_params: &gpt-4o_2024-11-20_gcr
+      model: azure/gpt-4o_2024-11-20
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2024-10-21"
+  - model_name: gpt-4o
+    litellm_params:
+      <<: *gpt-4o_2024-11-20_gcr
+  # msra/shared/openai	gpt-4o_2024-11-20	gpt-4o	2024-11-20	448	10	Modern Auth
+  - model_name: gpt-4o_2024-11-20
+    litellm_params: &gpt-4o_2024-11-20_msra
+      model: azure/gpt-4o_2024-11-20
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2024-10-21"
+  - model_name: gpt-4o
+    litellm_params:
+      <<: *gpt-4o_2024-11-20_msra
+  # gcr/shared/openai	gpt-4-32k_0314	gpt-4-32k	0314	10	10	Modern Auth
+  - model_name: gpt-4-32k_0314
+    litellm_params: &gpt-4-32k_0314_gcr
+      model: azure/gpt-4-32k_0314
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2024-10-21"
+  - model_name: gpt-4-32k
+    litellm_params:
+      <<: *gpt-4-32k_0314_gcr
 
 litellm_settings:
   # callbacks: xytoy.llm.lite.proxy_handler_instance  it will not looking for package
