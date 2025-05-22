@@ -34,4 +34,19 @@ return {
     event = "ModeChanged *:[vV\22]", -- optionally, lazy load on entering visual mode
     opts = {},
   },
+
+  {
+    "folke/snacks.nvim",
+    opts = {
+      styles = {
+        notification = {
+          wo = {
+            -- Fully opaque, no transparency;
+            -- Just to ctrl+click can open the window correctly
+            winblend = 0,
+          },
+        },
+      },
+    }
+  },
 }

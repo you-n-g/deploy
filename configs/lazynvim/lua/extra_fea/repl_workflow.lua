@@ -363,6 +363,7 @@ function get_pytest_doctest_module()
   -- python test doctest module:
   -- - because  --doctest-modules expect  <filepath>::<full_packagename>.<function_name> to specific a function.
   -- - vim can't automatically get it. So we have to set it mannually often.
+  -- - It will find a module path that contains __init__.py at the top level.
   -- often used command let b:ptdm="abc"
   -- - let b:ptdm="abc"
   -- - unlet b:ptdm
@@ -381,8 +382,9 @@ function get_pytest_doctest_module()
       -- module = v .. "." .. module
       table.insert(module, v)
     end
-    -- FIXME: qlib is hard code!!!!!
-    if v == "qlib" then
+    -- Check if "__init__.py" exists in each folder; if not, stop searching for module path.
+    local path = table.concat(vim.list_slice(t, 1, i - 1), "/")
+    if vim.fn.filereadable(path .. "/__init__.py") == 0 then
       finished = true
     end
   end

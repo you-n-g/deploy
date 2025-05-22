@@ -500,21 +500,22 @@ local extra_m = {
       prefix = "<m-g><m-g>",
       resume_dialog = { suffix = "<m-g>" },
       custom_shortcuts = {
-        ["<m-g>Q"] = {
+        {
+          key = "<m-g>Q",
           mode = { "n", "v" },
           tpl = "question_cn.json",
           target = "chat",
           opts = { noremap = true, silent = true, desc = "Questions for article" },
         },
-        ["<m-g>R"] = {  -- gr will conflict with goto reference in LSP.
-          mode = { "n", "v" },
-          tpl = "complete_writing_replace.json",
-          target = "diff",
-          reg = {
-            f = "No extra explanations. No block quotes. Output only the rewritten text. Maintain prefix spaces and indentations.",  -- NOTE: can't import due to recurive import
-          },
-          opts = { noremap = true, silent = true, desc = "(R)ewrite Text in Diff" },
-        },
+        -- ["<m-g>R"] = {  -- gr will conflict with goto reference in LSP.
+        --   mode = { "n", "v" },
+        --   tpl = "complete_writing_replace.json",
+        --   target = "diff",
+        --   reg = {
+        --     f = "No extra explanations. No block quotes. Output only the rewritten text. Maintain prefix spaces and indentations.",  -- NOTE: can't import due to recurive import
+        --   },
+        --   opts = { noremap = true, silent = true, desc = "(R)ewrite Text in Diff" },
+        -- },
         -- ["<m-g>D"] = {
         --   mode = { "n", "v" },
         --   tpl = "dictionary_en2cn.json",

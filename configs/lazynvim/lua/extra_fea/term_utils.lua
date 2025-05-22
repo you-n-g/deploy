@@ -185,18 +185,24 @@ end
 --   { noremap = true, silent = true })
 
 -- Map 'gf' in terminal mode to the function
-vim.keymap.set(
-  { "n", "v" },
-  "gf",
-  '<cmd>lua require"extra_fea.term_utils".open_file_in_largest_non_terminal_win()<CR>',
-  { noremap = true, silent = true }
-)
-vim.keymap.set(
-  { "n", "v" },
-  "gF",
-  '<cmd>lua require"extra_fea.term_utils".open_file_in_largest_non_terminal_win(true)<CR>',
-  { noremap = true, silent = true }
-)
+vim.api.nvim_create_autocmd("TermOpen", {
+  pattern = "*",
+  callback = function(args)
+    local bufnr = args.buf
+    vim.keymap.set(
+      { "n", "v" },
+      "gf",
+      '<cmd>lua require"extra_fea.term_utils".open_file_in_largest_non_terminal_win()<CR>',
+      { buffer = bufnr, noremap = true, silent = true }
+    )
+    vim.keymap.set(
+      { "n", "v" },
+      "gF",
+      '<cmd>lua require"extra_fea.term_utils".open_file_in_largest_non_terminal_win(true)<CR>',
+      { buffer = bufnr, noremap = true, silent = true }
+    )
+  end,
+})
 
 function M.copy_last_terminal_command()
   -- TODO: working on it.
