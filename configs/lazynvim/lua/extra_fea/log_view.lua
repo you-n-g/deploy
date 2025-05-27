@@ -24,14 +24,14 @@ local patterns = {
   { regex = "^Role:assistant", type = "    ❓system/user/prev message" },
   { regex = "- Response:", type = "    💬response message" },
   { regex = "- assistant:", type = "    💬response message" },
-  { regex = "self.workspace_path", type="    👾Code Workspace"},
-  { regex = "^Task Name: [%w%s_]+", type = "      📝 Task Name"},
-  { regex = "^name: [%w_]+", type = "      📝 Task Name"},
+  { regex = "self.workspace_path", type = "    👾Code Workspace" },
+  { regex = "^Task Name: [%w%s_]+", type = "      📝 Task Name" },
+  { regex = "^name: [%w_]+", type = "      📝 Task Name" },
   -- Add matching line: Match exactly a line padded with spaces containing only "Run Info"
-  { regex = " Run Info ", type = "    🚩 Run Info"},
+  { regex = " Run Info ", type = "    🚩 Run Info" },
   -- control
-  { regex = "Implementing: ", type="  🛠️Implementing"},
-  { regex = "loop_index=%d*, step_index=%d*, step_name=[%w_]+", type = "♾️ Loop:"},
+  { regex = "Implementing: ", type = "  🛠️Implementing" },
+  { regex = "loop_index=%d*, step_index=%d*, step_name=[%w_]+", type = "♾️ Loop:" },
   -- - Handle content like `Start Loop 9, Step 4: record` (the line sometimes cover)
   { regex = "Start Loop %d+, Step %d+: [%w_]+", type = "♾️ Loop:" },
 }
@@ -69,11 +69,11 @@ local function find_focused_outline_line(outline, current_line, bufnr)
   -- 2) make sure the highlighted line is visible
   if focus_line then
     local win_id = vim.fn.bufwinid(bufnr) -- Get the window ID for the buffer
-    if win_id ~= -1 then -- Check if the buffer is displayed in a window
+    if win_id ~= -1 then                  -- Check if the buffer is displayed in a window
       local top_line = vim.fn.line('w0', win_id)
       local bottom_line = vim.fn.line('w$', win_id)
       if focus_line + 1 < top_line or focus_line + 1 > bottom_line then
-        vim.api.nvim_win_set_cursor(win_id, {focus_line + 1, 0})
+        vim.api.nvim_win_set_cursor(win_id, { focus_line + 1, 0 })
         -- vim.api.nvim_command('normal! zz') -- Center the line in the window
       end
     end
@@ -92,14 +92,14 @@ local function create_outline()
   end
 
   local outline = {}
-  local type_idx = {}  -- record the number type
+  local type_idx = {} -- record the number type
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   for i, line in ipairs(lines) do
     for _, pattern in ipairs(patterns) do
       local match = string.match(line, pattern.regex)
       if match then
         type_idx[pattern.type] = (type_idx[pattern.type] or 0) + 1
-        table.insert(outline, { type = pattern.type, name = match, line = i, type_idx = type_idx[pattern.type]})
+        table.insert(outline, { type = pattern.type, name = match, line = i, type_idx = type_idx[pattern.type] })
       end
     end
   end
@@ -113,7 +113,7 @@ end
 function M.display_outline()
   local cur_win_id = vim.api.nvim_get_current_win()
   local cur_bufnr = vim.api.nvim_get_current_buf()
-  local outline = create_outline()  -- TODO: do it in the background
+  local outline = create_outline() -- TODO: do it in the background
   local lines = {}
   local line_map = {}
   for idx, item in ipairs(outline) do
@@ -172,11 +172,11 @@ function M.display_outline()
   vim.wo[win_id].signcolumn = 'no'
 
   if focus_line then
-    vim.api.nvim_win_set_cursor(0, {focus_line + 1, 0}) -- navigate to the focused line
+    vim.api.nvim_win_set_cursor(0, { focus_line + 1, 0 }) -- navigate to the focused line
   end
 
   -- Make the buffer not modifiable
-  vim.bo[bufnr].modifiable = false  -- Fixed the deprecated problem.
+  vim.bo[bufnr].modifiable = false -- Fixed the deprecated problem.
   -- Set up key mapping to navigate to the main content
   vim.api.nvim_buf_set_keymap(bufnr, 'n', '<CR>', '', {
     noremap = true,
@@ -186,7 +186,7 @@ function M.display_outline()
       local line = line_map[cursor[1]]
       if line then
         -- vim.api.nvim_win_close(win_id, true)
-        vim.api.nvim_win_set_cursor(cur_win_id, {line, 0})
+        vim.api.nvim_win_set_cursor(cur_win_id, { line, 0 })
         -- Move cursor to top of window in the correct window
         vim.api.nvim_win_call(cur_win_id, function()
           vim.cmd('normal! zt')
@@ -200,19 +200,18 @@ function M.display_outline()
   -- -- Highlight text like "loop_index=...", "step_index=...", "step_name=...", etc. for the outline buffer
   for idx, line in ipairs(lines) do
     for pat, hlgroup in pairs({
-      ["loop_index=%d+"]       = "LogTimestamp",
-      ["step_index=%d+"]       = "LogTimestamp",
+      ["loop_index=%d+"]           = "LogTimestamp",
+      ["step_index=%d+"]           = "LogTimestamp",
       ["Start Loop %d+, Step %d+"] = "LogTimestamp",
     }) do
       local from, to = string.find(line, pat)
       if from and to then
-        vim.api.nvim_buf_add_highlight(bufnr, -1, hlgroup, idx-1, from-1, to)
+        vim.api.nvim_buf_add_highlight(bufnr, -1, hlgroup, idx - 1, from - 1, to)
       end
     end
   end
   -- -- END highlight for items like "loop_index=1, step_index=1" for bufnr
 end
-
 
 -- Define highlight groups
 vim.api.nvim_set_hl(0, 'LogTimestamp', { fg = '#FFA500', bold = true })
@@ -251,7 +250,7 @@ function M.set_style()
     if ts then
       local start = string.find(line, ts, nil, true)
       if start then
-        vim.api.nvim_buf_add_highlight(bufnr, -1, 'LogTimestamp', i-1, start-1, start+#ts-1)
+        vim.api.nvim_buf_add_highlight(bufnr, -1, 'LogTimestamp', i - 1, start - 1, start + #ts - 1)
       end
     end
 
@@ -261,7 +260,7 @@ function M.set_style()
       if match then
         local start = string.find(line, match, nil, true)
         if start then
-          vim.api.nvim_buf_add_highlight(bufnr, -1, 'LogHeadingPattern', i-1, start-1, start+#match-1)
+          vim.api.nvim_buf_add_highlight(bufnr, -1, 'LogHeadingPattern', i - 1, start - 1, start + #match - 1)
         end
       end
     end
@@ -275,9 +274,7 @@ function M.set_style()
       vim.notify('File or directory not found: ' .. path, vim.log.levels.WARN)
     end
   end, { buffer = true, desc = "Open file under cursor in new tab" })
-
 end
-
 
 -- Map a key to display the outline
 vim.keymap.set('n', '<localleader>oo', M.display_outline, { noremap = true, silent = true, desc = "Display Outline" })
@@ -289,7 +286,7 @@ local function navigate_next_item()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
   for _, item in ipairs(outline) do
     if item.line > current_line then
-      vim.api.nvim_win_set_cursor(0, {item.line, 0})
+      vim.api.nvim_win_set_cursor(0, { item.line, 0 })
       print(string.format("%s[%d]: %s (line %d)", item.type, item.type_idx, item.name, item.line))
       return
     end
@@ -303,7 +300,7 @@ local function navigate_prev_item()
   for i = #outline, 1, -1 do
     if outline[i].line < current_line then
       local item = outline[i]
-      vim.api.nvim_win_set_cursor(0, {outline[i].line, 0})
+      vim.api.nvim_win_set_cursor(0, { outline[i].line, 0 })
       print(string.format("%s[%d]: %s (line %d)", item.type, item.type_idx, item.name, item.line))
       return
     end
