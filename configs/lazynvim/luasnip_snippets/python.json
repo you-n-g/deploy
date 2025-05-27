@@ -47,7 +47,7 @@
     ]
   },
   "emb": {
-    "prefix": "emb",
+    "prefix": "embmy",
     "description": "Embed for debuging",
     "body": "from IPython import embed; embed()"
   },

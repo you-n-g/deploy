@@ -53,7 +53,9 @@ local modules = {
   -- it does not work with reasoning models.   Now we have simplegpt.nvim's buffer support.
   -- {
   --   "robitx/gp.nvim",
-  --   event = "VeryLazy",
+  --   -- event = "VeryLazy",
+  --   lazy = true,
+  --   cmd = "GpChatNew",
   --   config = function()
   --       local cred = require("extra_fea.utils").get_cred("gpt-4.1.gpg")
   --       -- local model = require("extra_fea.utils").get_llm_model() or cred.model
@@ -379,6 +381,7 @@ local modules = {
     -- config = function()
     --   require("supermaven-nvim").setup({})
     -- end,
+    event = "VeryLazy",
     opts = {
       color = {
         suggestion_color = "#ffaaaa",
