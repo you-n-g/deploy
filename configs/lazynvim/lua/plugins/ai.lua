@@ -462,6 +462,15 @@ local modules = {
   --     },
   --   },
   -- },
+  -- {
+  --   -- this plugin will be good for apply diff to code.
+  --   'echasnovski/mini.diff',
+  --   version = '*',
+  --   opts = {
+  --     -- source = "save",
+  --   },
+  --   -- require"mini.diff".toggle_overlay(vim.api.nvim_get_current_buf())
+  -- }
 }
 
 
