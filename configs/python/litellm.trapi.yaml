@@ -298,27 +298,26 @@ model_list:
   - model_name: gpt-4.5-preview
     litellm_params:
       <<: *gpt-4-5-preview_2025-02-27_gcr
-
-  # gcr/shared/openai	gpt-4.1_2025-04-14	gpt-4.1	2025-04-14	8	60	Modern Auth
-  - model_name: gpt-4.1_2025-04-14
-    litellm_params: &gpt-4-1_2025-04-14_gcr
-      model: azure/gpt-4.1_2025-04-14
-      api_base: https://trapi.research.microsoft.com/gcr/shared
-      api_version: "2024-12-01-preview"
-  - model_name: gpt-4.1
-    litellm_params:
-      <<: *gpt-4-1_2025-04-14_gcr
-
-  # gcr/shared/openai	gpt-4.1-nano_2025-04-14	gpt-4.1-nano	2025-04-14	750	60	Modern Auth
-  - model_name: gpt-4.1-nano_2025-04-14
-    litellm_params: &gpt-4-1-nano_2025-04-14_gcr
-      model: azure/gpt-4.1-nano_2025-04-14
-      api_base: https://trapi.research.microsoft.com/gcr/shared
-      api_version: "2024-12-01-preview"
-  - model_name: gpt-4.1-nano
-    litellm_params:
-      <<: *gpt-4-1-nano_2025-04-14_gcr
-
+  # NOTE:  GCR disabled it. I hope it will work in the future.
+  # # gcr/shared/openai	gpt-4.1_2025-04-14	gpt-4.1	2025-04-14	8	60	Modern Auth
+  # - model_name: gpt-4.1_2025-04-14
+  #   litellm_params: &gpt-4-1_2025-04-14_gcr
+  #     model: azure/gpt-4.1_2025-04-14
+  #     api_base: https://trapi.research.microsoft.com/gcr/shared
+  #     api_version: "2024-12-01-preview"
+  # - model_name: gpt-4.1
+  #   litellm_params:
+  #     <<: *gpt-4-1_2025-04-14_gcr
+  #
+  # # gcr/shared/openai	gpt-4.1-nano_2025-04-14	gpt-4.1-nano	2025-04-14	750	60	Modern Auth
+  # - model_name: gpt-4.1-nano_2025-04-14
+  #   litellm_params: &gpt-4-1-nano_2025-04-14_gcr
+  #     model: azure/gpt-4.1-nano_2025-04-14
+  #     api_base: https://trapi.research.microsoft.com/gcr/shared
+  #     api_version: "2024-12-01-preview"
+  # - model_name: gpt-4.1-nano
+  #   litellm_params:
+  #     <<: *gpt-4-1-nano_2025-04-14_gcr
   # gcr/shared/openai	gpt-4.1-mini_2025-04-14	gpt-4.1-mini	2025-04-14	750	60	Modern Auth
   - model_name: gpt-4.1-mini_2025-04-14
     litellm_params: &gpt-4-1-mini_2025-04-14_gcr
@@ -385,6 +384,103 @@ model_list:
   - model_name: gpt-4-32k
     litellm_params:
       <<: *gpt-4-32k_0314_gcr
+  # --------------------------- GCR Non-OpenAI Models
+  # TRAPISuffix	DeploymentName	DeploymentFullURL
+  # gcr/shared/deepseek-ai	Deepseek-R1	https://trapi.research.microsoft.com/gcr/shared/deepseek-ai/deployments/DeepSeek-R1 
+  - model_name: Deepseek-R1
+    litellm_params:
+      model: azure/Deepseek-R1
+      api_base: https://trapi.research.microsoft.com/gcr/shared/deepseek-ai/deployments/DeepSeek-R1
+      api_version: '2024-05-01-preview'
+  # gcr/beta/deepseek-ai	deepseek-ai/Deepseek-R1	https://trapi.research.microsoft.com/gcr/beta/deepseek-ai/deployments/deepseek-ai/DeepSeek-R1 
+  - model_name: deepseek-ai/DeepSeek-R1
+    litellm_params: &deepseek-ai_DeepSeek-R1
+      model: azure/deepseek-ai/DeepSeek-R1
+      api_base: https://trapi.research.microsoft.com/gcr/beta/deepseek-ai/deployments/deepseek-ai/DeepSeek-R1
+      api_version: '2024-05-01-preview'
+  - model_name: Deepseek-R1
+    litellm_params:
+      <<: *deepseek-ai_DeepSeek-R1
+  # gcr/beta/deepseek-ai	deepseek-ai/DeepSeek-V3-0324	https://trapi.research.microsoft.com/gcr/beta/deepseek-ai/deployments/deepseek-ai/DeepSeek-V3-0324 - 
+  - model_name: deepseek-ai/DeepSeek-V3-0324
+    litellm_params: &deepseek-ai_DeepSeek-V3-0324
+      model: azure/deepseek-ai/DeepSeek-V3-0324
+      api_base: https://trapi.research.microsoft.com/gcr/beta/deepseek-ai/deployments/deepseek-ai/DeepSeek-V3-0324
+      api_version: '2024-05-01-preview'
+  - model_name: Deepseek-V3-0324
+    litellm_params:
+      <<: *deepseek-ai_DeepSeek-V3-0324
+  - model_name: DeepSeek-V3
+    litellm_params:
+      <<: *deepseek-ai_DeepSeek-V3-0324
+  # Meta Models
+  # TRAPISuffix	DeploymentName	DeploymentFullURL	Model Info
+  # gcr/shared/meta	meta-llama/Llama-3.3-70B-Instruct	https://trapi.research.microsoft.com/gcr/shared/meta/deployments/meta-llama/Llama-3.3-70B-Instruct 	Version 5 
+  - model_name: meta-llama/Llama-3.3-70B-Instruct
+    litellm_params:
+      model: azure/meta-llama/Llama-3.3-70B-Instruct
+      api_base: https://trapi.research.microsoft.com/gcr/shared/meta/deployments/meta-llama/Llama-3.3-70B-Instruct
+      api_version: '2024-05-01-preview'
+  # gcr/shared/meta	meta-llama/Meta-Llama-3.1-70B	https://trapi.research.microsoft.com/gcr/shared/meta/deployments/meta-llama/Meta-Llama-3.1-70B 	Version 5 
+  # this will raise error: `litellm.APIError: AzureException APIError - task_type text-generation not available with chat completions API..`
+  # - model_name: meta-llama/Meta-Llama-3.1-70B
+  #   litellm_params:
+  #     model: azure/meta-llama/Meta-Llama-3.1-70B
+  #     api_base: https://trapi.research.microsoft.com/gcr/shared/meta/deployments/meta-llama/Meta-Llama-3.1-70B
+  #     api_version: '2024-05-01-preview'
+  # gcr/shared/meta	Meta-Llama-3.1-8B-Instruct	https://trapi.research.microsoft.com/gcr/shared/meta/deployments/Meta-Llama-3.1-8B-Instruct 	Version 5
+  - model_name: Meta-Llama-3.1-8B-Instruct
+    litellm_params:
+      model: azure/Meta-Llama-3.1-8B-Instruct
+      api_base: https://trapi.research.microsoft.com/gcr/shared/meta/deployments/Meta-Llama-3.1-8B-Instruct
+      api_version: '2024-05-01-preview'
+  # Microsoft Models
+  # TRAPISuffix	DeploymentName	DeploymentFullURL	Model Info
+  # gcr/shared/microsoft	phi-4	https://trapi.research.microsoft.com/gcr/shared/microsoft/deployments/phi-4 	Version 6 
+  - model_name: phi-4
+    litellm_params:
+      model: azure/phi-4
+      api_base: https://trapi.research.microsoft.com/gcr/shared/microsoft/deployments/phi-4
+      api_version: '2024-05-01-preview'
+  # gcr/shared/microsoft	phi-4-reasoning	https://trapi.research.microsoft.com/gcr/shared/microsoft/deployments/phi-4-reasoning 	Version 1 
+  - model_name: phi-4-reasoning
+    litellm_params:
+      model: azure/phi-4-reasoning
+      api_base: https://trapi.research.microsoft.com/gcr/shared/microsoft/deployments/phi-4-reasoning
+      api_version: '2024-05-01-preview'
+  # gcr/shared/microsoft	phi-4-mini-reasoning	https://trapi.research.microsoft.com/gcr/shared/microsoft/deployments/phi-4-mini-reasoning 	Version 1 
+  - model_name: phi-4-mini-reasoning
+    litellm_params:
+      model: azure/phi-4-mini-reasoning
+      api_base: https://trapi.research.microsoft.com/gcr/shared/microsoft/deployments/phi-4-mini-reasoning
+      api_version: '2024-05-01-preview'
+  # gcr/shared/microsoft	phi-3-5-moe-instruct	https://trapi.research.microsoft.com/gcr/shared/microsoft/deployments/phi-3-5-moe-instruct 	Version 5 
+  - model_name: phi-3-5-moe-instruct
+    litellm_params:
+      model: azure/phi-3-5-moe-instruct
+      api_base: https://trapi.research.microsoft.com/gcr/shared/microsoft/deployments/phi-3-5-moe-instruct
+      api_version: '2024-05-01-preview'
+  # gcr/shared/microsoft	phi-3-5-mini-instruct	https://trapi.research.microsoft.com/gcr/shared/microsoft/deployments/phi-3-5-mini-instruct 	Version 6 
+  - model_name: phi-3-5-mini-instruct
+    litellm_params:
+      model: azure/phi-3-5-mini-instruct
+      api_base: https://trapi.research.microsoft.com/gcr/shared/microsoft/deployments/phi-3-5-mini-instruct
+      api_version: '2024-05-01-preview'
+  # gcr/shared/microsoft	phi-3-medium-128k-instruct	https://trapi.research.microsoft.com/gcr/shared/microsoft/deployments/phi-3-medium-128k-instruct 	Version 7 
+  - model_name: phi-3-medium-128k-instruct
+    litellm_params:
+      model: azure/phi-3-medium-128k-instruct
+      api_base: https://trapi.research.microsoft.com/gcr/shared/microsoft/deployments/phi-3-medium-128k-instruct
+      api_version: '2024-05-01-preview'
+  # Mistral Models
+  # TRAPISuffix	DeploymentName	DeploymentFullURL	Model Info
+  # gcr/shared/mistral	mistralai/Mixtral-8x7B-Instruct-v0.1	https://trapi.research.microsoft.com/gcr/shared/mistral/deployments/mistralai/Mixtral-8x7B-Instruct-v0.1 	Version 10 rsio
+  - model_name: mistralai/Mixtral-8x7B-Instruct-v0.1
+    litellm_params:
+      model: azure/mistralai/Mixtral-8x7B-Instruct-v0.1
+      api_base: https://trapi.research.microsoft.com/gcr/shared/mistral/deployments/mistralai/Mixtral-8x7B-Instruct-v0.1
+      api_version: '2024-05-01-preview'
+  # ---------------------------
 
 litellm_settings:
   # callbacks: xytoy.llm.lite.proxy_handler_instance  it will not looking for package
