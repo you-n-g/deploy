@@ -481,6 +481,11 @@ model_list:
       model: azure/mistralai/Mixtral-8x7B-Instruct-v0.1
       api_base: https://trapi.research.microsoft.com/gcr/shared/mistral/deployments/mistralai/Mixtral-8x7B-Instruct-v0.1
       api_version: '2024-05-01-preview'
+  # --------------------------- Open-source Models
+  - model_name: Qwen3-32B
+    litellm_params:
+      model: hosted_vllm/Qwen/Qwen3-32B  # add hosted_vllm/ prefix to route as OpenAI provider
+      api_base: http://localhost:38701/v1/      # add api base for OpenAI compatible provider
   # ---------------------------
 
 litellm_settings:

@@ -189,7 +189,7 @@
   Description = "python minimal install after create conda env"
   Output = ""
   Tag = []
-  command = "pip install ipdb ipython neovim fire yapf pylint black pipenv"
+  command = "pip install ipdb ipython neovim fire yapf pylint black" #  pipenv
 
 [[Snippets]]
   Description = "conda remove"
