@@ -5,23 +5,19 @@ EOF
 
 DIR="$( cd "$(dirname "$(readlink -f "$0")")" || exit ; pwd -P )"
 
-api_base=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 1p)
-azure_engine=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 2p)
-api_key=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 3p)
-
 # source the stdout from $(gpg -q --decrypt $HOME/deploy/keys/general.gpg)
-if [ -f $HOME/deploy/keys/general.gpg ]; then
-  eval "$(gpg -q --decrypt $HOME/deploy/keys/general.gpg)"
-else
-  echo "general.gpg not found; unable to source environment variables"
-  exit 1
-fi
+# if [ -f $HOME/deploy/keys/general.gpg ]; then
+#   eval "$(gpg -q --decrypt $HOME/deploy/keys/general.gpg)"
+# else
+#   echo "general.gpg not found; unable to source environment variables"
+#   exit 1
+# fi
 
 
 # # Outlines: Credentials
 openai_key_api_01() {
   OPENAI_API_KEY=sk-1234
-  OPENAI_BASE_URL=http://ep14.213428.xyz:4000
+  OPENAI_BASE_URL=${OPENAI_BASE_URL:-http://ep14.213428.xyz:4000}
   # OPENAI_BASE_URL=http://ep14.213428.xyz:38808
 
   # if [ ! -e $DIR/litellm_proxy.env ]; then
@@ -37,11 +33,27 @@ openai_key_api_01() {
 }
 
 azure_key_api_01() {
+  api_base=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 1p)
+  azure_engine=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 2p)
+  api_key=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 3p)
+
   API_VERSION=2023-03-15-preview
   API_KEY=$api_key
   ENDPOINT=$api_base
   CHAT_MODEL=gpt-4o # you should specify it mannually
   export EXP_MODEL=gpt-4o
+}
+
+azure_key_api_02() {
+  api_base=$(gpg -q --decrypt $HOME/deploy/keys/gpt-4.1.gpg | sed -n 1p)
+  azure_engine=$(gpg -q --decrypt $HOME/deploy/keys/gpt-4.1.gpg | sed -n 2p)
+  api_key=$(gpg -q --decrypt $HOME/deploy/keys/gpt-4.1.gpg | sed -n 3p)
+
+  API_VERSION=2024-12-01-preview
+  API_KEY=$api_key
+  ENDPOINT=$api_base
+  CHAT_MODEL=o3-mini # you should specify it mannually
+  # export EXP_MODEL=o3-mini
 }
 
 azure_ad_api_01() {
@@ -84,7 +96,8 @@ azure_ad_api_select() {
 }
 
 azure_key_api_select() {
-  azure_key_api_01
+  # azure_key_api_01
+  azure_key_api_02
 }
 
 # # Outlines: Usage format
@@ -130,6 +143,16 @@ azure_lite() {
   export CHAT_MODEL=azure/$CHAT_MODEL # you should specify it mannually
 }
 
+azure_o3_mini() {
+  azure_key_api_select
+  # aider uses litellm
+  # https://github.com/BerriAI/litellm
+  export AZURE_API_KEY=$API_KEY
+  export AZURE_API_VERSION=$API_VERSION
+  export AZURE_API_BASE=$ENDPOINT
+  export CHAT_MODEL=azure/o3-mini # you should specify it mannually
+}
+
 azure_ad() {
   azure_ad_api_select
   export AZURE_OPENAI_ENDPOINT=$END_POINT
@@ -165,6 +188,13 @@ openai_o3_mini() {
   export CHAT_MODEL=o3-mini
 }
 
+openai_o4_mini() {
+  openai_key_api_01
+  export OPENAI_API_KEY=$OPENAI_API_KEY
+  export OPENAI_BASE_URL=$OPENAI_BASE_URL
+  export CHAT_MODEL=o4-mini
+}
+
 openai_o1() {
   openai_key_api_01
   export OPENAI_API_KEY=$OPENAI_API_KEY
@@ -184,6 +214,13 @@ openai_lite_o3_mini() {
   export OPENAI_API_KEY=$OPENAI_API_KEY
   export OPENAI_API_BASE=$OPENAI_BASE_URL
   export CHAT_MODEL=o3-mini
+}
+
+openai_lite_o4_mini() {
+  openai_key_api_01
+  export OPENAI_API_KEY=$OPENAI_API_KEY
+  export OPENAI_API_BASE=$OPENAI_BASE_URL
+  export CHAT_MODEL=o4-mini
 }
 
 openai_lite_o3() {

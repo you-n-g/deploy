@@ -34,3 +34,16 @@ opt.relativenumber = false
 -- Set swap file directory to be near the original file location
 -- It will be easier to clean swap file
 opt.directory = '.'
+
+
+-- Filetypes
+vim.filetype.add {
+    pattern = {
+        -- ssh config
+        ['.*%/.*%.?ssh%.config']         = 'sshconfig',
+        ['.*%/.*%.?ssh%/config']         = 'sshconfig',
+        ['.*%/.*%.?ssh%/.*%.config']     = 'sshconfig',
+        ['.*%/.*%.?ssh%/.*%/config']     = 'sshconfig',
+        ['.*%/.*%.?ssh%/.*%/.*%.config'] = 'sshconfig',
+    },
+}

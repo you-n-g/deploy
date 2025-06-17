@@ -2,23 +2,6 @@
 # Example:
 # gcr/shared/openai	gpt-4o_2024-05-13	gpt-4o	2024-05-13	36150	10	Modern Auth
 model_list:
-  - model_name: gpt-4o_2024-05-13
-    litellm_params: &gpt-4o_2024-05-13
-      model: azure/gpt-4o_2024-05-13
-      api_base: https://trapi.research.microsoft.com/gcr/shared
-      api_version: "2024-10-21"
-  - model_name: gpt-4o
-    litellm_params:
-      <<: *gpt-4o_2024-05-13
-# gcr/shared/openai	gpt-4_0125-Preview	gpt-4	0125-Preview	10000	10	Modern Auth
-  - model_name: gpt-4_0125-Preview
-    litellm_params: &gpt-4_0125-Preview
-      model: azure/gpt-4_turbo-2024-04-09
-      api_base: https://trapi.research.microsoft.com/gcr/shared
-      api_version: "2024-10-21"
-  - model_name: gpt-4
-    litellm_params:
-      <<: *gpt-4_0125-Preview
 # gcr/shared/openai	gpt-4_turbo-2024-04-09	gpt-4	turbo-2024-04-09	151	10	Modern Auth
   - model_name: gpt-4_turbo-2024-04-09
     litellm_params: &gpt-4_turbo-2024-04-09
@@ -91,33 +74,6 @@ model_list:
   - model_name: o1-mini
     litellm_params:
       <<: *o1-mini_2024-09-12
-# gcr/shared/openai	gpt-4_0314	gpt-4	0314	2	10	Modern Auth
-  - model_name: gpt-4_0314
-    litellm_params: &gpt-4_0314
-      model: azure/gpt-4_0314
-      api_base: https://trapi.research.microsoft.com/gcr/shared
-      api_version: "2024-10-21"
-  - model_name: gpt-4
-    litellm_params:
-      <<: *gpt-4_0314
-# msra/shared/openai	gpt-4o_2024-05-13	gpt-4o	2024-05-13	36000	10	Modern Auth
-  - model_name: gpt-4o_2024-05-13
-    litellm_params: &gpt-4o_2024-05-13_msra
-      model: azure/gpt-4o_2024-05-13
-      api_base: https://trapi.research.microsoft.com/msra/shared
-      api_version: "2024-10-21"
-  - model_name: gpt-4o
-    litellm_params:
-      <<: *gpt-4o_2024-05-13_msra
-# msra/shared/openai	gpt-4_0125-Preview	gpt-4	0125-Preview	10000	10	Modern Auth
-  - model_name: gpt-4_0125-Preview
-    litellm_params: &gpt-4_0125-Preview_msra
-      model: azure/gpt-4_0125-Preview
-      api_base: https://trapi.research.microsoft.com/msra/shared
-      api_version: "2024-10-21"
-  - model_name: gpt-4
-    litellm_params:
-      <<: *gpt-4_0125-Preview_msra
 # msra/shared/openai	gpt-4_turbo-2024-04-09	gpt-4	turbo-2024-04-09	21	10	Modern Auth
   - model_name: gpt-4_turbo-2024-04-09
     litellm_params: &gpt-4_turbo-2024-04-09_msra
@@ -172,24 +128,6 @@ model_list:
   - model_name: o1-mini
     litellm_params:
       <<: *o1-mini_2024-09-12_msra
-# msra/shared/openai	gpt-4o-realtime-preview_2024-10-01	gpt-4o-realtime-preview	2024-10-01	100	60	Modern Auth
-  - model_name: gpt-4o-realtime-preview_2024-10-01
-    litellm_params: &gpt-4o-realtime-preview_2024-10-01_msra
-      model: azure/gpt-4o-realtime-preview_2024-10-01
-      api_base: https://trapi.research.microsoft.com/msra/shared
-      api_version: "2024-10-21"
-  - model_name: gpt-4o-realtime-preview
-    litellm_params:
-      <<: *gpt-4o-realtime-preview_2024-10-01_msra
-# msra/shared/openai	gpt-35-turbo_0301	gpt-35-turbo	0301	120	10	Modern Auth
-  - model_name: gpt-35-turbo_0301
-    litellm_params: &gpt-35-turbo_0301_msra
-      model: azure/gpt-35-turbo_0301
-      api_base: https://trapi.research.microsoft.com/msra/shared
-      api_version: "2024-10-21"
-  - model_name: gpt-35-turbo
-    litellm_params:
-      <<: *gpt-35-turbo_0301_msra
 # To be formatted.
 # gcr/shared/openai	o3-mini_2025-01-31	o3-mini	2025-01-31	200	60	Modern Auth
   - model_name: o3-mini_2025-01-31
@@ -241,14 +179,14 @@ model_list:
 
   # msra/shared/openai	gpt-4.1_2025-04-14	gpt-4.1	2025-04-14	750	60	Modern Auth
   # NOTE:  GCR disabled it. I hope it will work in the future.
-  # - model_name: gpt-4.1_2025-04-14
-  #   litellm_params: &gpt-4-1_2025-04-14_msra
-  #     model: azure/gpt-4.1_2025-04-14
-  #     api_base: https://trapi.research.microsoft.com/msra/shared
-  #     api_version: "2024-12-01-preview"
-  # - model_name: gpt-4.1
-  #   litellm_params:
-  #     <<: *gpt-4-1_2025-04-14_msra
+  - model_name: gpt-4.1_2025-04-14
+    litellm_params: &gpt-4-1_2025-04-14_msra
+      model: azure/gpt-4.1_2025-04-14
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2024-12-01-preview"
+  - model_name: gpt-4.1
+    litellm_params:
+      <<: *gpt-4-1_2025-04-14_msra
   # msra/shared/openai	gpt-4.1-nano_2025-04-14	gpt-4.1-nano	2025-04-14	750	60	Modern Auth
   - model_name: gpt-4.1-nano_2025-04-14
     litellm_params: &gpt-4-1-nano_2025-04-14_msra
@@ -300,16 +238,15 @@ model_list:
     litellm_params:
       <<: *gpt-4-5-preview_2025-02-27_gcr
   # NOTE:  GCR disabled it. I hope it will work in the future.
-  # # gcr/shared/openai	gpt-4.1_2025-04-14	gpt-4.1	2025-04-14	8	60	Modern Auth
-  # - model_name: gpt-4.1_2025-04-14
-  #   litellm_params: &gpt-4-1_2025-04-14_gcr
-  #     model: azure/gpt-4.1_2025-04-14
-  #     api_base: https://trapi.research.microsoft.com/gcr/shared
-  #     api_version: "2024-12-01-preview"
-  # - model_name: gpt-4.1
-  #   litellm_params:
-  #     <<: *gpt-4-1_2025-04-14_gcr
-  #
+  # gcr/shared/openai	gpt-4.1_2025-04-14	gpt-4.1	2025-04-14	8	60	Modern Auth
+  - model_name: gpt-4.1_2025-04-14
+    litellm_params: &gpt-4-1_2025-04-14_gcr
+      model: azure/gpt-4.1_2025-04-14
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2024-12-01-preview"
+  - model_name: gpt-4.1
+    litellm_params:
+      <<: *gpt-4-1_2025-04-14_gcr
   # gcr/shared/openai	gpt-4.1-nano_2025-04-14	gpt-4.1-nano	2025-04-14	750	60	Modern Auth
   - model_name: gpt-4.1-nano_2025-04-14
     litellm_params: &gpt-4-1-nano_2025-04-14_gcr
@@ -349,15 +286,6 @@ model_list:
     litellm_params:
       <<: *o3_2025-04-16_gcr
   # Add on 2025-5-21 based on email
-  # gcr/preview/openai	gpt-4o_2024-05-13	gpt-4o	2024-05-13	No Fixed Limits	No Fixed Limits	Modern Auth
-  - model_name: gpt-4o_2024-05-13
-    litellm_params: &gpt-4o_2024-05-13_gcr
-      model: azure/gpt-4o_2024-05-13
-      api_base: https://trapi.research.microsoft.com/gcr/preview
-      api_version: "2024-10-21"
-  - model_name: gpt-4o
-    litellm_params:
-      <<: *gpt-4o_2024-05-13_gcr
   # gcr/shared/openai	gpt-4o_2024-11-20	gpt-4o	2024-11-20	300	10	Modern Auth
   - model_name: gpt-4o_2024-11-20
     litellm_params: &gpt-4o_2024-11-20_gcr
@@ -385,6 +313,61 @@ model_list:
   - model_name: gpt-4-32k
     litellm_params:
       <<: *gpt-4-32k_0314_gcr
+  # NEW in  2025-6-17 -------------------------------------------
+  # gcr/shared/openai	whisper_001	whisper	001	3	60	Modern Auth
+  - model_name: whisper_001  
+    litellm_params: &whisper_001_gcr  
+      model: azure/whisper_001  
+      api_base: https://trapi.research.microsoft.com/gcr/shared  
+      api_version: "2024-12-01-preview"  
+  - model_name: whisper  
+    litellm_params:  
+      <<: *whisper_001_gcr  
+  # gcr/shared/openai	model-router_2025-05-19	model-router	2025-05-19	100000	60	Modern Auth
+  - model_name: model-router_2025-05-19  
+    litellm_params: &model-router_2025-05-19_gcr  
+      model: azure/model-router_2025-05-19  
+      api_base: https://trapi.research.microsoft.com/gcr/shared  
+      api_version: "2024-12-01-preview"  
+  - model_name: model-router  
+    litellm_params:  
+      <<: *model-router_2025-05-19_gcr  
+  # msra/shared/openai	model-router_2025-05-19	model-router	2025-05-19	100000	60	Modern Auth
+  - model_name: model-router_2025-05-19  
+    litellm_params: &model-router_2025-05-19_msra  
+      model: azure/model-router_2025-05-19  
+      api_base: https://trapi.research.microsoft.com/msra/shared  
+      api_version: "2024-12-01-preview"
+  - model_name: model-router  
+    litellm_params:  
+      <<: *model-router_2025-05-19_msra
+  # gcr/shared/openai	text-embedding-3-large_1	text-embedding-3-large	1	1000	10	Modern Auth
+  - model_name: text-embedding-3-large_1  
+    litellm_params: &text-embedding-3-large_1_gcr  
+      model: azure/text-embedding-3-large_1  
+      api_base: https://trapi.research.microsoft.com/gcr/shared  
+      api_version: "2024-12-01-preview"  
+  - model_name: text-embedding-3-large  
+    litellm_params:  
+      <<: *text-embedding-3-large_1_gcr  
+  # gcr/shared/openai	text-embedding-3-small_1	text-embedding-3-small	1	1000	10	Modern Auth
+  - model_name: text-embedding-3-small_1  
+    litellm_params: &text-embedding-3-small_1_gcr  
+      model: azure/text-embedding-3-small_1  
+      api_base: https://trapi.research.microsoft.com/gcr/shared  
+      api_version: "2024-12-01-preview"  
+  - model_name: text-embedding-3-small  
+    litellm_params:  
+      <<: *text-embedding-3-small_1_gcr  
+  # gcr/preview/openai	gpt-4o_2024-05-13	gpt-4o	2024-05-13	No Fixed Limits	No Fixed Limits	Modern Auth
+  - model_name: gpt-4o_2024-05-13  
+    litellm_params: &gpt-4o_2024-05-13  
+      model: azure/gpt-4o_2024-05-13  
+      api_base: https://trapi.research.microsoft.com/gcr/preview  
+      api_version: "2024-10-21"   # or whatever preview version  
+  - model_name: gpt-4o  
+    litellm_params:  
+      <<: *gpt-4o_2024-05-13  
   # --------------------------- GCR Non-OpenAI Models
   # TRAPISuffix	DeploymentName	DeploymentFullURL
   # gcr/shared/deepseek-ai	Deepseek-R1	https://trapi.research.microsoft.com/gcr/shared/deepseek-ai/deployments/DeepSeek-R1 

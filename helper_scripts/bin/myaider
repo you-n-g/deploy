@@ -1,18 +1,20 @@
 #!/bin/sh
 
 # Check if CHAT_MODEL is set in the environment
-if [ -z "$CHAT_MODEL" ]; then
-  echo "Error: CHAT_MODEL environment variable is not set." >&2
-  exit 1
-fi
+# if [ -z "$CHAT_MODEL" ]; then
+#   echo "Error: CHAT_MODEL environment variable is not set." >&2
+#   exit 1
+# fi
 
 # Check if WEAK_MODEL is set in the environment, default to CHAT_MODEL if not
-if [ -z "$WEAK_MODEL" ]; then
-  WEAK_MODEL="$CHAT_MODEL"
-fi
+# if [ -z "$WEAK_MODEL" ]; then
+#   WEAK_MODEL="$CHAT_MODEL"
+# fi
 
 # aider --model "$CHAT_MODEL" --weak-model "$WEAK_MODEL" --editor-model "$CHAT_MODEL" --architect --no-show-model-warnings --editor "nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\"w\"); require\"snacks\".bufdelete()'" --watch-files --subtree-only --no-auto-commit "$@"
 # I found architect mode will make it more accurate.
 
 # the sota model;
-aider --model "o3-mini" --reasoning-effort high --weak-model "gpt-4.1" --editor-model "gpt-4.1" --architect --no-show-model-warnings --editor "nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\"w\"); require\"snacks\".bufdelete()'" --watch-files --subtree-only --no-auto-commit "$@"
+# --reasoning-effort high
+aider --model "o4-mini" --weak-model "gpt-4.1" --editor-model "gpt-4.1" --architect --no-show-model-warnings --editor "nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\"w\"); require\"snacks\".bufdelete()'" --watch-files --subtree-only --no-auto-commit "$@"
+# - o3 does not support streaming mode

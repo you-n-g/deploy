@@ -33,7 +33,7 @@
   Description = "process tree"
   Output = ""
   Tag = []
-  command = "pstree -pas"
+  command = "pstree -pas "
 
 [[Snippets]]
   Description = "jupyter --ip 0.0.0.0"
@@ -189,7 +189,7 @@
   Description = "python minimal install after create conda env"
   Output = ""
   Tag = []
-  command = "pip install ipdb ipython neovim fire yapf pylint black" #  pipenv
+  command = "pip install ipdb ipython neovim fire yapf pylint black"
 
 [[Snippets]]
   Description = "conda remove"
@@ -343,6 +343,7 @@
 
 [[Snippets]]
   Description = "Disable precommit like --no-verify (https://github.com/typicode/husky/issues/346) ; but I found both HUSKY_SKIP_HOOKS=1 and export HUSKY=0 don't work"
+
   Output = ""
   Tag = []
   command = "--no-verify"
@@ -471,13 +472,13 @@
   Description = "aider command"
   Output = ""
   Tag = []
-  command = "key_shell.sh <cred=|_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> -m \"<command=/commit>\"'"
+  command = "key_shell.sh <cred=|_openai_lite_o4_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> -m \"<command=/commit>\"'"
 
 [[Snippets]]
   Description = "health check for openai & llm"
   Output = ""
   Tag = []
-  command = "key_shell.sh <cred=|_azure_ad_||_azure_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_||_deepseek_closeai_lite_||_openai_o3_mini_||_openai_|> hc_llm.py <api=|_azure_||_litellm_||_native_|>"
+  command = "key_shell.sh <cred=|_azure_ad_||_azure_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_||_deepseek_closeai_lite_||_openai_o3_mini_||_openai_o4_mini_||_openai_|> hc_llm.py <api=|_azure_||_litellm_||_embedding_||_native_|>"
 
 [[Snippets]]
   Description = "launch litellm proxy"
@@ -578,5 +579,11 @@
 [[Snippets]]
   Description = "exclude folders to make pyright faster"
   Output = ""
+  Tag = ["neovim"]
+  command = "echo '{ \"exclude\": [ \"amlt_project\", \"sessions\", \"data_source\", \"log\", \"pickle_cache\", \"git_ignore_folder\" ] }' > pyrightconfig.json"
+
+[[Snippets]]
+  Description = "code review with LLM/AI"
+  Output = ""
   Tag = []
-  command = "echo '{ \"exclude\": [ \"amlt_project\" ] }' > pyrightconfig.json"
+  command = "<diff_head=|__||_DIFF_HEAD=HEAD_|> key_shell.sh <cred=|_openai_lite_o4_mini_||_azure_lite_o3_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> code_review"

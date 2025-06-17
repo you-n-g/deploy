@@ -89,7 +89,7 @@ def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo"), json_mode: boo
     kwargs = {}
     if json_mode:
         kwargs['response_format'] = {"type": "json_object"}
-    if stream:
+    if not stream:
         response = client.chat.completions.create(model=model,
                                                 messages=[{
                                                     "role": system_role,
