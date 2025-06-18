@@ -1,9 +1,16 @@
 # https://github.com/github/gitignore/blob/master/Python.gitignore
 __pycache__/
-*.pyc
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
 *.so
 *.ipynb
 .ipynb_checkpoints
+
+# Virtual environments
+.venv
 
 # data related
 *.pkl
@@ -21,12 +28,10 @@ __pycache__/
 .vscode
 
 
-*.egg-info/
-
-
 # special software
 mlruns/
 .amltconfig
+.aider.*
 
 tags
 /data

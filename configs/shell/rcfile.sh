@@ -288,19 +288,11 @@ alias .r=". ranger"
 #     eval "export $env_expr"
 # fi
 
+
+# Conda 
 if [ -n "$conda_env" -a "$conda_env" != "base" ]; then
     conda activate $conda_env
 fi
-
-
-if [ "$pip_env" = "1" ]; then
-    pipenv shell
-fi
-
-if [ "$pdm_env" = "1" ]; then
-    `pdm venv activate`
-fi
-
 
 function yxca() {
     conda activate $1
@@ -314,6 +306,11 @@ function yxcd() {
     tmux setenv -r conda_env
 }
 
+# pip env
+if [ "$pip_env" = "1" ]; then
+    pipenv shell
+fi
+
 function pipenva() {
     tmux setenv pip_env 1  # this must come before
     pipenv shell
@@ -324,6 +321,11 @@ function pipenvd() {
     exit
 }
 
+# pdm env
+if [ "$pdm_env" = "1" ]; then
+    `pdm venv activate`
+fi
+
 function pdma() {
     tmux setenv pdm_env 1  # this must come before
     `pdm venv activate`
@@ -332,6 +334,29 @@ function pdma() {
 function pdmd() {
     tmux setenv -r pdm_env
     echo "Please restart the shell to deactivate the pdm environment"
+}
+
+
+# venv, for supporting UV.
+if [ -n "$venv_path" ]; then
+  source $venv_path
+fi
+
+function venva() {
+  venv_path="${1:-./.venv/bin/activate}"
+  if [ -e $venv_path ]
+  then
+    venv_path=$(realpath $venv_path)
+    tmux setenv venv_path $venv_path
+    source $venv_path
+  else
+    echo "venv not found"
+  fi
+}
+
+function venvd() {
+    tmux setenv -r venv_path
+    deactivate
 }
 
 

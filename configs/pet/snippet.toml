@@ -189,7 +189,7 @@
   Description = "python minimal install after create conda env"
   Output = ""
   Tag = []
-  command = "pip install ipdb ipython neovim fire yapf pylint black"
+  command = "<cmd=|_pip install_||_uv pip install pip_|> ipdb ipython neovim fire yapf pylint black"
 
 [[Snippets]]
   Description = "conda remove"
@@ -466,7 +466,7 @@
   Description = "aider start"
   Output = ""
   Tag = []
-  command = "key_shell.sh <cred=|_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> --no-auto-commit --no-show-model-warnings'"
+  command = "key_shell.sh <cred=|_openai_lite_o4_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> --no-auto-commit --no-show-model-warnings'"
 
 [[Snippets]]
   Description = "aider command"
