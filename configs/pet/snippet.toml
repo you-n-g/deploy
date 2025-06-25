@@ -343,7 +343,6 @@
 
 [[Snippets]]
   Description = "Disable precommit like --no-verify (https://github.com/typicode/husky/issues/346) ; but I found both HUSKY_SKIP_HOOKS=1 and export HUSKY=0 don't work"
-
   Output = ""
   Tag = []
   command = "--no-verify"
@@ -469,6 +468,12 @@
   command = "key_shell.sh <cred=|_openai_lite_o4_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> --no-auto-commit --no-show-model-warnings'"
 
 [[Snippets]]
+  Description = "key shell prefix; adding LLM key to env"
+  Output = ""
+  Tag = []
+  command = "key_shell.sh <cred=|_openai_lite_o4_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> <CMD=|_$SHELL_||_code_review_|>"
+
+[[Snippets]]
   Description = "aider command"
   Output = ""
   Tag = []
@@ -478,7 +483,7 @@
   Description = "health check for openai & llm"
   Output = ""
   Tag = []
-  command = "key_shell.sh <cred=|_azure_ad_||_azure_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_||_deepseek_closeai_lite_||_openai_o3_mini_||_openai_o4_mini_||_openai_|> hc_llm.py <api=|_azure_||_litellm_||_embedding_||_native_|>"
+  command = "<base_url=|__||_OPENAI_BASE_URL=http://ep14.213428.xyz:4000_|> key_shell.sh <cred=|_azure_ad_||_azure_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_||_deepseek_closeai_lite_||_openai_o3_mini_||_openai_o4_mini_||_openai_|> hc_llm.py <api=|_azure_||_litellm_||_embedding_||_native_|>"
 
 [[Snippets]]
   Description = "launch litellm proxy"
@@ -565,10 +570,10 @@
   command = "curl cip.cc"
 
 [[Snippets]]
-  Description = "creaet tmux panes"
+  Description = "create tmux panes"
   Output = ""
   Tag = []
-  command = "bash ~/deploy/helper_scripts/SA/tmux_cluster.sh create_panes"
+  command = "bash ~/deploy/helper_scripts/SA/tmux_cluster.sh create_panes ep{11,12,14}.213428.xyz"
 
 [[Snippets]]
   Description = "remove nvim persistent checkpoints"
@@ -586,4 +591,16 @@
   Description = "code review with LLM/AI"
   Output = ""
   Tag = []
-  command = "<diff_head=|__||_DIFF_HEAD=HEAD_|> key_shell.sh <cred=|_openai_lite_o4_mini_||_azure_lite_o3_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> code_review"
+  command = "<diff_head=|__||_DIFF_HEAD='origin/HEAD...'_||_DIFF_HEAD=HEAD_|> key_shell.sh <cred=|_openai_lite_o4_mini_||_azure_lite_o3_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> code_review"
+
+[[Snippets]]
+  Description = "run a batch of commands with tmux; one tmux window for each line."
+  Output = ""
+  Tag = []
+  command = "bash ~/deploy/helper_scripts/SA/tmux_cluster.sh create_wins_from_cmds <session name=tmux_cmd> <cmd file=cmd_file>"
+
+[[Snippets]]
+  Description = "interact terminal with all windows in a session in tmux"
+  Output = ""
+  Tag = []
+  command = "bash ~/deploy/helper_scripts/SA/tmux_cluster.sh interactive_term_win <session name=tmux_cmd>"

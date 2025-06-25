@@ -52,29 +52,6 @@ interactive_term() {
   done
 }
 
-# Function: create_wins() and interactive_term_win() for window-based operations
-create_wins() {
-  # Usage: bash ~/deploy/helper_scripts/SA/tmux_cluster.sh create_wins session_name [hosts...]
-  SESSION_NAME=$1
-  shift
-  IPS=("$@")
-
-  # Check if the tmux session exists; if not, create it and detach
-  if ! tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
-    tmux new-session -d -s "$SESSION_NAME" -n "${IPS[0]}"
-  fi
-
-  tmux send-keys -t "${SESSION_NAME}:0" "ssh ${IPS[0]}" C-m
-
-  # Create a new window for each additional IP and ssh
-  start_idx=1
-  for ((i=start_idx;i<${#IPS[@]};i++)); do
-    ip="${IPS[$i]}"
-    tmux new-window -t "$SESSION_NAME" -n "$ip"
-    tmux send-keys -t "${SESSION_NAME}:$i" "ssh $ip" C-m
-  done
-}
-
 interactive_term_win() {
   SESSION_NAME=$1  # the tmux session
   shift
@@ -103,6 +80,66 @@ interactive_term_win() {
     done
   done
 }
+
+# Function: create_wins() and interactive_term_win() for window-based operations
+create_wins() {
+  # Usage: bash ~/deploy/helper_scripts/SA/tmux_cluster.sh create_wins session_name [hosts...]
+  SESSION_NAME=$1
+  shift
+  IPS=("$@")
+
+  # Check if the tmux session exists; if not, create it and detach
+  if ! tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+    tmux new-session -d -s "$SESSION_NAME" -n "${IPS[0]}"
+  fi
+
+  tmux send-keys -t "${SESSION_NAME}:0" "ssh ${IPS[0]}" C-m
+
+  # Create a new window for each additional IP and ssh
+  start_idx=1
+  for ((i=start_idx;i<${#IPS[@]};i++)); do
+    ip="${IPS[$i]}"
+    tmux new-window -t "$SESSION_NAME" -n "$ip"
+    tmux send-keys -t "${SESSION_NAME}:$i" "ssh $ip" C-m
+  done
+}
+
+create_wins_from_cmds() {
+  # Usage: bash ~/deploy/helper_scripts/SA/tmux_cluster.sh create_wins_from_cmds session_name CMD_FILE
+  # CMD_FILE is a file containing commands to be executed in each window (one command per line).
+
+  SESSION_NAME="$1"
+  CMD_FILE="$2"
+
+  # Check if CMD_FILE exists
+  if [ ! -f "$CMD_FILE" ]; then
+    echo "Error: Command file '$CMD_FILE' does not exist."
+    return 1
+  fi
+
+  # Read all commands from CMD_FILE into an array
+  mapfile -t CMDS < "$CMD_FILE"
+
+  # Check if the tmux session exists; if not, create it and detach
+  if ! tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+    tmux new-session -d -s "$SESSION_NAME" -n "win0"
+  fi
+
+  # For each command, create a window and run the command
+  for idx in "${!CMDS[@]}"; do
+    WIN_NAME="win$idx"
+    CMD="${CMDS[$idx]}"
+    if [ "$idx" -eq 0 ]; then
+      # Use the first existing window for the first command
+      tmux rename-window -t "${SESSION_NAME}:0" "$WIN_NAME"
+      tmux send-keys -t "${SESSION_NAME}:0" "$CMD" C-m
+    else
+      tmux new-window -t "$SESSION_NAME:" -n "$WIN_NAME"
+      tmux send-keys -t "${SESSION_NAME}:$idx" "$CMD" C-m
+    fi
+  done
+}
+
 
 
 $1 "${@:2}"
