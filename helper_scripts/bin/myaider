@@ -19,5 +19,5 @@
 export LITELLM_PROXY_API_KEY=sk-1234
 export LITELLM_PROXY_API_BASE=http://ep14.213428.xyz:4000
 # litellm_proxy will make the streaming work.
-aider --model "litellm_proxy/o3" --weak-model "litellm_proxy/gpt-4.1" --editor-model "litellm_proxy/gpt-4.1" --architect --no-show-model-warnings --editor "nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\"w\"); require\"snacks\".bufdelete()'" --watch-files --subtree-only --no-auto-commit "$@"
+aider --model "litellm_proxy/o3_coreai" --weak-model "litellm_proxy/gpt-4.1" --editor-model "litellm_proxy/gpt-4.1" --architect --no-show-model-warnings --editor "nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\"w\"); require\"snacks\".bufdelete()'" --watch-files --subtree-only --no-auto-commit "$@"
 # - o3 does not support streaming mode

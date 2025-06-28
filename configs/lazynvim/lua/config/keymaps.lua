@@ -229,3 +229,7 @@ vim.keymap.set({ "i" }, "<C-x><C-f>", function()
     winopts = { preview = { hidden = false } },
   })
 end, { silent = true, desc = "Fuzzy complete file" })
+
+-- But I'm afraid to conflict with other keymaps, so try to remember the <C-d> keymap
+-- Map Shift-Tab in insert mode to <C-d> (delete char right) using Lua API
+-- vim.keymap.set("i", "<S-Tab>", "<C-d>", { noremap = true, desc = "Shift-Tab deletes right char in insert mode" })

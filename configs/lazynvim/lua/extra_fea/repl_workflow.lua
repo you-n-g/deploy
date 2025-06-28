@@ -37,6 +37,27 @@ augroup END]],
   false
 )
 
+-- Clean the per-terminal config when a ToggleTerm buffer disappears
+local function _clear_term_mode(term_id)
+  if M.config.term_modes then
+    M.config.term_modes[term_id] = nil
+    if next(M.config.term_modes) == nil then
+      M.config.term_modes = nil
+    end
+  end
+end
+
+vim.api.nvim_create_autocmd({ "TermClose", "BufDelete" }, {
+  pattern = "term://*",
+  callback = function(args)
+    local name  = vim.api.nvim_buf_get_name(args.buf)
+    local id    = tonumber(name:match("#(%d+)$") or "")
+    if id then _clear_term_mode(id) end
+  end,
+})
+
+
+
 local function sendContent()
   -- if filetype is python
   if vim.bo.filetype == "python" then
@@ -165,8 +186,10 @@ M.config = {
   -- "/test" to prepend commands with a testing directive,
   -- "/run" to prepend commands with a runtime directive.
   -- The default value is "".
-  -- term_mode = "",  -- default mode, can switch between "", "/test" , "/run"
+  term_mode = nil,
   -- term_modes is a placeholder to switch mode in terminal level
+  -- - default mode, can switch between "", "/test" , "/run"
+  -- - other scripts based on this one can set freely.
   key_shell = "",  -- key_shell.sh azure|azure_ad|
 }
 

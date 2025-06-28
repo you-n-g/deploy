@@ -386,6 +386,11 @@ local modules = {
         suggestion_color = "#ffaaaa",
         cterm = 244,
       },
+      keymaps = {
+        accept_suggestion = "<C-a>",  -- the original mapping is inserting the last input.
+        -- clear_suggestion = "<C-]>",
+        -- accept_word = "<C-j>",
+      },
       ignore_filetypes = { bigfile=true },
     },
     event = "VeryLazy",

@@ -16,6 +16,8 @@ If your cursor is on the "one", you can use `alt + h` to switch it with "two".
 
 local M = {}
 
+local SEGMENT_PATTERN = "[%w_-]+"
+
 -----------------------------------------------------------
 -- internal helpers
 -----------------------------------------------------------
@@ -23,12 +25,17 @@ local function split_line_into_segments(line)
   -- segments are contiguous runs of [a-zA-Z0-9_]; everything else
   -- (spaces, punctuation, quotes, brackets …) is treated as separator
   local segs = {}
-  for start_idx, txt in line:gmatch("()([%w_]+)") do
+  local init = 1
+  while true do
+    local s_col, e_col = line:find(SEGMENT_PATTERN, init)
+    if not s_col then break end
+    local txt = line:sub(s_col, e_col)
     segs[#segs + 1] = {
       text  = txt,
-      s_col = start_idx,              -- 1-based
-      e_col = start_idx + #txt - 1,   -- inclusive
+      s_col = s_col,          -- 1-based
+      e_col = e_col,          -- inclusive
     }
+    init = e_col + 1
   end
   return segs
 end

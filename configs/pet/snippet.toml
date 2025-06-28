@@ -604,3 +604,15 @@
   Output = ""
   Tag = []
   command = "bash ~/deploy/helper_scripts/SA/tmux_cluster.sh interactive_term_win <session name=tmux_cmd>"
+
+[[Snippets]]
+  Description = "create a vim instance with current tmux context; -100 means 100 more lines than the visible ones."
+  Output = ""
+  Tag = []
+  command = "tmux capture-pane -pJ <more_context=|__||_-S -100_|> | vim -"
+
+[[Snippets]]
+  Description = "git push current branch to upstream"
+  Output = ""
+  Tag = []
+  command = "git push -u origin HEAD"

@@ -23,6 +23,11 @@ install_user_deps() {
     pipx install $p
   done
 
+  # it is amazing because I don't have to install anything
+  # to run a command `uvx --from aider-chat aider`
+  # So Python version confliction problem is solved
+  pip install uv
+
   # other favorite candidates
   # - pipx install asciinema
   # NOTE: We suggest not installing the following package, pipx, as it is bound to your current environment.
