@@ -7,6 +7,8 @@ This repository helps deploy a development environment tailored for Python progr
 - tmux
 
 
+![image](https://github.com/user-attachments/assets/f8995ea6-c961-4019-9a48-c9705fe0e155)
+
 
 # My Config/Dotfiles and Installation Scripts for Tools
 Users can find individual configuration and installation scripts below.
