@@ -268,6 +268,13 @@ function tfts() {
 }
 
 
+alias black="uvx black"
+alias uvx="uvx --from wanot wan"
+alias yapf="uvx yapf"
+alias pre-commit="uvx pre-commit"
+alias copier="uvx copier"
+
+
 # ## Outlines: ranger
 # ranger的安装依赖  deploy_apps/install_fav_py_pack.sh
 alias .r=". ranger"

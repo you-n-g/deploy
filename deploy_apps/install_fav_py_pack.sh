@@ -12,21 +12,23 @@ install_user_deps() {
 
   # # Outlines: user-wise instead of environment-wise dependencies
 
-  # python -m pip install --user pipx
-  python -m pip install pipx # this will trigger unexpected behaviour in ss-python
-  python -m pipx ensurepath
-  export PATH="$PATH:$HOME/.local/bin"
-  pip install --user tldr
-  # `pipenv virtualenv` are not installed in this way due to it should bind with a specific python env
-  for p in pre-commit ranger-fm yapf black copier wanot pdm; do
-    # pipx will install things in user space
-    pipx install $p
-  done
+  # # python -m pip install --user pipx
+  # python -m pip install pipx # this will trigger unexpected behaviour in ss-python
+  # python -m pipx ensurepath
+  # export PATH="$PATH:$HOME/.local/bin"
+  # pip install --user tldr
+  # # `pipenv virtualenv` are not installed in this way due to it should bind with a specific python env
+  # for p in pre-commit ranger-fm yapf black copier wanot pdm; do
+  #   # pipx will install things in user space
+  #   pipx install $p
+  # done
 
   # it is amazing because I don't have to install anything
   # to run a command `uvx --from aider-chat aider`
   # So Python version confliction problem is solved
+  # NOTE: we should 
   pip install uv
+  # all other commands are based on uvx
 
   # other favorite candidates
   # - pipx install asciinema

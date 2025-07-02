@@ -189,7 +189,7 @@
   Description = "python minimal install after create conda env"
   Output = ""
   Tag = []
-  command = "<cmd=|_pip install_||_uv pip install pip_|> ipdb ipython neovim fire yapf pylint black"
+  command = "<cmd=|_pip install_||_uv pip install pip_|> ipdb ipython neovim fire yapf pylint black uv"
 
 [[Snippets]]
   Description = "conda remove"
@@ -582,16 +582,17 @@
   command = "rm ~/.local/share/nvim/nvim_checkpoints/*"
 
 [[Snippets]]
-  Description = "exclude folders to make pyright faster"
+  Description = "exclude folders to make pyright faster ; other configs"
   Output = ""
   Tag = ["neovim"]
-  command = "echo '{ \"exclude\": [ \"amlt_project\", \"sessions\", \"data_source\", \"log\", \"pickle_cache\", \"git_ignore_folder\" ] }' > pyrightconfig.json"
+  command = "echo '{ \"exclude\": [ \"amlt_project\", \"sessions\", \"data_source\", \"log\", \"pickle_cache\", \"git_ignore_folder\" ] }' > pyrightconfig.json  #  \"extraPaths\": [\"/Data/home/xiaoyang/repos/qlib-main\"]"
 
 [[Snippets]]
-  Description = "code review with LLM/AI"
+  Description = "code review with LLM/AI; based on xytb review"
   Output = ""
   Tag = []
-  command = "<diff_head=|__||_DIFF_HEAD='origin/HEAD...'_||_DIFF_HEAD=HEAD_|> key_shell.sh <cred=|_openai_lite_o4_mini_||_azure_lite_o3_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> code_review"
+  # pip install uv;  DIFF_HEAD='origin/HEAD...' OPENAI_API_KEY=sk-1234 OPENAI_API_BASE=http://ep14.213428.xyz:38881 uvx xytb review
+  command = "<diff_head=|__||_DIFF_HEAD='origin/HEAD...'_||_DIFF_HEAD=HEAD_|> key_shell.sh <cred=|_openai_lite_o4_mini_||_azure_lite_o3_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> <mode=|_uvx xytb_||_xytb_|> review"
 
 [[Snippets]]
   Description = "run a batch of commands with tmux; one tmux window for each line."
