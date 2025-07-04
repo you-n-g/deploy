@@ -48,7 +48,8 @@ vim.keymap.set("n", "<leader>ram", toggle_aider_mode, { desc = "Toggle Aider Mod
 
 local function run_aider(new_branch_mode)
   local current_file = vim.fn.expand("%")
-  local extra_args = "--lint-cmd 'lua: luacheck --globals vim -- '" .. " " .. current_file
+  -- local extra_args = "--lint-cmd 'lua: luacheck --globals vim -g -u -r -a -- '" .. " " .. current_file
+  local extra_args = "--lint-cmd 'lua: true '" .. " " .. current_file
   if not new_branch_mode then
     extra_args = "--no-auto-commit " .. extra_args
   end

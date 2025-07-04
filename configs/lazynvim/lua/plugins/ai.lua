@@ -233,33 +233,39 @@ local modules = {
       local cred = require("extra_fea.utils").get_cred("gpt-4.1.gpg")
       local model = require("extra_fea.utils").get_llm_model() or cred.model
 
+      opts["providers"] = opts["providers"] or {}
       if cred.type == "azure" then
         opts["provider"] = "azure"
 
         -- main provider
-        opts["azure"] = {
+        azure_provider = {
           endpoint = cred.api_base, -- example: "https://<your-resource-name>.openai.azure.com"
           deployment = model, -- Azure deployment name (e.g., "gpt-4o", "my-gpt-4o-deployment")
-          temperature = 1, -- this is used with gpt-reasoning models
+          extra_request_body = {
+            temperature = 1, -- this is used with gpt-reasoning models
+          }
         }
         if model == "gpt-4o" then
-          opts["azure"].max_tokens = 3000
+          azure_provider.max_tokens = 3000
         end
         if model == "4o-mini" then
-          opts["azure"].temperature = 1 -- this is used with gpt-reasoning models
-          opts["azure"].reasoning_effort = "low"
+          azure_provider.extra_request_body = {
+            temperature = 1, -- this is used with gpt-reasoning models
+          }
+          azure_provider.reasoning_effort = "low"
         end
+        opts["providers"]["azure"] = azure_provider
         vim.env.AZURE_OPENAI_API_KEY = cred.api_key
 
         -- other providers
-        opts["vendors"] = {
-          ["azure-o4-mini"] = {
-            __inherited_from = "azure",
-            endpoint = cred.api_base,
-            deployment = "o4-mini",
-            temperature = 1,
-            -- reasoning_effort = "low"  -- Now I use it for chatting, so it don't have to be low.
-          }
+        opts["providers"]["azure-o4-mini"] = {
+          __inherited_from = "azure",
+          endpoint = cred.api_base,
+          deployment = "o4-mini",
+          extra_request_body = {
+            temperature = 1, -- this is used with gpt-reasoning models
+          },
+          -- reasoning_effort = "low"  -- Now I use it for chatting, so it don't have to be low.
         }
       else
         opts["provider"] = "openai"
@@ -591,6 +597,20 @@ local extra_m = {
         --   tpl = "terminal.json",
         --   target = "popup",
         --   opts = { noremap = true, silent = true, desc = "Terminal Command" },
+        -- },
+        {
+          key = "<m-g>v",
+          mode = { "v" },
+          tpl = "variable_explain.json",
+          target = "popup",
+          opts = { noremap = true, silent = true, desc = "Add Doc For (V)ariable" },
+        },
+        -- {
+        --   key = "<m-g>k",
+        --   mode = { "v" },
+        --   tpl = "code_complete.json",
+        --   target = "diff",
+        --   opts = { noremap = true, silent = true, desc = "Add Do(c) For Function" },
         -- },
       },
     },
