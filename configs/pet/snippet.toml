@@ -543,7 +543,7 @@
   Description = "clean/remove vim's swap files."
   Output = ""
   Tag = []
-  command = "find . -name '*.swp' -exec rm {} \\\\;"
+  command = "find . -type f \\( -name '*.swp' -o -name '*.swo' \\) -exec rm {} \\\\;"
 
 [[Snippets]]
   Description = "kill process on a specifc port"
@@ -591,7 +591,6 @@
   Description = "code review with LLM/AI; based on xytb review"
   Output = ""
   Tag = []
-  # pip install uv;  DIFF_HEAD='origin/HEAD...' OPENAI_API_KEY=sk-1234 OPENAI_API_BASE=http://ep14.213428.xyz:38881 uvx xytb review
   command = "<diff_head=|__||_DIFF_HEAD='origin/HEAD...'_||_DIFF_HEAD=HEAD_|> key_shell.sh <cred=|_openai_lite_o4_mini_||_azure_lite_o3_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> <mode=|_uvx xytb_||_xytb_|> review"
 
 [[Snippets]]
@@ -617,3 +616,15 @@
   Output = ""
   Tag = []
   command = "git push -u origin HEAD"
+
+[[Snippets]]
+  Description = "auto read the content from a file"
+  Output = ""
+  Tag = []
+  command = "uv run --no-project `which rf.py` auto"
+
+[[Snippets]]
+  Description = "restart gpg server; sometimes gpg get stuck, we can solve it by killing the process"
+  Output = ""
+  Tag = []
+  command = "ps aux | grep gpg ; echo ; gpgconf --kill gpg-agent ; echo ; sleep 1; ps aux | grep gpg ; echo ; sleep 1;  gpg-agent --daemon ; ps aux | grep gpg ; gpg -d ~/deploy/keys/gpt-4.1.gpg"

@@ -103,6 +103,8 @@ local plugins = {
     lazy=true,
   },
   {
+    -- NOTE: cheatsheet
+    -- <localLeader>de: evaluate expression under cursor
     "mfussenegger/nvim-dap",
     keys = {
       {

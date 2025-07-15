@@ -79,7 +79,6 @@ chmod a+x ./deploy_apps/*
 ./deploy_apps/install_tmux.sh # 现在打算放在miniconda之后了 # 确保按安装新代码
 ./deploy_apps/install_fzf.sh
 ./deploy_apps/install_pet.sh
-./deploy_apps/install_wan.sh
 ./keys/deploy.sh
 ./tools.py/install.sh
 ./deploy_apps/nonauto/install_lazyvim.sh deploy

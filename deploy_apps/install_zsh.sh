@@ -80,6 +80,11 @@ cd $DIR_PATH
 CONDA="$HOME/miniconda3/bin/conda"
 $CONDA init zsh
 
+
+# Personal tools
+mkdir -p ~/.dotfiles
+ln -s  ~/deploy/configs/shell/notifiers.yaml  ~/.dotfiles/.notifiers.yaml
+
 RED="\033[0;31m"
 NC="\033[0m" # No Color
 echo  "${RED} Maybe you still have to install zsh with conda ${NC}"

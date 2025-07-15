@@ -598,13 +598,13 @@ local extra_m = {
         --   target = "popup",
         --   opts = { noremap = true, silent = true, desc = "Terminal Command" },
         -- },
-        {
-          key = "<m-g>v",
-          mode = { "v" },
-          tpl = "variable_explain.json",
-          target = "popup",
-          opts = { noremap = true, silent = true, desc = "Add Doc For (V)ariable" },
-        },
+        -- { --- Merged into the Plugin.
+        --   key = "<m-g>v",
+        --   mode = { "v", "n" },
+        --   tpl = "variable_explain.json",
+        --   target = "popup",
+        --   opts = { noremap = true, silent = true, desc = "Add Doc For (V)ariable" },
+        -- },
         -- {
         --   key = "<m-g>k",
         --   mode = { "v" },

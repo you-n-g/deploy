@@ -269,7 +269,7 @@ function tfts() {
 
 
 alias black="uvx black"
-alias uvx="uvx --from wanot wan"
+alias wan="uvx --from wanot wan"
 alias yapf="uvx yapf"
 alias pre-commit="uvx pre-commit"
 alias copier="uvx copier"
