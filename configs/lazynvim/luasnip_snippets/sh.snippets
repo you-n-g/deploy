@@ -25,10 +25,10 @@ snippet ife "if file exists"
 				rm $1
 		fi
 
-snippet EOF "EOF(usually for comments)"
-	false << "EOF" > /dev/null
-	${1:Comments}
-	EOF
+snippet EOFmy "EOF(usually for comments)"
+	false << "${1|PY,MARKDOWN,EOF|}" > /dev/null
+	${2:Comments or content}
+	${1}
 
 snippet ifve "if a variable is empty"
     if [ -z \$1 ] || [ -z \$2 ]; then
