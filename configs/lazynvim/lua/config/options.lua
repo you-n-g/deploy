@@ -32,9 +32,11 @@ vim.cmd [[ autocmd FileType tex setlocal conceallevel=0 ]]
 opt.relativenumber = false
 
 -- Set swap file directory to be near the original file location
--- It will be easier to clean swap file
-opt.directory = '.'
+-- It will be easier to clean swap file; However, it may cause problem when you are using gitdiffview, and result in "fail to create diff buffer"
+-- opt.directory = '.'
 
+-- TODO: create a command to clean the swap file below
+-- ls ~/.local/state/nvim/swap/
 
 -- Filetypes
 vim.filetype.add {

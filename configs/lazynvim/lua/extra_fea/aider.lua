@@ -14,7 +14,7 @@ local repl_inst = repl.REPLFactory()
 --   --no-show-model-warnings --editor \"nvim --cmd 'let g:flatten_wait=1'
 --   --cmd 'cnoremap wq lua vim.cmd(\\\"w\\\"); require\\\"snacks\\\".bufdelete()'\""
 --   --watch-files --subtree-only %s"]]
-local launch_cmd = [[key_shell.sh %s myaider %s]]
+local launch_cmd = [[key_shell.sh %s env -u CHAT_MODEL myaider %s]]
 
 -- It is not frequently used now
 -- vim.keymap.set("n", "<leader>raL", function()
@@ -117,8 +117,19 @@ end, { noremap = true, silent = true, desc = "Open editor(/editor)" })
 vim.api.nvim_create_autocmd({"BufEnter", "CursorHold", "FocusGained"}, {
   pattern = "*",
   callback = function()
-    if vim.fn.getbufvar(vim.fn.bufnr(), "&buftype") == "" then
-      -- This prevents the `checktime` command from running on non-file buffers (e.g., terminal buffers, help buffers).
+    local bufnr = vim.fn.bufnr()
+    local buftype = vim.api.nvim_buf_get_option(bufnr, "buftype")
+    -- check if buffer has 'nofile', 'terminal', 'help', etc
+    if buftype ~= "" then
+      return
+    end
+    local filename = vim.api.nvim_buf_get_name(bufnr)
+    -- Empty name means no file, skip
+    if filename == "" then
+      return
+    end
+    -- Check if the file actually exists
+    if vim.loop.fs_stat(filename) then
       vim.cmd("checktime")
     end
   end,

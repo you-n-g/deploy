@@ -235,12 +235,13 @@ local modules = {
 
       opts["providers"] = opts["providers"] or {}
       if cred.type == "azure" then
-        opts["provider"] = "azure"
 
         -- main provider
-        azure_provider = {
+        local azure_provider = {
           endpoint = cred.api_base, -- example: "https://<your-resource-name>.openai.azure.com"
+          -- deployment = model, -- Azure deployment name (e.g., "gpt-4o", "my-gpt-4o-deployment")
           deployment = model, -- Azure deployment name (e.g., "gpt-4o", "my-gpt-4o-deployment")
+          model = model, -- this is just for display purpose in AvanteModels
           extra_request_body = {
             temperature = 1, -- this is used with gpt-reasoning models
           }
@@ -267,6 +268,35 @@ local modules = {
           },
           -- reasoning_effort = "low"  -- Now I use it for chatting, so it don't have to be low.
         }
+
+        -- It does not work....
+        opts["providers"]["azure-gpt-5-chat"] = {
+          __inherited_from = "azure",
+          endpoint = cred.api_base,
+          deployment = "gpt-5-chat",
+          model = "gpt-5-chat",  -- this is just for display purpose in AvanteModels
+          extra_request_body = {
+            temperature = 1, -- this is used with gpt-reasoning models
+            model = "gpt-5-chat",
+            max_completion_tokens = 16384, --  "max_tokens is too large: 20480. This model supports at most 16384 completion tokens, whereas you provided 20480.",
+          },
+          -- entra = true,
+          -- reasoning_effort = "low"  -- Now I use it for chatting, so it don't have to be low.
+        }
+
+        opts["providers"]["azure-gpt-5-mini"] = {
+          __inherited_from = "azure",
+          endpoint = cred.api_base,
+          deployment = "gpt-5-mini",
+          model = "gpt-5-mini",  -- this is just for display purpose in AvanteModels
+          extra_request_body = {
+            temperature = 1, -- this is used with gpt-reasoning models
+          },
+          -- reasoning_effort = "low"  -- Now I use it for chatting, so it don't have to be low.
+        }
+
+        -- opts["provider"] = "azure"
+        opts["provider"] = "azure-gpt-5-chat"
       else
         opts["provider"] = "openai"
         opts["openai"] = {
@@ -280,6 +310,8 @@ local modules = {
 
       -- opts["provider"] = "ollama"
       -- opts.auto_suggestions_provider = "ollama"
+
+      -- opts.debug = true -- not enough information, even the failed request will not show the error message.
     end,
     -- if you want to build from source then do `make BUILD_FROM_SOURCE=true`
     build = "make",
@@ -619,7 +651,9 @@ local extra_m = {
       context_len = 20,
     },
     buffer_chat = {
-      provider = "azure-o4-mini"
+      -- provider = "azure-o4-mini"
+      provider = "azure-gpt-5-chat"
+      -- provider = "azure-gpt-5-mini"
     },
   },
   event = "VeryLazy", -- greatly boost the initial of neovim
