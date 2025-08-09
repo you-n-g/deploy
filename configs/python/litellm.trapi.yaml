@@ -464,6 +464,80 @@ model_list:
       model: azure/mistralai/Mixtral-8x7B-Instruct-v0.1
       api_base: https://trapi.research.microsoft.com/gcr/shared/mistral/deployments/mistralai/Mixtral-8x7B-Instruct-v0.1
       api_version: '2024-05-01-preview'
+  # 2025-8-9: add gpt-5, use 2024-12-01-preview api version
+  # gcr/shared/openai	gpt-5_2025-08-07	gpt-5	2025-08-07	7500	60	False
+  - model_name: gpt-5_2025-08-07
+    litellm_params: &gpt-5_2025-08-07-gcr
+      model: azure/gpt-5_2025-08-07
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2024-12-01-preview"
+  - model_name: gpt-5
+    litellm_params:
+      <<: *gpt-5_2025-08-07-gcr
+  # gcr/shared/openai	gpt-5-mini_2025-08-07	gpt-5-mini	2025-08-07	750	60	False
+  - model_name: gpt-5-mini_2025-08-07
+    litellm_params: &gpt-5-mini_2025-08-07-gcr
+      model: azure/gpt-5-mini_2025-08-07
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2024-12-01-preview"
+  - model_name: gpt-5-mini
+    litellm_params:
+      <<: *gpt-5-mini_2025-08-07-gcr
+  # gcr/shared/openai	gpt-5-nano_2025-08-07	gpt-5-nano	2025-08-07	750	60	False
+  - model_name: gpt-5-nano_2025-08-07
+    litellm_params: &gpt-5-nano_2025-08-07-gcr
+      model: azure/gpt-5-nano_2025-08-07
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2024-12-01-preview"
+  - model_name: gpt-5-nano
+    litellm_params:
+      <<: *gpt-5-nano_2025-08-07-gcr
+  # gcr/shared/openai	gpt-5-chat_2025-08-07	gpt-5-chat	2025-08-07	750
+  - model_name: gpt-5-chat_2025-08-07
+    litellm_params: &gpt-5-chat_2025-08-07-gcr
+      model: azure/gpt-5-chat_2025-08-07
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2024-12-01-preview"
+  - model_name: gpt-5-chat
+    litellm_params:
+      <<: *gpt-5-chat_2025-08-07-gcr
+  # msra/shared/openai	gpt-5_2025-08-07	gpt-5	2025-08-07	10000	60	False
+  - model_name: gpt-5_2025-08-07
+    litellm_params: &gpt-5_2025-08-07-msra
+      model: azure/gpt-5_2025-08-07
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2024-12-01-preview"
+  - model_name: gpt-5
+    litellm_params:
+      <<: *gpt-5_2025-08-07-msra
+  # msra/shared/openai	gpt-5-mini_2025-08-07	gpt-5-mini	2025-08-07	1000	60	False
+  - model_name: gpt-5-mini_2025-08-07
+    litellm_params: &gpt-5-mini_2025-08-07-msra
+      model: azure/gpt-5-mini_2025-08-07
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2024-12-01-preview"
+  - model_name: gpt-5-mini
+    litellm_params:
+      <<: *gpt-5-mini_2025-08-07-msra
+  # msra/shared/openai	gpt-5-nano_2025-08-07	gpt-5-nano	2025-08-07	1000	60	False
+  - model_name: gpt-5-nano_2025-08-07
+    litellm_params: &gpt-5-nano_2025-08-07-msra
+      model: azure/gpt-5-nano_2025-08-07
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2024-12-01-preview"
+  - model_name: gpt-5-nano
+    litellm_params:
+      <<: *gpt-5-nano_2025-08-07-msra
+  # msra/shared/openai	gpt-5-chat_2025-08-07	gpt-5-chat	2025-08-07	1000
+  - model_name: gpt-5-chat_2025-08-07
+    litellm_params: &gpt-5-chat_2025-08-07-msra
+      model: azure/gpt-5-chat_2025-08-07
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2024-12-01-preview"
+  - model_name: gpt-5-chat
+    litellm_params:
+      <<: *gpt-5-chat_2025-08-07-msra
+
   # --------------------------- Open-source Models
   - model_name: Qwen3-32B
     litellm_params:

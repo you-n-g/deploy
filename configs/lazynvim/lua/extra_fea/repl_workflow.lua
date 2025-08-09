@@ -1,4 +1,9 @@
 --[[
+Target Task: Send your content to the last terminal;
+- the sending can be categorized into two parts:
+ - script launching
+ - content of the script
+
 Difference from normal repl
 - It will base on your current script
   - when run whole scripts, run the correct runner
@@ -320,6 +325,10 @@ function BaseREPL:send_code()
   -- vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<c-c><c-c>", true, true, true), "n", false)
 end
 
+function BaseREPL:send_cell()
+  print("Please implement the function to send cell")
+end
+
 function BaseREPL:get_path_symbol()
   -- send key <c-c><c-c> by default
   if M.config.abs_path then
@@ -519,6 +528,50 @@ function PythonREPL:debug_explore(var)
   require("toggleterm").exec(cmd, M.get_toggleterm_last_id(), 12)
 end
 
+-- send the content in current cell to the terminal
+-- the cells are separated by "# %% ...."
+function PythonREPL:send_cell()
+  -- send the code block (cell) delimited by '# %%' lines
+  local bufnr = 0
+  local cur_line = vim.fn.line(".") - 1 -- 0-indexed
+  local all_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+
+  -- locate the start of the current cell
+  local start_line = 0
+  for i = cur_line, 0, -1 do
+    if all_lines[i + 1]:match("^%s*# %%+") then
+      start_line = i + 1 -- first line after the marker
+      break
+    end
+  end
+
+  -- locate the end of the current cell
+  local end_line = #all_lines - 1
+  for i = cur_line + 1, #all_lines - 1 do
+    if all_lines[i + 1]:match("^%s*# %%+") then
+      end_line = i - 1
+      break
+    end
+  end
+
+  if end_line < start_line then
+    return
+  end
+
+  local cell_lines = vim.api.nvim_buf_get_lines(bufnr, start_line, end_line + 1, false)
+  if vim.tbl_isempty(cell_lines) then
+    return
+  end
+
+  local content = table.concat(cell_lines, "\n")
+  require("toggleterm").exec("%cpaste -q", M.get_toggleterm_last_id(), 12)
+  -- we should send the cpaste command and give it a short delay to get ready
+  vim.defer_fn(function()
+    require("toggleterm").exec(content, M.get_toggleterm_last_id(), 12)
+    require("toggleterm").exec("--", M.get_toggleterm_last_id(), 12)
+  end, 100)
+end
+
 -- - Bash
 local BashREPL = class("BashREPL", BaseREPL)
 BashREPL.interpreter = "bash"
@@ -621,17 +674,13 @@ end, { desc = "explore locals()" })
 
 -- TODO: `configs/nvim/yx/plugins_conf.vim` for doc test
 
-vim.keymap.set({ "n", "v", "o" }, "<leader>rr", function()
-  -- P(vim.api.nvim_get_mode().mode)
-  -- local start_pos = vim.api.nvim_buf_get_mark(0, '<')
-  -- local end_pos = vim.api.nvim_buf_get_mark(0, '>')
-  -- DEBUGGING:
-  -- print("start:")
-  -- P(start_pos)
-  -- print("end:")
-  -- P(end_pos)
+vim.keymap.set({ "n", "v", "o" }, "<leader>r<m-r>", function()
   M.REPLFactory():send_code()
 end, { desc = "Send Code to (R)un" })
+
+vim.keymap.set({ "n"}, "<leader>rrc", function()
+  M.REPLFactory():send_cell()
+end, { desc = "Send Cell to (R)un" })
 
 -- M.config
 -- coroutine may be helpful: https://github.com/stevearc/dressing.nvim/discussions/70
