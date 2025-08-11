@@ -474,6 +474,9 @@ model_list:
   - model_name: gpt-5
     litellm_params:
       <<: *gpt-5_2025-08-07-gcr
+  - model_name: gpt-5-gcr
+    litellm_params:
+      <<: *gpt-5_2025-08-07-gcr
   # gcr/shared/openai	gpt-5-mini_2025-08-07	gpt-5-mini	2025-08-07	750	60	False
   - model_name: gpt-5-mini_2025-08-07
     litellm_params: &gpt-5-mini_2025-08-07-gcr
@@ -481,6 +484,9 @@ model_list:
       api_base: https://trapi.research.microsoft.com/gcr/shared
       api_version: "2024-12-01-preview"
   - model_name: gpt-5-mini
+    litellm_params:
+      <<: *gpt-5-mini_2025-08-07-gcr
+  - model_name: gpt-5-mini-gcr
     litellm_params:
       <<: *gpt-5-mini_2025-08-07-gcr
   # gcr/shared/openai	gpt-5-nano_2025-08-07	gpt-5-nano	2025-08-07	750	60	False
@@ -492,6 +498,9 @@ model_list:
   - model_name: gpt-5-nano
     litellm_params:
       <<: *gpt-5-nano_2025-08-07-gcr
+  - model_name: gpt-5-nano-gcr
+    litellm_params:
+      <<: *gpt-5-nano_2025-08-07-gcr
   # gcr/shared/openai	gpt-5-chat_2025-08-07	gpt-5-chat	2025-08-07	750
   - model_name: gpt-5-chat_2025-08-07
     litellm_params: &gpt-5-chat_2025-08-07-gcr
@@ -499,6 +508,9 @@ model_list:
       api_base: https://trapi.research.microsoft.com/gcr/shared
       api_version: "2024-12-01-preview"
   - model_name: gpt-5-chat
+    litellm_params:
+      <<: *gpt-5-chat_2025-08-07-gcr
+  - model_name: gpt-5-chat-gcr
     litellm_params:
       <<: *gpt-5-chat_2025-08-07-gcr
   # msra/shared/openai	gpt-5_2025-08-07	gpt-5	2025-08-07	10000	60	False
@@ -510,6 +522,9 @@ model_list:
   - model_name: gpt-5
     litellm_params:
       <<: *gpt-5_2025-08-07-msra
+  - model_name: gpt-5-msra
+    litellm_params:
+      <<: *gpt-5_2025-08-07-msra
   # msra/shared/openai	gpt-5-mini_2025-08-07	gpt-5-mini	2025-08-07	1000	60	False
   - model_name: gpt-5-mini_2025-08-07
     litellm_params: &gpt-5-mini_2025-08-07-msra
@@ -517,6 +532,9 @@ model_list:
       api_base: https://trapi.research.microsoft.com/msra/shared
       api_version: "2024-12-01-preview"
   - model_name: gpt-5-mini
+    litellm_params:
+      <<: *gpt-5-mini_2025-08-07-msra
+  - model_name: gpt-5-mini-msra
     litellm_params:
       <<: *gpt-5-mini_2025-08-07-msra
   # msra/shared/openai	gpt-5-nano_2025-08-07	gpt-5-nano	2025-08-07	1000	60	False
@@ -528,6 +546,9 @@ model_list:
   - model_name: gpt-5-nano
     litellm_params:
       <<: *gpt-5-nano_2025-08-07-msra
+  - model_name: gpt-5-nano-msra
+    litellm_params:
+      <<: *gpt-5-nano_2025-08-07-msra
   # msra/shared/openai	gpt-5-chat_2025-08-07	gpt-5-chat	2025-08-07	1000
   - model_name: gpt-5-chat_2025-08-07
     litellm_params: &gpt-5-chat_2025-08-07-msra
@@ -535,6 +556,9 @@ model_list:
       api_base: https://trapi.research.microsoft.com/msra/shared
       api_version: "2024-12-01-preview"
   - model_name: gpt-5-chat
+    litellm_params:
+      <<: *gpt-5-chat_2025-08-07-msra
+  - model_name: gpt-5-chat-msra
     litellm_params:
       <<: *gpt-5-chat_2025-08-07-msra
 
