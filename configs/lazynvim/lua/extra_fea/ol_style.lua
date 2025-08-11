@@ -85,3 +85,62 @@ augroup JavaOutlines
     autocmd! CursorMoved *.java call HighlightJavaOL()
 augroup END
 ]]
+
+-- Add a virtual "--------" delimiter to the end of every `# %%` cell-delimiter
+-- line so it is visually obvious where the cell finishes even when there is no
+-- following text.  We do this with an extmark that places Comment-highlighted
+-- virtual text at the end of the line.  The implementation is kept in Lua so
+-- it works consistently with modern Neovim themes.
+
+local ns = vim.api.nvim_create_namespace("cellsDelimiterVT")
+-- Bright colour for right-aligned cell delimiter
+vim.api.nvim_set_hl(0, "CellDelimiterBright", { fg = "#FFD75F" })
+
+local function add_virtual_cell_delimiter()
+  -- Restrict to the filetypes we use for notebook-style cells
+  local ft = vim.bo.filetype
+  if ft ~= "python" and ft ~= "sh" and ft ~= "zsh" then
+    return
+  end
+
+  local bufnr = vim.api.nvim_get_current_buf()
+  -- Clear previously placed extmarks in the visible region
+  vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
+
+  local start_line = vim.fn.line("w0") - 1 -- 0-indexed
+  local end_line = vim.fn.line("w$")       -- exclusive
+
+  for lnum = start_line, end_line - 1 do
+    local line = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)[1]
+    if line:match("^# %%") then
+      -- Add a right-aligned dashed line that fills the remaining space
+      local win_width  = vim.api.nvim_win_get_width(0)
+      local line_len   = vim.fn.strdisplaywidth(line)
+      local dash_count = math.max(win_width - line_len - 1, 0)
+      local dashes     = dash_count > 0 and (" " .. string.rep("-", dash_count)) or ""
+
+      vim.api.nvim_buf_set_extmark(bufnr, ns, lnum, -1, {
+        virt_text = { { dashes, "CellDelimiterBright" } },
+        virt_text_pos = "eol",
+        hl_mode = "combine",
+      })
+    end
+  end
+end
+
+-- Update the virtual text whenever the cursor moves, window is entered, or scrolled
+-- Autocmds to update virtual cell delimiter
+vim.api.nvim_create_autocmd({ "CursorMoved", "BufWinEnter", "WinResized" }, {
+  pattern = { "*.py", "*.sh", "*.zsh" },
+  callback = add_virtual_cell_delimiter,
+})
+
+-- WinScrolled event does not support pattern matching, so we filter by filetype in the callback
+vim.api.nvim_create_autocmd("WinScrolled", {
+  callback = function()
+    local ft = vim.bo.filetype
+    if ft == "python" or ft == "sh" or ft == "zsh" then
+      add_virtual_cell_delimiter()
+    end
+  end,
+})

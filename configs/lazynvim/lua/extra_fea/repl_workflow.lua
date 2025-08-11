@@ -3,6 +3,9 @@ Target Task: Send your content to the last terminal;
 - the sending can be categorized into two parts:
  - script launching
  - content of the script
+- the sending logic varies by filetype, e.g. python, bash, lua
+- more:
+  - support for aider?
 
 Difference from normal repl
 - It will base on your current script
@@ -16,7 +19,7 @@ Difference from normal repl
 -- it is based on toggleterm.nvim and vim-slime.
 local M = {}
 
-class = require("simplegpt.utils").class
+local class = require("simplegpt.utils").class
 
 -- get current buffer name
 function update_toggleterm_last_id()

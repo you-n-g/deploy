@@ -195,6 +195,13 @@ openai_o4_mini() {
   export CHAT_MODEL=o4-mini
 }
 
+openai_gpt_5() {
+  openai_key_api_01
+  export OPENAI_API_KEY=$OPENAI_API_KEY
+  export OPENAI_BASE_URL=$OPENAI_BASE_URL
+  export CHAT_MODEL=gpt-5
+}
+
 openai_o1() {
   openai_key_api_01
   export OPENAI_API_KEY=$OPENAI_API_KEY
@@ -221,6 +228,13 @@ openai_lite_o4_mini() {
   export OPENAI_API_KEY=$OPENAI_API_KEY
   export OPENAI_API_BASE=$OPENAI_BASE_URL
   export CHAT_MODEL=o4-mini
+}
+
+openai_lite_gpt_5() {
+  openai_key_api_01
+  export OPENAI_API_KEY=$OPENAI_API_KEY
+  export OPENAI_API_BASE=$OPENAI_BASE_URL
+  export CHAT_MODEL=gpt-5
 }
 
 openai_lite_o3() {

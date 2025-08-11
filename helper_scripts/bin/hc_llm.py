@@ -73,7 +73,7 @@ def litellm(model: str | None = None, system_role: str = "system"):
 
 
 @app.command()
-def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo"), json_mode: bool = False, system_role: str = "system", stream: bool = True):
+def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo"), json_mode: bool = False, system_role: str = "system", stream: bool = True, reasoning_effort: str | None = None):
     """
     Function to demonstrate a native OpenAI API call.
 
@@ -89,6 +89,8 @@ def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo"), json_mode: boo
     kwargs = {}
     if json_mode:
         kwargs['response_format'] = {"type": "json_object"}
+    if reasoning_effort is not None:
+        kwargs['reasoning_effort'] = reasoning_effort
     if not stream:
         response = client.chat.completions.create(model=model,
                                                 messages=[{

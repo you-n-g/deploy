@@ -465,19 +465,19 @@
   Description = "aider start"
   Output = ""
   Tag = []
-  command = "key_shell.sh <cred=|_openai_lite_o4_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> --no-auto-commit --no-show-model-warnings'"
+  command = "key_shell.sh <cred=|_openai_lite_o4_mini_||_openai_lite_gpt_5_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> --no-auto-commit --no-show-model-warnings'"
 
 [[Snippets]]
   Description = "key shell prefix; adding LLM key to env"
   Output = ""
   Tag = []
-  command = "key_shell.sh <cred=|_openai_lite_o4_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> <CMD=|_$SHELL_||_code_review_|>"
+  command = "key_shell.sh <cred=|_openai_lite_o4_mini_||_openai_lite_gpt_5_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> <CMD=|_$SHELL_||_code_review_|>"
 
 [[Snippets]]
   Description = "aider command"
   Output = ""
   Tag = []
-  command = "key_shell.sh <cred=|_openai_lite_o4_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> <commit_conf=|_--dirty-commits_||_--no-dirty-commits_|> -m \"<command=/commit>\"'"
+  command = "key_shell.sh <cred=|_openai_lite_o4_mini_||_openai_lite_gpt_5_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> <commit_conf=|_--dirty-commits_||_--no-dirty-commits_|> -m \"<command=/commit>\"'"
 
 [[Snippets]]
   Description = "health check for openai & llm"
@@ -549,7 +549,7 @@
   Description = "kill process on a specifc port"
   Output = ""
   Tag = []
-  command = "lsof -t -i:<port=|_5678_||_38888_|> | xargs -r kill -9"
+  command = "lsof -t -i:<port=|_4000_||_5678_||_38888_|> | xargs -r kill -9"
 
 [[Snippets]]
   Description = "append information to simplegpt"
@@ -591,7 +591,7 @@
   Description = "code review with LLM/AI; based on xytb review"
   Output = ""
   Tag = []
-  command = "<diff_head=|__||_DIFF_HEAD='origin/HEAD...'_||_DIFF_HEAD=HEAD_|> key_shell.sh <cred=|_openai_lite_o4_mini_||_azure_lite_o3_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> <mode=|_uvx xytb_||_xytb_|> review"
+  command = "<diff_head=|__||_DIFF_HEAD='origin/HEAD...'_||_DIFF_HEAD=HEAD_|> key_shell.sh <cred=|_openai_lite_o4_mini_||_openai_lite_gpt_5_||_azure_lite_o3_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> <mode=|_uvx xytb_||_xytb_|> review"
 
 [[Snippets]]
   Description = "run a batch of commands with tmux; one tmux window for each line."
