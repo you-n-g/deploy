@@ -14,6 +14,12 @@ echo "$SELECT_CRED"
 export AZURE_SCOPE=api://trapi/.default
 export AZURE_CREDENTIAL=AzureCliCredential
 
+export LANGFUSE_PUBLIC_KEY="pk-1234567890"
+export LANGFUSE_SECRET_KEY="sk-1234567890"
+# Optional, defaults to https://cloud.langfuse.com
+export LANGFUSE_HOST="http://ep14.213428.xyz:3000"
+# NOTE: don't use https!!!
+
 #Where the default model be placed
 # key_shell.sh $SELECT_CRED bash -c "echo CHAT_MODEL=\$CHAT_MODEL" >$DIR/litellm_proxy.env
 # key_shell.sh $SELECT_CRED bash -c "echo AZURE_API_BASE=\$AZURE_API_BASE"

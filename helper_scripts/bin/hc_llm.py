@@ -47,33 +47,65 @@ def azure(model: str | None = None):
     print(response.choices[0].message.content)
 
 
+from pydantic import BaseModel
+
+
+class ResponseFormat(BaseModel):
+    ans: str
+
+
 @app.command()
-def litellm(model: str | None = None, system_role: str = "system"):
+def litellm(
+    model: str | None = None,
+    system_role: str = "system",
+    test_response_format: bool = False,
+    reasoning_effort: str | None = None,
+):
     """
-    Function to demonstrate LiteLLM API calling for calling models
+    Function to demonstrate LiteLLM API calling for models.
 
     Args:
-        model (str): The name of the model. Default is "gpt-4o".
+        model (str): The name of the model. Default is taken from ``$CHAT_MODEL`` or
+                     ``gpt-4o`` when unset.
+        json_mode (bool): Request the model to return a JSON object (if the model
+                          supports it).
+        reasoning_effort (str | None): Forwarded to LiteLLM/OpenAI for advanced
+                                       control. ``None`` disables the parameter.
     """
     if model is None:
         model = os.getenv("CHAT_MODEL", "gpt-4o")
 
-    response = completion(model=f"{model}",
-                          messages=[{
-                              "role": system_role,
-                              "content": "Assistant is a large language model trained by OpenAI."
-                          }, {
-                              "role": "user",
-                              "content": "Who were the founders of Microsoft?"
-                          }],
-                          reasoning_effort=None)
+    kwargs = {}
+    if test_response_format:
+        kwargs["response_format"] = ResponseFormat
+    if reasoning_effort is not None:
+        kwargs["reasoning_effort"] = reasoning_effort
 
-    # Print the response in JSON format with indentation
+    response = completion(
+        model=model,
+        messages=[
+            {
+                "role": system_role,
+                "content": "Assistant is a large language model trained by OpenAI.",
+            },
+            {
+                "role": "user",
+                "content": "Who were the founders of Microsoft?",
+            },
+        ],
+        **kwargs,
+    )
+
+    # Print the response
     print(response)
 
 
 @app.command()
-def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo"), json_mode: bool = False, system_role: str = "system", stream: bool = True, reasoning_effort: str | None = None):
+def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo"),
+           json_mode: bool = False,
+           system_role: str = "system",
+           stream: bool = True,
+           reasoning_effort: str | None = None):
     """
     Function to demonstrate a native OpenAI API call.
 
@@ -92,15 +124,16 @@ def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo"), json_mode: boo
     if reasoning_effort is not None:
         kwargs['reasoning_effort'] = reasoning_effort
     if not stream:
-        response = client.chat.completions.create(model=model,
-                                                messages=[{
-                                                    "role": system_role,
-                                                    "content": "Assistant is a large language model trained by OpenAI."
-                                                }, {
-                                                    "role": "user",
-                                                    "content": "Who were the founders of Microsoft?"
-                                                }],
-                                                **kwargs)
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{
+                "role": system_role,
+                "content": "Assistant is a large language model trained by OpenAI."
+            }, {
+                "role": "user",
+                "content": "Who were the founders of Microsoft?"
+            }],
+            **kwargs)
         print(response)
     else:
         # use streaming to print the streaming output (synchronously, not async)
@@ -114,13 +147,11 @@ def native(model: str = os.getenv("CHAT_MODEL", "gpt-3.5-turbo"), json_mode: boo
                 "content": "Who were the founders of Microsoft?"
             }],
             stream=True,
-            **kwargs
-        )
+            **kwargs)
         for chunk in response:
             if hasattr(chunk.choices[0].delta, "content") and chunk.choices[0].delta.content:
                 print(chunk.choices[0].delta.content, end="", flush=True)
         print()  # for newline after streaming output
-
 
 
 @app.command()
@@ -133,7 +164,7 @@ def embedding(model: str = os.getenv("EMBEDDING_MODEL", "text-embedding-ada-002"
     """
     client = Client()
     response = client.embeddings.create(model=model, input="OpenAI provides tools for developers.")
-    
+
     # Print the embedding vector
     print("Embedding Vector:")
     print(response)
@@ -163,8 +194,7 @@ def load_model_names_and_params(yaml_file, startswith):
         config = yaml.safe_load(file)
     return [(model['model_name'], model['litellm_params'])
             for model in config['model_list']
-            if model['model_name'].startswith(startswith)
-    ]
+            if model['model_name'].startswith(startswith)]
 
 
 def check_model(model_name, error_log):

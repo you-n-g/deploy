@@ -477,13 +477,13 @@
   Description = "aider command"
   Output = ""
   Tag = []
-  command = "key_shell.sh <cred=|_openai_lite_o4_mini_||_openai_lite_gpt_5_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> <commit_conf=|_--dirty-commits_||_--no-dirty-commits_|> -m \"<command=/commit>\"'"
+  command = "key_shell.sh <cred=|_openai_lite_gpt_4_1_||_openai_lite_gpt_5_||_openai_lite_o4_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> bash -c 'aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> <commit_conf=|_--dirty-commits_||_--no-dirty-commits_|> -m \"<command=/commit>\"'"
 
 [[Snippets]]
   Description = "health check for openai & llm"
   Output = ""
   Tag = []
-  command = "<base_url=|__||_OPENAI_BASE_URL=http://ep14.213428.xyz:4000_|> key_shell.sh <cred=|_azure_ad_||_azure_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_||_deepseek_closeai_lite_||_openai_o3_mini_||_openai_o4_mini_||_openai_|> hc_llm.py <api=|_azure_||_litellm_||_embedding_||_native_|>"
+  command = "key_shell.sh <cred=|_openai_||_openai_lite_||_azure_ad_||_azure_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_||_deepseek_closeai_lite_||_openai_o3_mini_||_openai_o4_mini_|> env <base_url=|__||_OPENAI_BASE_URL=http://ep14.213428.xyz:4000_||_OPENAI_API_BASE=http://ep14.213428.xyz:4000_|> hc_llm.py <api=|_azure_||_litellm_||_embedding_||_native_|> <arg=|__||_--test-response-format_|> <model=|__||_--model=o3_|>"
 
 [[Snippets]]
   Description = "launch litellm proxy"

@@ -463,12 +463,12 @@ local modules = {
   --     local neocodeium = require("neocodeium")
   --     neocodeium.setup()
   --     -- Keymaps to match windsuf/codeium.nvim default AI accept keys
-  --     vim.keymap.set("i", "<Tab>", function()
+  --     vim.keymap.set("i", "<C-a>", function()
   --         -- use `neocodeium.visible()` to check if we should accept the suggestion or fallback to normal <TAB>
   --         if require("neocodeium").visible() then
   --           require("neocodeium").accept()
   --         else
-  --           vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Tab>", true, false, true), "n", false)
+  --           vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-a>", true, false, true), "n", false)
   --         end
   --     end)
   --     vim.keymap.set("i", "<C-l>", function()
@@ -507,6 +507,7 @@ local modules = {
   --     },
   --   },
   -- },
+
   -- {
   --   -- this plugin will be good for apply diff to code.
   --   'echasnovski/mini.diff',
