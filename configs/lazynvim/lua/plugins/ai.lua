@@ -306,6 +306,11 @@ local modules = {
         vim.env.OPENAI_API_KEY = cred.api_key
       end
       opts.hints = { enabled = false } -- it is annoying due to conflict with simplegpt.nvim. I have to use <leader>uE to erase them
+      opts.  selection = {
+        enabled = true,
+        -- hint_display = "delayed",
+        hint_display = "none",
+      }
       opts.auto_suggestions_provider = opts["provider"]
 
       -- opts["provider"] = "ollama"

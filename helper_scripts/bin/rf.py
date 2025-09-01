@@ -76,8 +76,10 @@ class ReadFile:
     def _parquet(self, path):
         return pd.read_parquet(path)
 
-    def _inspect(self, obj, e=False):
-        if e:
+    def _inspect(self, obj, e=False, p=False):
+        if p:
+            from IPython import embed; embed(header='__import__("objexplore").explore(obj)')
+        elif e:
             if isinstance(obj, defaultdict):
                 # defaultdict does not work well with objexplore
                 obj = dict(obj)
@@ -104,9 +106,9 @@ class ReadFile:
         obj = self._auto_load(path)
         self._inspect(obj, e)
 
-    def pk(self, path, e=False):
+    def pk(self, path, e=False, p=False):
         obj = self._pkl(path)
-        self._inspect(obj, e)
+        self._inspect(obj, e, p)
 
     def df_conv(self, file):
         """
