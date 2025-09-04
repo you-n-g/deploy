@@ -455,9 +455,10 @@ model_list:
       model: azure/text-embedding-3-small_1  
       api_base: https://trapi.research.microsoft.com/gcr/shared  
       api_version: "2024-12-01-preview"  
-  - model_name: text-embedding-3-small  
-    litellm_params:  
-      <<: *text-embedding-3-small_1_gcr  
+  # NOTE: we commmented out this one because it is not working on amlt...
+  # - model_name: text-embedding-3-small  
+  #   litellm_params:  
+  #     <<: *text-embedding-3-small_1_gcr  
   - model_name: text-embedding-3-small-gcr
     litellm_params:  
       <<: *text-embedding-3-small_1_gcr  

@@ -483,7 +483,7 @@
   Description = "health check for openai & llm"
   Output = ""
   Tag = []
-  command = "key_shell.sh <cred=|_openai_||_openai_lite_||_azure_ad_||_azure_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_||_deepseek_closeai_lite_||_openai_o3_mini_||_openai_o4_mini_|> env <base_url=|__||_OPENAI_BASE_URL=http://ep14.213428.xyz:4000_||_OPENAI_API_BASE=http://ep14.213428.xyz:4000_|> hc_llm.py <api=|_azure_||_litellm_||_embedding_||_native_|> <arg=|__||_--test-response-format_|> <model=|__||_--model=o3_|>"
+  command = "key_shell.sh <cred=|_openai_||_openai_lite_||_azure_ad_||_azure_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_||_deepseek_closeai_lite_||_openai_o3_mini_||_openai_o4_mini_|> env <base_url=|__||_OPENAI_BASE_URL=http://ep14.213428.xyz:4000_||_OPENAI_API_BASE=http://ep14.213428.xyz:4000_|> hc_llm.py <api=|_azure_||_litellm_||_embedding_||_native_|> <arg=|__||_--test-response-format_|> <model=|__||_--model=o3_||_--model=text-embedding-3-small_|>"
 
 [[Snippets]]
   Description = "launch litellm proxy"
