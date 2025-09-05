@@ -667,6 +667,33 @@ model_list:
   - model_name: gpt-5-chat-msra
     litellm_params:
       <<: *gpt-5-chat_2025-08-07-msra
+  # msra/shared	text-embedding-3-large_1	text-embedding-3-large	1	1000	10
+  - model_name: text-embedding-3-large-msra
+    litellm_params: &text-embedding-3-large-msra
+      model: azure/text-embedding-3-large_1
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2024-12-01-preview"
+  - model_name: text-embedding-3-large
+    litellm_params:
+      <<: *text-embedding-3-large-msra
+  # msra/shared	text-embedding-3-small_1	text-embedding-3-small	1	1000	10
+  - model_name: text-embedding-3-small-msra
+    litellm_params: &text-embedding-3-small-msra
+      model: azure/text-embedding-3-small_1
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2024-12-01-preview"
+  - model_name: text-embedding-3-small
+    litellm_params:
+      <<: *text-embedding-3-small-msra
+  # msra/shared	text-embedding-ada-002_2	text-embedding-ada-002	2	1000	10
+  - model_name: text-embedding-ada-002-msra
+    litellm_params: &text-embedding-ada-002-msra
+      model: azure/text-embedding-ada-002_2
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2024-12-01-preview"
+  - model_name: text-embedding-ada-002
+    litellm_params:
+      <<: *text-embedding-ada-002-msra
 
   # --------------------------- Open-source Models
   - model_name: Qwen3-32B
