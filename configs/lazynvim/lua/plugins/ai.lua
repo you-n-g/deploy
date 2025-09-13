@@ -230,7 +230,8 @@ local modules = {
       -- local cred = require("extra_fea.utils").get_cred("gpt-o4-mini.1.gpg")
       -- local cred = require("extra_fea.utils").get_cred("gpt-o3-mini.1.gpg")
       -- local cred = require("extra_fea.utils").get_cred("gpt-o4-mini.gpg")
-      local cred = require("extra_fea.utils").get_cred("gpt-4.1.gpg")
+      -- local cred = require("extra_fea.utils").get_cred("gpt-4.1.gpg")
+      local cred = require("extra_fea.utils").get_cred("gpt.gpg")
       local model = require("extra_fea.utils").get_llm_model() or cred.model
 
       opts["providers"] = opts["providers"] or {}
@@ -284,6 +285,20 @@ local modules = {
           -- reasoning_effort = "low"  -- Now I use it for chatting, so it don't have to be low.
         }
 
+        opts["providers"]["azure-gpt-5"] = {
+          __inherited_from = "azure",
+          endpoint = cred.api_base,
+          deployment = "gpt-5",
+          model = "gpt-5",  -- this is just for display purpose in AvanteModels
+          extra_request_body = {
+            temperature = 1, -- this is used with gpt-reasoning models
+            model = "gpt-5",
+            max_completion_tokens = 16384, --  "max_tokens is too large: 20480. This model supports at most 16384 completion tokens, whereas you provided 20480.",
+          },
+          -- entra = true,
+          -- reasoning_effort = "low"  -- Now I use it for chatting, so it don't have to be low.
+        }
+
         opts["providers"]["azure-gpt-5-mini"] = {
           __inherited_from = "azure",
           endpoint = cred.api_base,
@@ -297,6 +312,7 @@ local modules = {
 
         -- opts["provider"] = "azure"
         opts["provider"] = "azure-gpt-5-chat"
+        -- opts["provider"] = "azure-gpt-5"
       else
         opts["provider"] = "openai"
         opts["openai"] = {
@@ -306,7 +322,7 @@ local modules = {
         vim.env.OPENAI_API_KEY = cred.api_key
       end
       opts.hints = { enabled = false } -- it is annoying due to conflict with simplegpt.nvim. I have to use <leader>uE to erase them
-      opts.  selection = {
+      opts.selection = {
         enabled = true,
         -- hint_display = "delayed",
         hint_display = "none",
@@ -659,6 +675,7 @@ local extra_m = {
     buffer_chat = {
       -- provider = "azure-o4-mini"
       provider = "azure-gpt-5-chat"
+      -- provider = "azure-gpt-5"
       -- provider = "azure-gpt-5-mini"
     },
   },

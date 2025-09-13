@@ -16,4 +16,7 @@ ls config
 bin/up
 
 # TODO: change the port of overleaf.rc
-# I cahnged `NGINX_HTTP_PORT=` and `OVERLEAF_PORT=` to the same port
+# I cahnged
+# - `NGINX_HTTP_PORT=` and `OVERLEAF_PORT=` to the same port
+# - OVERLEAF_LISTEN_IP=0.0.0.0
+# bin/docker-compose exec sharelatex /bin/bash -ce "cd /overleaf/services/web && node modules/server-ce-scripts/scripts/create-user --admin --email=afe.young@gmail.com"

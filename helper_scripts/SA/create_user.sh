@@ -53,7 +53,7 @@ create_user() {
   
   IP=$(hostname -I | awk '{print $1}') # Get the first IP of the machine
   echo "I have created user for you.  ssh ${1}@${IP} , password is \`$password\` (the backquote is not included)"
-  echo "You can test by \`sshpass -p '$password' ssh ${1}@${IP}\`"
+  echo "You can test by \`sshpass -p '$password' ssh -o StrictHostKeyChecking=no ${1}@${IP}\`"
 }
 
 add_docker_perm() {
