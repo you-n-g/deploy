@@ -640,3 +640,9 @@
   Output = ""
   Tag = []
   command = "uv run --no-project --with typer buildchat"
+
+[[Snippets]]
+  Description = "create workspace"
+  Output = ""
+  Tag = []
+  command = "git worktree add ../RD-Agent-OptmRet && conda create -y -n RD-Agent-OptmRet python=3.11 && bash -c \"cp .env ../RD-Agent-OptmRet ; cp nav.md ../RD-Agent-OptmRet\"  && cd ../RD-Agent-OptmRet && conda run -n RD-Agent-OptmRet make dev"

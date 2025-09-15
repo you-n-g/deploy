@@ -332,6 +332,17 @@ function BaseREPL:send_cell()
   print("Please implement the function to send cell")
 end
 
+--- Send all the content in the current buffer to the repl interpreter
+function BaseREPL:send_all()
+  local bufnr = 0
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  if vim.tbl_isempty(lines) then
+    return
+  end
+  local content = table.concat(lines, "\n")
+  require("toggleterm").exec(content, M.get_toggleterm_last_id(), 12)
+end
+
 function BaseREPL:get_path_symbol()
   -- send key <c-c><c-c> by default
   if M.config.abs_path then
@@ -531,6 +542,15 @@ function PythonREPL:debug_explore(var)
   require("toggleterm").exec(cmd, M.get_toggleterm_last_id(), 12)
 end
 
+-- Helper to send content via IPython %cpaste
+local function python_send_via_cpaste(content)
+  require("toggleterm").exec("%cpaste -q", M.get_toggleterm_last_id(), 12)
+  vim.defer_fn(function()
+    require("toggleterm").exec(content, M.get_toggleterm_last_id(), 12)
+    require("toggleterm").exec("--", M.get_toggleterm_last_id(), 12)
+  end, 100)
+end
+
 -- send the content in current cell to the terminal
 -- the cells are separated by "# %% ...."
 function PythonREPL:send_cell()
@@ -567,12 +587,18 @@ function PythonREPL:send_cell()
   end
 
   local content = table.concat(cell_lines, "\n")
-  require("toggleterm").exec("%cpaste -q", M.get_toggleterm_last_id(), 12)
-  -- we should send the cpaste command and give it a short delay to get ready
-  vim.defer_fn(function()
-    require("toggleterm").exec(content, M.get_toggleterm_last_id(), 12)
-    require("toggleterm").exec("--", M.get_toggleterm_last_id(), 12)
-  end, 100)
+  python_send_via_cpaste(content)
+end
+
+
+function PythonREPL:send_all()
+  local bufnr = 0
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  if vim.tbl_isempty(lines) then
+    return
+  end
+  local content = table.concat(lines, "\n")
+  python_send_via_cpaste(content)
 end
 
 -- - Bash
@@ -684,6 +710,10 @@ end, { desc = "Send Code to (R)un" })
 vim.keymap.set({ "n"}, "<leader>rrc", function()
   M.REPLFactory():send_cell()
 end, { desc = "Send Cell to (R)un" })
+
+vim.keymap.set("n", "<leader>rra", function()
+  M.REPLFactory():send_all()
+end, { desc = "Send (A)ll to (R)un" })
 
 -- M.config
 -- coroutine may be helpful: https://github.com/stevearc/dressing.nvim/discussions/70

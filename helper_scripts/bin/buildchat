@@ -1,0 +1,41 @@
+#!/usr/bin/env python
+
+import typer
+import jinja2
+
+tpl = """
+💻 You are a helpful AI assistant.
+
+👤 
+You have a script like this:
+```python
+{{ code }}
+```
+
+It's according running stdout is:
+```
+{{ stdout }}
+```
+
+I want to understand how the prediction performance and labels are measured when creating the "score.csv".
+Please give a clear and precise explanation using mathematical expressions.
+"""
+
+app = typer.Typer()
+
+
+@app.command()
+def explain_ws(code_fname: str = "main.py", stdout_fname: str = "stdout.txt"):
+    # render template with provided code and stdout, then create a new file chat.md
+    with open(code_fname, 'r') as cf:
+        code_content = cf.read()
+    with open(stdout_fname, 'r') as sf:
+        stdout_content = sf.read()
+    template = jinja2.Template(tpl)
+    rendered = template.render(code=code_content, stdout=stdout_content)
+    with open("chat.md", "w") as out_f:
+        out_f.write(rendered)
+
+
+if __name__ == "__main__":
+    app()

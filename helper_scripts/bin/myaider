@@ -24,11 +24,16 @@ export LITELLM_PROXY_API_BASE=http://ep14.213428.xyz:4000
 
 # CHAT_MODEL=${CHAT_MODEL:-"litellm_proxy/o3_coreai"}
 CHAT_MODEL=${CHAT_MODEL:-"litellm_proxy/gpt-5"}
-WEAK_MODEL=${WEAK_MODEL:-${CHAT_MODEL:-"litellm_proxy/gpt-4.1"}}
+# WEAK_MODEL=${WEAK_MODEL:-${CHAT_MODEL:-"litellm_proxy/gpt-4.1"}}
+WEAK_MODEL=${WEAK_MODEL:-"litellm_proxy/gpt-4.1"} # for faster
 
 echo "CHAT_MODEL: $CHAT_MODEL, WEAK_MODEL: $WEAK_MODEL"
 
-uvx --from aider-chat aider --model "$CHAT_MODEL" --reasoning-effort high --edit-format diff --weak-model "$WEAK_MODEL" --no-show-model-warnings --editor "nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\"w\"); require\"snacks\".bufdelete()'" --watch-files --subtree-only --no-auto-commit "$@"
+# uvx --from aider-chat aider --model "$CHAT_MODEL" --reasoning-effort high --edit-format diff --weak-model "$WEAK_MODEL" --no-show-model-warnings --editor "nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\"w\"); require\"snacks\".bufdelete()'" --watch-files --subtree-only --no-auto-commit "$@"
+
+# for gpt-5, I don't want to force high reasoning effort. I expect it select automatically.
+uvx --from aider-chat aider --model "$CHAT_MODEL" --edit-format diff --weak-model "$WEAK_MODEL" --no-show-model-warnings --editor "nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\"w\"); require\"snacks\".bufdelete()'" --watch-files --subtree-only "$@"
+#  --no-auto-commit
 
 # uvx --from aider-chat aider --model "litellm_proxy/o3_coreai" --weak-model "litellm_proxy/gpt-4.1" --editor-model "litellm_proxy/gpt-4.1" --architect --no-show-model-warnings --editor "nvim --cmd 'let g:flatten_wait=1' --cmd 'cnoremap wq lua vim.cmd(\"w\"); require\"snacks\".bufdelete()'" --watch-files --subtree-only --no-auto-commit "$@"
 # Sometimes, it will only answer my question without do practical work....

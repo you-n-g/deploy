@@ -46,6 +46,11 @@ end
 vim.keymap.set("n", "<leader>ram", toggle_aider_mode, { desc = "Toggle Aider Mode." })
 
 
+local function exec_aider(final_cmd)
+  require("toggleterm").exec(final_cmd, repl.get_toggleterm_last_id(), nil, nil, "vertical")
+  toggle_aider_mode("/test", repl.get_toggleterm_last_id())
+end
+
 local function run_aider(new_branch_mode)
   local current_file = vim.fn.expand("%")
   -- local extra_args = "--lint-cmd 'lua: luacheck --globals vim -g -u -r -a -- '" .. " " .. current_file
@@ -60,11 +65,16 @@ local function run_aider(new_branch_mode)
   end
   local cmd = string.format(launch_cmd, model, extra_args)
   if new_branch_mode then
-    cmd = "git checkout -B aider && " .. cmd
+    vim.ui.input({ prompt = "Branch name for new branch:", default = "aider" }, function(branch)
+      local final_cmd = cmd
+      if branch and branch ~= "" then
+        final_cmd = string.format("git checkout -B %s && %s", branch, cmd)
+      end
+      exec_aider(final_cmd)
+    end)
+  else
+    exec_aider(cmd)
   end
-
-  require("toggleterm").exec(cmd, repl.get_toggleterm_last_id(), nil, nil, "vertical")
-  toggle_aider_mode("/test", repl.get_toggleterm_last_id())
 end
 
 vim.keymap.set("n", "<leader>raL", function()
