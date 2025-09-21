@@ -138,6 +138,9 @@ return {
 --   augroup END
 -- ]])
       -- vim.g.vimtex_parser_bib_backend = "bibtex"  -- default value is `lua`, All of them do not work for me.
+      -- If you want to configure the latexmk engine, you can add the following line to your
+      -- %! TEX program = lualatex
+      -- refer to function! s:vimtex.get_tex_program() abort dict " {{{1
     end,
   },
   {

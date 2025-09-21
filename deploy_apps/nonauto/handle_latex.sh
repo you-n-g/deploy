@@ -36,6 +36,7 @@ function install_latexmk() {
   sudo apt install -y texlive-full   # to supporting ctex. You can verify it by `kpsewhich ctex.sty`
   sudo apt install -y texlive-xetex  # some project requires `xelatex`
   sudo apt install -y texlive-fonts-extra  # maybe it will support -fontawesome5?
+  sudo apt install -y texlive-luatex
 }
 
 function install_tectonic () {
