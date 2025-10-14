@@ -23,7 +23,7 @@ done
 
 # if pipx does not exist, otherwise activate anaconda and add the PATH
 # - in case of the first installation of pipx
-if ! which pipx ; then
+if [[ $SKIP_INSTALL -eq 0 ]] && ! which pipx ; then
   . ~/miniconda3/etc/profile.d/conda.sh
   conda activate base
   export PATH="$PATH:$HOME/.local/bin"

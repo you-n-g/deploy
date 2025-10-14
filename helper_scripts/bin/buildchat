@@ -2,6 +2,8 @@
 
 import typer
 import jinja2
+from pathlib import Path
+from rdagent.utils.agent.tpl import T
 
 tpl = """
 💻 You are a helpful AI assistant.
@@ -35,6 +37,25 @@ def explain_ws(code_fname: str = "main.py", stdout_fname: str = "stdout.txt"):
     rendered = template.render(code=code_content, stdout=stdout_content)
     with open("chat.md", "w") as out_f:
         out_f.write(rendered)
+
+@app.command()
+def compare(
+    curr_ws: Path = typer.Argument(..., help="Path to current workspace"),
+    prev_ws: Path = typer.Argument(..., help="Path to previous workspace")
+):
+    curr_ws = Path(curr_ws)
+    prev_ws = Path(prev_ws)
+    with (curr_ws / "main.py").open() as cf:
+        curr_code_content = cf.read()
+    with (curr_ws / "stdout.txt").open() as cf:
+        curr_stdout_content = cf.read()
+    with (prev_ws / "main.py").open() as cf:
+        prev_code_content = cf.read()
+    with (prev_ws / "stdout.txt").open() as cf:
+        prev_stdout_content = cf.read()
+    chat_content = T(".buildchat:compare").r(curr_code=curr_code_content, curr_stdout=curr_stdout_content, prev_code=prev_code_content, prev_stdout=prev_stdout_content)
+    with open("chat.md", "w") as out_f:
+        out_f.write(chat_content)
 
 
 if __name__ == "__main__":
