@@ -1,27 +1,13 @@
 #!/usr/bin/env python
 
 import typer
-import jinja2
 from pathlib import Path
 from rdagent.utils.agent.tpl import T
+import urllib.request
+import tempfile
+import os
+import pypdf
 
-tpl = """
-💻 You are a helpful AI assistant.
-
-👤 
-You have a script like this:
-```python
-{{ code }}
-```
-
-It's according running stdout is:
-```
-{{ stdout }}
-```
-
-I want to understand how the prediction performance and labels are measured when creating the "score.csv".
-Please give a clear and precise explanation using mathematical expressions.
-"""
 
 app = typer.Typer()
 
@@ -33,10 +19,9 @@ def explain_ws(code_fname: str = "main.py", stdout_fname: str = "stdout.txt"):
         code_content = cf.read()
     with open(stdout_fname, 'r') as sf:
         stdout_content = sf.read()
-    template = jinja2.Template(tpl)
-    rendered = template.render(code=code_content, stdout=stdout_content)
+    chat_content = T(".buildchat:explain_ws").r(code=code_content, stdout=stdout_content)
     with open("chat.md", "w") as out_f:
-        out_f.write(rendered)
+        out_f.write(chat_content)
 
 
 @app.command()
@@ -60,7 +45,6 @@ def compare(curr_ws: Path = typer.Argument(..., help="Path to current workspace"
         out_f.write(chat_content)
 
 
-import typer
 from firecrawl import FirecrawlApp
 
 
@@ -73,6 +57,38 @@ def web(url: str = typer.Argument(..., help="The target URL to scrape"),):
     with open("chat.md", "w") as out_f:
         out_f.write(T(".buildchat:web").r(markdown=content))
 
+
+@app.command()
+def pdf(
+    url: str = typer.Argument(..., help="The PDF URL to download and convert"),
+    outfile: Path = Path("chat.md"),
+):
+    """
+    Download a PDF from a URL, extract its text, and write a chat.md file.
+    """
+    # Download to a temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmpf:
+        tmp_pdf_path = tmpf.name
+
+    try:
+        urllib.request.urlretrieve(url, tmp_pdf_path)
+
+        # Extract text using pypdf
+        reader = pypdf.PdfReader(tmp_pdf_path)
+        parts = []
+        for page in reader.pages:
+            # Directly extract text without try-except, let errors propagate if they occur
+            parts.append(page.extract_text() or "")
+        text = "\n".join(parts).strip()
+
+        with open(outfile, "w") as out_f:
+            out_f.write(T(".buildchat:pdf").r(text=text))
+    finally:
+        # Clean up the temporary file
+        try:
+            os.unlink(tmp_pdf_path)
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     app()

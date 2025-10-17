@@ -639,7 +639,7 @@
   Description = "build chat for research"
   Output = ""
   Tag = []
-  command = "uv run --no-project --with firecrawl-py --with typer --with rdagent buildchat"
+  command = "uv run --no-project --with firecrawl-py --with typer --with rdagent --with pypdf buildchat"
 
 [[Snippets]]
   Description = "create workspace"

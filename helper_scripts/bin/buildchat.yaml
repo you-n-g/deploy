@@ -1,0 +1,69 @@
+compare: |
+  💻 You are a helpful AI assistant.
+
+  👤
+  Previously, you have a script like this:
+  ```python
+  {{ prev_code }}
+  ```
+
+  It's according running stdout is:
+  ```
+  {{ prev_stdout }}
+  ```
+
+  After improving the solution, you have a script like this:
+  ```python
+  {{ curr_code }}
+  ```
+
+  It's according running stdout is:
+  ```
+  {{ curr_stdout }}
+  ```
+
+  The prediction performance and related information are demonstrated in the stdout.
+  I want to understand how the prediction performance are greatly improved.
+  Please pay attention to the following points:
+  - Is the prediction target changed?
+  - Is the metric changed?
+
+web:  | 
+  💻 You are a helpful AI assistant.
+
+  👤 
+  You have a webpage with following content:
+  ````markdown
+  {{ markdown }}
+  ````
+
+  I want to discuss with you about the content of the webpage.
+  Please response in Chinese.
+
+pdf: |-
+  💻 You are a helpful AI assistant.
+
+  👤 
+  You have a PDF with the following extracted text:
+  ````text
+  {{ text }}
+  ````
+  I want to discuss with you about the content of the webpage.
+  Please response in Chinese.
+
+explain_ws: |-
+  💻 You are a helpful AI assistant.
+
+  👤 
+  You have a script like this:
+  ```python
+  {{ code }}
+  ```
+
+  It's according running stdout is:
+  ```
+  {{ stdout }}
+  ```
+
+  I want to understand how the prediction performance and labels are measured when creating the "score.csv".
+  Please give a clear and precise explanation using mathematical expressions.
