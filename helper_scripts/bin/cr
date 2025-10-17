@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+"""
+Please refer to `deploy_apps/firecrawl.sh` to know how to start firecrawl.
+"""
 import typer
 from firecrawl import FirecrawlApp
 

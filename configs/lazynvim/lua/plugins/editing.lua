@@ -145,10 +145,10 @@ return {
   },
   {
     "sindrets/diffview.nvim",
+    cmd = { "DiffviewOpen", "DiffviewFileHistory" }, -- Auto-load when these commands are used
     keys = {
-      -- { "<leader>gd", [[<cmd>DiffviewOpen HEAD^<cr>]], desc = "Open Diffview" }, -- this can replace by the navigating on the first commit in DiffviewFileHistory.
-      { "<leader>gd", [[<cmd>DiffviewOpen<cr>]], desc = "Open Diffview" },
-      { "<leader>gH", [[<cmd>DiffviewFileHistory<cr>]], desc = "Diffview File History" },
-    }
+      { "<leader>gd", "<cmd>DiffviewOpen<cr>", desc = "Open Diffview" },
+      { "<leader>gH", "<cmd>DiffviewFileHistory<cr>", desc = "Diffview File History" },
+    },
   }
 }

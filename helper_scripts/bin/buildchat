@@ -38,11 +38,10 @@ def explain_ws(code_fname: str = "main.py", stdout_fname: str = "stdout.txt"):
     with open("chat.md", "w") as out_f:
         out_f.write(rendered)
 
+
 @app.command()
-def compare(
-    curr_ws: Path = typer.Argument(..., help="Path to current workspace"),
-    prev_ws: Path = typer.Argument(..., help="Path to previous workspace")
-):
+def compare(curr_ws: Path = typer.Argument(..., help="Path to current workspace"),
+            prev_ws: Path = typer.Argument(..., help="Path to previous workspace")):
     curr_ws = Path(curr_ws)
     prev_ws = Path(prev_ws)
     with (curr_ws / "main.py").open() as cf:
@@ -53,9 +52,26 @@ def compare(
         prev_code_content = cf.read()
     with (prev_ws / "stdout.txt").open() as cf:
         prev_stdout_content = cf.read()
-    chat_content = T(".buildchat:compare").r(curr_code=curr_code_content, curr_stdout=curr_stdout_content, prev_code=prev_code_content, prev_stdout=prev_stdout_content)
+    chat_content = T(".buildchat:compare").r(curr_code=curr_code_content,
+                                             curr_stdout=curr_stdout_content,
+                                             prev_code=prev_code_content,
+                                             prev_stdout=prev_stdout_content)
     with open("chat.md", "w") as out_f:
         out_f.write(chat_content)
+
+
+import typer
+from firecrawl import FirecrawlApp
+
+
+@app.command()
+def web(url: str = typer.Argument(..., help="The target URL to scrape"),):
+    firecrawl_app = FirecrawlApp(api_key="fc-YOUR_API_KEY", api_url="http://localhost:3002")
+    scrape_result = firecrawl_app.scrape_url(url, params={'formats': ['markdown']})
+    content = scrape_result["markdown"]
+
+    with open("chat.md", "w") as out_f:
+        out_f.write(T(".buildchat:web").r(markdown=content))
 
 
 if __name__ == "__main__":

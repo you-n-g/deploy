@@ -639,7 +639,7 @@
   Description = "build chat for research"
   Output = ""
   Tag = []
-  command = "uv run --no-project --with typer --with rdagent buildchat"
+  command = "uv run --no-project --with firecrawl-py --with typer --with rdagent buildchat"
 
 [[Snippets]]
   Description = "create workspace"
@@ -652,3 +652,9 @@
   Output = ""
   Tag = []
   command = "pip install git+https://github.com/microsoft/RD-Agent@main"
+
+[[Snippets]]
+  Description = "[neovim command] compare current branch to upstream main branch"
+  Output = ""
+  Tag = []
+  command = "DiffviewOpen origin/HEAD...HEAD"
