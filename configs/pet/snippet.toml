@@ -658,3 +658,9 @@
   Output = ""
   Tag = []
   command = "DiffviewOpen origin/HEAD...HEAD"
+
+[[Snippets]]
+  Description = "use local openai-like service LLM-backend to start vim"
+  Output = ""
+  Tag = []
+  command = "APIBACKEND=openai CHAT_MODEL=<chat_moodel=|_gpt-4.1_||_gpt-5_|> key_shell.sh openai vim"

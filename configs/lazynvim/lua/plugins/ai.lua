@@ -235,28 +235,42 @@ local modules = {
       local model = require("extra_fea.utils").get_llm_model() or cred.model
 
       opts["providers"] = opts["providers"] or {}
-      if cred.type == "azure" then
-
-        -- main provider
-        local azure_provider = {
-          endpoint = cred.api_base, -- example: "https://<your-resource-name>.openai.azure.com"
-          -- deployment = model, -- Azure deployment name (e.g., "gpt-4o", "my-gpt-4o-deployment")
-          deployment = model, -- Azure deployment name (e.g., "gpt-4o", "my-gpt-4o-deployment")
-          model = model, -- this is just for display purpose in AvanteModels
-          extra_request_body = {
-            temperature = 1, -- this is used with gpt-reasoning models
-          }
+      if vim.env.APIBACKEND == "openai" then
+        local provider_name = "openai-" .. vim.env.CHAT_MODEL
+        opts["providers"][provider_name] = {
+          __inherited_from = "openai",
+          endpoint = vim.env.OPENAI_BASE_URL,
+          model = vim.env.CHAT_MODEL,
         }
-        if model == "gpt-4o" then
-          azure_provider.max_tokens = 3000
-        end
-        if model == "4o-mini" then
-          azure_provider.extra_request_body = {
-            temperature = 1, -- this is used with gpt-reasoning models
+        if vim.env.CHAT_MODEL == "gpt-5" then
+          opts["providers"][provider_name].extra_request_body = {
+            reasoning_effort = "low"
           }
-          azure_provider.reasoning_effort = "low"
         end
-        opts["providers"]["azure"] = azure_provider
+        opts["provider"] = provider_name
+        -- the key will be in vim.env.OPENAI_API_KEY
+      elseif cred.type == "azure" then
+
+        -- -- main provider
+        -- local azure_provider = {
+        --   endpoint = cred.api_base, -- example: "https://<your-resource-name>.openai.azure.com"
+        --   -- deployment = model, -- Azure deployment name (e.g., "gpt-4o", "my-gpt-4o-deployment")
+        --   deployment = model, -- Azure deployment name (e.g., "gpt-4o", "my-gpt-4o-deployment")
+        --   model = model, -- this is just for display purpose in AvanteModels
+        --   extra_request_body = {
+        --     temperature = 1, -- this is used with gpt-reasoning models
+        --   }
+        -- }
+        -- if model == "gpt-4o" then
+        --   azure_provider.max_tokens = 3000
+        -- end
+        -- if model == "4o-mini" then
+        --   azure_provider.extra_request_body = {
+        --     temperature = 1, -- this is used with gpt-reasoning models
+        --   }
+        --   azure_provider.reasoning_effort = "low"
+        -- end
+        -- opts["providers"]["azure"] = azure_provider
         vim.env.AZURE_OPENAI_API_KEY = cred.api_key
 
         -- other providers
@@ -283,6 +297,16 @@ local modules = {
           },
           -- entra = true,
           -- reasoning_effort = "low"  -- Now I use it for chatting, so it don't have to be low.
+        }
+
+        opts["providers"]["azure-gpt-4.1"] = {
+          __inherited_from = "azure",
+          endpoint = cred.api_base,
+          deployment = "gpt-4.1",
+          model = "gpt-4.1",  -- this is just for display purpose in AvanteModels
+          extra_request_body = {
+            max_completion_tokens = 16384, --  "max_tokens is too large: 20480. This model supports at most 16384 completion tokens, whereas you provided 20480.",
+          },
         }
 
         opts["providers"]["azure-gpt-5"] = {
@@ -313,13 +337,6 @@ local modules = {
         -- opts["provider"] = "azure"
         opts["provider"] = "azure-gpt-5-chat"
         -- opts["provider"] = "azure-gpt-5"
-      else
-        opts["provider"] = "openai"
-        opts["openai"] = {
-          endpoint = cred.api_base,
-          model = model,
-        }
-        vim.env.OPENAI_API_KEY = cred.api_key
       end
       opts.hints = { enabled = false } -- it is annoying due to conflict with simplegpt.nvim. I have to use <leader>uE to erase them
       opts.selection = {
@@ -674,9 +691,11 @@ local extra_m = {
     },
     buffer_chat = {
       -- provider = "azure-o4-mini"
-      provider = "azure-gpt-5-chat"
       -- provider = "azure-gpt-5"
       -- provider = "azure-gpt-5-mini"
+	    -- provider = "azure-gpt-5-chat", -- (preferred)
+	    -- provider = "azure-gpt-4.1", -- if we want super long context and prefer fast response.
+      provider = vim.env.APIBACKEND == "openai" and "openai-" .. vim.env.CHAT_MODEL or "azure-gpt-5-chat",
     },
   },
   event = "VeryLazy", -- greatly boost the initial of neovim

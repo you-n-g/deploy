@@ -29,7 +29,7 @@ openai_key_api_01() {
   # source $DIR/litellm_proxy.env
   # CHAT_MODEL=$(python -c "print('$CHAT_MODEL'.split('/')[-1].split('_')[0])")
   # echo use $CHAT_MODEL from litellm_proxy
-  CHAT_MODEL=gpt-4o
+  CHAT_MODEL=${CHAT_MODEL:-gpt-4o}
 }
 
 azure_key_api_01() {
