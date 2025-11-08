@@ -5,6 +5,7 @@ Quick review files content.
 from collections import defaultdict
 from pathlib import Path
 import pickle
+import json
 from pprint import pprint
 
 import gc
@@ -63,6 +64,12 @@ def reduce_memory_usage(df):
 
 class ReadFile:
     def _auto_load(self, path):
+        p = Path(path)
+        if p.suffix.lower() == ".json":
+            try:
+                return self._json(path)
+            except Exception as e:
+                print(f"{self._json.__name__} failed: {e}")
         for f in [self._pkl, self._hdf, self._parquet]:
             try:
                 return f(path)
@@ -75,6 +82,10 @@ class ReadFile:
 
     def _parquet(self, path):
         return pd.read_parquet(path)
+
+    def _json(self, path):
+        with Path(path).open("r", encoding="utf-8") as f:
+            return json.load(f)
 
     def _inspect(self, obj, e=False, p=False):
         if p:

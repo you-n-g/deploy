@@ -74,9 +74,16 @@ def web(url: str = typer.Argument(..., help="The target URL to scrape"),):
 def pdf(
         url: str = typer.Argument(..., help="The PDF URL to download and convert"),
         outfile: Path = Path("chat.md"),
+        with_option: bool = typer.Option(
+            False,
+            "-p/-P",
+            "--with-option/--no-with-option",
+            help="Append additional pdf-option prompt to the chat output (use -p to enable, -P to disable)",
+        ),
 ):
     """
     Download a PDF from a URL, extract its text, and write a chat.md file.
+    Optionally append additional guidance from the pdf-option template.
     """
     # Download to a temporary file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmpf:
@@ -93,8 +100,11 @@ def pdf(
             parts.append(page.extract_text() or "")
         text = "\n".join(parts).strip()
 
+        content = T(".buildchat:pdf").r(text=text)
+        if with_option:
+            content = f"{content}\n\n{T('.buildchat:pdf-option.paper').r()}"
         with open(outfile, "w") as out_f:
-            out_f.write(T(".buildchat:pdf").r(text=text))
+            out_f.write(content)
     finally:
         # Clean up the temporary file
         try:

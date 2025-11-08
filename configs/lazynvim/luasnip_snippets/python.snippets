@@ -84,3 +84,12 @@ snippet explorelocals "explore local variables"
 
 snippet reprlibmy "use reprlib to display the object"
 	__repr = __import__("reprlib").Repr(); __repr.maxother=100; print(__repr.repr(${0:obj}))
+
+snippet uvx "start with uv environment"
+  #!/usr/bin/env -S uv run --no-project --with ${0:prefect} python
+
+snippet @task "prefect task cache policy"
+  ${1|,from prefect import task
+  from prefect.cache_policies import TASK_SOURCE\, INPUTS
+
+  |}@task(cache_policy=TASK_SOURCE + INPUTS)
