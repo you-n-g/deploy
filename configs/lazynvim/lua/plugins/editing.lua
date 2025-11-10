@@ -2,7 +2,7 @@ return {
   -- NOTE: we disable it due to lacking of following features.
   -- 1. Multiple quote pairing is not supported in the future (https://github.com/echasnovski/mini.nvim/discussions/255)
   -- 2. fast wrap is not supported
-  { "echasnovski/mini.pairs", enabled = false },
+  { "nvim-mini/mini.pairs", enabled = false },
 
   -- instead an alternative is used
   -- - https://github.com/jiangmiao/auto-pairs may be another alternative

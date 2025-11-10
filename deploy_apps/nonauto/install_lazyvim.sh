@@ -73,6 +73,11 @@ install_or_update_neovim_app() {
   fi
   pip install debugpy  # this will used by nvim-dap
 
+  # for installing 
+  bash ~/deploy/deploy_apps/install_cargo.sh
+  . "$HOME/.cargo/env"
+  cargo install --locked tree-sitter-cli
+
   # generate a redable unique string based on datetime
   # NAME="nvim-latest-$(date +%Y%m%d%H%M%S)"
   NAME="nvim-stable-$(date +%Y%m%d%H%M%S)"

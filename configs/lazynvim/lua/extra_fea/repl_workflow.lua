@@ -119,7 +119,7 @@ end
 -- https://www.reddit.com/r/neovim/comments/nnru7r/how_do_i_get_the_name_of_the_current_function_i/
 -- 这个版本还有如下问题
 -- - 遇到comments，就直接变成<node source了>
-local ts_utils = require("nvim-treesitter.ts_utils")
+-- local ts_utils = require("nvim-treesitter.ts_utils")
 -- local query = require'vim.treesitter.query'
 -- get_node_text 说是新版的得从这里拿，但是这里没找到怎么拿
 
@@ -128,7 +128,7 @@ local function get_current_function_name(find_cls, sep)
   find_cls = (find_cls == nil and false) or find_cls
   sep = (sep == nil and "::") or sep
 
-  local current_node = ts_utils.get_node_at_cursor()
+  local current_node = vim.treesitter.get_node()
 
   if not current_node then
     return ""
@@ -156,7 +156,7 @@ local function get_current_function_name(find_cls, sep)
     name_index = 0
   end
   -- query.get_node_text
-  local func_name = (ts_utils.get_node_text(expr:child(name_index)))[1]
+  local func_name = vim.treesitter.get_node_text(expr:child(name_index), vim.api.nvim_get_current_buf())
   if not find_cls then
     return func_name
   end
@@ -174,7 +174,7 @@ local function get_current_function_name(find_cls, sep)
     return func_name
   end
 
-  local cls_name = (ts_utils.get_node_text(expr:child(1)))[1]
+  local cls_name = vim.treesitter.get_node_text(expr:child(1), vim.api.nvim_get_current_buf())
   return cls_name .. sep .. func_name
 end
 

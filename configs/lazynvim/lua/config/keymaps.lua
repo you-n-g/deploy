@@ -233,3 +233,10 @@ end, { silent = true, desc = "Fuzzy complete file" })
 -- But I'm afraid to conflict with other keymaps, so try to remember the <C-d> keymap
 -- Map Shift-Tab in insert mode to <C-d> (delete char right) using Lua API
 -- vim.keymap.set("i", "<S-Tab>", "<C-d>", { noremap = true, desc = "Shift-Tab deletes right char in insert mode" })
+
+-- It does not work.
+-- maps <A-y> to yank to system clipboard (+ register) in visual mode
+-- vim.keymap.set("v", "<A-y>", '"+y', { noremap = true, desc = "Yank to system clipboard" })
+
+-- maps <A-p> to paste from system clipboard (+ register) in visual and normal mode
+-- vim.keymap.set({ "n", "v" }, "<A-p>", '"+p', { noremap = true, desc = "Paste from system clipboard" })
