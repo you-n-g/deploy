@@ -14,22 +14,23 @@ fi
 MY_ENV=${MY_ENV:-.env}
 
 # If $MY_ENV is not .env, backup .env (if it exists) and link .env to $MY_ENV.
-if [ "$MY_ENV" != ".env" ]; then
-  if [ -e ".env" ] && [ ! -L ".env" ]; then
-    echo "Backing up existing .env to .env.bak"
-    cp .env .env.bak
-    rm .env
-  fi
-  if [ -e "$MY_ENV" ]; then
-    # Only create or update .env symlink if it doesn't already point to $MY_ENV
-    if [ ! -L ".env" ] || [ "$(readlink .env)" != "$MY_ENV" ]; then
-      ln -sf "$MY_ENV" .env
-      echo "Linked .env -> $MY_ENV"
-    fi
-  else
-    echo "Warning: $MY_ENV does not exist. No link created."
-  fi
-fi
+# NOTE:  I think this behavior may bring confusion.
+# if [ "$MY_ENV" != ".env" ]; then
+#   if [ -e ".env" ] && [ ! -L ".env" ]; then
+#     echo "Backing up existing .env to .env.bak"
+#     cp .env .env.bak
+#     rm .env
+#   fi
+#   if [ -e "$MY_ENV" ]; then
+#     # Only create or update .env symlink if it doesn't already point to $MY_ENV
+#     if [ ! -L ".env" ] || [ "$(readlink .env)" != "$MY_ENV" ]; then
+#       ln -sf "$MY_ENV" .env
+#       echo "Linked .env -> $MY_ENV"
+#     fi
+#   else
+#     echo "Warning: $MY_ENV does not exist. No link created."
+#   fi
+# fi
 
 # EXTRA_DOTENV_ARGS is another considered environment variable.
 # for example: `-f .another.env`

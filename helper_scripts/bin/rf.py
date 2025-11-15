@@ -98,6 +98,7 @@ class ReadFile:
                 __import__("objexplore").explore(obj)
             except ImportError:
                 print("objexplore not installed")
+                print("uv pip install objexplore")
         else:
             if isinstance(obj, pd.DataFrame):
                 print(obj.head())
