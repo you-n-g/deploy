@@ -93,3 +93,6 @@ autosnippet pydap "Python DAP Config"
 
 autosnippet pypdb "add pdb module and continue"
 	python -m ipdb -c c 
+
+snippet projdir "get project directory"
+  PROJ_DIR="\$(cd "\$(dirname "\$0")" && while [ ! -d ".git" ] && [ "\$(pwd)" != "/" ]; do cd ..; done && pwd)"  # find parent folder containing .git starting from script location

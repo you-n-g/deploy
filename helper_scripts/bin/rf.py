@@ -114,9 +114,9 @@ class ReadFile:
             except KeyError:
                 print(f"key={k} not found")
 
-    def auto(self, path, e=False):
+    def auto(self, path, e=False, p=False):
         obj = self._auto_load(path)
-        self._inspect(obj, e)
+        self._inspect(obj, e, p)
 
     def pk(self, path, e=False, p=False):
         obj = self._pkl(path)

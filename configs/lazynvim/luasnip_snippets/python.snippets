@@ -87,6 +87,7 @@ snippet reprlibmy "use reprlib to display the object"
 
 snippet uvx "start with uv environment"
   #!/usr/bin/env -S uv run --no-project --with ${0:prefect} python
+  ${1|,# vim: filetype=python|}
 
 snippet @task "prefect task cache policy"
   ${1|,from prefect import task

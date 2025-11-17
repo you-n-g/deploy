@@ -1,3 +1,5 @@
+#!/usr/bin/env -S uv run --no-project --with typer python
+# vim: filetype=python
 """
 Please refer to `deploy_apps/firecrawl.sh` to know how to start firecrawl.
 """
