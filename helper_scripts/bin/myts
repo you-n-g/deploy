@@ -1,0 +1,8 @@
+#!/bin/bash
+# echo all arguments into script -c directly without tmp file, preserving spaces
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 <command> [args...]"
+    exit 1
+fi
+script -c "$*" typescript
+

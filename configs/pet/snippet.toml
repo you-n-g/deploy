@@ -624,7 +624,7 @@
   command = "uv run --no-project `which rf.py` auto"
 
 [[Snippets]]
-  Description = "restart gpg server; sometimes gpg get stuck, we can solve it by killing the process"
+  Description = "restart gpg server; sometimes gpg get stuck, we can solve it by killing the process; If it timeout, we can restart the tmux session."
   Output = ""
   Tag = []
   command = "ps aux | grep gpg ; echo ; gpgconf --kill gpg-agent ; echo ; sleep 1; ps aux | grep gpg ; echo ; sleep 1;  gpg-agent --daemon ; ps aux | grep gpg ; gpg -d ~/deploy/keys/gpt.gpg"
