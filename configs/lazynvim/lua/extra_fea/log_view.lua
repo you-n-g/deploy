@@ -10,6 +10,8 @@ Cheatsheets
 ]]
 
 local M = {}
+-- Dedicated namespace for highlights in this module
+local NS = vim.api.nvim_create_namespace('log_view')
 
 
 -- Define the regular expressions for the elements you want to match
@@ -206,7 +208,7 @@ function M.display_outline()
     }) do
       local from, to = string.find(line, pat)
       if from and to then
-        vim.api.nvim_buf_add_highlight(bufnr, -1, hlgroup, idx - 1, from - 1, to)
+        vim.api.nvim_buf_add_highlight(bufnr, NS, hlgroup, idx - 1, from - 1, to)
       end
     end
   end
@@ -237,11 +239,11 @@ function M.set_style()
   vim.bo[bufnr].readonly = true
   -- make it read only and prevent saving to disk
   -- Saving large logfiles is time consuming
-  -- vim.api.nvim_buf_set_option(bufnr, 'wrap', false)  -- Seems not necessary now.
+  vim.api.nvim_buf_set_option(bufnr, 'wrap', false)  -- Seems not necessary now. we have line-nowrap plugin!
   vim.api.nvim_buf_set_option(bufnr, 'buftype', 'nofile')
 
   -- Add timestamp highlighting
-  vim.api.nvim_buf_clear_namespace(bufnr, -1, 0, -1)
+  vim.api.nvim_buf_clear_namespace(bufnr, NS, 0, -1)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   -- Highlight all patterns
   for i, line in ipairs(lines) do
@@ -250,7 +252,7 @@ function M.set_style()
     if ts then
       local start = string.find(line, ts, nil, true)
       if start then
-        vim.api.nvim_buf_add_highlight(bufnr, -1, 'LogTimestamp', i - 1, start - 1, start + #ts - 1)
+        vim.api.nvim_buf_add_highlight(bufnr, NS, 'LogTimestamp', i - 1, start - 1, start + #ts - 1)
       end
     end
 
@@ -260,7 +262,7 @@ function M.set_style()
       if match then
         local start = string.find(line, match, nil, true)
         if start then
-          vim.api.nvim_buf_add_highlight(bufnr, -1, 'LogHeadingPattern', i - 1, start - 1, start + #match - 1)
+          vim.api.nvim_buf_add_highlight(bufnr, NS, 'LogHeadingPattern', i - 1, start - 1, start + #match - 1)
         end
       end
     end

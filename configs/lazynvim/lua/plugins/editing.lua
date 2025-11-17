@@ -150,5 +150,14 @@ return {
       { "<leader>gD", "<cmd>DiffviewOpen<cr>", desc = "Open Diffview" },
       { "<leader>gH", "<cmd>DiffviewFileHistory<cr>", desc = "Diffview File History" },
     },
-  }
+  },
+  -- it does not work when a file is not editable
+  -- {
+  --   "benlubas/wrapping-paper.nvim" ,
+  --   keys = {
+  --     { "n", "gww", function()
+  --         require("wrapping-paper").wrap_line()
+  --       end, desc = "Fake wrap current line" }, -- see :h gw to figure out why this makes sense.
+  --   }
+  -- },
 }
