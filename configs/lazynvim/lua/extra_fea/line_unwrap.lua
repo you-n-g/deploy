@@ -3,21 +3,41 @@ When in nowrap mode,
 automatically use virtual text to display the entire line at the current cursor position.
 This plugin shows the full line content as virtual text when entering a line and clears it when leaving.
 Enabled by default.
+
+Motivation:
+- Wrap mode shows more information but makes formatting harder to read.
+- No-wrap mode is often easier to read but hides part of the line.
+- single-line-wrap.nvimw combines the benefits of both modes.
+
+Related Work:
+- https://github.com/benlubas/wrapping-paper.nvim
+  - wrapping-paper uses a more complex machenism to show the line content. I encountered some issues when using it. This motivated me to write this plugin in a simpler manner to avoid the issues.
+- https://github.com/Aster89/vim-softwrap
+  - For very long lines, it does not work well when the cursor is in the middle of the line.
+  - It does not work well in neovim(I got some errors like  `softwrap.vim, line 43: Vim(if):E121: Undefined variable: v:versionlong`)
+
+
+TODO:
+- line navigation (e.g. j, k) in the virtual text area
+- visual selection in the virtual text area.
+- visual selection to activate multiple line wrapping.
 ]]
 
 local M = {}
 
-local ns_id = vim.api.nvim_create_namespace("LineUnwrap")
-local augroup_name = "LineUnwrapGroup"
+local ns_id = vim.api.nvim_create_namespace("SingleLineWrap")
+local augroup_name = "SingleLineWrapGroup"
 local enabled = false
-local last_line_by_buf = {}
 
 local function is_supported_buf(bufnr)
+  -- We want to support all kinds of buffers. So we don't check buftype.
   local bt = vim.bo[bufnr].buftype
-  -- We want to support all kinds of buffers.
-  -- if bt == "terminal" or bt == "nofile" or bt == "prompt" or bt == "help" or bt == "quickfix" then
-  --   return false
-  -- end
+  if vim.b.single_line_wrap_support then
+    return true
+  end
+  if bt == "terminal" or bt == "nofile" or bt == "prompt" or bt == "help" or bt == "quickfix" then
+    return false
+  end
   return true
 end
 
@@ -254,14 +274,12 @@ local function refresh_current_line()
 
   if not is_supported_buf(bufnr) then
     clear_buf(bufnr)
-    last_line_by_buf[bufnr] = nil
     return
   end
 
   -- Only active in nowrap mode
   if vim.wo[win].wrap then
     clear_buf(bufnr)
-    last_line_by_buf[bufnr] = nil
     return
   end
 
@@ -301,7 +319,6 @@ function M.enable()
     group = group,
     callback = function(args)
       clear_buf(args.buf)
-      last_line_by_buf[args.buf] = nil
     end,
   })
 
@@ -311,7 +328,6 @@ function M.enable()
     callback = function()
       local bufnr = vim.api.nvim_get_current_buf()
       clear_buf(bufnr)
-      last_line_by_buf[bufnr] = nil
       refresh_current_line()
     end,
   })
@@ -331,7 +347,6 @@ function M.disable()
       clear_buf(bufnr)
     end
   end
-  last_line_by_buf = {}
 end
 
 function M.toggle()
@@ -343,7 +358,7 @@ function M.toggle()
 end
 
 -- Enable by default unless explicitly disabled
-if vim.g.line_unwrap_auto_enable ~= false then
+if vim.g.single_line_wrap_auto_enable ~= false then
   if vim.fn.has("nvim") == 1 then
     M.enable()
   end

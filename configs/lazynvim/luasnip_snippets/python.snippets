@@ -94,3 +94,7 @@ snippet @task "prefect task cache policy"
   from prefect.cache_policies import TASK_SOURCE\, INPUTS
 
   |}@task(cache_policy=TASK_SOURCE + INPUTS)
+
+snippet richrule "rich console rule block"
+  from rich.console import Console
+  Console().rule("[${1|bold red,red,bold blue,blue,bold green,green|}]${0:Title}[/${1}]")

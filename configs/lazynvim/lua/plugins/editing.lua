@@ -160,4 +160,5 @@ return {
   --       end, desc = "Fake wrap current line" }, -- see :h gw to figure out why this makes sense.
   --   }
   -- },
+  -- {"Aster89/vim-softwrap"}
 }

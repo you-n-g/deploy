@@ -44,3 +44,8 @@ set +x
 # You can fix it by
 # - `pip install 'litellm[proxy]'`
 # - `pip install git+https://github.com/you-n-g/litellm@feat/add_more_credential`
+#
+# After merging my PR to fix the issue, the feature is broken again...
+# - So I create a branch to backup a stable version.
+#   - `pip install git+https://github.com/you-n-g/litellm@support_gpt_5 --upgrade`
+

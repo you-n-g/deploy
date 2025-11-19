@@ -240,6 +240,7 @@ function M.set_style()
   -- make it read only and prevent saving to disk
   -- Saving large logfiles is time consuming
   vim.api.nvim_buf_set_option(bufnr, 'wrap', false)  -- Seems not necessary now. we have line-nowrap plugin!
+  vim.b.single_line_wrap_support = true -- for single-line-wrap.nvim
   vim.api.nvim_buf_set_option(bufnr, 'buftype', 'nofile')
 
   -- Add timestamp highlighting

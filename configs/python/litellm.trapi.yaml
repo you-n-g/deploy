@@ -474,6 +474,85 @@ model_list:
   - model_name: gpt-4o-gcr
     litellm_params:  
       <<: *gpt-4o_2024-05-13-gcr
+  # new in 2025-11-19
+  # gcr/shared	gpt-5-chat_2025-10-03	gpt-5-chat	2025-10-03	700	60
+  - model_name: gpt-5-chat_2025-10-03
+    litellm_params: &gpt-5-chat_2025-10-03-gcr
+      model: azure/gpt-5-chat_2025-10-03
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2024-12-01-preview"
+  - model_name: gpt-5-chat
+    litellm_params:
+      <<: *gpt-5-chat_2025-10-03-gcr
+  - model_name: gpt-5-chat-gcr
+    litellm_params:
+      <<: *gpt-5-chat_2025-10-03-gcr
+
+  # gcr/shared	gpt-5-codex_2025-09-15	gpt-5-codex	2025-09-15	800	60
+  - model_name: gpt-5-codex_2025-09-15
+    litellm_params: &gpt-5-codex_2025-09-15-gcr
+      model: azure/gpt-5-codex_2025-09-15
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2024-12-01-preview"
+  - model_name: gpt-5-codex
+    litellm_params:
+      <<: *gpt-5-codex_2025-09-15-gcr
+  - model_name: gpt-5-codex-gcr
+    litellm_params:
+      <<: *gpt-5-codex_2025-09-15-gcr
+
+  # gcr/shared	gpt-5-pro_2025-10-06	gpt-5-pro	2025-10-06	1600	60
+  - model_name: gpt-5-pro_2025-10-06
+    litellm_params: &gpt-5-pro_2025-10-06-gcr
+      model: azure/gpt-5-pro_2025-10-06
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2024-12-01-preview"
+  - model_name: gpt-5-pro
+    litellm_params:
+      <<: *gpt-5-pro_2025-10-06-gcr
+  - model_name: gpt-5-pro-gcr
+    litellm_params:
+      <<: *gpt-5-pro_2025-10-06-gcr
+
+  # msra/shared	gpt-5-chat_2025-10-03	gpt-5-chat	2025-10-03	1000	60
+  - model_name: gpt-5-chat_2025-10-03
+    litellm_params: &gpt-5-chat_2025-10-03-msra
+      model: azure/gpt-5-chat_2025-10-03
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2024-12-01-preview"
+  - model_name: gpt-5-chat
+    litellm_params:
+      <<: *gpt-5-chat_2025-10-03-msra
+  - model_name: gpt-5-chat-msra
+    litellm_params:
+      <<: *gpt-5-chat_2025-10-03-msra
+
+  # msra/shared	gpt-5-codex_2025-09-15	gpt-5-codex	2025-09-15	1000	60
+  - model_name: gpt-5-codex_2025-09-15
+    litellm_params: &gpt-5-codex_2025-09-15-msra
+      model: azure/gpt-5-codex_2025-09-15
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2024-12-01-preview"
+  - model_name: gpt-5-codex
+    litellm_params:
+      <<: *gpt-5-codex_2025-09-15-msra
+  - model_name: gpt-5-codex-msra
+    litellm_params:
+      <<: *gpt-5-codex_2025-09-15-msra
+
+  # msra/shared	gpt-5-pro_2025-10-06	gpt-5-pro	2025-10-06	1600	60
+  - model_name: gpt-5-pro_2025-10-06
+    litellm_params: &gpt-5-pro_2025-10-06-msra
+      model: azure/gpt-5-pro_2025-10-06
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2024-12-01-preview"
+  - model_name: gpt-5-pro
+    litellm_params:
+      <<: *gpt-5-pro_2025-10-06-msra
+  - model_name: gpt-5-pro-msra
+    litellm_params:
+      <<: *gpt-5-pro_2025-10-06-msra
+
   # --------------------------- GCR Non-OpenAI Models
   # TRAPISuffix	DeploymentName	DeploymentFullURL
   # gcr/shared/deepseek-ai	Deepseek-R1	https://trapi.research.microsoft.com/gcr/shared/deepseek-ai/deployments/DeepSeek-R1 
@@ -577,6 +656,9 @@ model_list:
       model: azure/gpt-5_2025-08-07
       api_base: https://trapi.research.microsoft.com/gcr/shared
       api_version: "2024-12-01-preview"
+      allowed_openai_params:
+        - "reasoning_effort"
+        - "response_format"
   - model_name: gpt-5
     litellm_params:
       <<: *gpt-5_2025-08-07-gcr
@@ -625,6 +707,9 @@ model_list:
       model: azure/gpt-5_2025-08-07
       api_base: https://trapi.research.microsoft.com/msra/shared
       api_version: "2024-12-01-preview"
+      allowed_openai_params:
+        - "reasoning_effort"
+        - "response_format"
   - model_name: gpt-5
     litellm_params:
       <<: *gpt-5_2025-08-07-msra
