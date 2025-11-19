@@ -1,4 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env -S uv run --no-project --with openai --with typer --with pandas --with 'numpy<2' --with azure-identity --with litellm python
+# numpy < 2 due to following error:
+#   A module that was compiled using NumPy 1.x cannot be run in
+#   NumPy 2.3.5 as it may crash. To support both 1.x and 2.x
+#   versions of NumPy, modules must be compiled with NumPy 2.0.
+#   Some module may need to rebuild instead e.g. with 'pybind11>=2.12'.
 """
 This file is used together with key_shell.sh
 It is used to check the usability of the OpenAI API.
