@@ -752,6 +752,103 @@ model_list:
   - model_name: gpt-5-chat-msra
     litellm_params:
       <<: *gpt-5-chat_2025-08-07-msra
+  # gcr/shared	gpt-5.1_2025-11-13	gpt-5.1	2025-11-13	10000	60
+  - model_name: gpt-5.1_2025-11-13
+    litellm_params: &gpt-5-1_2025-11-13-gcr
+      model: azure/gpt-5.1_2025-11-13
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: 2025-03-01-preview
+  - model_name: gpt-5.1
+    litellm_params:
+      <<: *gpt-5-1_2025-11-13-gcr
+  - model_name: gpt-5.1-gcr
+    litellm_params:
+      <<: *gpt-5-1_2025-11-13-gcr
+  # gcr/shared	gpt-5.1-chat_2025-11-13	gpt-5.1-chat	2025-11-13	10000	60
+  - model_name: gpt-5.1-chat_2025-11-13
+    litellm_params: &gpt-5-1-chat_2025-11-13-gcr
+      model: azure/gpt-5.1-chat_2025-11-13
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: 2025-03-01-preview
+  - model_name: gpt-5.1-chat
+    litellm_params:
+      <<: *gpt-5-1-chat_2025-11-13-gcr
+  - model_name: gpt-5.1-chat-gcr
+    litellm_params:
+      <<: *gpt-5-1-chat_2025-11-13-gcr
+  # gcr/shared	gpt-5.1-codex_2025-11-13	gpt-5.1-codex	2025-11-13	1000	60
+  - model_name: gpt-5.1-codex_2025-11-13
+    litellm_params: &gpt-5-1-codex_2025-11-13-gcr
+      model: azure/gpt-5.1-codex_2025-11-13
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: 2025-03-01-preview
+  - model_name: gpt-5.1-codex
+    litellm_params:
+      <<: *gpt-5-1-codex_2025-11-13-gcr
+  - model_name: gpt-5.1-codex-gcr
+    litellm_params:
+      <<: *gpt-5-1-codex_2025-11-13-gcr
+  # gcr/shared	gpt-5.1-codex-mini_2025-11-13	gpt-5.1-codex-mini	2025-11-13	1000	60
+  - model_name: gpt-5.1-codex-mini_2025-11-13
+    litellm_params: &gpt-5-1-codex-mini_2025-11-13-gcr
+      model: azure/gpt-5.1-codex-mini_2025-11-13
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: 2025-03-01-preview
+  - model_name: gpt-5.1-codex-mini
+    litellm_params:
+      <<: *gpt-5-1-codex-mini_2025-11-13-gcr
+  - model_name: gpt-5.1-codex-mini-gcr
+    litellm_params:
+      <<: *gpt-5-1-codex-mini_2025-11-13-gcr
+  # msra/shared	gpt-5.1_2025-11-13	gpt-5.1	2025-11-13	10000	60
+  - model_name: gpt-5.1_2025-11-13
+    litellm_params: &gpt-5-1_2025-11-13-msra
+      model: azure/gpt-5.1_2025-11-13
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: 2025-03-01-preview
+  - model_name: gpt-5.1
+    litellm_params:
+      <<: *gpt-5-1_2025-11-13-msra
+  - model_name: gpt-5.1-msra
+    litellm_params:
+      <<: *gpt-5-1_2025-11-13-msra
+  # msra/shared	gpt-5.1-chat_2025-11-13	gpt-5.1-chat	2025-11-13	10000	60
+  - model_name: gpt-5.1-chat_2025-11-13
+    litellm_params: &gpt-5-1-chat_2025-11-13-msra
+      model: azure/gpt-5.1-chat_2025-11-13
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: 2025-03-01-preview
+  - model_name: gpt-5.1-chat
+    litellm_params:
+      <<: *gpt-5-1-chat_2025-11-13-msra
+  - model_name: gpt-5.1-chat-msra
+    litellm_params:
+      <<: *gpt-5-1-chat_2025-11-13-msra
+  # msra/shared	gpt-5.1-codex_2025-11-13	gpt-5.1-codex	2025-11-13	1000	60
+  - model_name: gpt-5.1-codex_2025-11-13
+    litellm_params: &gpt-5-1-codex_2025-11-13-msra
+      model: azure/gpt-5.1-codex_2025-11-13
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: 2025-03-01-preview
+  - model_name: gpt-5.1-codex
+    litellm_params:
+      <<: *gpt-5-1-codex_2025-11-13-msra
+  - model_name: gpt-5.1-codex-msra
+    litellm_params:
+      <<: *gpt-5-1-codex_2025-11-13-msra
+  # msra/shared	gpt-5.1-codex-mini_2025-11-13	gpt-5.1-codex-mini	2025-11-13	1000	60
+  - model_name: gpt-5.1-codex-mini_2025-11-13
+    litellm_params: &gpt-5-1-codex-mini_2025-11-13-msra
+      model: azure/gpt-5.1-codex-mini_2025-11-13
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: 2025-03-01-preview
+  - model_name: gpt-5.1-codex-mini
+    litellm_params:
+      <<: *gpt-5-1-codex-mini_2025-11-13-msra
+  - model_name: gpt-5.1-codex-mini-msra
+    litellm_params:
+      <<: *gpt-5-1-codex-mini_2025-11-13-msra
+
   # msra/shared	text-embedding-3-large_1	text-embedding-3-large	1	1000	10
   - model_name: text-embedding-3-large-msra
     litellm_params: &text-embedding-3-large-msra

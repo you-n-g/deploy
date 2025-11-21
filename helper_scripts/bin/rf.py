@@ -2,6 +2,8 @@
 """
 Quick review files content.
 """
+# We don't use the following line because pickle reading depends on the environment.
+#!/usr/bin/env -S uv run --no-project --with fire --with tqdm --with pandas --with objexplore python
 from collections import defaultdict
 from pathlib import Path
 import pickle
@@ -64,17 +66,21 @@ def reduce_memory_usage(df):
 
 class ReadFile:
     def _auto_load(self, path):
-        p = Path(path)
-        if p.suffix.lower() == ".json":
+        suffix_order = {
+            ".pkl": "_pkl",
+            ".h5": "_hdf",
+            ".hdf": "_hdf",
+            ".parquet": "_parquet",
+            ".jsonl": "_jsonl",
+            ".json": "_json"
+        }
+        funcs = [self._pkl, self._hdf, self._parquet, self._jsonl, self._json]
+        funcs.sort(key=lambda f: 0 if f.__name__ == suffix_order.get(Path(path).suffix.lower()) else 1)
+        for func in funcs:
             try:
-                return self._json(path)
+                return func(path)
             except Exception as e:
-                print(f"{self._json.__name__} failed: {e}")
-        for f in [self._pkl, self._hdf, self._parquet]:
-            try:
-                return f(path)
-            except Exception as e:
-                print(f"{f.__name__} failed: {e}")
+                print(f"{func.__name__} failed: {e}")
 
     def _pkl(self, path):
         with Path(path).open("rb") as f:
@@ -86,6 +92,10 @@ class ReadFile:
     def _json(self, path):
         with Path(path).open("r", encoding="utf-8") as f:
             return json.load(f)
+
+    def _jsonl(self, path):
+        with Path(path).open("r", encoding="utf-8") as f:
+            return [json.loads(line) for line in f if line.strip()]
 
     def _inspect(self, obj, e=False, p=False):
         if p:
