@@ -7,7 +7,7 @@ Enabled by default.
 Motivation:
 - Wrap mode shows more information but makes formatting harder to read.
 - No-wrap mode is often easier to read but hides part of the line.
-- single-line-wrap.nvimw combines the benefits of both modes.
+- virtual-single-line-wrap.nvimw combines the benefits of both modes.
 
 Related Work:
 - https://github.com/benlubas/wrapping-paper.nvim
@@ -284,9 +284,18 @@ local function refresh_current_line()
   end
 
   local lnum = vim.api.nvim_win_get_cursor(win)[1] - 1
-  -- Always refresh to reflect horizontal scrolling and visibility changes.
-  clear_buf(bufnr)
-  show_virtual_line(bufnr, lnum)
+  -- use an async, debounced refresh to avoid excessive redraws
+  -- It would greatly improve the performance when cursor moves rapidly.
+  if M._refresh_timer then
+    pcall(vim.fn.timer_stop, M._refresh_timer)
+    M._refresh_timer = nil
+  end
+  M._refresh_timer = vim.fn.timer_start(100, function()
+    vim.schedule(function()
+      clear_buf(bufnr)
+      show_virtual_line(bufnr, lnum)
+    end)
+  end)
 end
 
 function M.enable()
@@ -342,6 +351,10 @@ function M.disable()
   end
   enabled = false
   pcall(vim.api.nvim_del_augroup_by_name, augroup_name)
+  if M._refresh_timer then
+    pcall(vim.fn.timer_stop, M._refresh_timer)
+    M._refresh_timer = nil
+  end
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
     if vim.api.nvim_buf_is_loaded(bufnr) then
       clear_buf(bufnr)

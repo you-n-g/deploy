@@ -1,8 +1,9 @@
 #!/bin/sh
 
-export BROWSER=browser.sh
+# I found not using absolute path may fail.
+export BROWSER=`pwd`/browser.sh
 
-cat <<EOF > browser.sh
+cat <<'EOF' > browser.sh
 #!/bin/sh
 echo "$@" >  ./browser.log
 EOF

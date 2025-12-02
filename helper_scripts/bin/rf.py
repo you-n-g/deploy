@@ -79,6 +79,9 @@ class ReadFile:
         for func in funcs:
             try:
                 return func(path)
+            except ModuleNotFoundError:
+                print(f"{func.__name__} failed due to module not found(But it should be a pikle file)")
+                raise
             except Exception as e:
                 print(f"{func.__name__} failed: {e}")
 

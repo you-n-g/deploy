@@ -4,5 +4,8 @@ if [ $# -eq 0 ]; then
     echo "Usage: $0 <command> [args...]"
     exit 1
 fi
-script -c "$*" typescript
+
+LOG_FILE=${LOG_FILE:-typescript}
+# FIXED: properly handle arguments with quotes and spaces
+script -c "$(printf '%q ' "$@")" $LOG_FILE
 
