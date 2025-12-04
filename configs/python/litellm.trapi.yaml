@@ -552,6 +552,136 @@ model_list:
   - model_name: gpt-5-pro-msra
     litellm_params:
       <<: *gpt-5-pro_2025-10-06-msra
+  # added in 2025-12-3
+  # Added in 2025-12-03 following the above comment to add the APIs  
+  # gcr/shared	grok-3_1	grok-3	1	1000	60  
+  - model_name: grok-3_1
+    litellm_params: &grok-3_1-gcr
+      model: azure/grok-3_1
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: '2025-03-01-preview'
+  - model_name: grok-3
+    litellm_params:
+      <<: *grok-3_1-gcr
+  - model_name: grok-3-gcr
+    litellm_params:
+      <<: *grok-3_1-gcr
+
+  # gcr/shared	grok-4_1	grok-4	1	1000	60  
+  - model_name: grok-4_1
+    litellm_params: &grok-4_1-gcr
+      model: azure/grok-4_1
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: '2025-03-01-preview'
+  - model_name: grok-4
+    litellm_params:
+      <<: *grok-4_1-gcr
+  - model_name: grok-4-gcr
+    litellm_params:
+      <<: *grok-4_1-gcr
+
+  # gcr/shared	grok-4-fast-non-reasoning_1	grok-4-fast-non-reasoning	1	1000	60  
+  - model_name: grok-4-fast-non-reasoning_1
+    litellm_params: &grok-4-fast-non-reasoning_1-gcr
+      model: azure/grok-4-fast-non-reasoning_1
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: '2025-03-01-preview'
+  - model_name: grok-4-fast-non-reasoning
+    litellm_params:
+      <<: *grok-4-fast-non-reasoning_1-gcr
+  - model_name: grok-4-fast-non-reasoning-gcr
+    litellm_params:
+      <<: *grok-4-fast-non-reasoning_1-gcr
+
+  # gcr/shared	grok-4-fast-reasoning_1	grok-4-fast-reasoning	1	1000	60  
+  - model_name: grok-4-fast-reasoning_1
+    litellm_params: &grok-4-fast-reasoning_1-gcr
+      model: azure/grok-4-fast-reasoning_1
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: '2025-03-01-preview'
+  - model_name: grok-4-fast-reasoning
+    litellm_params:
+      <<: *grok-4-fast-reasoning_1-gcr
+  - model_name: grok-4-fast-reasoning-gcr
+    litellm_params:
+      <<: *grok-4-fast-reasoning_1-gcr
+
+  # gcr/shared	grok-code-fast-1_1	grok-code-fast-1	1	1000	60  
+  - model_name: grok-code-fast-1_1
+    litellm_params: &grok-code-fast-1_1-gcr
+      model: azure/grok-code-fast-1_1
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: '2025-03-01-preview'
+  - model_name: grok-code-fast-1
+    litellm_params:
+      <<: *grok-code-fast-1_1-gcr
+  - model_name: grok-code-fast-1-gcr
+    litellm_params:
+      <<: *grok-code-fast-1_1-gcr
+  # msra/shared	grok-3_1	grok-3	1	1000	60
+  - model_name: grok-3_1
+    litellm_params: &grok-3_1-msra
+      model: azure/grok-3_1
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: '2025-03-01-preview'
+  - model_name: grok-3
+    litellm_params:
+      <<: *grok-3_1-msra
+  - model_name: grok-3-msra
+    litellm_params:
+      <<: *grok-3_1-msra
+
+  # msra/shared	grok-4_1	grok-4	1	1000	60
+  - model_name: grok-4_1
+    litellm_params: &grok-4_1-msra
+      model: azure/grok-4_1
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: '2025-03-01-preview'
+  - model_name: grok-4
+    litellm_params:
+      <<: *grok-4_1-msra
+  - model_name: grok-4-msra
+    litellm_params:
+      <<: *grok-4_1-msra
+
+  # msra/shared	grok-4-fast-non-reasoning_1	grok-4-fast-non-reasoning	1	1000	60
+  - model_name: grok-4-fast-non-reasoning_1
+    litellm_params: &grok-4-fast-non-reasoning_1-msra
+      model: azure/grok-4-fast-non-reasoning_1
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: '2025-03-01-preview'
+  - model_name: grok-4-fast-non-reasoning
+    litellm_params:
+      <<: *grok-4-fast-non-reasoning_1-msra
+  - model_name: grok-4-fast-non-reasoning-msra
+    litellm_params:
+      <<: *grok-4-fast-non-reasoning_1-msra
+
+  # msra/shared	grok-4-fast-reasoning_1	grok-4-fast-reasoning	1	1000	60
+  - model_name: grok-4-fast-reasoning_1
+    litellm_params: &grok-4-fast-reasoning_1-msra
+      model: azure/grok-4-fast-reasoning_1
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: '2025-03-01-preview'
+  - model_name: grok-4-fast-reasoning
+    litellm_params:
+      <<: *grok-4-fast-reasoning_1-msra
+  - model_name: grok-4-fast-reasoning-msra
+    litellm_params:
+      <<: *grok-4-fast-reasoning_1-msra
+
+  # msra/shared	grok-code-fast-1_1	grok-code-fast-1	1	1000	60
+  - model_name: grok-code-fast-1_1
+    litellm_params: &grok-code-fast-1_1-msra
+      model: azure/grok-code-fast-1_1
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: '2025-03-01-preview'
+  - model_name: grok-code-fast-1
+    litellm_params:
+      <<: *grok-code-fast-1_1-msra
+  - model_name: grok-code-fast-1-msra
+    litellm_params:
+      <<: *grok-code-fast-1_1-msra
 
   # --------------------------- GCR Non-OpenAI Models
   # TRAPISuffix	DeploymentName	DeploymentFullURL
