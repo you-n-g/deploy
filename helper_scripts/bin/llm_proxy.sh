@@ -8,6 +8,8 @@ PORT=${1:-4000}
 SELECT_CRED=${SELECT_CRED:-azure_ad_default_lite}
 CONF=${CONF:-litellm.trapi.yaml}
 
+export PATH=$DIR:$PATH
+
 echo "$SELECT_CRED"
 
 # new
