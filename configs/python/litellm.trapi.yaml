@@ -682,6 +682,32 @@ model_list:
   - model_name: grok-code-fast-1-msra
     litellm_params:
       <<: *grok-code-fast-1_1-msra
+  
+  # Added in 2025-12-05
+  # gcr/shared/openai	gpt-oss-120b_1	gpt-oss-120b	1
+  - model_name: gpt-oss-120b_1
+    litellm_params: &gpt-oss-120b_1_gcr
+      model: azure/gpt-oss-120b_1
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-oss-120b
+    litellm_params:
+      <<: *gpt-oss-120b_1_gcr
+  - model_name: gpt-oss-120b-gcr
+    litellm_params:
+      <<: *gpt-oss-120b_1_gcr
+  # msra/shared/openai	gpt-oss-120b_1	gpt-oss-120b	1
+  - model_name: gpt-oss-120b_1
+    litellm_params: &gpt-oss-120b_1_msra
+      model: azure/gpt-oss-120b_1
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-oss-120b
+    litellm_params:
+      <<: *gpt-oss-120b_1_msra
+  - model_name: gpt-oss-120b-msra
+    litellm_params:
+      <<: *gpt-oss-120b_1_msra
 
   # --------------------------- GCR Non-OpenAI Models
   # TRAPISuffix	DeploymentName	DeploymentFullURL
