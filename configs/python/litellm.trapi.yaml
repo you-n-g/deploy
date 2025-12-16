@@ -709,6 +709,551 @@ model_list:
     litellm_params:
       <<: *gpt-oss-120b_1_msra
 
+  # Added in 2025-12-16
+  # redmond/interactive models
+  # redmond/interactive	codex-mini_2025-05-16	codex-mini	2025-05-16	1000	60
+  - model_name: codex-mini_2025-05-16
+    litellm_params: &codex-mini_2025-05-16_redmond
+      model: azure/codex-mini_2025-05-16
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: codex-mini
+    litellm_params:
+      <<: *codex-mini_2025-05-16_redmond
+  - model_name: codex-mini-redmond
+    litellm_params:
+      <<: *codex-mini_2025-05-16_redmond
+  
+  # redmond/interactive	computer-use-preview_2025-03-11	computer-use-preview	2025-03-11	4500	60
+  - model_name: computer-use-preview_2025-03-11
+    litellm_params: &computer-use-preview_2025-03-11_redmond
+      model: azure/computer-use-preview_2025-03-11
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: computer-use-preview
+    litellm_params:
+      <<: *computer-use-preview_2025-03-11_redmond
+  - model_name: computer-use-preview-redmond
+    litellm_params:
+      <<: *computer-use-preview_2025-03-11_redmond
+  
+  # redmond/interactive	dall-e-3_30	dall-e-3	3.0	6	60
+  - model_name: dall-e-3_30
+    litellm_params: &dall-e-3_30_redmond
+      model: azure/dall-e-3_30
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: dall-e-3
+    litellm_params:
+      <<: *dall-e-3_30_redmond
+  - model_name: dall-e-3-redmond
+    litellm_params:
+      <<: *dall-e-3_30_redmond
+  
+  # redmond/interactive	gpt-4.1_2025-04-14	gpt-4.1	2025-04-14	0	60
+  - model_name: gpt-4.1_2025-04-14
+    litellm_params: &gpt-4-1_2025-04-14_redmond
+      model: azure/gpt-4.1_2025-04-14
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-4.1
+    litellm_params:
+      <<: *gpt-4-1_2025-04-14_redmond
+  - model_name: gpt-4.1-redmond
+    litellm_params:
+      <<: *gpt-4-1_2025-04-14_redmond
+  
+  # redmond/interactive	gpt-4.1-mini_2025-04-14	gpt-4.1-mini	2025-04-14	750	60
+  - model_name: gpt-4.1-mini_2025-04-14
+    litellm_params: &gpt-4-1-mini_2025-04-14_redmond
+      model: azure/gpt-4.1-mini_2025-04-14
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-4.1-mini
+    litellm_params:
+      <<: *gpt-4-1-mini_2025-04-14_redmond
+  - model_name: gpt-4.1-mini-redmond
+    litellm_params:
+      <<: *gpt-4-1-mini_2025-04-14_redmond
+  
+  # redmond/interactive	gpt-4.1-nano_2025-04-14	gpt-4.1-nano	2025-04-14	750	60
+  - model_name: gpt-4.1-nano_2025-04-14
+    litellm_params: &gpt-4-1-nano_2025-04-14_redmond
+      model: azure/gpt-4.1-nano_2025-04-14
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-4.1-nano
+    litellm_params:
+      <<: *gpt-4-1-nano_2025-04-14_redmond
+  - model_name: gpt-4.1-nano-redmond
+    litellm_params:
+      <<: *gpt-4-1-nano_2025-04-14_redmond
+  
+  # redmond/interactive	gpt-4o_2024-08-06	gpt-4o	2024-08-06	100	10
+  - model_name: gpt-4o_2024-08-06
+    litellm_params: &gpt-4o_2024-08-06_redmond
+      model: azure/gpt-4o_2024-08-06
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2024-10-21"
+  - model_name: gpt-4o
+    litellm_params:
+      <<: *gpt-4o_2024-08-06_redmond
+  - model_name: gpt-4o-redmond
+    litellm_params:
+      <<: *gpt-4o_2024-08-06_redmond
+  
+  # redmond/interactive	gpt-4o_2024-11-20	gpt-4o	2024-11-20	0	60
+  - model_name: gpt-4o_2024-11-20
+    litellm_params: &gpt-4o_2024-11-20_redmond
+      model: azure/gpt-4o_2024-11-20
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2024-10-21"
+  - model_name: gpt-4o
+    litellm_params:
+      <<: *gpt-4o_2024-11-20_redmond
+  - model_name: gpt-4o-redmond
+    litellm_params:
+      <<: *gpt-4o_2024-11-20_redmond
+  
+  # redmond/interactive	gpt-4o-mini_2024-07-18	gpt-4o-mini	2024-07-18	20000	60
+  - model_name: gpt-4o-mini_2024-07-18
+    litellm_params: &gpt-4o-mini_2024-07-18_redmond
+      model: azure/gpt-4o-mini_2024-07-18
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2024-10-21"
+  - model_name: gpt-4o-mini
+    litellm_params:
+      <<: *gpt-4o-mini_2024-07-18_redmond
+  - model_name: gpt-4o-mini-redmond
+    litellm_params:
+      <<: *gpt-4o-mini_2024-07-18_redmond
+  
+  # redmond/interactive	gpt-4o-mini-tts_2025-03-20	gpt-4o-mini-tts	2025-03-20	60000	60
+  - model_name: gpt-4o-mini-tts_2025-03-20
+    litellm_params: &gpt-4o-mini-tts_2025-03-20_redmond
+      model: azure/gpt-4o-mini-tts_2025-03-20
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-4o-mini-tts
+    litellm_params:
+      <<: *gpt-4o-mini-tts_2025-03-20_redmond
+  - model_name: gpt-4o-mini-tts-redmond
+    litellm_params:
+      <<: *gpt-4o-mini-tts_2025-03-20_redmond
+  
+  # redmond/interactive	gpt-4o-transcribe-diarize_2025-10-15	gpt-4o-transcribe-diarize	2025-10-15	40000	60
+  - model_name: gpt-4o-transcribe-diarize_2025-10-15
+    litellm_params: &gpt-4o-transcribe-diarize_2025-10-15_redmond
+      model: azure/gpt-4o-transcribe-diarize_2025-10-15
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-4o-transcribe-diarize
+    litellm_params:
+      <<: *gpt-4o-transcribe-diarize_2025-10-15_redmond
+  - model_name: gpt-4o-transcribe-diarize-redmond
+    litellm_params:
+      <<: *gpt-4o-transcribe-diarize_2025-10-15_redmond
+  
+  # redmond/interactive	gpt-5_2025-08-07	gpt-5	2025-08-07	10000	60
+  - model_name: gpt-5_2025-08-07
+    litellm_params: &gpt-5_2025-08-07_redmond
+      model: azure/gpt-5_2025-08-07
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5
+    litellm_params:
+      <<: *gpt-5_2025-08-07_redmond
+  - model_name: gpt-5-redmond
+    litellm_params:
+      <<: *gpt-5_2025-08-07_redmond
+  
+  # redmond/interactive	gpt-5-chat_2025-08-07	gpt-5-chat	2025-08-07	1000	60
+  - model_name: gpt-5-chat_2025-08-07
+    litellm_params: &gpt-5-chat_2025-08-07_redmond
+      model: azure/gpt-5-chat_2025-08-07
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5-chat
+    litellm_params:
+      <<: *gpt-5-chat_2025-08-07_redmond
+  - model_name: gpt-5-chat-redmond
+    litellm_params:
+      <<: *gpt-5-chat_2025-08-07_redmond
+  
+  # redmond/interactive	gpt-5-chat_2025-10-03	gpt-5-chat	2025-10-03	1000	60
+  - model_name: gpt-5-chat_2025-10-03
+    litellm_params: &gpt-5-chat_2025-10-03_redmond
+      model: azure/gpt-5-chat_2025-10-03
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5-chat
+    litellm_params:
+      <<: *gpt-5-chat_2025-10-03_redmond
+  - model_name: gpt-5-chat-redmond
+    litellm_params:
+      <<: *gpt-5-chat_2025-10-03_redmond
+  
+  # redmond/interactive	gpt-5-codex_2025-09-15	gpt-5-codex	2025-09-15	1000	60
+  - model_name: gpt-5-codex_2025-09-15
+    litellm_params: &gpt-5-codex_2025-09-15_redmond
+      model: azure/gpt-5-codex_2025-09-15
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5-codex
+    litellm_params:
+      <<: *gpt-5-codex_2025-09-15_redmond
+  - model_name: gpt-5-codex-redmond
+    litellm_params:
+      <<: *gpt-5-codex_2025-09-15_redmond
+  
+  # redmond/interactive	gpt-5-mini_2025-08-07	gpt-5-mini	2025-08-07	1000	60
+  - model_name: gpt-5-mini_2025-08-07
+    litellm_params: &gpt-5-mini_2025-08-07_redmond
+      model: azure/gpt-5-mini_2025-08-07
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5-mini
+    litellm_params:
+      <<: *gpt-5-mini_2025-08-07_redmond
+  - model_name: gpt-5-mini-redmond
+    litellm_params:
+      <<: *gpt-5-mini_2025-08-07_redmond
+  
+  # redmond/interactive	gpt-5-nano_2025-08-07	gpt-5-nano	2025-08-07	1000	60
+  - model_name: gpt-5-nano_2025-08-07
+    litellm_params: &gpt-5-nano_2025-08-07_redmond
+      model: azure/gpt-5-nano_2025-08-07
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5-nano
+    litellm_params:
+      <<: *gpt-5-nano_2025-08-07_redmond
+  - model_name: gpt-5-nano-redmond
+    litellm_params:
+      <<: *gpt-5-nano_2025-08-07_redmond
+  
+  # redmond/interactive	gpt-5-pro_2025-10-06	gpt-5-pro	2025-10-06	1600	60
+  - model_name: gpt-5-pro_2025-10-06
+    litellm_params: &gpt-5-pro_2025-10-06_redmond
+      model: azure/gpt-5-pro_2025-10-06
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5-pro
+    litellm_params:
+      <<: *gpt-5-pro_2025-10-06_redmond
+  - model_name: gpt-5-pro-redmond
+    litellm_params:
+      <<: *gpt-5-pro_2025-10-06_redmond
+  
+  # redmond/interactive	gpt-5.1_2025-11-13	gpt-5.1	2025-11-13	10000	60
+  - model_name: gpt-5.1_2025-11-13
+    litellm_params: &gpt-5-1_2025-11-13_redmond
+      model: azure/gpt-5.1_2025-11-13
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5.1
+    litellm_params:
+      <<: *gpt-5-1_2025-11-13_redmond
+  - model_name: gpt-5.1-redmond
+    litellm_params:
+      <<: *gpt-5-1_2025-11-13_redmond
+  
+  # redmond/interactive	gpt-5.1-chat_2025-11-13	gpt-5.1-chat	2025-11-13	10000	60
+  - model_name: gpt-5.1-chat_2025-11-13
+    litellm_params: &gpt-5-1-chat_2025-11-13_redmond
+      model: azure/gpt-5.1-chat_2025-11-13
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5.1-chat
+    litellm_params:
+      <<: *gpt-5-1-chat_2025-11-13_redmond
+  - model_name: gpt-5.1-chat-redmond
+    litellm_params:
+      <<: *gpt-5-1-chat_2025-11-13_redmond
+  
+  # redmond/interactive	gpt-5.1-codex_2025-11-13	gpt-5.1-codex	2025-11-13	1000	60
+  - model_name: gpt-5.1-codex_2025-11-13
+    litellm_params: &gpt-5-1-codex_2025-11-13_redmond
+      model: azure/gpt-5.1-codex_2025-11-13
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5.1-codex
+    litellm_params:
+      <<: *gpt-5-1-codex_2025-11-13_redmond
+  - model_name: gpt-5.1-codex-redmond
+    litellm_params:
+      <<: *gpt-5-1-codex_2025-11-13_redmond
+  
+  # redmond/interactive	gpt-5.1-codex-max_2025-12-04	gpt-5.1-codex-max	2025-12-04	10000	60
+  - model_name: gpt-5.1-codex-max_2025-12-04
+    litellm_params: &gpt-5-1-codex-max_2025-12-04_redmond
+      model: azure/gpt-5.1-codex-max_2025-12-04
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5.1-codex-max
+    litellm_params:
+      <<: *gpt-5-1-codex-max_2025-12-04_redmond
+  - model_name: gpt-5.1-codex-max-redmond
+    litellm_params:
+      <<: *gpt-5-1-codex-max_2025-12-04_redmond
+  
+  # redmond/interactive	gpt-5.1-codex-mini_2025-11-13	gpt-5.1-codex-mini	2025-11-13	1000	60
+  - model_name: gpt-5.1-codex-mini_2025-11-13
+    litellm_params: &gpt-5-1-codex-mini_2025-11-13_redmond
+      model: azure/gpt-5.1-codex-mini_2025-11-13
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5.1-codex-mini
+    litellm_params:
+      <<: *gpt-5-1-codex-mini_2025-11-13_redmond
+  - model_name: gpt-5.1-codex-mini-redmond
+    litellm_params:
+      <<: *gpt-5-1-codex-mini_2025-11-13_redmond
+  
+  # redmond/interactive	gpt-5.2_2025-12-11	gpt-5.2	2025-12-11	10000	60
+  - model_name: gpt-5.2_2025-12-11
+    litellm_params: &gpt-5-2_2025-12-11_redmond
+      model: azure/gpt-5.2_2025-12-11
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5.2
+    litellm_params:
+      <<: *gpt-5-2_2025-12-11_redmond
+  - model_name: gpt-5.2-redmond
+    litellm_params:
+      <<: *gpt-5-2_2025-12-11_redmond
+  
+  # redmond/interactive	gpt-5.2-chat_2025-12-11	gpt-5.2-chat	2025-12-11	10000	60
+  - model_name: gpt-5.2-chat_2025-12-11
+    litellm_params: &gpt-5-2-chat_2025-12-11_redmond
+      model: azure/gpt-5.2-chat_2025-12-11
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5.2-chat
+    litellm_params:
+      <<: *gpt-5-2-chat_2025-12-11_redmond
+  - model_name: gpt-5.2-chat-redmond
+    litellm_params:
+      <<: *gpt-5-2-chat_2025-12-11_redmond
+  
+  # redmond/interactive	gpt-audio_2025-08-28	gpt-audio	2025-08-28	10001	10
+  - model_name: gpt-audio_2025-08-28
+    litellm_params: &gpt-audio_2025-08-28_redmond
+      model: azure/gpt-audio_2025-08-28
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2024-10-21"
+  - model_name: gpt-audio
+    litellm_params:
+      <<: *gpt-audio_2025-08-28_redmond
+  - model_name: gpt-audio-redmond
+    litellm_params:
+      <<: *gpt-audio_2025-08-28_redmond
+  
+  # redmond/interactive	gpt-audio-mini_2025-10-06	gpt-audio-mini	2025-10-06	200	60
+  - model_name: gpt-audio-mini_2025-10-06
+    litellm_params: &gpt-audio-mini_2025-10-06_redmond
+      model: azure/gpt-audio-mini_2025-10-06
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-audio-mini
+    litellm_params:
+      <<: *gpt-audio-mini_2025-10-06_redmond
+  - model_name: gpt-audio-mini-redmond
+    litellm_params:
+      <<: *gpt-audio-mini_2025-10-06_redmond
+  
+  # redmond/interactive	gpt-image-1	gpt-image-1	2025-04-15	6	60
+  - model_name: gpt-image-1
+    litellm_params: &gpt-image-1_redmond
+      model: azure/gpt-image-1
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-image-1-redmond
+    litellm_params:
+      <<: *gpt-image-1_redmond
+  
+  # redmond/interactive	gpt-realtime_2025-08-28	gpt-realtime	2025-08-28	200	60
+  - model_name: gpt-realtime_2025-08-28
+    litellm_params: &gpt-realtime_2025-08-28_redmond
+      model: azure/gpt-realtime_2025-08-28
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-realtime
+    litellm_params:
+      <<: *gpt-realtime_2025-08-28_redmond
+  - model_name: gpt-realtime-redmond
+    litellm_params:
+      <<: *gpt-realtime_2025-08-28_redmond
+  
+  # redmond/interactive	gpt-realtime-mini_2025-10-06	gpt-realtime-mini	2025-10-06	200	60
+  - model_name: gpt-realtime-mini_2025-10-06
+    litellm_params: &gpt-realtime-mini_2025-10-06_redmond
+      model: azure/gpt-realtime-mini_2025-10-06
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-realtime-mini
+    litellm_params:
+      <<: *gpt-realtime-mini_2025-10-06_redmond
+  - model_name: gpt-realtime-mini-redmond
+    litellm_params:
+      <<: *gpt-realtime-mini_2025-10-06_redmond
+  
+  # redmond/interactive	model-router_2025-05-19	model-router	2025-05-19	100000	60
+  - model_name: model-router_2025-05-19
+    litellm_params: &model-router_2025-05-19_redmond
+      model: azure/model-router_2025-05-19
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: model-router
+    litellm_params:
+      <<: *model-router_2025-05-19_redmond
+  - model_name: model-router-redmond
+    litellm_params:
+      <<: *model-router_2025-05-19_redmond
+  
+  # redmond/interactive	model-router_2025-11-18	model-router	2025-11-18	250	60
+  - model_name: model-router_2025-11-18
+    litellm_params: &model-router_2025-11-18_redmond
+      model: azure/model-router_2025-11-18
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: model-router
+    litellm_params:
+      <<: *model-router_2025-11-18_redmond
+  - model_name: model-router-redmond
+    litellm_params:
+      <<: *model-router_2025-11-18_redmond
+  
+  # redmond/interactive	o1_2024-12-17	o1	2024-12-17	119	60
+  - model_name: o1_2024-12-17
+    litellm_params: &o1_2024-12-17_redmond
+      model: azure/o1_2024-12-17
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: o1
+    litellm_params:
+      <<: *o1_2024-12-17_redmond
+  - model_name: o1-redmond
+    litellm_params:
+      <<: *o1_2024-12-17_redmond
+  
+  # redmond/interactive	o3_2025-04-16	o3	2025-04-16	1000	60
+  - model_name: o3_2025-04-16
+    litellm_params: &o3_2025-04-16_redmond
+      model: azure/o3_2025-04-16
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: o3
+    litellm_params:
+      <<: *o3_2025-04-16_redmond
+  - model_name: o3-redmond
+    litellm_params:
+      <<: *o3_2025-04-16_redmond
+  
+  # redmond/interactive	o3-pro_2025-06-10	o3-pro	2025-06-10	160	60
+  - model_name: o3-pro_2025-06-10
+    litellm_params: &o3-pro_2025-06-10_redmond
+      model: azure/o3-pro_2025-06-10
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: o3-pro
+    litellm_params:
+      <<: *o3-pro_2025-06-10_redmond
+  - model_name: o3-pro-redmond
+    litellm_params:
+      <<: *o3-pro_2025-06-10_redmond
+  
+  # redmond/interactive	o4-mini_2025-04-16	o4-mini	2025-04-16	1000	60
+  - model_name: o4-mini_2025-04-16
+    litellm_params: &o4-mini_2025-04-16_redmond
+      model: azure/o4-mini_2025-04-16
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: o4-mini
+    litellm_params:
+      <<: *o4-mini_2025-04-16_redmond
+  - model_name: o4-mini-redmond
+    litellm_params:
+      <<: *o4-mini_2025-04-16_redmond
+  
+  # redmond/interactive	sora-2_2025-10-06	sora-2	2025-10-06	60	60
+  - model_name: sora-2_2025-10-06
+    litellm_params: &sora-2_2025-10-06_redmond
+      model: azure/sora-2_2025-10-06
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: sora-2
+    litellm_params:
+      <<: *sora-2_2025-10-06_redmond
+  - model_name: sora-2-redmond
+    litellm_params:
+      <<: *sora-2_2025-10-06_redmond
+  
+  # redmond/interactive	text-embedding-ada-002_2	text-embedding-ada-002	2	240	10
+  - model_name: text-embedding-ada-002_2
+    litellm_params: &text-embedding-ada-002_2_redmond
+      model: azure/text-embedding-ada-002_2
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2024-10-21"
+  - model_name: text-embedding-ada-002
+    litellm_params:
+      <<: *text-embedding-ada-002_2_redmond
+  - model_name: text-embedding-ada-002-redmond
+    litellm_params:
+      <<: *text-embedding-ada-002_2_redmond
+  
+  # gcr/shared	gpt-5.2_2025-12-11	gpt-5.2	2025-12-11	8500	60
+  - model_name: gpt-5.2_2025-12-11
+    litellm_params: &gpt-5-2_2025-12-11-gcr
+      model: azure/gpt-5.2_2025-12-11
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: 2025-03-01-preview
+  - model_name: gpt-5.2
+    litellm_params:
+      <<: *gpt-5-2_2025-12-11-gcr
+  - model_name: gpt-5.2-gcr
+    litellm_params:
+      <<: *gpt-5-2_2025-12-11-gcr
+
+  # gcr/shared	gpt-5.2-chat_2025-12-11	gpt-5.2-chat	2025-12-11	10000	60
+  - model_name: gpt-5.2-chat_2025-12-11
+    litellm_params: &gpt-5-2-chat_2025-12-11-gcr
+      model: azure/gpt-5.2-chat_2025-12-11
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: 2025-03-01-preview
+  - model_name: gpt-5.2-chat
+    litellm_params:
+      <<: *gpt-5-2-chat_2025-12-11-gcr
+  - model_name: gpt-5.2-chat-gcr
+    litellm_params:
+      <<: *gpt-5-2-chat_2025-12-11-gcr
+
+  # msra/shared	gpt-5.2_2025-12-11	gpt-5.2	2025-12-11	10000	60
+  - model_name: gpt-5.2_2025-12-11
+    litellm_params: &gpt-5-2_2025-12-11-msra
+      model: azure/gpt-5.2_2025-12-11
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: 2025-03-01-preview
+  - model_name: gpt-5.2
+    litellm_params:
+      <<: *gpt-5-2_2025-12-11-msra
+  - model_name: gpt-5.2-msra
+    litellm_params:
+      <<: *gpt-5-2_2025-12-11-msra
+
+  # msra/shared	gpt-5.2-chat_2025-12-11	gpt-5.2-chat	2025-12-11	10000	60
+  - model_name: gpt-5.2-chat_2025-12-11
+    litellm_params: &gpt-5-2-chat_2025-12-11-msra
+      model: azure/gpt-5.2-chat_2025-12-11
+      api_base: https://trapi.research.microsoft.com/msra/shared
+      api_version: 2025-03-01-preview
+  - model_name: gpt-5.2-chat
+    litellm_params:
+      <<: *gpt-5-2-chat_2025-12-11-msra
+  - model_name: gpt-5.2-chat-msra
+    litellm_params:
+      <<: *gpt-5-2-chat_2025-12-11-msra
+
   # --------------------------- GCR Non-OpenAI Models
   # TRAPISuffix	DeploymentName	DeploymentFullURL
   # gcr/shared/deepseek-ai	Deepseek-R1	https://trapi.research.microsoft.com/gcr/shared/deepseek-ai/deployments/DeepSeek-R1 
