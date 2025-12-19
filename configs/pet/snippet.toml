@@ -588,7 +588,7 @@
   command = "echo '{ \"exclude\": [ \"amlt_project\", \"sessions\", \"data_source\", \"log\", \"pickle_cache\", \"git_ignore_folder\" ] }' > pyrightconfig.json  #  \"extraPaths\": [\"/Data/home/xiaoyang/repos/qlib-main\"]"
 
 [[Snippets]]
-  Description = "code review with LLM/AI; based on xytb review"
+  Description = "code review with LLM/AI; based on xytb review; # OPENAI_API_BASE=http://ep14.213428.xyz:38832 OPENAI_API_KEY=sk-1234 CHAT_MODEL=gpt-5"
   Output = ""
   Tag = []
   command = "<diff_head=|__||_DIFF_HEAD='origin/HEAD...'_||_DIFF_HEAD=HEAD_|> key_shell.sh <cred=|_openai_lite_gpt_5_||_openai_lite_o4_mini_||_azure_lite_o3_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> <mode=|_uvx xytb_||_xytb_|> review"

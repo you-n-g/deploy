@@ -73,6 +73,8 @@ install_or_update_neovim_app() {
   fi
   pip install debugpy  # this will used by nvim-dap
 
+  $DIR/../install_fd.sh
+
   # for installing 
   bash ~/deploy/deploy_apps/install_cargo.sh
   . "$HOME/.cargo/env"

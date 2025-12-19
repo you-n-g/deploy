@@ -222,13 +222,16 @@ vim.keymap.set(
 -- end, { silent = true, desc = "Fuzzy complete path" })
 
 -- NOTE: this works
+--It really depends on the version of fzf-lua!!! If it insert a wierd character "a" before the last character, please update the fzf-lua version!!!
 vim.keymap.set({ "i" }, "<C-x><C-f>", function()
   require("fzf-lua").complete_file({
-    cmd = "rg --files",
+    cmd = "fd --type f --type d --color never ",
+    -- cmd = "rg --files",
     -- Show preview window for file content while searching
     winopts = { preview = { hidden = false } },
   })
 end, { silent = true, desc = "Fuzzy complete file" })
+
 
 -- But I'm afraid to conflict with other keymaps, so try to remember the <C-d> keymap
 -- Map Shift-Tab in insert mode to <C-d> (delete char right) using Lua API

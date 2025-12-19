@@ -688,6 +688,7 @@ local extra_m = {
     custom_template_path = "~/deploy/configs/lazynvim/data/tpl/",
     tpl_conf = {
       context_len = 20,
+      content_max_len = 500, -- the max number of lines to show as full content
     },
     buffer_chat = {
       -- provider = "azure-o4-mini"
