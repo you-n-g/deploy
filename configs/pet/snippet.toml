@@ -664,3 +664,9 @@
   Output = ""
   Tag = []
   command = "APIBACKEND=openai CHAT_MODEL=<chat_moodel=|_gpt-4.1_||_gpt-5_|> key_shell.sh openai vim"
+
+[[Snippets]]
+  Description = "add adier conf yaml"
+  Output = ""
+  Tag = []
+  command = "echo \"read: GEMINI.md\" > .aider.conf.yml"

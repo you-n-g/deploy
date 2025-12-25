@@ -1,18 +1,10 @@
 #!/bin/sh
 
+DIR="$( cd "$(dirname "$(readlink -f "$0")")" || exit ; pwd -P )"
 
-BAT_PATH=~/apps/bat/
+source $DIR/utils.sh
 
-mkdir -p $BAT_PATH
+cd ~/apps/
 
-cd $BAT_PATH
-
-wget https://github.com/sharkdp/bat/releases/download/v0.15.4/bat-v0.15.4-x86_64-unknown-linux-gnu.tar.gz -O bat.tar.gz
-
-tar xf bat.tar.gz
-
-FILE_PATH=$BAT_PATH/bat-v0.15.4-x86_64-unknown-linux-gnu/bat
-
-mkdir -p ~/bin/
-
-ln -s  $FILE_PATH  ~/bin
+untar_url https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-x86_64-unknown-linux-gnu.tar.gz bat
+link_to_bin bat/bat-v0.26.1-x86_64-unknown-linux-gnu/bat
