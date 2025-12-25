@@ -35,16 +35,17 @@ fi
 
 grep url $DIR/../.gitmodules  | cut -d'=' -f2 | xargs -I % git clone %
 
-for p in $(find . -maxdepth 1 -type d); do
-  if [ "$p" == "." ]; then
-    continue
-  fi
-
-  cd $DIR/$p
-  # Python package
-  git pull
-  if [[ (-e "pyproject.toml" || -e "requirements.txt" || -e "setup.py") && $SKIP_INSTALL -eq 0 ]]; then
-    # make dev  # this will install package in `pipenv` instead of global.
-    pipx install -e .
-  fi
-done
+# We prefer uv to start commands, so we don't use these packages any more.
+# for p in $(find . -maxdepth 1 -type d); do
+#   if [ "$p" == "." ]; then
+#     continue
+#   fi
+#
+#   cd $DIR/$p
+#   # Python package
+#   git pull
+#   if [[ (-e "pyproject.toml" || -e "requirements.txt" || -e "setup.py") && $SKIP_INSTALL -eq 0 ]]; then
+#     # make dev  # this will install package in `pipenv` instead of global.
+#     pipx install -e .
+#   fi
+# done

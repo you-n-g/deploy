@@ -31,18 +31,57 @@ local function has_gemini_window(session)
   return false
 end
 
-local function format_gemini_prompt(content)
+local function get_relative_path()
   local file_path = vim.fn.expand("%:p")
   local project_root = vim.fn.getcwd()
   -- Get relative path by removing project root + trailing slash
   local relative_path = file_path:sub(#project_root + 2)
   if relative_path == "" then relative_path = file_path end
+  return relative_path
+end
 
+local function get_target_tmux()
+  local current_session = get_current_tmux_session()
+  local target_session = nil
+  local target_window = nil
+
+  if current_session and has_gemini_window(current_session) then
+    target_session = current_session
+    target_window = "gemini"
+  else
+    local input = vim.fn.input("Target tmux session (session.window): ")
+    if input == "" then
+      print(" Canceled")
+      return nil, nil
+    end
+
+    -- Support session.window format
+    local s, w = string.match(input, "([^%.]+)%.?(.*)")
+    if s then
+      target_session = s
+      target_window = w
+    else
+      target_session = input
+    end
+  end
+  return target_session, target_window
+end
+
+local function format_gemini_prompt(content)
+  local relative_path = get_relative_path()
   return string.format(
     "We are edit the file @%s\nYou are focusing the following block\n```\n%s\n```",
     relative_path,
     content
   )
+end
+
+function M.send_path_to_gemini()
+  local relative_path = get_relative_path()
+  local target_session, target_window = get_target_tmux()
+  if target_session then
+    tmux.send_to_tmux("@" .. relative_path, target_session, target_window)
+  end
 end
 
 function M.send_to_gemini(raw)
@@ -58,38 +97,18 @@ function M.send_to_gemini(raw)
   end
 
   local final_content = raw and content or format_gemini_prompt(content)
+  local target_session, target_window = get_target_tmux()
 
-  local current_session = get_current_tmux_session()
-  local target_session = nil
-  local target_window = nil
-
-  if current_session and has_gemini_window(current_session) then
-    target_session = current_session
-    target_window = "gemini"
-  else
-    local input = vim.fn.input("Target tmux session (session.window): ")
-    if input == "" then
-      print(" Canceled")
-      return
-    end
-    
-    -- Support session.window format
-    local s, w = string.match(input, "([^%.]+)%.?(.*)")
-    if s then
-      target_session = s
-      target_window = w
-    else
-      target_session = input
-    end
+  if target_session then
+    tmux.send_to_tmux(final_content, target_session, target_window)
   end
-
-  tmux.send_to_tmux(final_content, target_session, target_window)
 end
 
 function M.setup()
   vim.keymap.set({ "n", "v" }, "<Localleader>c", function() end, { desc = "Send to Gemini/Tmux" })
   vim.keymap.set({ "n", "v" }, "<Localleader>cc", function() M.send_to_gemini(true) end, { desc = "Send to Gemini/Tmux (Raw)" })
-  vim.keymap.set({ "n", "v" }, "<Localleader>ce", function() M.send_to_gemini(false) end, { desc = "Send to Gemini/Tmux (Context)" })
+  vim.keymap.set({ "n", "v" }, "<Localleader>ce", function() M.send_to_gemini(false) end, { desc = "Send to Gemini/Tmux (edit with Context)" })
+  vim.keymap.set({ "n", "v" }, "<Localleader>cp", function() M.send_path_to_gemini() end, { desc = "Send Path to Gemini/Tmux" })
 end
 
 M.setup()
