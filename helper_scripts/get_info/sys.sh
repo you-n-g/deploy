@@ -18,7 +18,7 @@ get_hw_info() {
   echo
 
   # Show memory information
-  echo -e "\033[1;33mMemory Information:\033[0m"
+  echo -e "\03refactor3[1;33mMemory Information:\033[0m"
   free -h
   echo
 
@@ -40,3 +40,5 @@ get_performance_info() {
     # writing performance
     fio --name=randwrite --ioengine=libaio --iodepth=16 --rw=randwrite --bs=4k --direct=0 --size=512M --numjobs=2 --runtime=240 --group_reporting
  }
+
+$1

@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+import os
+import re
+import typer
+
+SEARCH_PATTERN = r"Start Loop (\d+), Step 0:"
+
+
+def main(log_file: str = typer.Argument(..., help="The path to the log file to be split.")):
+    """
+    Splits a log file into multiple files based on a separator, with automatic padding for filenames.
+
+    The log file is split at lines that match the pattern "Start Loop X, Step Y:".
+    The script first determines the maximum loop number to automatically adjust the zero-padding in filenames.
+    The split files are saved in a subdirectory named after the log file with a '.split' extension.
+    """
+    output_dir = f"{log_file}.split"
+
+    try:
+        # First pass: determine the maximum loop index for padding
+        max_loop_index = 0
+        with open(log_file, 'r') as f:
+            for line in f:
+                match = re.search(SEARCH_PATTERN, line)
+                if match:
+                    loop_index = int(match.group(1))
+                    if loop_index > max_loop_index:
+                        max_loop_index = loop_index
+
+        padding_width = len(str(max_loop_index)) if max_loop_index > 0 else 1
+
+        # Clean up and create output directory
+        os.makedirs(output_dir, exist_ok=True)
+
+        # Second pass: split the file and write to new files
+        with open(log_file, 'r') as f:
+            current_file = None
+            # The first file for content before any loops.
+            header_file_path = os.path.join(output_dir, "header.log")
+            current_file = open(header_file_path, 'w')
+
+            for line in f:
+                match = re.search(SEARCH_PATTERN, line)
+                if match:
+                    loop_index = int(match.group(1))
+                    if current_file:
+                        current_file.close()
+
+                    # Open a new file for the current loop with dynamic padding
+                    new_file_path = os.path.join(output_dir, f"loop_{loop_index:0{padding_width}d}.log")
+                    current_file = open(new_file_path, 'w')
+
+                if current_file:
+                    current_file.write(line)
+
+            if current_file:
+                current_file.close()
+
+        print(
+            f"Log file '{log_file}' has been split into '{output_dir}' with filenames padded to {padding_width} digits."
+        )
+
+    except FileNotFoundError:
+        print(f"Error: Log file '{log_file}' not found.")
+
+
+if __name__ == "__main__":
+    typer.run(main)
