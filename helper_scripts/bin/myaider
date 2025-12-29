@@ -23,7 +23,8 @@ export LITELLM_PROXY_API_BASE=http://ep14.213428.xyz:4000
 # The following is ranked by the leaderboard on https://aider.chat/docs/leaderboards/
 
 # CHAT_MODEL=${CHAT_MODEL:-"litellm_proxy/o3_coreai"}
-CHAT_MODEL=${CHAT_MODEL:-"litellm_proxy/gpt-5"}
+# CHAT_MODEL=${CHAT_MODEL:-"litellm_proxy/gpt-5"}
+CHAT_MODEL=${CHAT_MODEL:-"litellm_proxy/gpt-5.1"}
 # WEAK_MODEL=${WEAK_MODEL:-${CHAT_MODEL:-"litellm_proxy/gpt-4.1"}}
 WEAK_MODEL=${WEAK_MODEL:-"litellm_proxy/gpt-4.1"} # for faster
 

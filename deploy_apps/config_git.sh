@@ -19,6 +19,7 @@ ln -s ~/deploy/configs/git/gitconfig $CONF_PATH
 
 
 # Config fir git-credential-manager
+mkdir -p ~/tmp/
 cd ~/tmp/
 wget https://github.com/git-ecosystem/git-credential-manager/releases/download/v2.5.1/gcm-linux_amd64.2.5.1.deb
 

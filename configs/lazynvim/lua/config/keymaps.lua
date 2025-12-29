@@ -56,66 +56,69 @@ vim.keymap.set(
 )
 
 -- this is usually useful when check the content in small window
-vim.keymap.set("n", "<leader><tab>b", function()
-  local bufnr = vim.api.nvim_get_current_buf()
+-- vim.keymap.set("n", "<leader><tab>b", function()
+--   local bufnr = vim.api.nvim_get_current_buf()
+--
+--   local win_id = vim.api.nvim_open_win(bufnr, true, {
+--     relative = "editor",
+--     width = math.floor(0.99 * vim.o.columns),
+--     height = math.floor(0.99 * vim.o.lines),
+--     row = math.floor(0.1 * vim.o.lines),
+--     col = math.floor(0.1 * vim.o.columns),
+--     border = "single",
+--   })
+--
+--   -- Function to synchronize the cursor position between two windowskkk
+--   local function synchronize_cursor()
+--     -- Get the current window and buffer
+--     local current_win = vim.api.nvim_get_current_win()
+--     local current_buf = vim.api.nvim_get_current_buf()
+--     -- Get the cursor position in the current window
+--     local cursor_pos = vim.api.nvim_win_get_cursor(current_win)
+--     -- Iterate over all windows
+--     for _, win in ipairs(vim.api.nvim_list_wins()) do
+--       -- Check if the window is displaying the same buffer and is not the current window
+--       if win ~= current_win and vim.api.nvim_win_get_buf(win) == current_buf then
+--         -- Set the cursor position in the other window
+--         vim.api.nvim_win_set_cursor(win, cursor_pos)
+--       end
+--     end
+--   end
+--
+--   -- Set up autocommand to synchronize the cursor position on cursor movement for the current buffer
+--   local sync_cursor_augroup = vim.api.nvim_create_augroup("SyncCursor", { clear = true })
+--   vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+--     group = sync_cursor_augroup,
+--     buffer = bufnr,
+--     callback = synchronize_cursor,
+--   })
+--
+--   -- -- for the open window's terminal mode, map the <c-w>q to <c-\><c-n><c-w>q
+--   -- vim.keymap.set("t", "<C-w>q", "<C-\\><C-n><C-w>q", { desc = "Close terminal window" })
+--   -- NOTE: we don't need this any more if we can use <M-x> in terminal mode.
+--   -- -- Map <C-w>q to close the terminal window only for the floating window
+--   -- vim.api.nvim_create_autocmd("WinEnter", {
+--   --   group = sync_cursor_augroup,
+--   --   pattern = tostring(win_id),
+--   --   callback = function()
+--   --     vim.keymap.set("t", "<C-w>q", "<C-\\><C-n><C-w>q", { buffer = bufnr, desc = "Close terminal window" })
+--   --   end,
+--   -- })
+--   --
+--   -- -- Remove the keymap and autocmds when the floating window is closed
+--   -- vim.api.nvim_create_autocmd("WinClosed", {
+--   --   group = sync_cursor_augroup,
+--   --   pattern = tostring(win_id),
+--   --   callback = function()
+--   --     vim.api.nvim_del_augroup_by_id(sync_cursor_augroup)
+--   --     -- skip if the keymap does not exist
+--   --     pcall(vim.keymap.del, "t", "<C-w>q", { buffer = bufnr })
+--   --   end,
+--   -- })
+-- end, { expr = false, noremap = true, desc = "Open cur buffer in float window" })
 
-  local win_id = vim.api.nvim_open_win(bufnr, true, {
-    relative = "editor",
-    width = math.floor(0.99 * vim.o.columns),
-    height = math.floor(0.99 * vim.o.lines),
-    row = math.floor(0.1 * vim.o.lines),
-    col = math.floor(0.1 * vim.o.columns),
-    border = "single",
-  })
-
-  -- Function to synchronize the cursor position between two windowskkk
-  local function synchronize_cursor()
-    -- Get the current window and buffer
-    local current_win = vim.api.nvim_get_current_win()
-    local current_buf = vim.api.nvim_get_current_buf()
-    -- Get the cursor position in the current window
-    local cursor_pos = vim.api.nvim_win_get_cursor(current_win)
-    -- Iterate over all windows
-    for _, win in ipairs(vim.api.nvim_list_wins()) do
-      -- Check if the window is displaying the same buffer and is not the current window
-      if win ~= current_win and vim.api.nvim_win_get_buf(win) == current_buf then
-        -- Set the cursor position in the other window
-        vim.api.nvim_win_set_cursor(win, cursor_pos)
-      end
-    end
-  end
-
-  -- Set up autocommand to synchronize the cursor position on cursor movement for the current buffer
-  local sync_cursor_augroup = vim.api.nvim_create_augroup("SyncCursor", { clear = true })
-  vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
-    group = sync_cursor_augroup,
-    buffer = bufnr,
-    callback = synchronize_cursor,
-  })
-
-  -- -- for the open window's terminal mode, map the <c-w>q to <c-\><c-n><c-w>q
-  -- vim.keymap.set("t", "<C-w>q", "<C-\\><C-n><C-w>q", { desc = "Close terminal window" })
-  -- NOTE: we don't need this any more if we can use <M-x> in terminal mode.
-  -- -- Map <C-w>q to close the terminal window only for the floating window
-  -- vim.api.nvim_create_autocmd("WinEnter", {
-  --   group = sync_cursor_augroup,
-  --   pattern = tostring(win_id),
-  --   callback = function()
-  --     vim.keymap.set("t", "<C-w>q", "<C-\\><C-n><C-w>q", { buffer = bufnr, desc = "Close terminal window" })
-  --   end,
-  -- })
-  --
-  -- -- Remove the keymap and autocmds when the floating window is closed
-  -- vim.api.nvim_create_autocmd("WinClosed", {
-  --   group = sync_cursor_augroup,
-  --   pattern = tostring(win_id),
-  --   callback = function()
-  --     vim.api.nvim_del_augroup_by_id(sync_cursor_augroup)
-  --     -- skip if the keymap does not exist
-  --     pcall(vim.keymap.del, "t", "<C-w>q", { buffer = bufnr })
-  --   end,
-  -- })
-end, { expr = false, noremap = true, desc = "Open cur buffer in float window" })
+-- The above zoom trick can be replace by this one
+require("snacks").toggle.zoom():map("<leader><tab>b")
 
 vim.keymap.set("n", "<leader><tab><leader>", function()
   -- Check if the current buffer is associated with a file
@@ -222,13 +225,16 @@ vim.keymap.set(
 -- end, { silent = true, desc = "Fuzzy complete path" })
 
 -- NOTE: this works
+--It really depends on the version of fzf-lua!!! If it insert a wierd character "a" before the last character, please update the fzf-lua version!!!
 vim.keymap.set({ "i" }, "<C-x><C-f>", function()
   require("fzf-lua").complete_file({
-    cmd = "rg --files",
+    cmd = "fd --type f --type d --color never ",
+    -- cmd = "rg --files",
     -- Show preview window for file content while searching
     winopts = { preview = { hidden = false } },
   })
 end, { silent = true, desc = "Fuzzy complete file" })
+
 
 -- But I'm afraid to conflict with other keymaps, so try to remember the <C-d> keymap
 -- Map Shift-Tab in insert mode to <C-d> (delete char right) using Lua API

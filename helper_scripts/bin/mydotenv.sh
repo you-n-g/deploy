@@ -40,7 +40,7 @@ run_single_env() {
   local env_file=$1
   echo "loading ${env_file}..."
   if command -v dotenv &> /dev/null; then
-    echo dotenv -f $env_file $EXTRA_DOTENV_ARGS run -- "${@:2}"
+    printf "%q " dotenv -f "$env_file" $EXTRA_DOTENV_ARGS run -- "${@:2}"; echo
     dotenv -f $env_file $EXTRA_DOTENV_ARGS run -- "${@:2}"
     # `--override` is the default option we don't have to add it
   else

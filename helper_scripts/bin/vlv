@@ -1,0 +1,2 @@
+#!/bin/bash
+vim -n "$@" -c "lua require'extra_fea.log_view'.set_style()" -c "lua require'extra_fea.log_view'.display_outline()"

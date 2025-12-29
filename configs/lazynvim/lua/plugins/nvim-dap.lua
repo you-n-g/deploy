@@ -172,6 +172,7 @@ local plugins = {
           load_breakpoints_event = { "BufReadPost" },
         },
         lazy=false,  -- otherwise, the breakpoint will not trigger when load buffer.
+        -- require('persistent-breakpoints.api').store_breakpoints()
       }
     },
   },

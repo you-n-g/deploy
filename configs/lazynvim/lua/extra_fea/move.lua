@@ -101,11 +101,14 @@ function M.swap_right() perform_swap("right") end
 -----------------------------------------------------------
 if not vim.g.__extra_fea_move_loaded then
   vim.g.__extra_fea_move_loaded = true
-  local map = function(mode, lhs, rhs, desc)
-    vim.keymap.set(mode, lhs, rhs, { silent = true, desc = desc })
-  end
-  map("n", "<A-h>", M.swap_left,  "Swap element with left neighbor")
-  map("n", "<A-l>", M.swap_right, "Swap element with right neighbor")
+
+  -- NOTE: it conflicts with with the key mapping with `navigate-note.nvim` in normal mode.
+  -- local map = function(mode, lhs, rhs, desc)
+  --   vim.keymap.set(mode, lhs, rhs, { silent = true, desc = desc })
+  -- end
+  -- map("n", "<A-h>", M.swap_left,  "Swap element with left neighbor")
+  -- map("n", "<A-l>", M.swap_right, "Swap element with right neighbor")
+
   vim.keymap.set("i", "<A-h>", function()
       vim.schedule(M.swap_left)   -- do the swap after this mapping finishes
       return ""                   -- insert nothing, stay in Insert mode

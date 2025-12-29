@@ -18,7 +18,7 @@ get_hw_info() {
   echo
 
   # Show memory information
-  echo -e "\033[1;33mMemory Information:\033[0m"
+  echo -e "\03refactor3[1;33mMemory Information:\033[0m"
   free -h
   echo
 
@@ -90,3 +90,5 @@ get_port_info() {
     return 1
   fi
 }
+
+$1
