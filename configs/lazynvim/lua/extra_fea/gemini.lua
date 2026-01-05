@@ -71,7 +71,7 @@ local function get_current_or_visual_content()
     content = utils.get_visual_selection()
     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", false)
   else
-    content = vim.api.nvim_get_current_line()
+    content = vim.fn.getline(".") -- vim.api.nvim_get_current_line() does not work with Chinese characters
   end
   return content
 end
@@ -150,6 +150,7 @@ end
 
 function M.setup()
   vim.keymap.set({ "n", "v" }, "<Localleader>c", function() end, { desc = "Send to Gemini/Tmux" })
+  -- when it contains chinese, "<Localleader>cc" does not work. But  "<Localleader>ce" works
   vim.keymap.set({ "n", "v" }, "<Localleader>cc", function() M.send_to_gemini(true) end, { desc = "Send to Gemini/Tmux (Raw)" })
   vim.keymap.set({ "n", "v" }, "<Localleader>ce", function() M.send_to_gemini(false) end, { desc = "Send to Gemini/Tmux (edit with Context)" })
   vim.keymap.set({ "n", "v" }, "<Localleader>cp", function() M.send_path_to_gemini() end, { desc = "Send Path to Gemini/Tmux" })

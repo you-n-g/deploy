@@ -84,6 +84,7 @@ chmod a+x ./deploy_apps/*
 ./deploy_apps/nonauto/install_lazyvim.sh deploy
 ./deploy_apps/install_fd.sh
 
+# This is very important for tmux-pet. otherwise, tmux-pet with variables will not work
 sudo ./deploy_apps/set_code.sh
 
 sudo rm /etc/needrestart/conf.d/99mychanges.conf

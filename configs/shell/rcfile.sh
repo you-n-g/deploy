@@ -396,6 +396,13 @@ export AIDER_CHECK_UPDATE=False
 export AIDER_SHOW_RELEASE_NOTES=False
 export AIDER_GITIGNORE=False
 
+# pet search
+# export LANG=en_US.UTF-8
+# export LC_ALL=en_US.UTF-8
+# export LANGUAGE=en_US:en
+# export TERM=xterm-256color
+
+
 # # Outlines: 准备删掉的
 
 # ## Outlines: nnn
