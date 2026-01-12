@@ -17,6 +17,10 @@ local set_context = function()
   vim.fn.setreg("c", content)
 end
 
+-- local default_azure_model = "azure-gpt-5.2-chat"  -- still slow
+-- local default_azure_model = "azure-gpt-5-chat"  -- it is fast
+local default_azure_model = "azure-gpt-5.1-chat" -- fast enough
+
 local modules = {
   -- - Perhaps this would be better: https://github.com/Robitx/gp.nvim. It appears simple, yet comprehensive.
   -- - It does not work  well in my terminal finally.
@@ -274,68 +278,33 @@ local modules = {
         vim.env.AZURE_OPENAI_API_KEY = cred.api_key
 
         -- other providers
-        opts["providers"]["azure-o4-mini"] = {
-          __inherited_from = "azure",
-          endpoint = cred.api_base,
-          deployment = "o4-mini",
-          extra_request_body = {
-            temperature = 1, -- this is used with gpt-reasoning models
-          },
-          -- reasoning_effort = "low"  -- Now I use it for chatting, so it don't have to be low.
+        local models = {
+          { "o4-mini", 1, nil },
+          { "gpt-5-chat", 1, 16384 },
+          { "gpt-5.2-chat", 1, 16384 },
+          { "gpt-4.1", nil, 16384 },
+          { "gpt-5", 1, 16384 },
+          { "gpt-5.1", 1, 16384 },
+          { "gpt-5.1-chat", 1, 16384 },
+          { "gpt-5.2", 1, 16384 },
+          { "gpt-5-mini", 1, nil },
         }
-
-        -- It does not work....
-        opts["providers"]["azure-gpt-5-chat"] = {
-          __inherited_from = "azure",
-          endpoint = cred.api_base,
-          deployment = "gpt-5-chat",
-          model = "gpt-5-chat",  -- this is just for display purpose in AvanteModels
-          extra_request_body = {
-            temperature = 1, -- this is used with gpt-reasoning models
-            model = "gpt-5-chat",
-            max_completion_tokens = 16384, --  "max_tokens is too large: 20480. This model supports at most 16384 completion tokens, whereas you provided 20480.",
-          },
-          -- entra = true,
-          -- reasoning_effort = "low"  -- Now I use it for chatting, so it don't have to be low.
-        }
-
-        opts["providers"]["azure-gpt-4.1"] = {
-          __inherited_from = "azure",
-          endpoint = cred.api_base,
-          deployment = "gpt-4.1",
-          model = "gpt-4.1",  -- this is just for display purpose in AvanteModels
-          extra_request_body = {
-            max_completion_tokens = 16384, --  "max_tokens is too large: 20480. This model supports at most 16384 completion tokens, whereas you provided 20480.",
-          },
-        }
-
-        opts["providers"]["azure-gpt-5"] = {
-          __inherited_from = "azure",
-          endpoint = cred.api_base,
-          deployment = "gpt-5",
-          model = "gpt-5",  -- this is just for display purpose in AvanteModels
-          extra_request_body = {
-            temperature = 1, -- this is used with gpt-reasoning models
-            model = "gpt-5",
-            max_completion_tokens = 16384, --  "max_tokens is too large: 20480. This model supports at most 16384 completion tokens, whereas you provided 20480.",
-          },
-          -- entra = true,
-          -- reasoning_effort = "low"  -- Now I use it for chatting, so it don't have to be low.
-        }
-
-        opts["providers"]["azure-gpt-5-mini"] = {
-          __inherited_from = "azure",
-          endpoint = cred.api_base,
-          deployment = "gpt-5-mini",
-          model = "gpt-5-mini",  -- this is just for display purpose in AvanteModels
-          extra_request_body = {
-            temperature = 1, -- this is used with gpt-reasoning models
-          },
-          -- reasoning_effort = "low"  -- Now I use it for chatting, so it don't have to be low.
-        }
+        for _, m in ipairs(models) do
+          local name, temperature, max_tokens = m[1], m[2], m[3]
+          opts["providers"]["azure-" .. name] = {
+            __inherited_from = "azure",
+            endpoint = cred.api_base,
+            deployment = name,
+            model = name, -- this is just for display purpose in AvanteModels
+            extra_request_body = {
+              temperature = temperature,
+              max_completion_tokens = max_tokens,
+            },
+          }
+        end
 
         -- opts["provider"] = "azure"
-        opts["provider"] = "azure-gpt-5-chat"
+        opts["provider"] = default_azure_model
         -- opts["provider"] = "azure-gpt-5"
       end
       opts.hints = { enabled = false } -- it is annoying due to conflict with simplegpt.nvim. I have to use <leader>uE to erase them
@@ -696,7 +665,7 @@ local extra_m = {
       -- provider = "azure-gpt-5-mini"
 	    -- provider = "azure-gpt-5-chat", -- (preferred)
 	    -- provider = "azure-gpt-4.1", -- if we want super long context and prefer fast response.
-      provider = vim.env.APIBACKEND == "openai" and "openai-" .. vim.env.CHAT_MODEL or "azure-gpt-5-chat",
+      provider = vim.env.APIBACKEND == "openai" and "openai-" .. vim.env.CHAT_MODEL or default_azure_model,
     },
   },
   event = "VeryLazy", -- greatly boost the initial of neovim
