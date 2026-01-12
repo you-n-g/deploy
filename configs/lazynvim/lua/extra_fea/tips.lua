@@ -4,10 +4,11 @@ This is a plugin that shows tips based on current condition.
 
 NAV_TIPS = [[
 For marking sections you are focusing on, you can use following registers:
-- q: question
-- a: AI command blocks
-- e: explanation
-- r: runnable code]]
+- q: (Q)uestion
+- a: (A)I command blocks
+- e: (E)xplanation
+- r: (R)unnable code
+- b: (B)acklogs: Design issues; Non-Important Issues]]
 
 -- if file name is nav.md, show above tips
 vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {

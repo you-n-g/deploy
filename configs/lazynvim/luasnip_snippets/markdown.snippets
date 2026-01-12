@@ -1,1 +1,41 @@
 extends sh
+
+snippet gemini "gemini template"
+	<Project information>
+	
+	# Important System Information
+	<Explain the part you are focusing on>
+	
+	# systematically run the system
+	\`\`\`bash
+	<So if you want to run the system in a systematic way, you can use the command above. However, it is usually heavy..>
+	\`\`\`
+	
+	# Coding Principles
+	Don't catch unknown exceptions when implementing new code. I prefer to let the error propagate so it can be detected and fixed promptly.
+	
+	# Tips
+  <tips>
+
+snippet nav "navigate note template"
+	## (R)un for a specific feature
+  <The vim markers can highlight the most recently useful run and do not have to be placed at the start of the section>
+	
+	### for debug
+	
+	## (A)I editing
+  <instructions sending to AI>
+	
+	## (E)xplanation
+  <the key part to understand the code>
+
+	## (Q)uestions
+  <record the questions for collegues>
+
+  ## (B)acklogs
+  <design improvements>
+
+snippet taskb "create a task block"
+	\`\`\`task
+	$0
+	\`\`\`

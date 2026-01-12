@@ -591,7 +591,7 @@
   Description = "code review with LLM/AI; based on xytb review; # OPENAI_API_BASE=http://ep14.213428.xyz:38832 OPENAI_API_KEY=sk-1234 CHAT_MODEL=gpt-5"
   Output = ""
   Tag = []
-  command = "<diff_head=|__||_DIFF_HEAD='origin/HEAD...'_||_DIFF_HEAD=HEAD_|> key_shell.sh <cred=|_openai_lite_gpt_5_||_openai_lite_o4_mini_||_azure_lite_o3_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> <mode=|_uvx xytb_||_xytb_|> review"
+  command = "DIFF_HEAD=<diff_head=|__||_'origin/HEAD...'_||_'HEAD'_||_'HEAD^'_||_\"`git branch -r | awk '{$1=$1;print}' | fzf`...\"_|> key_shell.sh <cred=|_openai_lite_gpt_5_||_openai_lite_o4_mini_||_azure_lite_o3_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> <mode=|_uvx xytb_||_xytb_|> review"
 
 [[Snippets]]
   Description = "run a batch of commands with tmux; one tmux window for each line."
@@ -670,3 +670,9 @@
   Output = ""
   Tag = []
   command = "echo \"read: GEMINI.md\" > .aider.conf.yml"
+
+[[Snippets]]
+  Description = "creating a mirror window for a session."
+  Output = ""
+  Tag = []
+  command = "SESSION=$(tmux list-sessions -F '#S' | fzf) && if [ -n \"$SESSION\" ]; then tmux new-session -d -t \"$SESSION\" -s \"$SESSION-<session_name_suffix=|_mirror_|>\" && tmux switch-client -t \"$SESSION-<session_name_suffix=|_mirror_|>\" ; fi"

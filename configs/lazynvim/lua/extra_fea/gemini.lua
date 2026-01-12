@@ -121,7 +121,7 @@ function M.send_path_to_gemini()
   end
 end
 
-function M.send_to_gemini(raw)
+function M.send_to_gemini(raw, post_action)
   if raw == nil then raw = true end
   local content = get_current_or_visual_content()
 
@@ -129,11 +129,11 @@ function M.send_to_gemini(raw)
   local target_session, target_window = get_target_tmux()
 
   if target_session then
-    tmux.send_to_tmux(final_content, target_session, target_window)
+    tmux.send_to_tmux(final_content, target_session, target_window, post_action)
   end
 end
 
-function M.send_to_last_window(raw)
+function M.send_to_last_window(raw, post_action)
   if raw == nil then raw = true end
   local content = get_current_or_visual_content()
 
@@ -144,7 +144,14 @@ function M.send_to_last_window(raw)
     return
   end
 
-  tmux.send_to_tmux(final_content, session, window)
+  tmux.send_to_tmux(final_content, session, window, post_action)
+end
+
+function M.send_literal_to_gemini(content, post_action)
+  local target_session, target_window = get_target_tmux()
+  if target_session then
+    tmux.send_to_tmux(content, target_session, target_window, post_action)
+  end
 end
 
 
@@ -152,9 +159,15 @@ function M.setup()
   vim.keymap.set({ "n", "v" }, "<Localleader>c", function() end, { desc = "Send to Gemini/Tmux" })
   -- when it contains chinese, "<Localleader>cc" does not work. But  "<Localleader>ce" works
   vim.keymap.set({ "n", "v" }, "<Localleader>cc", function() M.send_to_gemini(true) end, { desc = "Send to Gemini/Tmux (Raw)" })
+  vim.keymap.set({ "n", "v" }, "<Localleader>cC", function() M.send_to_gemini(true, "enter") end, { desc = "Send to Gemini/Tmux (Raw, no switch)" })
   vim.keymap.set({ "n", "v" }, "<Localleader>ce", function() M.send_to_gemini(false) end, { desc = "Send to Gemini/Tmux (edit with Context)" })
   vim.keymap.set({ "n", "v" }, "<Localleader>cp", function() M.send_path_to_gemini() end, { desc = "Send Path to Gemini/Tmux" })
   vim.keymap.set({ "n", "v" }, "<Localleader>cl", function() M.send_to_last_window(true) end, { desc = "Send to last tmux window in current session (Raw, line/visual)" })
+  vim.keymap.set({ "n", "v" }, "<Localleader>cL", function() M.send_to_last_window(true, "enter") end, { desc = "Send to last tmux window (Raw, no switch)" })
+
+  for i = 1, 4 do
+    vim.keymap.set({ "n", "v" }, "<Localleader>c" .. i, function() M.send_literal_to_gemini(tostring(i), "enter") end, { desc = "Send " .. i .. " to Gemini" })
+  end
 end
 
 M.setup()

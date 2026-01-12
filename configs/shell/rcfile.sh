@@ -24,9 +24,13 @@ EOF
     }
     # antigen use oh-my-zsh
     # 
-    antigen bundle zsh-users/zsh-autosuggestions
-    antigen bundle zsh-users/zsh-completions
+
+    # just for highlighting the command which is being typed
+    # If we place it after autocomplete, it will raise error
     antigen bundle zsh-users/zsh-syntax-highlighting
+
+    antigen bundle zsh-users/zsh-completions  # add more completion options
+    antigen bundle zsh-users/zsh-autosuggestions
     antigen bundle colored-man-pages
     antigen bundle rupa/z z.sh
     antigen bundle MichaelAquilina/zsh-you-should-use
@@ -52,11 +56,16 @@ EOF
     # C-x C-e 被 vv 替代掉了
     antigen bundle jeffreytse/zsh-vi-mode
 
+    # NOTE: fzf-tab conflicts with autocomplete
     antigen bundle Aloxaf/fzf-tab
+
+    # It does not work well with vi-mode.
+    # antigen bundle marlonrichert/zsh-autocomplete
 
     # It does not work due to permission error
     # antigen bundle atuinsh/atuin@main
 
+    # antigen bundle zsh-users/zsh-syntax-highlighting
     antigen apply
 
     # 后面遇到问题是不是用 zplug可以替代
@@ -125,8 +134,10 @@ EOF
     # zsh vim mode 常常会和其他的插件起冲突(启用后会覆盖其他插件)
     # 所以很多插件需要 后面再补一发启动
     function zvm_after_init() {
+        # NOTE: fzf-tab conflicts with autocomplete
         [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
         enable-fzf-tab
+
         # 有时候光有 zvm_after_lazy_keybindings 似乎也不work
         zvm_bindkey viins '^S^L' insert-last-word
     }
@@ -140,8 +151,17 @@ EOF
     # Allow autosuggestions to partially accept with forward-word
     export ZSH_AUTOSUGGEST_PARTIAL_ACCEPT_WIDGETS=(forward-word)
     # Make sure forward-word is bound correctly in vi insert mode
+    # If I use ^J, it will incur a bug when sending content to zsh
     bindkey -M viins '^L' forward-word
     bindkey -M emacs '^L' forward-word
+
+    # for autocomplete
+    # # 开启强力模糊匹配 (Fuzzy Matching)
+    # # 1. m:{a-zA-Z}={A-Za-z}  -> 忽略大小写
+    # # 2. r:|[._-]=* r:|=* -> 允许 . _ - 符号后的模糊匹配
+    # # 3. l:|=* r:|=* -> 【关键】允许任意位置的模糊匹配 (类似 fzf)
+    # zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+    # zstyle ':completion:*:*:-command-:*:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
 fi
 
 
