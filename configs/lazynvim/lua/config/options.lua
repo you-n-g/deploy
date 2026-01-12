@@ -49,3 +49,5 @@ vim.filetype.add {
         ['.*%/.*%.?ssh%/.*%/.*%.config'] = 'sshconfig',
     },
 }
+
+

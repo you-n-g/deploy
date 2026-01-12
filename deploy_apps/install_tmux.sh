@@ -18,6 +18,7 @@ fi
 
 bash ~/deploy/deploy_apps/install_tmuxinator.sh
 
+
 ## config tmux, `tmux source-file ~/.tmux.conf` can make all the options affect immediately
 TMUX_CONF=~/.tmux.conf
 

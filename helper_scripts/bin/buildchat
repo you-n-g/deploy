@@ -5,6 +5,7 @@ import typer
 from pathlib import Path
 from rdagent.utils.agent.tpl import T
 import urllib.request
+import urllib.parse
 import tempfile
 import os
 import pypdf
@@ -70,6 +71,14 @@ def web(url: str = typer.Argument(..., help="The target URL to scrape"),):
     return meta_chat_builder(firecrawl_get)(url)
 
 
+def extract_pdf_content(pdf_path: Path | str) -> str:
+    reader = pypdf.PdfReader(pdf_path)
+    parts = []
+    for page in reader.pages:
+        parts.append(page.extract_text() or "")
+    return "\n".join(parts).strip()
+
+
 @app.command()
 def pdf(
         url: str = typer.Argument(..., help="The PDF URL to download and convert"),
@@ -91,14 +100,7 @@ def pdf(
 
     try:
         urllib.request.urlretrieve(url, tmp_pdf_path)
-
-        # Extract text using pypdf
-        reader = pypdf.PdfReader(tmp_pdf_path)
-        parts = []
-        for page in reader.pages:
-            # Directly extract text without try-except, let errors propagate if they occur
-            parts.append(page.extract_text() or "")
-        text = "\n".join(parts).strip()
+        text = extract_pdf_content(tmp_pdf_path)
 
         content = T(".buildchat:pdf").r(text=text)
         if with_option:
@@ -111,6 +113,48 @@ def pdf(
             os.unlink(tmp_pdf_path)
         except Exception:
             pass
+
+
+def read_data(path: Path) -> str:
+    ext = path.suffix.lower()
+    if ext == '.pdf':
+        return extract_pdf_content(path)
+    elif ext == '.txt':
+        with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+            return f.read()
+    else:
+        print(f"Error: Unsupported file type '{ext}'. Only .pdf and .txt are supported.")
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def paper(
+    source: Path = typer.Argument(..., help="The source file path (pdf or txt)"),
+    outfile: Path = Path("chat.md"),
+    with_option: bool = typer.Option(
+        True,
+        "-o/-O",
+        "--with-option/--no-with-option",
+        help="Append additional pdf-option prompt to the chat output (use -o to enable, -O to disable)",
+    ),
+):
+    """
+    Detect file type (txt, pdf) and create a chat session.
+    """
+    if not source.exists():
+        print(f"Error: Source '{source}' not found.")
+        raise typer.Exit(code=1)
+
+    # Stage 1: Read data
+    text = read_data(source)
+
+    # Stage 2: Render to chat
+    content = T(".buildchat:pdf").r(text=text)
+    if with_option:
+        content = f"{content}\n\n{T('.buildchat:pdf-option.paper').r()}"
+    with open(outfile, "w") as out_f:
+        out_f.write(content)
+
 
 
 from xytb.crawl.weixin import get_content
