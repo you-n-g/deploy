@@ -1,6 +1,6 @@
 #!/bin/bash
 # Wrapper to chat with custom OpenAI-compatible API using llm via uv
-# curl -LsSf https://raw.githubusercontent.com/you-n-g/deploy/master/helper_scripts/bin/chat-custom | bash -s -- "Your prompt here"
+# bash <(curl -LsSf https://raw.githubusercontent.com/you-n-g/deploy/master/helper_scripts/bin/chat-custom)
 
 # Install uv if it does not exist
 if ! command -v uv &> /dev/null; then
@@ -26,6 +26,3 @@ uvx llm keys set custom-ep14-key --value sk-1234 > /dev/null 2>&1
 
 # Run the prompt
 uvx llm chat -m custom-ep14 "$@"
-
-# the url of the script is https://github.com/you-n-g/deploy/blob/573950fe772bfbb20ac9c9d520eaf452511df22e/helper_scripts/bin/chat-custom#L25
-# How to run the script in terminal ?
