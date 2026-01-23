@@ -1,0 +1,31 @@
+#!/bin/bash
+# Wrapper to chat with custom OpenAI-compatible API using llm via uv
+# curl -LsSf https://raw.githubusercontent.com/you-n-g/deploy/master/helper_scripts/bin/chat-custom | bash -s -- "Your prompt here"
+
+# Install uv if it does not exist
+if ! command -v uv &> /dev/null; then
+  curl -LsSf https://astral.sh/uv/install.sh | sh > /dev/null 2>&1
+  export PATH="$HOME/.cargo/bin:$PATH"
+fi
+
+# Configure the model (idempotent)
+CONFIG_FILE=~/.config/io.datasette.llm/extra-openai-models.yaml
+mkdir -p "$(dirname "$CONFIG_FILE")"
+
+if [ ! -f "$CONFIG_FILE" ] || ! grep -q "custom-ep14" "$CONFIG_FILE"; then
+  cat <<EOF >> "$CONFIG_FILE"
+- model_id: custom-ep14
+  model_name: gpt-5.2
+  api_base: "http://ep14.213428.xyz:38824/v1"
+  api_key_name: custom-ep14-key
+EOF
+fi
+
+# Set the key
+uvx llm keys set custom-ep14-key --value sk-1234 > /dev/null 2>&1
+
+# Run the prompt
+uvx llm chat -m custom-ep14 "$@"
+
+# the url of the script is https://github.com/you-n-g/deploy/blob/573950fe772bfbb20ac9c9d520eaf452511df22e/helper_scripts/bin/chat-custom#L25
+# How to run the script in terminal ?

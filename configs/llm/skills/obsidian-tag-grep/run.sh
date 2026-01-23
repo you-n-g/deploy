@@ -13,7 +13,7 @@ OBSIDIAN_VAULT_PATH="$(pwd)"
 if [ -z "$1" ]; then
     echo "Usage: ./run.sh <tag_to_search>"
     echo "Note: This script should be run from the root directory of the Obsidian vault you want to search."
-    echo "Example: /path/to/run.sh p/ms/lwq"
+    echo "Example: /path/to/run.sh p/ms/name"
     exit 1
 fi
 

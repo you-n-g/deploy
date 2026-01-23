@@ -30,6 +30,11 @@ def search_files(directory, tag_query):
     tag_search = tag_query.strip()
     if not tag_search.startswith("#"):
         tag_search = "#" + tag_search
+    
+    # Pre-compile inline regex
+    # Matches: start of line/space/paren + tag + end of line/space/punctuation/slash
+    # Note: We use re.escape(tag_search) because tag_search contains '#'
+    inline_pattern = re.compile(r'(?:^|[\s(])' + re.escape(tag_search) + r'(?=[\s\.,;!?\)\]]|$|/)')
 
     print(f"Searching for structure under tag: {tag_search} in {directory}\n")
 
@@ -56,6 +61,47 @@ def search_files(directory, tag_query):
             except Exception:
                 continue
 
+            # Check for Frontmatter match
+            whole_file_match = False
+            if len(lines) > 0 and lines[0].strip() == "---":
+                fm_end_idx = -1
+                for i in range(1, len(lines)):
+                    if lines[i].strip() == "---":
+                        fm_end_idx = i
+                        break
+                
+                if fm_end_idx > 0:
+                    frontmatter = lines[1:fm_end_idx]
+                    tag_pure = tag_search.lstrip("#")
+                    in_tags = False
+                    
+                    for line in frontmatter:
+                        clean_line = line.strip()
+                        # Check for tags key
+                        if re.match(r'^(tags?):', clean_line):
+                            in_tags = True
+                        elif re.match(r'^[a-zA-Z0-9_-]+:', clean_line):
+                            in_tags = False
+                            
+                        if in_tags:
+                            # Check for tag match.
+                            # Matches "tag", "tag/sub", but not "sometag" or "tag-other"
+                            # Boundary at start: start of string or whitespace/quote/bracket/comma
+                            # Boundary at end: end of string or whitespace/quote/bracket/comma OR forward slash (for nested tags)
+                            pattern = r'(^|[\s\[\],"\'])' + re.escape(tag_pure) + r'($|[\s\[\],"\']|/)'
+                            if re.search(pattern, clean_line):
+                                whole_file_match = True
+                                break
+            
+            if whole_file_match:
+                found_any = True
+                print(f"📄 File: [[{rel_path}]]")
+                print("=" * 40)
+                print("".join(lines).rstrip())
+                print("-" * 20)
+                print("\n")
+                continue
+
             # 快速过滤
             content = "".join(lines)
             if tag_search not in content:
@@ -68,7 +114,7 @@ def search_files(directory, tag_query):
                 line = lines[i]
 
                 # 简单匹配：只要行内包含该Tag字符串
-                if tag_search in line:
+                if inline_pattern.search(line):
                     stripped = line.lstrip()
                     indent = get_indentation(line)
 
