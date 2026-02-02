@@ -5,6 +5,31 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 # Source directory containing ALL your custom skills
 SOURCE_CUSTOM_SKILLS_BASE_DIR="$SCRIPT_DIR/skills"
+EXTERNAL_REPOS_DIR="$SCRIPT_DIR/external"
+
+mkdir -p "$SOURCE_CUSTOM_SKILLS_BASE_DIR"
+mkdir -p "$EXTERNAL_REPOS_DIR"
+
+# Manage external skills (kepano/obsidian-skills)
+OBSIDIAN_SKILLS_DIR="$EXTERNAL_REPOS_DIR/obsidian-skills"
+if [ ! -d "$OBSIDIAN_SKILLS_DIR" ]; then
+    echo "Cloning external skills from kepano/obsidian-skills..."
+    git clone --depth 1 https://github.com/kepano/obsidian-skills "$OBSIDIAN_SKILLS_DIR"
+else
+    echo "Updating external skills from kepano/obsidian-skills..."
+    (cd "$OBSIDIAN_SKILLS_DIR" && git pull)
+fi
+
+# Link skills from external repo to SOURCE_CUSTOM_SKILLS_BASE_DIR
+if [ -d "$OBSIDIAN_SKILLS_DIR/skills" ]; then
+    echo "Linking external skills..."
+    for skill in "$OBSIDIAN_SKILLS_DIR/skills"/*; do
+        if [ -d "$skill" ]; then
+            skill_name=$(basename "$skill")
+            ln -snf "$skill" "$SOURCE_CUSTOM_SKILLS_BASE_DIR/$skill_name"
+        fi
+    done
+fi
 
 # Target directory where gemini is expected to find skills.
 # The user explicitly requested to link the *entire* source folder directly here.

@@ -635,11 +635,11 @@
   Tag = []
   command = "curl -X POST http://localhost:<port=4000>/v1/<api=|_chat/completions_||_responses_|><api-version=|__||_?api-version=2025-03-01-preview_|> -H \"Content-Type: application/json\" -H \"Authorization: Bearer sk1234\" -d '{\"model\": \"<model=|_o3_||_gpt-5_||_gpt-4.1_|>\", <message=|_\"messages\": [{\"content\": \"Assistant is a large language model trained by OpenAI.\", \"role\": \"user\"}, {\"role\": \"user\", \"content\": \"Who were the founders of Microsoft?\"}]_||_\"input\": \"ahahah x = 3; java\"_|>, <reasoning=|__||_\"reasoning_effort\": \"low\",_|> \"extra_body\": {}}'"
 
-[[Snippets]]
-  Description = "build chat for research"
-  Output = ""
-  Tag = []
-  command = "uv run --no-project --with firecrawl-py --with typer --with rdagent --with pypdf buildchat"
+# [[Snippets]]
+#   Description = "build chat for research"
+#   Output = ""
+#   Tag = []
+#   command = "uv run --no-project --with firecrawl-py --with typer --with rdagent --with pypdf buildchat"
 
 [[Snippets]]
   Description = "create workspace"

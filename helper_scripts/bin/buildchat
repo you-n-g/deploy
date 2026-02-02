@@ -89,6 +89,12 @@ def pdf(
             "--with-option/--no-with-option",
             help="Append additional pdf-option prompt to the chat output (use -p to enable, -P to disable)",
         ),
+        option_type: str = typer.Option(
+            "reading",
+            "-t",
+            "--type",
+            help="The type of option to use (reading, review)",
+        ),
 ):
     """
     Download a PDF from a URL, extract its text, and write a chat.md file.
@@ -104,7 +110,7 @@ def pdf(
 
         content = T(".buildchat:pdf").r(text=text)
         if with_option:
-            content = f"{content}\n\n{T('.buildchat:pdf-option.paper').r()}"
+            content = f"{content}\n\n{T(f'.buildchat:paper-option.{option_type}').r()}"
         with open(outfile, "w") as out_f:
             out_f.write(content)
     finally:
@@ -137,6 +143,12 @@ def paper(
         "--with-option/--no-with-option",
         help="Append additional pdf-option prompt to the chat output (use -o to enable, -O to disable)",
     ),
+    option_type: str = typer.Option(
+        "reading",
+        "-t",
+        "--type",
+        help="The type of option to use (reading, review)",
+    ),
 ):
     """
     Detect file type (txt, pdf) and create a chat session.
@@ -151,7 +163,7 @@ def paper(
     # Stage 2: Render to chat
     content = T(".buildchat:pdf").r(text=text)
     if with_option:
-        content = f"{content}\n\n{T('.buildchat:pdf-option.paper').r()}"
+        content = f"{content}\n\n{T(f'.buildchat:paper-option.{option_type}').r()}"
     with open(outfile, "w") as out_f:
         out_f.write(content)
 

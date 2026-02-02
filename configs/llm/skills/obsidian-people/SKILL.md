@@ -33,3 +33,7 @@ cd /path/to/your/obsidian/vault
 3.  For each file, it reads the YAML frontmatter (the block between `---` at the top).
 4.  It extracts `name`, `aliases`, and `tags` using a robust parser (falling back to a simple manual parser if `PyYAML` is not installed).
 5.  It prints a formatted table of the results.
+
+## Notes
+
+If the user provides more details about a person, such as an alias, please help update that person's information.

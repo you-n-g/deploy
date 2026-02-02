@@ -52,13 +52,29 @@ pdf: |-
   Please response in Chinese.
 
 pdf-option:
-  paper: |-
+  paper: &paper-reading |-
     请总结这篇文章，主要内容包含以下部分
     1. 如果只聚焦在 **方法设计** 本身的亮点（不讨论跨领域成果与应用表现），归纳文章亮点
     2. 验证方法的有效性，它选取了什么场景用于评测，每个场景试用的指标是什么意思？请用表格形式展示
     3. 和哪些Baseline做了比较，在方法设计上（而不是实验结果），现在的方法比baseline更好？
 
     每个关键点后都接一个[<原文内容>]的引用(如果有图表也要引用)，方便我Ctrl+F查找。
+
+paper-option:
+  reading: *paper-reading
+  review: |-
+    你是一个NIPS/ICML/ICLR 顶尖会议的reviewer, 对于这篇paper，你会觉得有什么缺陷？
+    对于你指明的每一处缺陷，请列出原文引用，方便后续去原文中查找&证实。
+  review1: |-
+    你是一个NIPS/ICML/ICLR 顶尖会议的reviewer, 对于这篇paper，
+    是否有不自洽的地方，比如有的点逻辑链路不完整 (完整的逻辑链路应该是 提出问题-> 提出解决方案 -> 实验验证)
+    同时引用原文内容，方便后续去原文中查找&证实。
+  review2: |-
+    你是一个NIPS/ICML/ICLR 顶尖会议的reviewer, 对于这篇paper，
+    论文中是否有表达不清的问题，例如
+    - 某些可能引起歧义的术语在首次出现时没有解释或给出参考文献
+    - 某些用词在前后出现时不一致，从而造成理解困难
+
 
 explain_ws: |-
   💻 You are a helpful AI assistant.
