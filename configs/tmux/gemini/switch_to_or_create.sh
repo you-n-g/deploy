@@ -11,5 +11,6 @@ WINDOW_ID=$(tmux list-windows -F "#{window_id} #{window_name}" | grep " gemini$"
 if [ -n "$WINDOW_ID" ]; then
     tmux select-window -t "$WINDOW_ID"
 else
-    tmux new-window -n gemini "gemini"
+    # we must use -i to make it an interactive shell. otherwise, geminir will not work
+    tmux new-window -n gemini "zsh -ic \"geminir\""
 fi

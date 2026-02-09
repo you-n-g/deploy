@@ -189,9 +189,9 @@ alias sudo="sudo -E"
 
 function proxy_up() {
     # don't capitalize them
-    export http_proxy=127.0.0.1:6489
-    export https_proxy=127.0.0.1:6489
-    export SOCKS_SERVER=127.0.0.1:8964
+    export http_proxy=${proxy_addr:-127.0.0.1:6489}
+    export https_proxy=${proxy_addr:-127.0.0.1:6489}
+    export SOCKS_SERVER=${proxy_addr:-127.0.0.1:8964}
     # NOTICE: the ip range my not works on some softwares !!!!!
     export no_proxy=localhost,127.0.0.1,127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.sock
     # To make it works for all softwares, proxychains is recommended
@@ -203,6 +203,19 @@ function proxy_down() {
     unset http_proxy https_proxy SOCKS_SERVER no_proxy
 }
 
+# NOTE: add a function to check if we need proxy by testing connectivity
+function proxy_check() {
+    local test_url=${1:-https://x.com}
+    # timeout 3 seconds; if failed, we may need proxy
+    if curl -Is --max-time 3 "$test_url" >/dev/null 2>&1; then
+        echo "Network OK. Proxy not needed."
+        return 0
+    else
+        echo "Network unreachable. Proxy may be needed."
+        return 1
+    fi
+}
+
 
 
 alias pypdb='python -m ipdb -c c'
@@ -211,8 +224,28 @@ alias pyprof='python -m cProfile -o stats_out'
 alias ipify="curl cip.cc"
 # using this alias name  because the previous tool is ipify
 
-# gemini with (r)ename
-alias geminir='if [ -n "$TMUX" ]; then prev_name=$(tmux display-message -p "#W"); tmux rename-window gemini; command gemini; tmux rename-window "$prev_name"; else command gemini; fi'  # if inside tmux, rename to 'gemini', run it, then restore name
+# gemini with proxy (p) — auto-detect: if proxy needed, wrap with proxychains, else run normally
+function myp() {
+    if proxy_check >/dev/null 2>&1; then
+        "$@"
+    else
+        proxychains -q "$@"
+    fi
+}
+
+# gemini with (r)ename — now implemented as a function
+function geminir() {
+    # if inside tmux, rename window temporarily
+    if [ -n "$TMUX" ]; then
+        local prev_name
+        prev_name=$(tmux display-message -p "#W")
+        tmux rename-window gemini
+        myp gemini
+        tmux rename-window "$prev_name"
+    else
+        myp gemini
+    fi
+}
 
 # for fzf
 # 文件太大常常没法正常运行
@@ -306,7 +339,7 @@ alias copier="uvx copier"
 # ## Outlines: ranger
 # ranger的安装依赖  deploy_apps/install_fav_py_pack.sh
 alias .r=". ranger"
-alias ranger='if [ -n "$TMUX" ]; then prev_name=$(tmux display-message -p "#W"); tmux rename-window ranger; command ranger; tmux rename-window "$prev_name"; else command ranger; fi'  # if inside tmux, rename to 'ranger', run it, then restore name
+alias ranger='if [ -n "$TMUX" ]; then prev_name=$(tmux display-message -p "#W"); tmux rename-window ranger; command uvx --from ranger-fm ranger ; tmux rename-window "$prev_name"; else command ranger; fi'  # if inside tmux, rename to 'ranger', run it, then restore name
 # 其他
 # -快捷键篇
 #   - r: 可以open_with调用当前文件，1是less/pager
