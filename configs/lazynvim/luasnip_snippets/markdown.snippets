@@ -36,6 +36,11 @@ snippet nav "navigate note template"
   <design improvements>
 
 snippet taskb "create a task block"
-	\`\`\`task
+	\`\`\`task `luaeval("os.date('%Y-%m-%d')")`
+	$0
+	\`\`\`
+
+snippet tb "create a task block"
+	\`\`\`task `luaeval("os.date('%Y-%m-%d')")`
 	$0
 	\`\`\`

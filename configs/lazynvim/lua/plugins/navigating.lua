@@ -157,6 +157,7 @@ return {
       --   right = "}}"
       -- },
       enable_block = true,
+      default_tmux_target = "T:{current}.gemini",
     },
   },
   -- It conflicts with https://github.com/jbyuki/one-small-step-for-vimkind?tab=readme-ov-file#flattennvim
