@@ -11,6 +11,7 @@ This skill acts as an intelligent secretary for your Obsidian knowledge base. It
 2.  Appends diary entries to `Logging/Daily/`.
 3.  Identifies people, resolves their aliases, and updates their files in `People/`.
 4.  Extracts knowledge points to relevant documents.
+5.  Removes the raw content from the `Tools/chat/daily summary.md`.
 
 You should process the raw content one section at a time, usually by day. Do not compile all sections together in a single batch.
 
@@ -33,17 +34,22 @@ Before writing, you must identify who is mentioned in the text.
 #### A. Update Daily Log
 -   **Target**: `Logging/Daily/YYYY-MM-DD.md` (Use today's date).
 -   **Action**: 
-    1.  Read the file to understand its current structure.
-    2.  move the raw content to the diary.
-    3.  add the compiled content to the diary (Please follow the instructions in `Tools/chat/daily summary.md`).
+    1. Read the file to understand its current structure.  
+    2. Move the raw content from the summary into the diary.  
+    3. Add the compiled content to the diary, following the instructions in `Tools/chat/daily summary.md`.  
+    4. **Remove the raw content from `Tools/chat/daily summary.md`** after it has been moved. Keep the original information in the `Logging/Daily/YYYY-MM-DD.md` as much as possible.  
+       - In the end, the diary should contain the raw content, the compiled content, and any derived information based on the instructions.
+       - Remove the raw content from the summary right after updating `Logging/Daily/YYYY-MM-DD.md`. Do not wait until the end to delete it.
 
 #### B. Update People Files
 -   **Target**: The matched `People/<CanonicalName>.md` files.
 -   **Action**: 
     1.  For each person mentioned, extract the relevant context or information about them.
     2.  Read their file.
-    3.  **Append** a new entry (e.g., a bullet point with today's date link `[[YYYY-MM-DD]]`) containing this info.
-    4. Leave a tag like `#p/...` to that people file.
+    3.  Update the person’s file only when necessary. Do not copy the diary entry into the person’s file. Instead, add or adjust information only when it helps clarify or improve what is already there.
+      - If the information is already included in the diary, you do not need to add it again to the people file. I can find it through tags.
+    4. Add a tag like `#p/...` pointing to the related people file. Use this tag in the daily log to link the summarized content to that person. Make sure the tag appears in the diary entry.
+      - When adding a tag, make sure there is a space before and after it so Obsidian can recognize it correctly.
 
 #### C. Knowledge & Concepts
 -   **Target**: Relevant topic files (search for them if needed) or new files.
@@ -58,7 +64,7 @@ Before writing, you must identify who is mentioned in the text.
 **Agent Actions**:
 1.  Read `Tools/chat/daily summary.md`.
 2.  Run `obsidian-people/run.sh`. Find that "Lao Wang" is an alias for `People/Wang Xiaoming.md`.
-3.  **Update `Logging/Daily/202X-XX-XX.md`**: Append the meeting note and the realization about RAG.
+3.  **Update `Logging/Daily/202X-XX-XX.md`**: Move the meeting notes from `Tools/chat/daily summary.md` into the daily log, and further refine or expand the content based on what is required in `daily summary.md`.
 4.  **Update `People/Wang Xiaoming.md`**: Append "- [[202X-XX-XX]]: Discussed AI project structure."
 5.  **Update `RAG.md` (or similar)**: Append the note about chunking strategies.
 

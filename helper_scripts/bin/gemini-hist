@@ -3,57 +3,92 @@ import json
 import glob
 import os
 import pathlib
+import argparse
+import sys
 
-def extract_chat_history():
-    """
-    This script extracts chat history from the latest gemini session file
-    and converts it into a bash script.
-    """
-
-    # Find the latest session file
+def get_latest_session_file():
+    """Finds and returns the path to the latest gemini session file."""
     search_path = pathlib.Path.home().joinpath('.gemini', 'tmp', '**', 'chats', 'session-*.json')
     files = glob.glob(str(search_path), recursive=True)
-
     if not files:
-        print("No session files found.")
-        return
+        return None
+    return max(files, key=os.path.getmtime)
 
-    latest_file = max(files, key=os.path.getmtime)
-    print(f"Latest session file: {latest_file}")
-
-    # Read the content of the latest session file
-    with open(latest_file, 'r') as f:
+def extract_messages(session_file, n=None):
+    """
+    Extracts relevant messages from the session file.
+    If n is provided, it limits to the last n user interactions.
+    """
+    with open(session_file, 'r') as f:
         try:
             json_content = json.load(f)
         except json.JSONDecodeError:
-            print(f"Error decoding JSON from {latest_file}")
-            return
+            print(f"Error decoding JSON from {session_file}", file=sys.stderr)
+            return []
 
-    script_content = ""
-    if "messages" in json_content:
-        for message in json_content["messages"]:
+    messages = json_content.get("messages", [])
+    if n is None:
+        return messages
+
+    user_indices = [i for i, m in enumerate(messages) if m.get("type") == "user"]
+    if len(user_indices) > n:
+        start_index = user_indices[-n]
+        return messages[start_index:]
+    return messages
+
+def format_output(messages, full_format=False):
+    """
+    Formats the extracted messages for output.
+    If full_format is False, only outputs user content.
+    If full_format is True, outputs full interaction in bash-script format.
+    """
+    if not full_format:
+        output = []
+        for message in messages:
             if message.get("type") == "user":
-                content = message.get('content', '')
-                if len(content) > 200:
-                    content = content[:200] + f" <.... {len(content) - 200} chars are truncated ...>"
-                script_content += f"\n\ntrue << 'EOF'\n{content}\nEOF\n"
-            elif message.get("type") == "gemini" and "toolCalls" in message:
-                for tool_call in message["toolCalls"]:
-                    args = tool_call.get("args", {})
-                    if "command" in args:
-                        script_content += f"{args['command']}\n"
-                    elif "pattern" in args:
-                        script_content += f"glob \"{args['pattern']}\"\n"
-                    elif "file_path" in args:
-                        script_content += f"cat \"{args['file_path']}\"\n"
+                output.append(message.get('content', ''))
+        return "\n".join(output)
+    
+    script_parts = []
+    for message in messages:
+        if message.get("type") == "user":
+            content = message.get('content', '')
+            if len(content) > 200:
+                content = content[:200] + f" <.... {len(content) - 200} chars are truncated ...>"
+            script_parts.append(f"\n\ntrue << 'EOF'\n{content}\nEOF\n")
+        elif message.get("type") == "gemini" and "toolCalls" in message:
+            for tool_call in message["toolCalls"]:
+                t_args = tool_call.get("args", {})
+                if "command" in t_args:
+                    script_parts.append(f"{t_args['command']}\n")
+                elif "pattern" in t_args:
+                    script_parts.append(f"glob \"{t_args['pattern']}\"\n")
+                elif "file_path" in t_args:
+                    script_parts.append(f"cat \"{t_args['file_path']}\"\n")
+    return "".join(script_parts).strip()
 
+def main():
+    parser = argparse.ArgumentParser(description="Extract gemini chat history")
+    parser.add_argument("-F", action="store_true", help="Output full interaction including tool calls in bash-script format")
+    parser.add_argument("-n", type=int, default=None, help="Number of recent user inputs to display")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Show verbose logging info")
+    args = parser.parse_args()
 
-    # Write the bash script
-    output_filename = "gemini_history.sh"
-    with open(output_filename, "w") as f:
-        f.write(script_content)
+    latest_file = get_latest_session_file()
+    if not latest_file:
+        print("No session files found.", file=sys.stderr)
+        return
 
-    print(f"Bash script '{output_filename}' created successfully.")
+    if args.verbose:
+        print(f"Latest session file: {latest_file}", file=sys.stderr)
+
+    messages = extract_messages(latest_file, n=args.n)
+    if not messages:
+        return
+
+    output = format_output(messages, full_format=args.F)
+    if output:
+        print(output)
 
 if __name__ == "__main__":
-    extract_chat_history()
+    main()

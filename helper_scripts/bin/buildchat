@@ -121,21 +121,40 @@ def pdf(
             pass
 
 
-def read_data(path: Path) -> str:
-    ext = path.suffix.lower()
-    if ext == '.pdf':
-        return extract_pdf_content(path)
-    elif ext == '.txt':
-        with open(path, 'r', encoding='utf-8', errors='ignore') as f:
-            return f.read()
+def read_data(source: str) -> str:
+    if source.startswith(("http://", "https://")):
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmpf:
+            tmp_path = tmpf.name
+        try:
+            urllib.request.urlretrieve(source, tmp_path)
+            with open(tmp_path, "rb") as f:
+                header = f.read(4)
+            if header == b"%PDF":
+                return extract_pdf_content(tmp_path)
+            else:
+                return firecrawl_get(source)
+        finally:
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
     else:
-        print(f"Error: Unsupported file type '{ext}'. Only .pdf and .txt are supported.")
-        raise typer.Exit(code=1)
+        path = Path(source)
+        if not path.exists():
+            print(f"Error: Source '{source}' not found.")
+            raise typer.Exit(code=1)
+        ext = path.suffix.lower()
+        if ext == ".pdf":
+            return extract_pdf_content(path)
+        elif ext == ".txt":
+            with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                return f.read()
+        else:
+            print(f"Error: Unsupported file type '{ext}'. Only .pdf and .txt are supported.")
+            raise typer.Exit(code=1)
 
 
 @app.command()
 def paper(
-    source: Path = typer.Argument(..., help="The source file path (pdf or txt)"),
+    source: str = typer.Argument(..., help="The source file path (pdf or txt) or URL"),
     outfile: Path = Path("chat.md"),
     with_option: bool = typer.Option(
         True,
@@ -151,11 +170,8 @@ def paper(
     ),
 ):
     """
-    Detect file type (txt, pdf) and create a chat session.
+    Detect file type (txt, pdf) or URL and create a chat session.
     """
-    if not source.exists():
-        print(f"Error: Source '{source}' not found.")
-        raise typer.Exit(code=1)
 
     # Stage 1: Read data
     text = read_data(source)

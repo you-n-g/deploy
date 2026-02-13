@@ -239,11 +239,11 @@ function geminir() {
     if [ -n "$TMUX" ]; then
         local prev_name
         prev_name=$(tmux display-message -p "#W")
-        tmux rename-window gemini
-        myp gemini
-        tmux rename-window "$prev_name"
+        tmux rename-window -t "$TMUX_PANE" gemini
+        myp gemini "$@"
+        tmux rename-window -t "$TMUX_PANE" "$prev_name"
     else
-        myp gemini
+        myp gemini "$@"
     fi
 }
 
@@ -339,7 +339,7 @@ alias copier="uvx copier"
 # ## Outlines: ranger
 # ranger的安装依赖  deploy_apps/install_fav_py_pack.sh
 alias .r=". ranger"
-alias ranger='if [ -n "$TMUX" ]; then prev_name=$(tmux display-message -p "#W"); tmux rename-window ranger; command uvx --from ranger-fm ranger ; tmux rename-window "$prev_name"; else command ranger; fi'  # if inside tmux, rename to 'ranger', run it, then restore name
+alias ranger='if [ -n "$TMUX" ]; then prev_name=$(tmux display-message -p "#W"); tmux rename-window -t "$TMUX_PANE" ranger; command uvx --from ranger-fm ranger ; tmux rename-window -t "$TMUX_PANE" "$prev_name"; else command ranger; fi'  # if inside tmux, rename to 'ranger', run it, then restore name
 # 其他
 # -快捷键篇
 #   - r: 可以open_with调用当前文件，1是less/pager

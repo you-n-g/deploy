@@ -164,6 +164,11 @@ function M.setup()
   vim.keymap.set({ "n", "v" }, "<Localleader>cp", function() M.send_path_to_gemini() end, { desc = "Send Path to Gemini/Tmux" })
   vim.keymap.set({ "n", "v" }, "<Localleader>cl", function() M.send_to_last_window(true) end, { desc = "Send to last tmux window in current session (Raw, line/visual)" })
   vim.keymap.set({ "n", "v" }, "<Localleader>cL", function() M.send_to_last_window(true, "enter") end, { desc = "Send to last tmux window (Raw, no switch)" })
+  vim.keymap.set({ "n" }, "<Localleader>ch", function()
+    local count = vim.v.count1
+    vim.cmd("r !gemini-hist -n " .. count)
+  end, { desc = "Insert last n gemini history below" })
+  vim.keymap.set({ "n" }, "<Localleader>cH", ":r !gemini-hist<CR>", { desc = "Insert all gemini history below" })
 
   for i = 1, 4 do
     vim.keymap.set({ "n", "v" }, "<Localleader>c" .. i, function() M.send_literal_to_gemini(tostring(i), "enter") end, { desc = "Send " .. i .. " to Gemini" })
