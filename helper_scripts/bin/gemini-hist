@@ -5,6 +5,7 @@ import os
 import pathlib
 import argparse
 import sys
+import re
 
 def get_latest_session_file():
     """Finds and returns the path to the latest gemini session file."""
@@ -42,17 +43,23 @@ def format_output(messages, full_format=False):
     If full_format is False, only outputs user content.
     If full_format is True, outputs full interaction in bash-script format.
     """
+    def clean_content(text):
+        if not text:
+            return ""
+        pattern = r"--- Content from referenced files ---.*?--- End of content ---"
+        return re.sub(pattern, "", text, flags=re.DOTALL).strip()
+
     if not full_format:
         output = []
         for message in messages:
             if message.get("type") == "user":
-                output.append(message.get('content', ''))
+                output.append(clean_content(message.get('content', '')))
         return "\n".join(output)
     
     script_parts = []
     for message in messages:
         if message.get("type") == "user":
-            content = message.get('content', '')
+            content = clean_content(message.get('content', ''))
             if len(content) > 200:
                 content = content[:200] + f" <.... {len(content) - 200} chars are truncated ...>"
             script_parts.append(f"\n\ntrue << 'EOF'\n{content}\nEOF\n")

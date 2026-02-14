@@ -19,16 +19,13 @@ local function get_current_tmux_session()
   return trim(session)
 end
 
-local function has_gemini_window(session)
-  if not session then return false end
-  local windows = vim.fn.system("tmux list-windows -t " .. session .. " -F '#{window_name}'")
-  if vim.v.shell_error ~= 0 then return false end
-  for w in string.gmatch(windows, "[^\r\n]+") do
-    if w == "gemini" then
-      return true
-    end
-  end
-  return false
+local function get_ai_window(session)
+  if not session then return nil end
+  local script = vim.fn.expand("~/deploy/configs/tmux/ai/get_ai_window.sh")
+  local window = vim.fn.system(script .. " " .. session)
+  if vim.v.shell_error ~= 0 then return nil end
+  window = trim(window)
+  return window ~= "" and window or nil
 end
 
 local function get_relative_path()
@@ -81,9 +78,10 @@ local function get_target_tmux()
   local target_session = nil
   local target_window = nil
 
-  if current_session and has_gemini_window(current_session) then
+  local ai_window = get_ai_window(current_session)
+  if current_session and ai_window then
     target_session = current_session
-    target_window = "gemini"
+    target_window = ai_window
   else
     local input = vim.fn.input("Target tmux session (session.window): ")
     if input == "" then
@@ -164,6 +162,7 @@ function M.setup()
   vim.keymap.set({ "n", "v" }, "<Localleader>cp", function() M.send_path_to_gemini() end, { desc = "Send Path to Gemini/Tmux" })
   vim.keymap.set({ "n", "v" }, "<Localleader>cl", function() M.send_to_last_window(true) end, { desc = "Send to last tmux window in current session (Raw, line/visual)" })
   vim.keymap.set({ "n", "v" }, "<Localleader>cL", function() M.send_to_last_window(true, "enter") end, { desc = "Send to last tmux window (Raw, no switch)" })
+  -- NOTE: this does not work in navigate-note, because the number leading command is defined by other shortcut.
   vim.keymap.set({ "n" }, "<Localleader>ch", function()
     local count = vim.v.count1
     vim.cmd("r !gemini-hist -n " .. count)

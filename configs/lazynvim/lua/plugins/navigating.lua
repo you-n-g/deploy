@@ -157,7 +157,14 @@ return {
       --   right = "}}"
       -- },
       enable_block = true,
-      default_tmux_target = "T:{current}.gemini",
+      default_tmux_target = function()
+        local script = vim.fn.expand("~/deploy/configs/tmux/ai/get_ai_window.sh")
+        local window = vim.fn.system(script):gsub("%s+", "")
+        if vim.v.shell_error ~= 0 or window == "" then
+          window = "gemini"
+        end
+        return string.format("T:{current}.%s", window)
+      end,
     },
   },
   -- It conflicts with https://github.com/jbyuki/one-small-step-for-vimkind?tab=readme-ov-file#flattennvim

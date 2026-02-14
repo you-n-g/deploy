@@ -31,31 +31,37 @@ if [ -d "$OBSIDIAN_SKILLS_DIR/skills" ]; then
     done
 fi
 
-# Target directory where gemini is expected to find skills.
-# The user explicitly requested to link the *entire* source folder directly here.
-TARGET_GEMINI_SKILLS_DIR="$HOME/.gemini/skills"
+# Function to link skills directory for a specific tool
+link_skills_for_tool() {
+    local tool_name=$1
+    local target_dir="$HOME/.$tool_name/skills"
+    local tool_config_dir="$HOME/.$tool_name"
 
-# Check if TARGET_GEMINI_SKILLS_DIR already exists
-if [ -d "$TARGET_GEMINI_SKILLS_DIR" ] && ! [ -L "$TARGET_GEMINI_SKILLS_DIR" ]; then
-    echo "ERROR: '$TARGET_GEMINI_SKILLS_DIR' exists and is a directory (not a symlink)."
-    echo "       Linking the entire folder here will effectively replace this directory with a symlink."
-    echo "       Please manually remove or rename '$TARGET_GEMINI_SKILLS_DIR' if you wish to proceed with this linking strategy."
-    exit 1
-elif [ -L "$TARGET_GEMINI_SKILLS_DIR" ]; then
-    # If it's already a symlink, check where it points
-    current_target=$(readlink "$TARGET_GEMINI_SKILLS_DIR")
-    if [ "$current_target" = "$SOURCE_CUSTOM_SKILLS_BASE_DIR" ]; then
-        echo "Info: '$TARGET_GEMINI_SKILLS_DIR' is already a symlink pointing to the correct source. No action needed."
-        exit 0
-    else
-        echo "Warning: '$TARGET_GEMINI_SKILLS_DIR' is already a symlink, but points to '$current_target'."
-        echo "         Removing old symlink and creating a new one to '$SOURCE_CUSTOM_SKILLS_BASE_DIR'."
-        rm "$TARGET_GEMINI_SKILLS_DIR"
+    echo "Configuring skills for $tool_name..."
+    mkdir -p "$tool_config_dir"
+    # Handle existing target_dir states:
+    # - If it's a real directory, automatically replace it with a symlink
+    # - If it's a symlink but points elsewhere, replace it
+    # - If it's already correctly linked, skip
+    if [ -d "$target_dir" ] && ! [ -L "$target_dir" ]; then
+        echo "WARNING: '$target_dir' exists as a directory. Replacing it with a symlink..."
+        rm -rf "$target_dir"
+    elif [ -L "$target_dir" ]; then
+        local current_target=$(readlink "$target_dir")
+        if [ "$current_target" = "$SOURCE_CUSTOM_SKILLS_BASE_DIR" ]; then
+            echo "Info: '$target_dir' is already correctly linked."
+            return 0
+        fi
+        echo "Updating symlink: '$target_dir' (old target: $current_target)"
+        rm "$target_dir"
     fi
-fi
 
-# Create the symbolic link
-echo "Creating symbolic link from '$SOURCE_CUSTOM_SKILLS_BASE_DIR' to '$TARGET_GEMINI_SKILLS_DIR'."
-ln -s "$SOURCE_CUSTOM_SKILLS_BASE_DIR" "$TARGET_GEMINI_SKILLS_DIR"
+    echo "Creating symbolic link: '$target_dir' -> '$SOURCE_CUSTOM_SKILLS_BASE_DIR'"
+    ln -s "$SOURCE_CUSTOM_SKILLS_BASE_DIR" "$target_dir"
+}
 
-echo "Entire skills folder linking process complete. '$TARGET_GEMINI_SKILLS_DIR' is now a symlink to your custom skills folder."
+# Link for both gemini and codex
+link_skills_for_tool "gemini"
+link_skills_for_tool "codex"
+
+echo "Skills linking process complete for all AI tools."

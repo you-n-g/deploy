@@ -1,18 +1,22 @@
 #!/bin/bash
-# Select and switch to a tmux window named 'gemini'
+# Select and switch to a tmux window for AI tools (gemini, codex, etc.)
+# Usage: tmuxg [tool_pattern]
+# Default pattern matches both gemini and codex
 
-# Get the list of windows named 'gemini', sorted by last activity
-LIST=$(tmux list-windows -a -F '#{window_activity} #{session_name}:#{window_index} #{window_name}' | grep ' gemini$' | sort -nr | cut -d' ' -f2-)
+PATTERN=${1:-"(gemini|codex)"}
+
+# Get the list of windows matching the pattern, sorted by last activity
+LIST=$(tmux list-windows -a -F '#{window_activity} #{session_name}:#{window_index} #{window_name}' | grep -E " ${PATTERN}$" | sort -nr | cut -d' ' -f2-)
 
 if [[ -z "$LIST" ]]; then
-    echo "No windows named 'gemini' found."
+    echo "No windows matching '${PATTERN}' found."
     exit 0
 fi
 
 # Use fzf to select a window
 SELECTED=$(echo "$LIST" | fzf \
     --reverse \
-    --header 'Select a gemini window (Enter to switch)' \
+    --header "Select an AI window (Enter to switch)" \
     --preview 'tmux capture-pane -ept {1}' \
     --preview-window 'up:70%,follow')
 

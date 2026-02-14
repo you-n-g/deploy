@@ -233,18 +233,29 @@ function myp() {
     fi
 }
 
-# gemini with (r)ename — now implemented as a function
-function geminir() {
-    # if inside tmux, rename window temporarily
+# gemini with (r)ename — unified runner
+function _with_tmux_rename() {
+    local title="$1"
+    shift
     if [ -n "$TMUX" ]; then
         local prev_name
         prev_name=$(tmux display-message -p "#W")
-        tmux rename-window -t "$TMUX_PANE" gemini
-        myp gemini "$@"
+        tmux rename-window -t "$TMUX_PANE" "$title"
+        myp "$@"
         tmux rename-window -t "$TMUX_PANE" "$prev_name"
     else
-        myp gemini "$@"
+        myp "$@"
     fi
+}
+
+# gemini with rename
+function geminir() {
+    _with_tmux_rename gemini gemini "$@"
+}
+
+# codex with rename
+function codexr() {
+    _with_tmux_rename codex codex --dangerously-bypass-approvals-and-sandbox "$@"
 }
 
 # for fzf
