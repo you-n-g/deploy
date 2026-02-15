@@ -255,7 +255,8 @@ function geminir() {
 
 # codex with rename
 function codexr() {
-    _with_tmux_rename codex codex --dangerously-bypass-approvals-and-sandbox "$@"
+    # _with_tmux_rename codex codex --dangerously-bypass-approvals-and-sandbox "$@"
+    _with_tmux_rename codex codex "$@"
 }
 
 # for fzf

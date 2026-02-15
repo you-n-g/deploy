@@ -165,9 +165,9 @@ function M.setup()
   -- NOTE: this does not work in navigate-note, because the number leading command is defined by other shortcut.
   vim.keymap.set({ "n" }, "<Localleader>ch", function()
     local count = vim.v.count1
-    vim.cmd("r !gemini-hist -n " .. count)
-  end, { desc = "Insert last n gemini history below" })
-  vim.keymap.set({ "n" }, "<Localleader>cH", ":r !gemini-hist<CR>", { desc = "Insert all gemini history below" })
+    vim.cmd("r !ai-hist -n " .. count)
+  end, { desc = "Insert last n AI history below" })
+  vim.keymap.set({ "n" }, "<Localleader>cH", ":r !ai-hist<CR>", { desc = "Insert all AI history below" })
 
   for i = 1, 4 do
     vim.keymap.set({ "n", "v" }, "<Localleader>c" .. i, function() M.send_literal_to_gemini(tostring(i), "enter") end, { desc = "Send " .. i .. " to Gemini" })

@@ -1,0 +1,343 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import glob
+import json
+import os
+import pathlib
+import re
+import sys
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Any, Iterable, List, Optional, Sequence
+
+
+def eprint(*args: object) -> None:
+    print(*args, file=sys.stderr)
+
+
+def latest_file(glob_pattern: str) -> Optional[str]:
+    files = glob.glob(glob_pattern, recursive=True)
+    if not files:
+        return None
+    return max(files, key=os.path.getmtime)
+
+
+def clean_content(text: str) -> str:
+    if not text:
+        return ""
+    pattern = r"--- Content from referenced files ---.*?--- End of content ---"
+    return re.sub(pattern, "", text, flags=re.DOTALL).strip()
+
+
+@dataclass(frozen=True)
+class SessionRef:
+    provider: str
+    path: str
+    mtime: float
+
+
+@dataclass(frozen=True)
+class TimelineItem(ABC):
+    @abstractmethod
+    def to_user_only_text(self) -> Optional[str]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def to_full_bash_lines(self) -> List[str]:
+        raise NotImplementedError
+
+
+@dataclass(frozen=True)
+class UserInput(TimelineItem):
+    text: str
+
+    def to_user_only_text(self) -> Optional[str]:
+        t = clean_content(self.text)
+        return t if t else None
+
+    def to_full_bash_lines(self) -> List[str]:
+        content = clean_content(self.text)
+        if len(content) > 200:
+            content = content[:200] + f" <.... {len(content) - 200} chars are truncated ...>"
+        return [f"\n\ntrue << 'EOF'\n{content}\nEOF\n"]
+
+
+@dataclass(frozen=True)
+class ToolCommand(TimelineItem):
+    command: str
+
+    def to_user_only_text(self) -> Optional[str]:
+        return None
+
+    def to_full_bash_lines(self) -> List[str]:
+        return [self.command.rstrip("\n") + "\n"]
+
+
+@dataclass(frozen=True)
+class ToolNote(TimelineItem):
+    note: str
+
+    def to_user_only_text(self) -> Optional[str]:
+        return None
+
+    def to_full_bash_lines(self) -> List[str]:
+        return [self.note.rstrip("\n") + "\n"]
+
+
+class Provider(ABC):
+    name: str
+
+    @abstractmethod
+    def latest_session(self) -> Optional[SessionRef]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def load_timeline(self, session_path: str) -> List[TimelineItem]:
+        raise NotImplementedError
+
+
+class GeminiProvider(Provider):
+    name = "gemini"
+
+    def latest_session(self) -> Optional[SessionRef]:
+        search_path = pathlib.Path.home().joinpath(".gemini", "tmp", "**", "chats", "session-*.json")
+        path = latest_file(str(search_path))
+        if not path:
+            return None
+        return SessionRef(provider=self.name, path=path, mtime=os.path.getmtime(path))
+
+    def load_timeline(self, session_path: str) -> List[TimelineItem]:
+        try:
+            with open(session_path, "r", encoding="utf-8") as f:
+                content = json.load(f)
+        except json.JSONDecodeError:
+            eprint(f"Error decoding JSON from {session_path}")
+            return []
+        except OSError as exc:
+            eprint(f"Error reading {session_path}: {exc}")
+            return []
+
+        messages = content.get("messages", []) or []
+        timeline: List[TimelineItem] = []
+        for message in messages:
+            if not isinstance(message, dict):
+                continue
+
+            msg_type = message.get("type")
+            if msg_type == "user":
+                timeline.append(UserInput(text=self._message_text(message)))
+                continue
+
+            if msg_type == "gemini" and "toolCalls" in message:
+                for tool_call in message.get("toolCalls", []) or []:
+                    if not isinstance(tool_call, dict):
+                        continue
+                    t_args = (tool_call.get("args") or {}) if isinstance(tool_call.get("args"), dict) else {}
+                    if "command" in t_args and isinstance(t_args["command"], str):
+                        timeline.append(ToolCommand(command=t_args["command"]))
+                    elif "pattern" in t_args and isinstance(t_args["pattern"], str):
+                        timeline.append(ToolCommand(command=f'glob "{t_args["pattern"]}"'))
+                    elif "file_path" in t_args and isinstance(t_args["file_path"], str):
+                        timeline.append(ToolCommand(command=f'cat "{t_args["file_path"]}"'))
+        return timeline
+
+    @staticmethod
+    def _message_text(message: dict) -> str:
+        content = message.get("content")
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            chunks: List[str] = []
+            for item in content:
+                if isinstance(item, str):
+                    chunks.append(item)
+                    continue
+                if not isinstance(item, dict):
+                    continue
+                text = item.get("text")
+                if isinstance(text, str) and text:
+                    chunks.append(text)
+            return "\n".join(chunks).strip()
+        if isinstance(content, dict):
+            text = content.get("text")
+            return text.strip() if isinstance(text, str) else ""
+        return ""
+
+
+class CodexProvider(Provider):
+    name = "codex"
+
+    def latest_session(self) -> Optional[SessionRef]:
+        search_path = pathlib.Path.home().joinpath(".codex", "sessions", "**", "rollout-*.jsonl")
+        path = latest_file(str(search_path))
+        if not path:
+            return None
+        return SessionRef(provider=self.name, path=path, mtime=os.path.getmtime(path))
+
+    def load_timeline(self, session_path: str) -> List[TimelineItem]:
+        timeline: List[TimelineItem] = []
+        try:
+            with open(session_path, "r", encoding="utf-8") as f:
+                for line_no, line in enumerate(f, start=1):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        ev = json.loads(line)
+                    except json.JSONDecodeError:
+                        eprint(f"Error decoding JSON on line {line_no} of {session_path}")
+                        return []
+                    timeline.extend(self._event_to_items(ev))
+        except OSError as exc:
+            eprint(f"Error reading {session_path}: {exc}")
+            return []
+        return timeline
+
+    @staticmethod
+    def _event_to_items(ev: Any) -> List[TimelineItem]:
+        if not isinstance(ev, dict):
+            return []
+
+        if ev.get("type") != "response_item":
+            return []
+
+        payload = ev.get("payload") if isinstance(ev.get("payload"), dict) else {}
+        p_type = payload.get("type")
+
+        if p_type == "message" and payload.get("role") == "user":
+            return [UserInput(text=CodexProvider._message_text(payload))]
+
+        if p_type == "function_call":
+            name = payload.get("name")
+            raw_args = payload.get("arguments") or ""
+            call_args: dict = {}
+            if isinstance(raw_args, str) and raw_args:
+                try:
+                    maybe = json.loads(raw_args)
+                    if isinstance(maybe, dict):
+                        call_args = maybe
+                except json.JSONDecodeError:
+                    call_args = {}
+
+            if name == "shell_command":
+                cmd = call_args.get("command")
+                if isinstance(cmd, str) and cmd:
+                    return [ToolCommand(command=cmd)]
+            if name == "apply_patch":
+                return [ToolNote(note="# apply_patch (omitted)")]
+
+        return []
+
+    @staticmethod
+    def _message_text(payload: dict) -> str:
+        content = payload.get("content") or []
+        if not isinstance(content, list):
+            return ""
+        chunks: List[str] = []
+        for item in content:
+            if not isinstance(item, dict):
+                continue
+            if item.get("type") in {"input_text", "text"}:
+                text = item.get("text")
+                if isinstance(text, str) and text:
+                    chunks.append(text)
+        return "\n".join(chunks).strip()
+
+
+def providers() -> List[Provider]:
+    return [GeminiProvider(), CodexProvider()]
+
+
+def select_session(provider_name: str, verbose: bool) -> Optional[SessionRef]:
+    by_name = {p.name: p for p in providers()}
+
+    if provider_name != "auto":
+        prov = by_name.get(provider_name)
+        if not prov:
+            eprint(f"Unknown provider: {provider_name} (expected: auto|gemini|codex)")
+            return None
+        return prov.latest_session()
+
+    candidates: List[SessionRef] = []
+    for prov in by_name.values():
+        ref = prov.latest_session()
+        if ref:
+            candidates.append(ref)
+            if verbose:
+                eprint(f"{prov.name.capitalize()} latest: {ref.path}")
+    if not candidates:
+        return None
+    return max(candidates, key=lambda r: r.mtime)
+
+
+def slice_from_last_n_user_inputs(items: Sequence[TimelineItem], n: Optional[int]) -> List[TimelineItem]:
+    if n is None:
+        return list(items)
+
+    user_positions = [i for i, item in enumerate(items) if isinstance(item, UserInput)]
+    if len(user_positions) <= n:
+        return list(items)
+    return list(items[user_positions[-n] :])
+
+
+def format_user_only(items: Iterable[TimelineItem]) -> str:
+    out: List[str] = []
+    for item in items:
+        text = item.to_user_only_text()
+        if text:
+            out.append(text)
+    return "\n".join(out)
+
+
+def format_full_bash(items: Iterable[TimelineItem]) -> str:
+    parts: List[str] = []
+    for item in items:
+        parts.extend(item.to_full_bash_lines())
+    return "".join(parts).strip()
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    parser = argparse.ArgumentParser(description="Extract AI (Gemini/Codex) chat history")
+    parser.add_argument(
+        "--provider",
+        default="auto",
+        choices=["auto", "gemini", "codex"],
+        help="Which provider to read from (default: auto = newest session between gemini and codex)",
+    )
+    parser.add_argument(
+        "-F",
+        action="store_true",
+        help="Output full interaction including tool calls in bash-script format",
+    )
+    parser.add_argument("-n", type=int, default=None, help="Number of recent user inputs to display")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Show verbose logging info")
+    args = parser.parse_args(list(argv) if argv is not None else None)
+
+    by_name = {p.name: p for p in providers()}
+    session = select_session(args.provider, verbose=args.verbose)
+    if not session:
+        eprint("No session files found.")
+        return 1
+
+    prov = by_name.get(session.provider)
+    if not prov:
+        eprint(f"Unexpected provider selection: {session.provider}")
+        return 2
+
+    if args.verbose:
+        eprint(f"Provider: {session.provider}")
+        eprint(f"Session file: {session.path}")
+
+    timeline = prov.load_timeline(session.path)
+    timeline = slice_from_last_n_user_inputs(timeline, n=args.n)
+    output = format_full_bash(timeline) if args.F else format_user_only(timeline)
+    if output:
+        print(output)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
