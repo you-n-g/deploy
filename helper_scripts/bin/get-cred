@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Script to get Azure credentials from GPG encrypted files
+# Usage: get-cred [key|base|model] [filename.gpg]
+# Default: get-cred key gpt.gpg
+
+TYPE="${1:-key}"
+FNAME="${2:-gpt.gpg}"
+KEY_PATH="$HOME/deploy/keys/$FNAME"
+
+if [ ! -f "$KEY_PATH" ]; then
+    echo "Error: Key file $KEY_PATH not found." >&2
+    exit 1
+fi
+
+case "$TYPE" in
+    base)
+        LINE=1
+        ;;
+    model)
+        LINE=2
+        ;;
+    key)
+        LINE=3
+        ;;
+    *)
+        echo "Usage: $0 [base|model|key] [filename.gpg]" >&2
+        exit 1
+        ;;
+esac
+
+# Decrypt and extract the specific line
+gpg -q --decrypt "$KEY_PATH" | sed -n "${LINE}p"

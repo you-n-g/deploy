@@ -256,7 +256,7 @@ function geminir() {
 # codex with rename
 function codexr() {
     # _with_tmux_rename codex codex --dangerously-bypass-approvals-and-sandbox "$@"
-    _with_tmux_rename codex codex "$@"
+    AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) _with_tmux_rename codex codex "$@"
 }
 
 # for fzf
