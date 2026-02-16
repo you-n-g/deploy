@@ -63,5 +63,8 @@ link_skills_for_tool() {
 # Link for both gemini and codex
 link_skills_for_tool "gemini"
 link_skills_for_tool "codex"
-
 echo "Skills linking process complete for all AI tools."
+
+npm install -g @google/gemini-cli
+npm install -g @openai/codex
+~/deploy/deploy_apps/config_codex.py

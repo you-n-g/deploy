@@ -6,14 +6,34 @@ set -x
 
 export PATH="$HOME/anaconda3/bin:$HOME/miniconda3/bin:$PATH"   # for enable conda after installation
 
-if which conda ;
-then
-    conda install -c conda-forge -y tmux
-    # TMUX_EXE=$CONDA_PREFIX/bin/tmux
-    TMUX_EXE=~/miniconda3/bin/tmux
-    # 这里硬编码了， 但是也没有更好的，一直找不到环境变量
+# if which conda ;
+# then
+#     conda install -c conda-forge -y tmux
+#     # TMUX_EXE=$CONDA_PREFIX/bin/tmux
+#     TMUX_EXE=~/miniconda3/bin/tmux
+#     # 这里硬编码了， 但是也没有更好的，一直找不到环境变量
+# else
+#     TMUX_EXE=`which tmux`
+# fi
+
+# 这个地方是为了无论在哪个 conda 环境中， 都能找到正常的tmux
+# 需要下面的假设成立
+# - ~/bin/ 被加到了PATH中，这个依赖 rcfile.sh
+# 如果不加这个会导致
+# - 在老的系统中找不到正确版本的tmux，导致 vim-slime, ranger 之类的软件失效(失效表现为遇到tmux相关的的步骤就卡住)
+# ln -s $TMUX_EXE ~/bin/tmux
+
+# use homebrew to install tmux
+# Sometime I found conda's tmux is not working. homebrew is more stable across different *nix systems
+if command -v brew >/dev/null 2>&1 ; then
+    if ! brew list tmux >/dev/null 2>&1 ; then
+        brew install tmux
+        # this may take very long time
+    fi
+    brew link tmux >/dev/null 2>&1 || true
+    TMUX_EXE=$(brew --prefix)/bin/tmux
 else
-    TMUX_EXE=`which tmux`
+    echo "Homebrew not found, skipping brew-based tmux installation"
 fi
 
 bash ~/deploy/deploy_apps/install_tmuxinator.sh
@@ -30,13 +50,6 @@ TMUX_CONF=~/.tmux.conf
 if ! grep "^source-file ~/deploy/configs/tmux/tmux.conf" $TMUX_CONF ; then
     echo 'source-file ~/deploy/configs/tmux/tmux.conf' >> $TMUX_CONF
 fi
-
-# 这个地方是为了无论在哪个 conda 环境中， 都能找到正常的tmux
-# 需要下面的假设成立
-# - ~/bin/ 被加到了PATH中，这个依赖 rcfile.sh
-# 如果不加这个会导致
-# - 在老的系统中找不到正确版本的tmux，导致 vim-slime, ranger 之类的软件失效(失效表现为遇到tmux相关的的步骤就卡住)
-ln -s $TMUX_EXE ~/bin/tmux
 
 
 sh ~/deploy/deploy_apps/deploy_tpm.sh

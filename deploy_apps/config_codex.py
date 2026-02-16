@@ -5,7 +5,6 @@
 # ]
 # ///
 
-import os
 import subprocess
 from pathlib import Path
 import tomlkit
@@ -81,7 +80,6 @@ def main():
         return
 
     update_config_toml(cred)
-    print("Codex CLI configuration updated successfully (auth.json was not modified).")
 
 if __name__ == "__main__":
     main()
