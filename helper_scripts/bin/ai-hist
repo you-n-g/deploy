@@ -27,8 +27,13 @@ def latest_file(glob_pattern: str) -> Optional[str]:
 def clean_content(text: str) -> str:
     if not text:
         return ""
-    pattern = r"--- Content from referenced files ---.*?--- End of content ---"
-    return re.sub(pattern, "", text, flags=re.DOTALL).strip()
+    # Remove Content from referenced files
+    text = re.sub(r"--- Content from referenced files ---.*?--- End of content ---", "", text, flags=re.DOTALL)
+    # Remove instructions header
+    text = re.sub(r"--- # AGENTS\.md instructions for .*?\n", "", text, flags=re.MULTILINE)
+    # Remove INSTRUCTIONS and environment_context tags
+    text = re.sub(r"<(INSTRUCTIONS|environment_context)>.*?</\1>", "", text, flags=re.DOTALL)
+    return text.strip()
 
 
 @dataclass(frozen=True)

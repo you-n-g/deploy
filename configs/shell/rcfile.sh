@@ -156,12 +156,14 @@ EOF
     bindkey -M emacs '^L' forward-word
 
     # for autocomplete
-    # # 开启强力模糊匹配 (Fuzzy Matching)
-    # # 1. m:{a-zA-Z}={A-Za-z}  -> 忽略大小写
-    # # 2. r:|[._-]=* r:|=* -> 允许 . _ - 符号后的模糊匹配
-    # # 3. l:|=* r:|=* -> 【关键】允许任意位置的模糊匹配 (类似 fzf)
-    # zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
-    # zstyle ':completion:*:*:-command-:*:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+    # 启用强力模糊匹配和大小写忽略
+    # 背景：解决当同时存在 GEMINI.md 和 gemini_history.md 时，输入 GEM 无法正确补全的问题。
+    # 如果不开启此设置，zsh 可能会因大小写敏感或匹配逻辑问题导致补全失败（如错误地补全为不存在的 GEMini）。
+    # 1. m:{a-z}={A-Z} -> 忽略大小写，使 gemini 能匹配 GEMINI
+    # 2. r:|[._-]=* r:|=* -> 允许在标点符号后进行模糊匹配
+    # 3. l:|=* r:|=* -> 允许任意位置模糊匹配
+    zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+    zstyle ':completion:*:*:-command-:*:*' matcher-list 'm:{a-z}={A-Z}' 'r:|[._-_-]=* r:|=*' 'l:|=* r:|=*'
 fi
 
 
