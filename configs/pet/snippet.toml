@@ -465,7 +465,7 @@
   Description = "aider start"
   Output = ""
   Tag = []
-  command = "key_shell.sh <cred=|_openai_lite_o4_mini_||_openai_lite_gpt_5_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> bash -c 'uvx --from aider-chat aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> --no-auto-commit --no-show-model-warnings'"
+  command = "key_shell.sh <cred=|_openai_lite_gpt_5_1_||_openai_lite_o4_mini_||_openai_lite_gpt_5_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_azure_lite_||_deepseek_lite_|> bash -c 'uvx --from aider-chat aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> --no-auto-commit --no-show-model-warnings'"
 
 [[Snippets]]
   Description = "key shell prefix; adding LLM key to env"
@@ -676,3 +676,9 @@
   Output = ""
   Tag = []
   command = "tmux set-env -g TMUX_AI_TOOL <tool=|_codex_||_gemini_|>"
+
+[[Snippets]]
+  Description = "last git commit url"
+  Output = ""
+  Tag = []
+  command = "repo_url=$(git remote get-url origin | sed -E 's#(git@github.com:|https://github.com/)#https://github.com/#; s/\\.git$//'); echo \"$repo_url/commit/$(git rev-parse HEAD)\""

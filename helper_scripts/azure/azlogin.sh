@@ -10,6 +10,7 @@ EOF
 chmod +x browser.sh
 
 az login &
+# az login --scope api://trapi/.default
 # it will start a local http server; and embed the callback authentication url in the browser accessing url.
 
 sleep 1

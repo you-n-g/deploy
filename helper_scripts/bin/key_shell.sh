@@ -236,6 +236,12 @@ openai_lite_gpt_5() {
   export OPENAI_API_BASE=$OPENAI_BASE_URL
   export CHAT_MODEL=gpt-5
 }
+openai_lite_gpt_5_1() {
+  openai_key_api_01
+  export OPENAI_API_KEY=$OPENAI_API_KEY
+  export OPENAI_API_BASE=$OPENAI_BASE_URL
+  export CHAT_MODEL=gpt-5.1
+}
 
 openai_lite_gpt_4_1() {
   openai_key_api_01
