@@ -50,6 +50,7 @@ def update_config_toml(cred):
     # Set top-level fields
     doc["model"] = cred["model"]
     doc["model_provider"] = "azure"
+    doc["project_doc_fallback_filenames"] = ["GEMINI.md"]
 
     # Ensure [model_providers] exists
     if "model_providers" not in doc:
