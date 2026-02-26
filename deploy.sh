@@ -85,6 +85,7 @@ chmod a+x ./deploy_apps/*
 ./deploy_apps/nonauto/install_lazyvim.sh deploy
 ./deploy_apps/install_fd.sh
 bash ./configs/llm/conf_llm.sh
+./deploy_apps/fav_pack.sh
 
 # This is very important for tmux-pet. otherwise, tmux-pet with variables will not work
 sudo ./deploy_apps/set_code.sh

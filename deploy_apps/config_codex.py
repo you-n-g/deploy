@@ -48,7 +48,8 @@ def update_config_toml(cred):
         doc = tomlkit.document()
 
     # Set top-level fields
-    doc["model"] = cred["model"]
+    # doc["model"] = cred["model"]
+    doc["model"] = "gpt-5.2"
     doc["model_provider"] = "azure"
     doc["project_doc_fallback_filenames"] = ["GEMINI.md"]
 
