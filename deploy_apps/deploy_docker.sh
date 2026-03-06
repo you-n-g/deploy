@@ -25,6 +25,17 @@ deploy() {
 
   sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
+  current_user=$(whoami)
+  if [ "$current_user" != "root" ]; then
+    if ! groups "$current_user" | grep -q '\bdocker\b'; then
+      echo "Adding user $current_user to docker group..."
+      sudo usermod -aG docker "$current_user"
+      echo "User $current_user added to docker group. You must log out and log back in for this to take effect."
+    else
+      echo "User $current_user is already in the docker group."
+    fi
+  fi
+
 
   # curl -sSL https://get.docker.com/ | sudo -E sh
   # -E for http_proxy

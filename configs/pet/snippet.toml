@@ -682,3 +682,9 @@
   Output = ""
   Tag = []
   command = "repo_url=$(git remote get-url origin | sed -E 's#(git@github.com:|https://github.com/)#https://github.com/#; s/\\.git$//'); echo \"$repo_url/commit/$(git rev-parse HEAD)\""
+
+[[Snippets]]
+  Description = "wsl view markdown"
+  Output = ""
+  Tag = []
+  command = "/mnt/c/Users/xiaoyang/OneDrive/APP/marktext-x64-win/MarkText.exe chat.md"

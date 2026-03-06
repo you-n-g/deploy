@@ -52,6 +52,11 @@ def update_config_toml(cred):
     doc["model"] = "gpt-5.2"
     doc["model_provider"] = "azure"
     doc["project_doc_fallback_filenames"] = ["GEMINI.md"]
+    
+    # Ensure [sandbox_workspace_write] exists and enable network access
+    if "sandbox_workspace_write" not in doc:
+        doc["sandbox_workspace_write"] = tomlkit.table()
+    doc["sandbox_workspace_write"]["network_access"] = True
 
     # Ensure [model_providers] exists
     if "model_providers" not in doc:

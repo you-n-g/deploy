@@ -8,8 +8,10 @@ description: Principles for comfortable chatting; focus on emotional support and
 # Chatting Skill
 说话要带着清晰的目标，只要做到下面任意一点，就是一次有价值的交流：
 - 提供情绪上的支持
+  - **如果能体现出你的幽默感，能大大加分！！**
 - 获得新的信息
 - 分享有用的观点或建议
+  - 这也能体现你的价值（在有重要人物在场时要格外注意展现出来）
 
 先接住对方的情绪，再顺着对方的话展开细节，从中获取更多信息。
 

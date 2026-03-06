@@ -1,19 +1,51 @@
-#!/usr/bin/env -S uv run --no-project --with typer python
+#!/usr/bin/env -S uv run --no-project --with typer --with 'firecrawl-py==4.17.0' python
 # vim: filetype=python
 """
 Please refer to `deploy_apps/firecrawl.sh` to know how to start firecrawl.
 """
+
+import socket
+from urllib.parse import urlparse
+
 import typer
 from firecrawl import FirecrawlApp
 
 app = typer.Typer()
 
+
+def _require_firecrawl_up(api_url: str) -> None:
+    parsed = urlparse(api_url)
+    host = parsed.hostname or "localhost"
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+
+    try:
+        with socket.create_connection((host, port), timeout=1.0):
+            return
+    except OSError:
+        typer.echo(
+            f"error: Firecrawl is not reachable at {api_url}. "
+            "Start it via: `bash deploy_apps/firecrawl.sh`",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
+
 @app.command()
-def scrape(url: str):
+def scrape(
+    url: str,
+    wait_for: int = typer.Option(
+        0,
+        "--wait-for",
+        help="Wait time before extraction (typically milliseconds; 0 disables).",
+    ),
+):
     """Scrape a URL using FirecrawlApp."""
-    firecrawl_app = FirecrawlApp(api_key="fc-YOUR_API_KEY", api_url="http://localhost:3002")
-    scrape_result = firecrawl_app.scrape_url(url, params={'formats': ['markdown']})
-    print(scrape_result["markdown"])
+    api_url = "http://localhost:3002"
+    _require_firecrawl_up(api_url)
+    firecrawl_app = FirecrawlApp(api_key="fc-YOUR_API_KEY", api_url=api_url)
+    scrape_result = firecrawl_app.scrape(url, wait_for=wait_for)
+    print(scrape_result.markdown)
+
 
 if __name__ == "__main__":
     app()

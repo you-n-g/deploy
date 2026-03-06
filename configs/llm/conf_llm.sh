@@ -31,6 +31,9 @@ if [ -d "$OBSIDIAN_SKILLS_DIR/skills" ]; then
     done
 fi
 
+npm install -g defuddle-cli  # 好像哪里会有一个 
+# External skills 里面有一个skill依赖了 defuddle-cli 包
+
 # Function to link skills directory for a specific tool
 link_skills_for_tool() {
     local tool_name=$1
@@ -64,6 +67,7 @@ link_skills_for_tool() {
 link_skills_for_tool "gemini"
 link_skills_for_tool "codex"
 echo "Skills linking process complete for all AI tools."
+
 
 npm install -g @google/gemini-cli
 npm install -g @openai/codex

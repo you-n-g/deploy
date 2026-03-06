@@ -27,6 +27,5 @@ HOST=0.0.0.0
 USE_DB_AUTHENTICATION=false
 EOF
 
-pip install firecrawl-py
 docker compose build  # ~3mins
 docker compose up
