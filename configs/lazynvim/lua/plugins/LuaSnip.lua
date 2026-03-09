@@ -1,3 +1,8 @@
+local function get_snippet_file()
+  local ft = vim.bo.filetype
+  return vim.fn.expand("~/.config/nvim/luasnip_snippets/" .. ft .. ".snippets")
+end
+
 return {
   {
     -- "L3MON4D3/LuaSnip",
@@ -41,6 +46,50 @@ return {
         end,
         mode = "n",
         desc = "Select snippet file",
+      },
+      {
+        "<leader>cs",
+        function()
+          local text = require("extra_fea.utils").get_visual_selection_content()
+          local lines = vim.split(text, "\n")
+          if #lines == 0 or (#lines == 1 and lines[1] == "") then return end
+
+          local min_indent = nil
+          for _, line in ipairs(lines) do
+            if line:match("%S") then
+              local indent = line:match("^%s*"):len()
+              min_indent = min_indent and math.min(min_indent, indent) or indent
+            end
+          end
+          min_indent = min_indent or 0
+
+          local snippet_file = get_snippet_file()
+
+          local file = io.open(snippet_file, "a")
+          if file then
+            file:write("\nsnippet <trigger> \"<Description>\"\n")
+            for _, line in ipairs(lines) do
+              file:write("\t" .. line:sub(min_indent + 1) .. "\n")
+            end
+            file:close()
+            vim.cmd("vsplit " .. snippet_file)
+            vim.cmd("$")
+            require("luasnip.loaders.from_snipmate").load({ paths = "./luasnip_snippets" })
+          else
+             vim.notify("Could not open " .. snippet_file, vim.log.levels.ERROR)
+          end
+        end,
+        mode = "v",
+        desc = "Append selection to SnipMate file",
+      },
+      {
+        "<leader>cS",
+        function()
+          local snippet_file = get_snippet_file()
+          vim.cmd("vsplit " .. snippet_file)
+        end,
+        mode = "n",
+        desc = "Open SnipMate snippet file",
       },
       {
         "<C-c>", -- choices

@@ -3,7 +3,7 @@
 
 if [ ! -d ~/homebrew ]; then
   mkdir ~/homebrew && curl -L https://github.com/Homebrew/brew/tarball/master | tar xz --strip 1 -C ~/homebrew
-  ln -s ~/homebrew/bin/brew /home/xiaoyang/bin/
+  ln -s ~/homebrew/bin/brew ~/bin/
 fi
 
-/home/xiaoyang/homebrew/bin/brew update
+~/homebrew/bin/brew update

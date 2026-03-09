@@ -19,16 +19,13 @@ local function get_current_tmux_session()
   return trim(session)
 end
 
-local function has_gemini_window(session)
-  if not session then return false end
-  local windows = vim.fn.system("tmux list-windows -t " .. session .. " -F '#{window_name}'")
-  if vim.v.shell_error ~= 0 then return false end
-  for w in string.gmatch(windows, "[^\r\n]+") do
-    if w == "gemini" then
-      return true
-    end
-  end
-  return false
+local function get_ai_window(session)
+  if not session then return nil end
+  local script = vim.fn.expand("~/deploy/configs/tmux/ai/get_ai_window.sh")
+  local window = vim.fn.system(script .. " " .. session)
+  if vim.v.shell_error ~= 0 then return nil end
+  window = trim(window)
+  return window ~= "" and window or nil
 end
 
 local function get_relative_path()
@@ -71,7 +68,7 @@ local function get_current_or_visual_content()
     content = utils.get_visual_selection()
     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", false)
   else
-    content = vim.api.nvim_get_current_line()
+    content = vim.fn.getline(".") -- vim.api.nvim_get_current_line() does not work with Chinese characters
   end
   return content
 end
@@ -81,9 +78,10 @@ local function get_target_tmux()
   local target_session = nil
   local target_window = nil
 
-  if current_session and has_gemini_window(current_session) then
+  local ai_window = get_ai_window(current_session)
+  if current_session and ai_window then
     target_session = current_session
-    target_window = "gemini"
+    target_window = ai_window
   else
     local input = vim.fn.input("Target tmux session (session.window): ")
     if input == "" then
@@ -121,7 +119,7 @@ function M.send_path_to_gemini()
   end
 end
 
-function M.send_to_gemini(raw)
+function M.send_to_gemini(raw, post_action)
   if raw == nil then raw = true end
   local content = get_current_or_visual_content()
 
@@ -129,11 +127,11 @@ function M.send_to_gemini(raw)
   local target_session, target_window = get_target_tmux()
 
   if target_session then
-    tmux.send_to_tmux(final_content, target_session, target_window)
+    tmux.send_to_tmux(final_content, target_session, target_window, post_action)
   end
 end
 
-function M.send_to_last_window(raw)
+function M.send_to_last_window(raw, post_action)
   if raw == nil then raw = true end
   local content = get_current_or_visual_content()
 
@@ -144,16 +142,36 @@ function M.send_to_last_window(raw)
     return
   end
 
-  tmux.send_to_tmux(final_content, session, window)
+  tmux.send_to_tmux(final_content, session, window, post_action)
+end
+
+function M.send_literal_to_gemini(content, post_action)
+  local target_session, target_window = get_target_tmux()
+  if target_session then
+    tmux.send_to_tmux(content, target_session, target_window, post_action)
+  end
 end
 
 
 function M.setup()
   vim.keymap.set({ "n", "v" }, "<Localleader>c", function() end, { desc = "Send to Gemini/Tmux" })
+  -- when it contains chinese, "<Localleader>cc" does not work. But  "<Localleader>ce" works
   vim.keymap.set({ "n", "v" }, "<Localleader>cc", function() M.send_to_gemini(true) end, { desc = "Send to Gemini/Tmux (Raw)" })
+  vim.keymap.set({ "n", "v" }, "<Localleader>cC", function() M.send_to_gemini(true, "enter") end, { desc = "Send to Gemini/Tmux (Raw, no switch)" })
   vim.keymap.set({ "n", "v" }, "<Localleader>ce", function() M.send_to_gemini(false) end, { desc = "Send to Gemini/Tmux (edit with Context)" })
   vim.keymap.set({ "n", "v" }, "<Localleader>cp", function() M.send_path_to_gemini() end, { desc = "Send Path to Gemini/Tmux" })
   vim.keymap.set({ "n", "v" }, "<Localleader>cl", function() M.send_to_last_window(true) end, { desc = "Send to last tmux window in current session (Raw, line/visual)" })
+  vim.keymap.set({ "n", "v" }, "<Localleader>cL", function() M.send_to_last_window(true, "enter") end, { desc = "Send to last tmux window (Raw, no switch)" })
+  -- NOTE: this does not work in navigate-note, because the number leading command is defined by other shortcut.
+  vim.keymap.set({ "n" }, "<Localleader>ch", function()
+    local count = vim.v.count1
+    vim.cmd("r !ai-hist -n " .. count)
+  end, { desc = "Insert last n AI history below" })
+  vim.keymap.set({ "n" }, "<Localleader>cH", ":r !ai-hist<CR>", { desc = "Insert all AI history below" })
+
+  for i = 1, 4 do
+    vim.keymap.set({ "n", "v" }, "<Localleader>c" .. i, function() M.send_literal_to_gemini(tostring(i), "enter") end, { desc = "Send " .. i .. " to Gemini" })
+  end
 end
 
 M.setup()

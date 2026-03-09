@@ -1256,21 +1256,21 @@ model_list:
 
   # --------------------------- GCR Non-OpenAI Models
   # TRAPISuffix	DeploymentName	DeploymentFullURL
-  # gcr/shared/deepseek-ai	Deepseek-R1	https://trapi.research.microsoft.com/gcr/shared/deepseek-ai/deployments/DeepSeek-R1 
-  - model_name: Deepseek-R1
-    litellm_params:
-      model: azure/Deepseek-R1
-      api_base: https://trapi.research.microsoft.com/gcr/shared/deepseek-ai/deployments/DeepSeek-R1
-      api_version: '2024-05-01-preview'
-  # gcr/beta/deepseek-ai	deepseek-ai/Deepseek-R1	https://trapi.research.microsoft.com/gcr/beta/deepseek-ai/deployments/deepseek-ai/DeepSeek-R1 
-  - model_name: deepseek-ai/DeepSeek-R1
-    litellm_params: &deepseek-ai_DeepSeek-R1
-      model: azure/deepseek-ai/DeepSeek-R1
-      api_base: https://trapi.research.microsoft.com/gcr/beta/deepseek-ai/deployments/deepseek-ai/DeepSeek-R1
-      api_version: '2024-05-01-preview'
-  - model_name: Deepseek-R1
-    litellm_params:
-      <<: *deepseek-ai_DeepSeek-R1
+  # # gcr/shared/deepseek-ai	Deepseek-R1	https://trapi.research.microsoft.com/gcr/shared/deepseek-ai/deployments/DeepSeek-R1 
+  # - model_name: Deepseek-R1
+  #   litellm_params:
+  #     model: azure/Deepseek-R1
+  #     api_base: https://trapi.research.microsoft.com/gcr/shared/deepseek-ai/deployments/DeepSeek-R1
+  #     api_version: '2024-05-01-preview'
+  # # gcr/beta/deepseek-ai	deepseek-ai/Deepseek-R1	https://trapi.research.microsoft.com/gcr/beta/deepseek-ai/deployments/deepseek-ai/DeepSeek-R1 
+  # - model_name: deepseek-ai/DeepSeek-R1
+  #   litellm_params: &deepseek-ai_DeepSeek-R1
+  #     model: azure/deepseek-ai/DeepSeek-R1
+  #     api_base: https://trapi.research.microsoft.com/gcr/beta/deepseek-ai/deployments/deepseek-ai/DeepSeek-R1
+  #     api_version: '2024-05-01-preview'
+  # - model_name: Deepseek-R1
+  #   litellm_params:
+  #     <<: *deepseek-ai_DeepSeek-R1
   # gcr/beta/deepseek-ai	deepseek-ai/DeepSeek-V3-0324	https://trapi.research.microsoft.com/gcr/beta/deepseek-ai/deployments/deepseek-ai/DeepSeek-V3-0324 - 
   - model_name: deepseek-ai/DeepSeek-V3-0324
     litellm_params: &deepseek-ai_DeepSeek-V3-0324
@@ -1577,6 +1577,20 @@ model_list:
   - model_name: text-embedding-ada-002
     litellm_params:
       <<: *text-embedding-ada-002-msra
+  # gcr/shared	deepseek-r1_1	DeepSeek-R1	1	0	60
+  - model_name: deepseek-r1_1
+    litellm_params: &deepseek-r1_1-gcr
+      model: azure/DeepSeek-R1_1
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: '2024-12-01-preview'
+      extra_headers:
+        "extra-parameters": "pass-through"
+  - model_name: DeepSeek-R1
+    litellm_params:
+      <<: *deepseek-r1_1-gcr
+  - model_name: deepseek-r1-gcr
+    litellm_params:
+      <<: *deepseek-r1_1-gcr
 
   # --------------------------- Open-source Models
   - model_name: Qwen3-32B

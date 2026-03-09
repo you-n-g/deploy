@@ -21,7 +21,7 @@
 DEBUG 一些异常的行为
 - 按键开始还按期望行为， 然后失灵: `<space>sk` 看看keymapping的变化(同一个key可能会有很多种映射)
 
-# 还希望要的功能
+# 还希望要的功能/ Pending Plugins
 - [ ] LSP in other documents. `https://github.com/jmbuhr/otter.nvim`
 - [X] fast wrap (类似 https://github.com/jiangmiao/auto-pairs), 但是 "echasnovski/mini.pairs" 没有提供类似的功能
 - [ ] strip spaces in selection in vim (to better apply GPT to specific scope)
@@ -30,7 +30,7 @@ DEBUG 一些异常的行为
 - [ ] renaming folder in neotree in Python project: https://github.com/alexpasmantier/pymple.nvim
 
 - [ ] Attach to a docker dap-server: maybe we can replace the project prefix or creating link?
-
+- [ ] https://github.com/andrewferrier/debugprint.nvim  # Debug print 更方便一点
 
 
 # Introduction

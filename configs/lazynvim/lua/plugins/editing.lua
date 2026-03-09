@@ -99,6 +99,10 @@ return {
       -- vim.g.vimtex_compiler_method = "tectonic"
       -- tectonic does not support continuous compilation; So we use the preferred compiler backend(latexmk).
 
+      -- About latexmk:
+      -- - It will read .latexmkrc in the current directory for config
+      --    - e.g. You can place into `$pdflatex = 'pdflatex %O -shell-escape %S';`
+
       local function get_onedrive_path()
         local handle = io.popen([[cmd.exe /c echo %onedriveconsumer% 2> /dev/null | sed -e 's/C:/\\mnt\\c/g' | sed -e 's/\\/\//g' | tr -d '\r' | tr -d '\n']])
         if handle == nil then

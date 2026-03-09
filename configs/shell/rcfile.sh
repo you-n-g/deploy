@@ -24,9 +24,13 @@ EOF
     }
     # antigen use oh-my-zsh
     # 
-    antigen bundle zsh-users/zsh-autosuggestions
-    antigen bundle zsh-users/zsh-completions
+
+    # just for highlighting the command which is being typed
+    # If we place it after autocomplete, it will raise error
     antigen bundle zsh-users/zsh-syntax-highlighting
+
+    antigen bundle zsh-users/zsh-completions  # add more completion options
+    antigen bundle zsh-users/zsh-autosuggestions
     antigen bundle colored-man-pages
     antigen bundle rupa/z z.sh
     antigen bundle MichaelAquilina/zsh-you-should-use
@@ -52,11 +56,16 @@ EOF
     # C-x C-e 被 vv 替代掉了
     antigen bundle jeffreytse/zsh-vi-mode
 
+    # NOTE: fzf-tab conflicts with autocomplete
     antigen bundle Aloxaf/fzf-tab
+
+    # It does not work well with vi-mode.
+    # antigen bundle marlonrichert/zsh-autocomplete
 
     # It does not work due to permission error
     # antigen bundle atuinsh/atuin@main
 
+    # antigen bundle zsh-users/zsh-syntax-highlighting
     antigen apply
 
     # 后面遇到问题是不是用 zplug可以替代
@@ -125,8 +134,10 @@ EOF
     # zsh vim mode 常常会和其他的插件起冲突(启用后会覆盖其他插件)
     # 所以很多插件需要 后面再补一发启动
     function zvm_after_init() {
+        # NOTE: fzf-tab conflicts with autocomplete
         [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
         enable-fzf-tab
+
         # 有时候光有 zvm_after_lazy_keybindings 似乎也不work
         zvm_bindkey viins '^S^L' insert-last-word
     }
@@ -140,8 +151,19 @@ EOF
     # Allow autosuggestions to partially accept with forward-word
     export ZSH_AUTOSUGGEST_PARTIAL_ACCEPT_WIDGETS=(forward-word)
     # Make sure forward-word is bound correctly in vi insert mode
+    # If I use ^J, it will incur a bug when sending content to zsh
     bindkey -M viins '^L' forward-word
     bindkey -M emacs '^L' forward-word
+
+    # for autocomplete
+    # 启用强力模糊匹配和大小写忽略
+    # 背景：解决当同时存在 GEMINI.md 和 gemini_history.md 时，输入 GEM 无法正确补全的问题。
+    # 如果不开启此设置，zsh 可能会因大小写敏感或匹配逻辑问题导致补全失败（如错误地补全为不存在的 GEMini）。
+    # 1. m:{a-z}={A-Z} -> 忽略大小写，使 gemini 能匹配 GEMINI
+    # 2. r:|[._-]=* r:|=* -> 允许在标点符号后进行模糊匹配
+    # 3. l:|=* r:|=* -> 允许任意位置模糊匹配
+    zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+    zstyle ':completion:*:*:-command-:*:*' matcher-list 'm:{a-z}={A-Z}' 'r:|[._-_-]=* r:|=*' 'l:|=* r:|=*'
 fi
 
 
@@ -169,9 +191,9 @@ alias sudo="sudo -E"
 
 function proxy_up() {
     # don't capitalize them
-    export http_proxy=127.0.0.1:6489
-    export https_proxy=127.0.0.1:6489
-    export SOCKS_SERVER=127.0.0.1:8964
+    export http_proxy=${proxy_addr:-127.0.0.1:6489}
+    export https_proxy=${proxy_addr:-127.0.0.1:6489}
+    export SOCKS_SERVER=${proxy_addr:-127.0.0.1:8964}
     # NOTICE: the ip range my not works on some softwares !!!!!
     export no_proxy=localhost,127.0.0.1,127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.sock
     # To make it works for all softwares, proxychains is recommended
@@ -183,6 +205,19 @@ function proxy_down() {
     unset http_proxy https_proxy SOCKS_SERVER no_proxy
 }
 
+# NOTE: add a function to check if we need proxy by testing connectivity
+function proxy_check() {
+    local test_url=${1:-https://x.com}
+    # timeout 3 seconds; if failed, we may need proxy
+    if curl -Is --max-time 3 "$test_url" >/dev/null 2>&1; then
+        echo "Network OK. Proxy not needed."
+        return 0
+    else
+        echo "Network unreachable. Proxy may be needed."
+        return 1
+    fi
+}
+
 
 
 alias pypdb='python -m ipdb -c c'
@@ -191,8 +226,40 @@ alias pyprof='python -m cProfile -o stats_out'
 alias ipify="curl cip.cc"
 # using this alias name  because the previous tool is ipify
 
-# gemini with (r)ename
-alias geminir='if [ -n "$TMUX" ]; then prev_name=$(tmux display-message -p "#W"); tmux rename-window gemini; command gemini; tmux rename-window "$prev_name"; else command gemini; fi'  # if inside tmux, rename to 'gemini', run it, then restore name
+# gemini with proxy (p) — auto-detect: if proxy needed, wrap with proxychains, else run normally
+function myp() {
+    if proxy_check >/dev/null 2>&1; then
+        "$@"
+    else
+        proxychains -q "$@"
+    fi
+}
+
+# gemini with (r)ename — unified runner
+function _with_tmux_rename() {
+    local title="$1"
+    shift
+    if [ -n "$TMUX" ]; then
+        local prev_name
+        prev_name=$(tmux display-message -p "#W")
+        tmux rename-window -t "$TMUX_PANE" "$title"
+        myp "$@"
+        tmux rename-window -t "$TMUX_PANE" "$prev_name"
+    else
+        myp "$@"
+    fi
+}
+
+# gemini with rename
+function geminir() {
+    _with_tmux_rename gemini gemini "$@"
+}
+
+# codex with rename
+function codexr() {
+    # _with_tmux_rename codex codex --dangerously-bypass-approvals-and-sandbox "$@"
+    AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) _with_tmux_rename codex codex "$@"
+}
 
 # for fzf
 # 文件太大常常没法正常运行
@@ -286,7 +353,7 @@ alias copier="uvx copier"
 # ## Outlines: ranger
 # ranger的安装依赖  deploy_apps/install_fav_py_pack.sh
 alias .r=". ranger"
-alias ranger='if [ -n "$TMUX" ]; then prev_name=$(tmux display-message -p "#W"); tmux rename-window ranger; command ranger; tmux rename-window "$prev_name"; else command ranger; fi'  # if inside tmux, rename to 'ranger', run it, then restore name
+alias ranger='if [ -n "$TMUX" ]; then prev_name=$(tmux display-message -p "#W"); tmux rename-window -t "$TMUX_PANE" ranger; command uvx --from ranger-fm ranger ; tmux rename-window -t "$TMUX_PANE" "$prev_name"; else command ranger; fi'  # if inside tmux, rename to 'ranger', run it, then restore name
 # 其他
 # -快捷键篇
 #   - r: 可以open_with调用当前文件，1是less/pager
@@ -395,6 +462,13 @@ function deploy_quant_libs() {
 export AIDER_CHECK_UPDATE=False
 export AIDER_SHOW_RELEASE_NOTES=False
 export AIDER_GITIGNORE=False
+
+# pet search
+# export LANG=en_US.UTF-8
+# export LC_ALL=en_US.UTF-8
+# export LANGUAGE=en_US:en
+# export TERM=xterm-256color
+
 
 # # Outlines: 准备删掉的
 

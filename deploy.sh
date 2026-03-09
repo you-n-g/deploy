@@ -76,6 +76,7 @@ chmod a+x ./deploy_apps/*
 ./deploy_apps/deploy_miniconda.sh
 ./deploy_apps/install_zsh.sh  # zsh加的 `configs/shell/rcfile.sh` 的性能得在 conda 之后
 # - FIXME: rcfile does not appear after conda on 2024-10
+./deploy_apps/install_homebrew.sh
 ./deploy_apps/install_tmux.sh # 现在打算放在miniconda之后了 # 确保按安装新代码
 ./deploy_apps/install_fzf.sh
 ./deploy_apps/install_pet.sh
@@ -83,7 +84,10 @@ chmod a+x ./deploy_apps/*
 ./tools.py/install.sh
 ./deploy_apps/nonauto/install_lazyvim.sh deploy
 ./deploy_apps/install_fd.sh
+bash ./configs/llm/conf_llm.sh
+./deploy_apps/fav_pack.sh
 
+# This is very important for tmux-pet. otherwise, tmux-pet with variables will not work
 sudo ./deploy_apps/set_code.sh
 
 sudo rm /etc/needrestart/conf.d/99mychanges.conf

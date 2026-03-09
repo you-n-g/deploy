@@ -5,6 +5,7 @@ import typer
 from pathlib import Path
 from rdagent.utils.agent.tpl import T
 import urllib.request
+import urllib.parse
 import tempfile
 import os
 import pypdf
@@ -70,6 +71,14 @@ def web(url: str = typer.Argument(..., help="The target URL to scrape"),):
     return meta_chat_builder(firecrawl_get)(url)
 
 
+def extract_pdf_content(pdf_path: Path | str) -> str:
+    reader = pypdf.PdfReader(pdf_path)
+    parts = []
+    for page in reader.pages:
+        parts.append(page.extract_text() or "")
+    return "\n".join(parts).strip()
+
+
 @app.command()
 def pdf(
         url: str = typer.Argument(..., help="The PDF URL to download and convert"),
@@ -79,6 +88,12 @@ def pdf(
             "-p/-P",
             "--with-option/--no-with-option",
             help="Append additional pdf-option prompt to the chat output (use -p to enable, -P to disable)",
+        ),
+        option_type: str = typer.Option(
+            "reading",
+            "-t",
+            "--type",
+            help="The type of option to use (reading, review)",
         ),
 ):
     """
@@ -91,18 +106,11 @@ def pdf(
 
     try:
         urllib.request.urlretrieve(url, tmp_pdf_path)
-
-        # Extract text using pypdf
-        reader = pypdf.PdfReader(tmp_pdf_path)
-        parts = []
-        for page in reader.pages:
-            # Directly extract text without try-except, let errors propagate if they occur
-            parts.append(page.extract_text() or "")
-        text = "\n".join(parts).strip()
+        text = extract_pdf_content(tmp_pdf_path)
 
         content = T(".buildchat:pdf").r(text=text)
         if with_option:
-            content = f"{content}\n\n{T('.buildchat:pdf-option.paper').r()}"
+            content = f"{content}\n\n{T(f'.buildchat:paper-option.{option_type}').r()}"
         with open(outfile, "w") as out_f:
             out_f.write(content)
     finally:
@@ -111,6 +119,70 @@ def pdf(
             os.unlink(tmp_pdf_path)
         except Exception:
             pass
+
+
+def read_data(source: str) -> str:
+    if source.startswith(("http://", "https://")):
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmpf:
+            tmp_path = tmpf.name
+        try:
+            urllib.request.urlretrieve(source, tmp_path)
+            with open(tmp_path, "rb") as f:
+                header = f.read(4)
+            if header == b"%PDF":
+                return extract_pdf_content(tmp_path)
+            else:
+                return firecrawl_get(source)
+        finally:
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+    else:
+        path = Path(source)
+        if not path.exists():
+            print(f"Error: Source '{source}' not found.")
+            raise typer.Exit(code=1)
+        ext = path.suffix.lower()
+        if ext == ".pdf":
+            return extract_pdf_content(path)
+        elif ext == ".txt":
+            with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                return f.read()
+        else:
+            print(f"Error: Unsupported file type '{ext}'. Only .pdf and .txt are supported.")
+            raise typer.Exit(code=1)
+
+
+@app.command()
+def paper(
+    source: str = typer.Argument(..., help="The source file path (pdf or txt) or URL"),
+    outfile: Path = Path("chat.md"),
+    with_option: bool = typer.Option(
+        True,
+        "-o/-O",
+        "--with-option/--no-with-option",
+        help="Append additional pdf-option prompt to the chat output (use -o to enable, -O to disable)",
+    ),
+    option_type: str = typer.Option(
+        "reading",
+        "-t",
+        "--type",
+        help="The type of option to use (reading, review)",
+    ),
+):
+    """
+    Detect file type (txt, pdf) or URL and create a chat session.
+    """
+
+    # Stage 1: Read data
+    text = read_data(source)
+
+    # Stage 2: Render to chat
+    content = T(".buildchat:pdf").r(text=text)
+    if with_option:
+        content = f"{content}\n\n{T(f'.buildchat:paper-option.{option_type}').r()}"
+    with open(outfile, "w") as out_f:
+        out_f.write(content)
+
 
 
 from xytb.crawl.weixin import get_content

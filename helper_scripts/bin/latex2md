@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# This script converts LaTeX files to plain text (Markdown-friendly) using detex
+# Dependencies: texlive-extra-utils
+# Usage: ./latex2md [input_file] [output_file]
+
+set -e
+
+# Default file names
+INPUT_FILE=${1:-main.tex}
+OUTPUT_FILE=${2:-main.txt}
+
+# Install dependencies
+if ! dpkg -s texlive-extra-utils >/dev/null 2>&1; then
+    echo "Installing required package: texlive-extra-utils"
+    sudo apt-get update
+    sudo apt-get install -y texlive-extra-utils
+fi
+
+# Check if input file exists
+if [ ! -f "$INPUT_FILE" ]; then
+    echo "Error: Input file '$INPUT_FILE' not found."
+    exit 1
+fi
+
+# Convert LaTeX to plain text
+echo "Converting $INPUT_FILE to $OUTPUT_FILE..."
+detex "$INPUT_FILE" > "$OUTPUT_FILE"
+
+echo "Conversion completed: $OUTPUT_FILE"
