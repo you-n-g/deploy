@@ -12,6 +12,11 @@ EOF
 	# https://github.com/zsh-users/antigen/issues/743
 	# NOTE: this is caused by a bug of antigen
     fi
+
+    # Antigen runtime must be loaded before any `antigen bundle/theme/apply`.
+    if [ -f ~/.antigen.zsh ]; then
+        source ~/.antigen.zsh
+    fi
     function zf() {
             local dir=$(eval $ZF_CMD)
             cd "$dir"
@@ -282,11 +287,22 @@ fi
 
 # ## Outlines: color
 # enable color support of ls and also add handy aliases
-if [ -x /usr/bin/dircolors ]; then
+if command -v dircolors >/dev/null 2>&1; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+fi
+
+# Prefer GNU ls flags when available; fall back to BSD/macOS `-G`.
+if ls --color=auto . >/dev/null 2>&1; then
     alias ls='ls --color=auto'
     alias dir='dir --color=auto'
     alias vdir='vdir --color=auto'
+elif ls -G . >/dev/null 2>&1; then
+    export CLICOLOR=1
+    export LSCOLORS="${LSCOLORS:-ExFxBxDxCxegedabagacad}"
+    alias ls='ls -G'
+fi
+
+if grep --color=auto "" </dev/null >/dev/null 2>&1; then
     alias grep='grep --color=auto'
     alias fgrep='fgrep --color=auto'
     alias egrep='egrep --color=auto'
@@ -475,4 +491,3 @@ export AIDER_GITIGNORE=False
 # ## Outlines: nnn
 
 export NNN_OPENER=~/apps/nnn/plugins/nuke
-
