@@ -1,5 +1,18 @@
 #!/bin/bash
 
+UNAME_S="$(uname -s 2>/dev/null || echo unknown)"
+if [ "$UNAME_S" = "Darwin" ]; then
+    if ! command -v brew >/dev/null 2>&1; then
+        echo "brew not found; cannot install tmuxinator on macOS." >&2
+        exit 1
+    fi
+    brew list tmuxinator >/dev/null 2>&1 || brew install tmuxinator
+
+    rm -rf ~/.tmuxinator
+    ln -snf ~/deploy/configs/tmux/tmuxinator/ ~/.tmuxinator
+    exit 0
+fi
+
 
 # 这个全局安装rvm的我试了很久， 都没成功
 # TODO: 刚刚装的 rvm不一定能马上找到
