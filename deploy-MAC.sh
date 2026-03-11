@@ -22,5 +22,7 @@ bash ./configs/llm/conf_llm.sh
 
 bash ./deploy_apps/install_zsh.sh
 
+bash ./deploy_apps/config_git.sh
+
 # Optinal tools:
 brew install htop
