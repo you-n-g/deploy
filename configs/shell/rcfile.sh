@@ -140,7 +140,8 @@ EOF
     # 所以很多插件需要 后面再补一发启动
     function zvm_after_init() {
         # NOTE: fzf-tab conflicts with autocomplete
-        [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+        # fzf key-bindings are sourced later (after FZF_* env vars are set),
+        # otherwise fzf widgets may not be registered.
         enable-fzf-tab
 
         # 有时候光有 zvm_after_lazy_keybindings 似乎也不work
@@ -169,6 +170,8 @@ EOF
     # 3. l:|=* r:|=* -> 允许任意位置模糊匹配
     zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
     zstyle ':completion:*:*:-command-:*:*' matcher-list 'm:{a-z}={A-Z}' 'r:|[._-_-]=* r:|=*' 'l:|=* r:|=*'
+
+    source <(fzf --zsh)
 fi
 
 
@@ -179,8 +182,8 @@ fi
 
 # # Outlines: Common config
 
-alias gitlog="git log --all --oneline --graph --decorate # --reflog"
-alias gitlogs="git log --all --pretty=short --abbrev-commit --graph --decorate # --reflog"
+alias gitlog="git log --all --oneline --graph --decorate"
+alias gitlogs="git log --all --pretty=short --abbrev-commit --graph --decorate"
 alias mux=tmuxinator
 alias mx=tmux
 export PATH="$HOME/deploy/helper_scripts/bin/:$HOME/bin/:$HOME/apps/nodejs/bin/:$HOME/.luarocks/bin/:$PATH"

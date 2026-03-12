@@ -46,8 +46,8 @@ brew install htop
 brew tap homebrew/cask-fonts
 brew install --cask font-jetbrains-mono-nerd-font
 
-# 需要手动配置的
-#  在 mac 默认终端 Terminal.app 里，<m-h> 对应的物理按键就是 ⌥ + h。
+# 需要手动配置的 🙌
+# 在 mac 默认终端 Terminal.app 里，<m-h> 对应的物理按键就是 ⌥ + h。
 # 要让它真的变成 Vim/Neovim 里的 Meta（发送 Esc 前缀），需要在 Terminal.app 里把 Option 设为 Meta：
 # - Terminal.app -> Settings(设置) -> Profiles(描述文件) -> Keyboard(键盘)
 # - 勾选 Use Option as Meta key
@@ -56,4 +56,25 @@ brew install --cask font-jetbrains-mono-nerd-font
 # - 点 Change...（字体）
 # - 选择刚装的 Nerd Font（例如 JetBrainsMono Nerd Font）
 
+brew install orbstack
+# 🙌 用lunchpad打开orbstack后，才能在bin中找到docker
 
+brew install --cask sioyek
+sudo xattr -rd com.apple.quarantine /Applications/sioyek.app  # otherwise it will be blocked by macOS
+
+
+# Install WeChat
+brew install --cask wechat
+
+
+brew install koekeishiya/formulae/skhd
+skhd --start-service
+# Configure skhd to launch Obsidian with fn + 1
+cat > ~/.skhdrc <<EOF
+# fn + 1 launches Obsidian
+fn - 1 : open -a Obsidian
+EOF
+skhd --restart-service
+# If the hotkey still doesn't work:
+# - System Settings -> Privacy & Security -> Accessibility -> enable for skhd
+# - Check logs: /tmp/skhd_xiaoyang.err.log
