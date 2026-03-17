@@ -1254,6 +1254,85 @@ model_list:
     litellm_params:
       <<: *gpt-5-2-chat_2025-12-11-msra
 
+  # gcr/shared	gpt-5.4_2026-03-05	gpt-5.4	2026-03-05
+  - model_name: gpt-5.4_2026-03-05
+    litellm_params: &gpt-5-4_2026-03-05_gcr
+      model: azure/gpt-5.4_2026-03-05
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5.4
+    litellm_params:
+      <<: *gpt-5-4_2026-03-05_gcr
+  - model_name: gpt-5.4-gcr
+    litellm_params:
+      <<: *gpt-5-4_2026-03-05_gcr
+
+  # redmond/interactive	gpt-5.4_2026-03-05	gpt-5.4	2026-03-05
+  - model_name: gpt-5.4_2026-03-05
+    litellm_params: &gpt-5-4_2026-03-05_redmond
+      model: azure/gpt-5.4_2026-03-05
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5.4
+    litellm_params:
+      <<: *gpt-5-4_2026-03-05_redmond
+  - model_name: gpt-5.4-redmond
+    litellm_params:
+      <<: *gpt-5-4_2026-03-05_redmond
+
+  # gcr/shared	gpt-5.4-pro_2026-03-05	gpt-5.4-pro	2026-03-05
+  - model_name: gpt-5.4-pro_2026-03-05
+    litellm_params: &gpt-5-4-pro_2026-03-05_gcr
+      model: azure/gpt-5.4-pro_2026-03-05
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5.4-pro
+    litellm_params:
+      <<: *gpt-5-4-pro_2026-03-05_gcr
+  - model_name: gpt-5.4-pro-gcr
+    litellm_params:
+      <<: *gpt-5-4-pro_2026-03-05_gcr
+
+  # redmond/interactive	gpt-5.4-pro_2026-03-05	gpt-5.4-pro	2026-03-05
+  - model_name: gpt-5.4-pro_2026-03-05
+    litellm_params: &gpt-5-4-pro_2026-03-05_redmond
+      model: azure/gpt-5.4-pro_2026-03-05
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5.4-pro
+    litellm_params:
+      <<: *gpt-5-4-pro_2026-03-05_redmond
+  - model_name: gpt-5.4-pro-redmond
+    litellm_params:
+      <<: *gpt-5-4-pro_2026-03-05_redmond
+
+  # gcr/shared	gpt-5.3-codex_2026-02-24	gpt-5.3-codex	2026-02-24
+  - model_name: gpt-5.3-codex_2026-02-24
+    litellm_params: &gpt-5-3-codex_2026-02-24_gcr
+      model: azure/gpt-5.3-codex_2026-02-24
+      api_base: https://trapi.research.microsoft.com/gcr/shared
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5.3-codex
+    litellm_params:
+      <<: *gpt-5-3-codex_2026-02-24_gcr
+  - model_name: gpt-5.3-codex-gcr
+    litellm_params:
+      <<: *gpt-5-3-codex_2026-02-24_gcr
+
+  # redmond/interactive	gpt-5.3-codex_2026-02-24	gpt-5.3-codex	2026-02-24
+  - model_name: gpt-5.3-codex_2026-02-24
+    litellm_params: &gpt-5-3-codex_2026-02-24_redmond
+      model: azure/gpt-5.3-codex_2026-02-24
+      api_base: https://trapi.research.microsoft.com/redmond/interactive
+      api_version: "2025-03-01-preview"
+  - model_name: gpt-5.3-codex
+    litellm_params:
+      <<: *gpt-5-3-codex_2026-02-24_redmond
+  - model_name: gpt-5.3-codex-redmond
+    litellm_params:
+      <<: *gpt-5-3-codex_2026-02-24_redmond
+
+
   # --------------------------- GCR Non-OpenAI Models
   # TRAPISuffix	DeploymentName	DeploymentFullURL
   # # gcr/shared/deepseek-ai	Deepseek-R1	https://trapi.research.microsoft.com/gcr/shared/deepseek-ai/deployments/DeepSeek-R1 
@@ -1607,4 +1686,4 @@ litellm_settings:
 
 router_settings:
   client_ttl: 300
-  num_retries: 4  # make sure all points have been tried
+  num_retries: 5  # make sure all points have been tried
