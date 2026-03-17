@@ -12,6 +12,11 @@ EOF
 	# https://github.com/zsh-users/antigen/issues/743
 	# NOTE: this is caused by a bug of antigen
     fi
+
+    # Antigen runtime must be loaded before any `antigen bundle/theme/apply`.
+    if [ -f ~/.antigen.zsh ]; then
+        source ~/.antigen.zsh
+    fi
     function zf() {
             local dir=$(eval $ZF_CMD)
             cd "$dir"
@@ -135,7 +140,8 @@ EOF
     # 所以很多插件需要 后面再补一发启动
     function zvm_after_init() {
         # NOTE: fzf-tab conflicts with autocomplete
-        [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+        # fzf key-bindings are sourced later (after FZF_* env vars are set),
+        # otherwise fzf widgets may not be registered.
         enable-fzf-tab
 
         # 有时候光有 zvm_after_lazy_keybindings 似乎也不work
@@ -164,6 +170,8 @@ EOF
     # 3. l:|=* r:|=* -> 允许任意位置模糊匹配
     zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
     zstyle ':completion:*:*:-command-:*:*' matcher-list 'm:{a-z}={A-Z}' 'r:|[._-_-]=* r:|=*' 'l:|=* r:|=*'
+
+    source <(fzf --zsh)
 fi
 
 
@@ -174,8 +182,8 @@ fi
 
 # # Outlines: Common config
 
-alias gitlog="git log --all --oneline --graph --decorate # --reflog"
-alias gitlogs="git log --all --pretty=short --abbrev-commit --graph --decorate # --reflog"
+alias gitlog="git log --all --oneline --graph --decorate"
+alias gitlogs="git log --all --pretty=short --abbrev-commit --graph --decorate"
 alias mux=tmuxinator
 alias mx=tmux
 export PATH="$HOME/deploy/helper_scripts/bin/:$HOME/bin/:$HOME/apps/nodejs/bin/:$HOME/.luarocks/bin/:$PATH"
@@ -282,11 +290,22 @@ fi
 
 # ## Outlines: color
 # enable color support of ls and also add handy aliases
-if [ -x /usr/bin/dircolors ]; then
+if command -v dircolors >/dev/null 2>&1; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+fi
+
+# Prefer GNU ls flags when available; fall back to BSD/macOS `-G`.
+if ls --color=auto . >/dev/null 2>&1; then
     alias ls='ls --color=auto'
     alias dir='dir --color=auto'
     alias vdir='vdir --color=auto'
+elif ls -G . >/dev/null 2>&1; then
+    export CLICOLOR=1
+    export LSCOLORS="${LSCOLORS:-ExFxBxDxCxegedabagacad}"
+    alias ls='ls -G'
+fi
+
+if grep --color=auto "" </dev/null >/dev/null 2>&1; then
     alias grep='grep --color=auto'
     alias fgrep='fgrep --color=auto'
     alias egrep='egrep --color=auto'
@@ -475,4 +494,3 @@ export AIDER_GITIGNORE=False
 # ## Outlines: nnn
 
 export NNN_OPENER=~/apps/nnn/plugins/nuke
-

@@ -1,38 +1,47 @@
 #!/bin/sh
+set -eu
 
+install_pet_mac() {
+	if ! command -v brew >/dev/null 2>&1; then
+		echo "brew not found; cannot install pet on macOS." >&2
+		exit 1
+	fi
 
-PET_PATH=~/apps/pet/
+	brew list pet >/dev/null 2>&1 || brew install pet
+}
 
-mkdir -p $PET_PATH
+install_pet_linux() {
+	PET_PATH="$HOME/apps/pet"
+	VER="1.0.1"
+	NAME="pet_${VER}_linux_amd64.tar.gz"
 
-cd $PET_PATH
+	mkdir -p "$PET_PATH"
+	cd "$PET_PATH"
 
+	if [ ! -f "$NAME" ]; then
+		wget "https://github.com/knqyf263/pet/releases/download/v$VER/$NAME"
+	fi
 
-# VER=0.3.6
-VER=1.0.1
-NAME=pet_${VER}_linux_amd64.tar.gz
+	tar xf "$NAME"
 
-wget https://github.com/knqyf263/pet/releases/download/v$VER/$NAME
+	mkdir -p "$HOME/bin"
+	ln -snf "$PET_PATH/pet" "$HOME/bin/pet"
+}
 
-tar xf $NAME
+UNAME_S="$(uname -s 2>/dev/null || echo unknown)"
+if [ "$UNAME_S" = "Darwin" ]; then
+	install_pet_mac
+else
+	install_pet_linux
+fi
 
-FILE_PATH=$PET_PATH/pet
+mkdir -p "$HOME/.config/pet"
+rm -f "$HOME/.config/pet/snippet.toml"
+ln -snf "$HOME/deploy/configs/pet/snippet.toml" "$HOME/.config/pet/snippet.toml"
 
-mkdir -p ~/bin/
+if command -v pet >/dev/null 2>&1; then
+	pet list || true
+fi
 
-ln -s  $FILE_PATH  ~/bin
-
-
-mkdir -p ~/.config/pet/
-unlink ~/.config/pet/snippet.toml
-ln -s ~/deploy/configs/pet/snippet.toml ~/.config/pet/snippet.toml
-
-# 不知道为什么每次这里都会被清空， 所以这里主动还原一步
-# 但是最后似乎还是没有用， 感觉是第一次启动pet时清空的
-$PET_PATH/pet list    # 那就启动一次试试
-cd ~/deploy/configs/pet/ && git checkout snippet.toml
-
-
-
-# NOTE: known issues
-# - 现在往变量窗口里面填写长句子，会导多出来很多额外的空格
+# pet 可能会清空 snippet.toml，这里尽量还原
+cd "$HOME/deploy/configs/pet" && git checkout snippet.toml

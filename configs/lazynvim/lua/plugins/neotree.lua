@@ -23,6 +23,10 @@ local function copy_path(type)
   return _copy
 end
 
+local function is_pdf(path)
+  return type(path) == "string" and path:lower():match("%.pdf$") ~= nil
+end
+
 return {
   {
     "nvim-neo-tree/neo-tree.nvim",
@@ -43,6 +47,29 @@ return {
       opts.window.mappings["YP"] = copy_path("P")
       opts.window.mappings["Yp"] = copy_path("p")
       opts.window.mappings["Yn"] = copy_path("n")
+
+      opts.commands = vim.tbl_extend("force", opts.commands or {}, {
+        open_smart = function(state)
+          local ok, fs_commands = pcall(require, "neo-tree.sources.filesystem.commands")
+          if not ok then
+            return
+          end
+
+          local node = state.tree:get_node()
+          if node and node.type == "file" and is_pdf(node.path) and vim.fn.has("mac") == 1 then
+            if vim.fn.executable("sioyek") == 1 then
+              vim.fn.jobstart({ "sioyek", node.path }, { detach = true })
+              return
+            end
+          end
+
+          fs_commands.open(state)
+        end,
+      })
+
+      -- Use sioyek to open PDFs on macOS, otherwise keep default open behavior.
+      opts.window.mappings["<cr>"] = "open_smart"
+      opts.window.mappings["l"] = "open_smart"
     end,
   },
 }

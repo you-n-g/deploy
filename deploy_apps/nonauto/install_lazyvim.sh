@@ -61,6 +61,7 @@ install_lazygit() {
 link_conf() { 
   # TODO: will it work?
   ln -s ~/deploy/configs/shell/style.yapf ~/.style.yapf
+  mkdir -p ~/.config/
   ln -s ~/deploy/configs/lazynvim/stylua.toml ~/.config/
 }
 
@@ -134,6 +135,22 @@ deploy() {
   install_or_update_neovim_app
   install_lazyvim
   install_lazygit
+  link_conf
+}
+
+deploy_mac() {
+  if ! command -v brew >/dev/null 2>&1; then
+    echo "brew not found. Install Homebrew first." >&2
+    return 1
+  fi
+
+  # Minimal LazyVim deps. Keep it simple and let brew manage packages.
+  brew install neovim ripgrep fd lazygit node tree-sitter
+  
+  ln -s ~/bin/nvim ~/bin/vim
+
+  mkdir -p ~/.config
+  install_lazyvim
   link_conf
 }
 
