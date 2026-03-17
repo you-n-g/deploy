@@ -20,11 +20,12 @@ brew install uv
 brew install ripgrep fzf fd tmux lazygit
 
 brew install gnupg # it takes very long time
-brew install pinentry-mac
 mkdir -p ~/.gnupg
 chmod 700 ~/.gnupg
-
-echo "pinentry-program $(brew --prefix)/bin/pinentry-mac" >> ~/.gnupg/gpg-agent.conf
+# NOTE: 我开多桌面后，有时候他会有问题（我想在弹出的框框里面输密码，结果东西都输入到终端里面了）
+# brew install pinentry-mac
+# echo "pinentry-program $(brew --prefix)/bin/pinentry-mac" >> ~/.gnupg/gpg-agent.conf
+cat ~/deploy/configs/misc/gpg-agent.conf >> ~/.gnupg/gpg-agent.conf
 
 
 bash ./configs/llm/conf_llm.sh
@@ -70,11 +71,14 @@ brew install --cask wechat
 brew install koekeishiya/formulae/skhd
 skhd --start-service
 # Configure skhd to launch Obsidian with fn + 1
-cat > ~/.skhdrc <<EOF
-# fn + 1 launches Obsidian
-fn - 1 : open -a Obsidian
-EOF
+if [ -f ~/.skhdrc ]; then
+  rm ~/.skhdrc
+fi
+ln -s ~/deploy/configs/skhdrc ~/.skhdrc
 skhd --restart-service
-# If the hotkey still doesn't work:
+# 🙌 If the hotkey still doesn't work:
 # - System Settings -> Privacy & Security -> Accessibility -> enable for skhd
 # - Check logs: /tmp/skhd_xiaoyang.err.log
+
+brew install koekeishiya/formulae/yabai
+yabai --start-service

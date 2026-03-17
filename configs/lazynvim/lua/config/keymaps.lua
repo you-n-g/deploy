@@ -191,6 +191,9 @@ end
 
 -- TODO: ctrl+^ in insert mode into ctrl+^ in normal mode; To make it possible to switch buffer in insert mode
 vim.keymap.set("i", "<C-^>", "<esc><C-^>a", { noremap = true, desc = "Switch buffer in insert mode" })
+-- TODO: I don't know why this does not work
+-- vim.keymap.set("i", "<C-6>", "<esc><C-^>a", { noremap = true, desc = "Switch buffer in insert mode" })
+-- vim.keymap.set("n", "<C-6>", "<C-^>", { noremap = true, desc = "Switch buffer in insert mode" })
 
 -- It fails to trigger auto import...
 -- vim.keymap.set(

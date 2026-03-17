@@ -60,6 +60,7 @@ pdf-option:
     4. 和哪些Baseline做了比较，在方法设计上（而不是实验结果），现在的方法比baseline更好？
 
     每个关键点后都接一个[<原文内容>]的引用(如果有图表也要引用)，方便我Ctrl+F查找。
+    回复格式请遵循markdown语法，便于使用markdown工具进行阅读。
 
 paper-option:
   reading: *paper-reading

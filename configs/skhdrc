@@ -1,0 +1,72 @@
+# fn + 1 launches Obsidian
+fn - 1 [
+    "obsidian" : skhd -k "cmd - h"
+    * : open -a "Obsidian"
+]
+
+# 使用 0x53 代表小键盘 1
+0x53 [
+    "obsidian" : skhd -k "cmd - h"
+    * : open -a "Obsidian"
+]
+
+
+# 定义小键盘 2 (0x54) 的行为（Safari）
+0x54 [
+    "Safari" : skhd -k "cmd - h"      # 如果 Safari 已在前台，则隐藏
+    * : open -a "Safari"              # 否则启动 Safari
+]
+
+# 定义 fn + 主键盘 2 的行为（Safari）
+# 注意：fn 组合键在 skhd 中直接写 fn - <key>
+fn - 2 [
+    "Safari" : skhd -k "cmd - h"      # 如果 Safari 在前台，关闭当前窗口
+    * : open -a "Safari"              # 否则启动 Safari
+]
+
+# 定义小键盘 3 (0x55) 的行为
+0x55 [
+    "Clash Verge" : skhd -k "cmd - w"
+    * : open -a "Clash Verge"
+]
+
+# 定义 fn + 主键盘 3 的行为
+# 注意：fn 组合键在 skhd 中直接写 fn - <key>
+fn - 3 [
+    "Clash Verge" : skhd -k "cmd - w"
+    * : open -a "Clash Verge"
+]
+
+# fn - 2 [
+#     "clash-verge" : osascript -e 'tell application "System Events" to set frontApp to name of first application process whose frontmost is true' \
+#                      -e 'display notification frontApp with title "Current App Name for skhd"'
+#     * : open -a "Clash Verge"
+# ]
+
+# # 小键盘 2 (0x54) 
+# 0x54 : osascript -e 'if frontmost of application id "io.github.clash-verge-rev.clash-verge-rev" then \
+#           tell application "System Events" to set visible of process "Clash Verge" to false \
+#        else \
+#           activate application id "io.github.clash-verge-rev.clash-verge-rev" \
+#        end if'
+#
+# # fn + 2
+# fn - 2 : osascript -e 'if frontmost of application id "io.github.clash-verge-rev.clash-verge-rev" then \
+#           tell application "System Events" to set visible of process "Clash Verge" to false \
+#        else \
+#           activate application id "io.github.clash-verge-rev.clash-verge-rev" \
+#        end if'
+
+# Helper
+# fn - 0 : osascript -e 'tell application "System Events" to set frontApp to name of first application process whose frontmost is true' \
+#                      -e 'display notification frontApp with title "Current App Name for skhd"'
+
+fn - 0 : name=$(yabai -m query --windows --window | jq -r '.app'); \
+             osascript -e "display notification \"skhd name: $name\" with title \"yabai Debugger\""
+
+# 窗口：最大化/还原（yabai 的 zoom-fullscreen；不是 macOS 原生全屏模式）
+# ctrl + fn - f : yabai -m window --toggle zoom-fullscreen
+# 这个只要开了 display have separate Spaces ，系统本来就有
+
+# NOTE:
+# yabai 只有在 “显示器具有单独的空间(Displays have separate Spaces)” 开启的时候有效果； 但是一套显示对应一个桌面更符合我的行事逻辑。
