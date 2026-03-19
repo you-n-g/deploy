@@ -688,3 +688,9 @@
   Output = ""
   Tag = []
   command = "/mnt/c/Users/xiaoyang/OneDrive/APP/marktext-x64-win/MarkText.exe chat.md"
+
+[[Snippets]]
+  Description = "test if we cross the GFW"
+  Output = ""
+  Tag = []
+  command = "curl -I https://www.google.com"

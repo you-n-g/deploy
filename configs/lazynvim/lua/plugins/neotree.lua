@@ -57,10 +57,22 @@ return {
 
           local node = state.tree:get_node()
           if node and node.type == "file" and is_pdf(node.path) and vim.fn.has("mac") == 1 then
-            if vim.fn.executable("sioyek") == 1 then
-              vim.fn.jobstart({ "sioyek", node.path }, { detach = true })
-              return
+            -- Prefer launching the macOS app bundle so it shows up as a real app (Cmd+Tab),
+            -- then fall back to the CLI binary if needed.
+            local app_name = "Sioyek"
+            if vim.fn.executable("open") == 1 then
+              -- It is important to use open to launch the app, otherwise I guess it may result in a subprocess of Finder/Terminal?
+              vim.fn.system({ "open", "-Ra", app_name })
+              if vim.v.shell_error == 0 then
+                vim.fn.jobstart({ "open", "-a", app_name, node.path }, { detach = true })
+                return
+              end
             end
+
+            -- if vim.fn.executable("sioyek") == 1 then
+            --   vim.fn.jobstart({ "sioyek", node.path }, { detach = true })
+            --   return
+            -- end
           end
 
           fs_commands.open(state)

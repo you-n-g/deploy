@@ -30,6 +30,32 @@ fn - 2 [
     * : open -a "Clash Verge"
 ]
 
+# 定义小键盘 4 (0x56) 的行为（Terminal）
+0x56 [
+    "Terminal" : skhd -k "cmd - h"    # 如果 Terminal 已在前台，则隐藏
+    * : open -a "Terminal"            # 否则启动/切到 Terminal
+]
+
+# 定义 fn + 主键盘 4 的行为（Terminal）
+fn - 4 [
+    "Terminal" : skhd -k "cmd - h"    # 如果 Terminal 已在前台，则隐藏
+    * : open -a "Terminal"            # 否则启动/切到 Terminal
+]
+
+# 定义小键盘 7 (0x59) 的行为（飞书 / Lark）
+0x59 [
+    "Feishu" : skhd -k "cmd - h"      # 如果飞书已在前台，则隐藏
+    "Lark" : skhd -k "cmd - h"        # 国际版名字通常是 Lark
+    * : open -a "Feishu" || open -a "Lark"
+]
+
+# 定义 fn + 主键盘 7 的行为（飞书 / Lark）
+fn - 7 [
+    "Feishu" : skhd -k "cmd - h"
+    "Lark" : skhd -k "cmd - h"
+    * : open -a "Feishu" || open -a "Lark"
+]
+
 # 定义 fn + 主键盘 3 的行为
 # 注意：fn 组合键在 skhd 中直接写 fn - <key>
 fn - 3 [
