@@ -215,7 +215,7 @@ function proxy_down() {
 
 # NOTE: add a function to check if we need proxy by testing connectivity
 function proxy_check() {
-    local test_url=${1:-https://x.com}
+    local test_url=${1:-https://www.google.com}
     # timeout 3 seconds; if failed, we may need proxy
     if curl -Is --max-time 3 "$test_url" >/dev/null 2>&1; then
         echo "Network OK. Proxy not needed."

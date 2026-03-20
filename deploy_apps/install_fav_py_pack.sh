@@ -56,6 +56,7 @@ install_data_deps() {
 
 # Function to handle Jupyter setup
 setup_jupyter_nb() {
+  # 时代的眼泪：我现在不用这套方案了
   # Jupyter
   conda install -y notebook==6.4.12   # NOTE: Only the older version of jupyter supporting extensions.
   conda install -c conda-forge -y jupyter_contrib_nbextensions
@@ -133,9 +134,8 @@ main() {
   install_data_deps
   install_dev_deps
   install_openai_deps
-  setup_jupyter_nb
+  # setup_jupyter_nb
   setup_jupyter_asc
-  handle_deprecated_pkgs
   install_misc
 }
 

@@ -37,9 +37,16 @@ fi
 
 
 # FIXME: 第一次找不到 rvm
+if [ -e ~/.rvm/scripts/rvm ]; then
 . $HOME/.rvm/scripts/rvm
+else
+  # If I install rvm with root, following path will work.
+  . /usr/local/rvm/scripts/rvm
+fi
 rvm install ruby   # 这个是害怕rc.local还没生效找不到文件
+rvm use ruby --default
 gem install tmuxinator  # 的安装完ruby之后才有tmuxinator
+
 
 
 if [ -e ~/.tmuxinator ]; then
