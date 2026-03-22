@@ -15,6 +15,7 @@ brew install fnm
 echo 'eval "$(fnm env --use-on-cd)"' >> ~/.zshrc  # mac has already use zsh as the default shell
 
 brew install uv
+uv tool install ranger-fm
 
 # Common CLI tools (use brew instead of Linux-only install scripts).
 brew install ripgrep fzf fd tmux lazygit
@@ -69,6 +70,7 @@ brew install --cask wechat
 
 
 brew install koekeishiya/formulae/skhd
+brew install cliclick
 skhd --start-service
 # Configure skhd to launch Obsidian with fn + 1
 if [ -f ~/.skhdrc ]; then
@@ -82,3 +84,14 @@ skhd --restart-service
 
 brew install koekeishiya/formulae/yabai
 yabai --start-service
+
+
+brew install --cask xquartz
+# 🙌 
+# 1) 注销并重新登录：安装完成后，强烈建议你注销当前 macOS 用户并重新登录（或者直接重启）。这是因为 XQuartz 需要设置一些系统环境变量（如 $DISPLAY），这些变量在重新登录后才会对所有终端生效。
+# 配置权限（针对 SSH 转发）：
+# 2) 启动 XQuartz（在“应用程序”或 Spotlight 中搜索）。
+# 点击顶部菜单栏的 XQuartz -> 设置 (Settings/Preferences)。
+# 切换到 安全性 (Security) 选项卡。
+# 勾选 "允许从网络客户端连接" (Allow connections from network clients)。
+# 3) Sometimes, we need to restart the server

@@ -72,3 +72,5 @@ echo "Skills linking process complete for all AI tools."
 npm install -g @google/gemini-cli
 npm install -g @openai/codex
 ~/deploy/deploy_apps/config_codex.py
+
+curl -fsSL https://claude.ai/install.sh | bash

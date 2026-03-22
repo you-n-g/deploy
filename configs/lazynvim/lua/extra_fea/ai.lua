@@ -137,7 +137,7 @@ function M.send_current_tmux_target_to_ai()
 
   local target_session, target_window = get_target_tmux()
   if target_session then
-    tmux.send_to_tmux(tmux_target, target_session, target_window)
+    tmux.send_to_tmux(string.format("请capture我的Tmux的这个pane[%s]的内容", tmux_target), target_session, target_window)
   end
 end
 

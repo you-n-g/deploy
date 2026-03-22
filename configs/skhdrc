@@ -63,6 +63,10 @@ fn - 3 [
     * : open -a "Clash Verge"
 ]
 
+# fn + n 打开通知中心，并把鼠标移到当前显示器右上角
+fn - n : pos=$(yabai -m query --displays --display | jq -r '[.frame.x + .frame.w - 80, .frame.y + 20] | @csv' | tr -d '"'); \
+             cliclick "m:$pos" "w:100" "c:$pos"
+
 # fn - 2 [
 #     "clash-verge" : osascript -e 'tell application "System Events" to set frontApp to name of first application process whose frontmost is true' \
 #                      -e 'display notification frontApp with title "Current App Name for skhd"'
