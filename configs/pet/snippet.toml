@@ -675,7 +675,7 @@
   Description = "Config Tmux AI tool"
   Output = ""
   Tag = []
-  command = "tmux set-env -g TMUX_AI_TOOL <tool=|_codex_||_gemini_|>"
+  command = "tmux set-env -g TMUX_AI_TOOL <tool=|_codex_||_gemini_||_claude_|>"
 
 [[Snippets]]
   Description = "last git commit url"

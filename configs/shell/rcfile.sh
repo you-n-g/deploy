@@ -235,7 +235,7 @@ alias pyprof='python -m cProfile -o stats_out'
 alias ipify="curl cip.cc"
 # using this alias name  because the previous tool is ipify
 
-# gemini with proxy (p) — auto-detect: if proxy needed, wrap with proxychains, else run normally
+# run with proxy (p) — auto-detect: if proxy needed, wrap with proxychains, else run normally
 function myp() {
     if proxy_check >/dev/null 2>&1; then
         "$@"
@@ -244,39 +244,49 @@ function myp() {
     fi
 }
 
-# gemini with (r)ename — unified runner
+# Per-tool proxy defaults: "on" (always proxychains) | "off" (always direct) | "auto" (detect)
+export MYPROXY_GEMINI=${MYPROXY_GEMINI:-auto}
+export MYPROXY_CLAUDE=${MYPROXY_CLAUDE:-off}
+export MYPROXY_CODEX=${MYPROXY_CODEX:-off}
+
+function _myp_run() {
+    local mode="$1"; shift
+    case "$mode" in
+        on)  proxychains -q "$@" ;;
+        off) "$@" ;;
+        *)   myp "$@" ;;
+    esac
+}
+
+# unified runner with tmux rename; args: title proxy_mode cmd...
 function _with_tmux_rename() {
     local title="$1"
-    shift
-    # NOTE: codex (azure based now) does not need proxy
+    local proxy_mode="$2"
+    shift 2
     if [ -n "$TMUX" ]; then
         local prev_name
         prev_name=$(tmux display-message -p "#W")
         tmux rename-window -t "$TMUX_PANE" "$title"
-        if [ $title = "codex" ]; then
-            "$@"
-        else
-            myp "$@"
-        fi
+        _myp_run "$proxy_mode" "$@"
         tmux rename-window -t "$TMUX_PANE" "$prev_name"
     else
-        if [ $title = "codex" ]; then
-            "$@"
-        else
-            myp "$@"
-        fi
+        _myp_run "$proxy_mode" "$@"
     fi
 }
 
 # gemini with rename
 function geminir() {
-    _with_tmux_rename gemini gemini "$@"
+    _with_tmux_rename gemini "$MYPROXY_GEMINI" gemini "$@"
 }
 
 # codex with rename
 function codexr() {
     # _with_tmux_rename codex codex --dangerously-bypass-approvals-and-sandbox "$@"
-    AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) _with_tmux_rename codex codex "$@"
+    AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) _with_tmux_rename codex "$MYPROXY_CODEX" codex "$@"
+}
+
+function clauder() {
+    _with_tmux_rename claude "$MYPROXY_CLAUDE" claude "$@"
 }
 
 # for fzf
