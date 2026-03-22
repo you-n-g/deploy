@@ -145,14 +145,15 @@ EOF
         enable-fzf-tab
 
         # 有时候光有 zvm_after_lazy_keybindings 似乎也不work
-        zvm_bindkey viins '^S^L' insert-last-word
+        zvm_bindkey viins '^[l' insert-last-word
     }
 
     function zvm_after_lazy_keybindings() {
         # 这个按键绑定在 zvm 上不work
         # bindkey -M viins '\e.' insert-last-word
         # - 一般的shell中的就是 ESC + .
-        zvm_bindkey viins '^S^L' insert-last-word
+        # NOTE: ^S^L 不work，因为终端 ixon 流控制会拦截 ^S（stty -ixon 也无效）
+        zvm_bindkey viins '^[l' insert-last-word
     }
     # Allow autosuggestions to partially accept with forward-word
     export ZSH_AUTOSUGGEST_PARTIAL_ACCEPT_WIDGETS=(forward-word)
