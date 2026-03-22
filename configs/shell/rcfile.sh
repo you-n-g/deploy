@@ -247,14 +247,23 @@ function myp() {
 function _with_tmux_rename() {
     local title="$1"
     shift
+    # NOTE: codex (azure based now) does not need proxy
     if [ -n "$TMUX" ]; then
         local prev_name
         prev_name=$(tmux display-message -p "#W")
         tmux rename-window -t "$TMUX_PANE" "$title"
-        myp "$@"
+        if [ $title = "codex" ]; then
+            "$@"
+        else
+            myp "$@"
+        fi
         tmux rename-window -t "$TMUX_PANE" "$prev_name"
     else
-        myp "$@"
+        if [ $title = "codex" ]; then
+            "$@"
+        else
+            myp "$@"
+        fi
     fi
 }
 
