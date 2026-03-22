@@ -28,6 +28,7 @@ install_user_deps() {
   # So Python version confliction problem is solved
   # NOTE: we should 
   pip install uv
+  uv tool install ranger
   # all other commands are based on uvx
 
   # other favorite candidates

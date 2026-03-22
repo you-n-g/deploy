@@ -10,7 +10,7 @@ if [[ -z "$CURRENT_SESSION" || -z "$CURRENT_TARGET" ]]; then
     exit 1
 fi
 
-AI_WINDOW_ID=$("$SCRIPT_DIR/get_ai_window.sh" "$CURRENT_SESSION" --id)
+AI_WINDOW_ID=$("$SCRIPT_DIR/get_ai_window.sh" -i "$CURRENT_SESSION")
 if [[ -z "$AI_WINDOW_ID" ]]; then
     tmux display-message "No AI window found in session: $CURRENT_SESSION"
     exit 1

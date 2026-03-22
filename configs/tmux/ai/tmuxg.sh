@@ -1,9 +1,10 @@
 #!/bin/bash
-# Select and switch to a tmux window for AI tools (gemini, codex, etc.)
+# Select and switch to a tmux window for AI tools (gemini, codex, claude, etc.)
 # Usage: tmuxg [tool_pattern]
-# Default pattern matches both gemini and codex
+# Default pattern matches all known AI tools
 
-PATTERN=${1:-"(gemini|codex)"}
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+PATTERN=${1:-$("$SCRIPT_DIR/get_ai_window.sh" -p)}
 
 # Get the list of windows matching the pattern, sorted by last activity
 LIST=$(tmux list-windows -a -F '#{window_activity} #{session_name}:#{window_index} #{window_name}' | grep -E " ${PATTERN}$" | sort -nr | cut -d' ' -f2-)

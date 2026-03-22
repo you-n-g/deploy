@@ -1,34 +1,33 @@
 #!/bin/bash
-# Centralized script to find the most recently active AI window (gemini or codex)
-# Usage: ./get_ai_window.sh [session_name] [--id]
-# --id: return window_id instead of window_name
+# Centralized script to find the most recently active AI window
+# Usage: ./get_ai_window.sh [-i] [-p] [session_name]
+# -i: return window_id instead of window_name
+# -p: print the AI window name pattern and exit
 
-SESSION=$1
+AI_WINDOW_PATTERN="(gemini|codex|claude)"
+
 RETURN_ID=false
 
-# Handle arguments
-if [[ "$1" == "--id" ]]; then
-    RETURN_ID=true
-    SESSION=""
-fi
-if [[ "$2" == "--id" ]]; then
-    RETURN_ID=true
-fi
+while getopts ":ip" opt; do
+    case $opt in
+        i) RETURN_ID=true ;;
+        p) echo "$AI_WINDOW_PATTERN"; exit 0 ;;
+        *) echo "Usage: $0 [-i] [-p] [session_name]" >&2; exit 1 ;;
+    esac
+done
+shift $((OPTIND - 1))
 
-# Default session to current if not provided
-if [[ -z "$SESSION" ]]; then
-    SESSION=$(tmux display-message -p '#S' 2>/dev/null)
-fi
+SESSION=${1:-$(tmux display-message -p '#S' 2>/dev/null)}
 
 if [[ -z "$SESSION" ]]; then
     exit 1
 fi
 
-# List windows in the session, filter for gemini or codex, sort by activity
+# List windows in the session, filter for AI windows, sort by activity
 # Format: name activity id
-RESULT=$(tmux list-windows -t "$SESSION" -F '#{window_name} #{window_activity} #{window_id}' 2>/dev/null | 
-    grep -E '^(gemini|codex) ' | 
-    sort -k2,2nr | 
+RESULT=$(tmux list-windows -t "$SESSION" -F '#{window_name} #{window_activity} #{window_id}' 2>/dev/null |
+    grep -E "^${AI_WINDOW_PATTERN} " |
+    sort -k2,2nr |
     head -n 1)
 
 if [[ -z "$RESULT" ]]; then

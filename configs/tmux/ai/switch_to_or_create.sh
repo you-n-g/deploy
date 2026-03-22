@@ -4,17 +4,17 @@
 # If neither exists, create a new one based on PREFERRED_AI_TOOL.
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-TARGET_WINDOW=$("$SCRIPT_DIR/get_ai_window.sh" --id)
+TARGET_WINDOW=$("$SCRIPT_DIR/get_ai_window.sh" -i)
 
 if [ -n "$TARGET_WINDOW" ]; then
     tmux select-window -t "$TARGET_WINDOW"
 else
     # 1. Try to get TMUX_AI_TOOL from tmux global environment
     # 2. Fallback to current shell environment
-    # 3. Default to 'gemini'
+    # 3. Default to 'claude'
     TOOL=$(tmux show-environment -g TMUX_AI_TOOL 2>/dev/null | cut -d= -f2)
     if [ -z "$TOOL" ]; then
-        TOOL=gemini
+        TOOL=claude
     fi
     
     # Launch with interactive shell to ensure the tool runner is available
