@@ -1,0 +1,28 @@
+#!/bin/bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+CURRENT_SESSION=$(tmux display-message -p '#S' 2>/dev/null)
+CURRENT_TARGET=$(tmux display-message -p '#S:#I.#P' 2>/dev/null)
+
+if [[ -z "$CURRENT_SESSION" || -z "$CURRENT_TARGET" ]]; then
+    tmux display-message "Failed to resolve current tmux target"
+    exit 1
+fi
+
+AI_WINDOW_ID=$("$SCRIPT_DIR/get_ai_window.sh" "$CURRENT_SESSION" --id)
+if [[ -z "$AI_WINDOW_ID" ]]; then
+    tmux display-message "No AI window found in session: $CURRENT_SESSION"
+    exit 1
+fi
+
+AI_PANE_ID=$(tmux list-panes -t "$AI_WINDOW_ID" -F '#{?pane_active,#{pane_id},}' 2>/dev/null | grep -v '^$' | head -n 1)
+TARGET=${AI_PANE_ID:-$AI_WINDOW_ID}
+
+tmux send-keys -t "$TARGET" -- "请capture我的Tmux的这个pane[$CURRENT_TARGET]的内容"
+tmux select-window -t "$AI_WINDOW_ID"
+if [[ -n "$AI_PANE_ID" ]]; then
+    tmux select-pane -t "$AI_PANE_ID"
+fi
+
+# tmux display-message "Sent tmux target to AI: $CURRENT_TARGET"

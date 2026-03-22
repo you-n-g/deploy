@@ -497,6 +497,10 @@ export AIDER_GITIGNORE=False
 # export LANGUAGE=en_US:en
 # export TERM=xterm-256color
 
+# Failed to use due to quota limitations
+# export ANTHROPIC_BASE_URL="http://10.100.193.46:4004"
+# export ANTHROPIC_AUTH_TOKEN="sk-1234"
+# export ANTHROPIC_DEFAULT_SONNET_MODEL="openrouter/anthropic/claude-sonnet-4.5"
 
 # # Outlines: 准备删掉的
 
