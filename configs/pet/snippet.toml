@@ -669,7 +669,7 @@
   Description = "creating a mirror window for a session."
   Output = ""
   Tag = []
-  command = "SESSION=$(tmux list-sessions -F '#S' | fzf) && if [ -n \"$SESSION\" ]; then tmux new-session -d -t \"$SESSION\" -s \"$SESSION-<session_name_suffix=|_mirror_|>\" && tmux switch-client -t \"$SESSION-<session_name_suffix=|_mirror_|>\" ; fi"
+  command = "SESSION=$(tmux list-sessions -F '#S' | fzf) && if [ -n \"$SESSION\" ]; then tmux new-session -d -t \"$SESSION\" -s \"$SESSION-<session_name_suffix=|_mirror_|>\" ; tmux switch-client -t \"$SESSION-<session_name_suffix=|_mirror_|>\" ; fi"
 
 [[Snippets]]
   Description = "Config Tmux AI tool"
@@ -694,3 +694,9 @@
   Output = ""
   Tag = []
   command = "curl -I https://www.google.com"
+
+[[Snippets]]
+  Description = "check X forward's clipboard"
+  Output = ""
+  Tag = []
+  command = "xclip -out -selection clipboard"

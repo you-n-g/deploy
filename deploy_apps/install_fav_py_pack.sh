@@ -29,6 +29,15 @@ install_user_deps() {
   # NOTE: we should 
   pip install uv
   uv tool install ranger
+  # NOTE: ranger hardcode to disable preview for root users, so we need to patch it
+  # # Fix: ranger disables preview for root users by default, patch it to allow previews
+  # sed -i "s/        if fm.username == 'root':/        if False:  # root preview enabled/" \
+  #   "$(python3 -c "import ranger; import os; print(os.path.dirname(ranger.__file__))")/core/main.py"
+  # # ranger's default rc.conf has preview_script commented out, explicitly enable it
+  # mkdir -p ~/.config/ranger
+  # ranger --copy-config=scope
+  # echo 'set preview_script ~/.config/ranger/scope.sh' >> ~/.config/ranger/rc.conf
+
   # all other commands are based on uvx
 
   # other favorite candidates

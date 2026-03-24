@@ -143,13 +143,17 @@ end
 
 function M.send_to_ai(raw, post_action)
   if raw == nil then raw = true end
-  local content = get_current_or_visual_content()
-
-  local final_content = raw and content or format_ai_prompt(content)
+  local final_content
+  if type(raw) == "string" then
+    final_content = raw
+  else
+    local content = get_current_or_visual_content()
+    final_content = raw and content or format_ai_prompt(content)
+  end
   local target_session, target_window = get_target_tmux()
 
   if target_session then
-    tmux.send_to_tmux(final_content, target_session, target_window, post_action)
+    tmux.send_to_tmux(final_content, target_session, target_window, nil, post_action)
   end
 end
 
@@ -164,13 +168,13 @@ function M.send_to_last_window(raw, post_action)
     return
   end
 
-  tmux.send_to_tmux(final_content, session, window, post_action)
+  tmux.send_to_tmux(final_content, session, window, nil, post_action)
 end
 
 function M.send_literal_to_ai(content, post_action)
   local target_session, target_window = get_target_tmux()
   if target_session then
-    tmux.send_to_tmux(content, target_session, target_window, post_action)
+    tmux.send_to_tmux(content, target_session, target_window, nil, post_action)
   end
 end
 
@@ -178,6 +182,7 @@ end
 function M.setup()
   vim.keymap.set({ "n", "v" }, "<Localleader>c", function() end, { desc = "Send to AI/Tmux" })
   -- when it contains chinese, "<Localleader>cc" does not work. But  "<Localleader>ce" works
+  vim.keymap.set({ "n", "v" }, "<Localleader>c<Localleader>", function() M.send_to_ai("", "enter") end, { desc = "Send Enter to AI/Tmux" })
   vim.keymap.set({ "n", "v" }, "<Localleader>cc", function() M.send_to_ai(true) end, { desc = "Send to AI/Tmux (Raw)" })
   vim.keymap.set({ "n", "v" }, "<Localleader>cC", function() M.send_to_ai(true, "enter") end, { desc = "Send to AI/Tmux (Raw, no switch)" })
   vim.keymap.set({ "n", "v" }, "<Localleader>ce", function() M.send_to_ai(false) end, { desc = "Send to AI/Tmux (edit with Context)" })
