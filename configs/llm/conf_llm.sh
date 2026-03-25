@@ -3,14 +3,16 @@
 # Get the absolute path of the current script's directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-# Source directory containing ALL your custom skills
-SOURCE_CUSTOM_SKILLS_BASE_DIR="$SCRIPT_DIR/skills"
+CUSTOM_SKILLS_DIR="$SCRIPT_DIR/skills"
 EXTERNAL_REPOS_DIR="$SCRIPT_DIR/external"
+MERGED_SKILLS_DIR="$SCRIPT_DIR/merged-skills"
 
-mkdir -p "$SOURCE_CUSTOM_SKILLS_BASE_DIR"
+mkdir -p "$CUSTOM_SKILLS_DIR"
 mkdir -p "$EXTERNAL_REPOS_DIR"
+mkdir -p "$MERGED_SKILLS_DIR"
 
-# Manage external skills (kepano/obsidian-skills)
+# ── External repos ────────────────────────────────────────────────────────────
+
 OBSIDIAN_SKILLS_DIR="$EXTERNAL_REPOS_DIR/obsidian-skills"
 if [ ! -d "$OBSIDIAN_SKILLS_DIR" ]; then
     echo "Cloning external skills from kepano/obsidian-skills..."
@@ -20,57 +22,96 @@ else
     (cd "$OBSIDIAN_SKILLS_DIR" && git pull)
 fi
 
-# Link skills from external repo to SOURCE_CUSTOM_SKILLS_BASE_DIR
+npm install -g defuddle-cli
+
+# ── Merge: link every skill folder into merged-skills/ ───────────────────────
+
+link_skill() {
+    local skill_dir=$1
+    local skill_name
+    skill_name=$(basename "$skill_dir")
+    # skip if SKILL.md is disabled
+    [ -f "$skill_dir/SKILL.md" ] || return 0
+    ln -snf "$skill_dir" "$MERGED_SKILLS_DIR/$skill_name"
+}
+
+# Custom skills
+for skill in "$CUSTOM_SKILLS_DIR"/*/; do
+    [ -d "$skill" ] && link_skill "$skill"
+done
+
+# External: obsidian-skills
 if [ -d "$OBSIDIAN_SKILLS_DIR/skills" ]; then
-    echo "Linking external skills..."
-    for skill in "$OBSIDIAN_SKILLS_DIR/skills"/*; do
-        if [ -d "$skill" ]; then
-            skill_name=$(basename "$skill")
-            ln -snf "$skill" "$SOURCE_CUSTOM_SKILLS_BASE_DIR/$skill_name"
-        fi
+    for skill in "$OBSIDIAN_SKILLS_DIR/skills"/*/; do
+        [ -d "$skill" ] && link_skill "$skill"
     done
 fi
 
-npm install -g defuddle-cli  # 好像哪里会有一个 
-# External skills 里面有一个skill依赖了 defuddle-cli 包
+echo "Merged skills: $(ls "$MERGED_SKILLS_DIR" | wc -l) skills linked."
 
-# Function to link skills directory for a specific tool
+# ── Environment-based skill exclusions ───────────────────────────────────────
+
+_can_run_containers() {
+    case "$(uname)" in
+        Darwin) return 0 ;;       # macOS: assume Docker Desktop can be installed
+        *)  test -w /sys/fs/cgroup ;;
+    esac
+}
+
+disable_skill() {
+    local name=$1
+    if [ -L "$MERGED_SKILLS_DIR/$name" ]; then
+        rm "$MERGED_SKILLS_DIR/$name"
+        echo "Disabled skill: $name"
+    fi
+}
+
+if [ "$(uname)" != "Darwin" ]; then
+    echo "Not macOS, disabling Obsidian skills..."
+    for s in "$MERGED_SKILLS_DIR"/obsidian-*; do
+        [ -L "$s" ] && disable_skill "$(basename "$s")"
+    done
+fi
+
+if ! _can_run_containers; then
+    echo "No container runtime, disabling container-dependent skills..."
+    disable_skill "cr"
+fi
+
+echo "Active skills: $(ls "$MERGED_SKILLS_DIR" | wc -l)"
+
+# ── Link merged-skills/ to each agent ────────────────────────────────────────
+
 link_skills_for_tool() {
     local tool_name=$1
     local target_dir="$HOME/.$tool_name/skills"
-    local tool_config_dir="$HOME/.$tool_name"
+    mkdir -p "$HOME/.$tool_name"
 
-    echo "Configuring skills for $tool_name..."
-    mkdir -p "$tool_config_dir"
-    # Handle existing target_dir states:
-    # - If it's a real directory, automatically replace it with a symlink
-    # - If it's a symlink but points elsewhere, replace it
-    # - If it's already correctly linked, skip
     if [ -d "$target_dir" ] && ! [ -L "$target_dir" ]; then
-        echo "WARNING: '$target_dir' exists as a directory. Replacing it with a symlink..."
+        echo "WARNING: '$target_dir' exists as a real directory. Replacing with symlink..."
         rm -rf "$target_dir"
     elif [ -L "$target_dir" ]; then
-        local current_target=$(readlink "$target_dir")
-        if [ "$current_target" = "$SOURCE_CUSTOM_SKILLS_BASE_DIR" ]; then
-            echo "Info: '$target_dir' is already correctly linked."
+        local current_target
+        current_target=$(readlink "$target_dir")
+        if [ "$current_target" = "$MERGED_SKILLS_DIR" ]; then
+            echo "Info: '$target_dir' already correctly linked."
             return 0
         fi
-        echo "Updating symlink: '$target_dir' (old target: $current_target)"
         rm "$target_dir"
     fi
 
-    echo "Creating symbolic link: '$target_dir' -> '$SOURCE_CUSTOM_SKILLS_BASE_DIR'"
-    ln -s "$SOURCE_CUSTOM_SKILLS_BASE_DIR" "$target_dir"
+    ln -s "$MERGED_SKILLS_DIR" "$target_dir"
+    echo "Linked: $target_dir -> $MERGED_SKILLS_DIR"
 }
 
-# Link for gemini, codex, and claude
 link_skills_for_tool "gemini"
 link_skills_for_tool "codex"
 link_skills_for_tool "claude"
-echo "Skills linking process complete for all AI tools."
+echo "Skills linking complete."
 
+# ── Install agents ────────────────────────────────────────────────────────────
 
-npm install -g @google/gemini-cli
-npm install -g @openai/codex
-curl -fsSL https://claude.ai/install.sh | bash
+command -v gemini &>/dev/null || npm install -g @google/gemini-cli
+command -v codex  &>/dev/null || npm install -g @openai/codex
+command -v claude &>/dev/null || curl -fsSL https://claude.ai/install.sh | bash
 ~/deploy/deploy_apps/config_codex.py

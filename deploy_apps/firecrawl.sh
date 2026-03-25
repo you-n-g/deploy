@@ -29,3 +29,6 @@ EOF
 
 docker compose build  # ~3mins
 docker compose up
+# 没有权限的时候 podman 可能有用， 但是实际上不一定行
+# podman compose build  # ~3mins
+# podman compose up
