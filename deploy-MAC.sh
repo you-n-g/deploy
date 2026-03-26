@@ -15,7 +15,8 @@ brew install fnm
 echo 'eval "$(fnm env --use-on-cd)"' >> ~/.zshrc  # mac has already use zsh as the default shell
 
 brew install uv
-uv tool install ranger-fm
+uv tool install ranger-fm  # will brew be a better choice?
+brew install bat
 
 # Common CLI tools (use brew instead of Linux-only install scripts).
 brew install ripgrep fzf fd tmux lazygit
@@ -95,3 +96,14 @@ brew install --cask xquartz
 # 切换到 安全性 (Security) 选项卡。
 # 勾选 "允许从网络客户端连接" (Allow connections from network clients)。
 # 3) Sometimes, we need to restart the server
+
+
+brew install --cask iterm2
+# 🙌  
+# Profile -> Text:  设置nerd font;  然后启动 ligature
+#         -> Keys:  Left Option => Esc+
+
+
+brew install --cask homerow
+# 🙌
+# 手动启动，开启相应权限，开机启动

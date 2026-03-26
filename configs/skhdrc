@@ -30,16 +30,16 @@ fn - 2 [
     * : open -a "Clash Verge"
 ]
 
-# 定义小键盘 4 (0x56) 的行为（Terminal）
+# 定义小键盘 4 (0x56) 的行为（iTerm2）
 0x56 [
-    "Terminal" : skhd -k "cmd - h"    # 如果 Terminal 已在前台，则隐藏
-    * : open -a "Terminal"            # 否则启动/切到 Terminal
+    "iTerm2" : skhd -k "cmd - h"    # 如果 iTerm2 已在前台，则隐藏
+    * : open -a "iTerm"            # 否则启动/切到 iTerm2
 ]
 
-# 定义 fn + 主键盘 4 的行为（Terminal）
+# 定义 fn + 主键盘 4 的行为（iTerm2）
 fn - 4 [
-    "Terminal" : skhd -k "cmd - h"    # 如果 Terminal 已在前台，则隐藏
-    * : open -a "Terminal"            # 否则启动/切到 Terminal
+    "iTerm2" : skhd -k "cmd - h"    # 如果 iTerm2 已在前台，则隐藏
+    * : open -a "iTerm"            # 否则启动/切到 iTerm2
 ]
 
 # 定义小键盘 7 (0x59) 的行为（飞书 / Lark）
@@ -63,9 +63,10 @@ fn - 3 [
     * : open -a "Clash Verge"
 ]
 
-# fn + n 打开通知中心，并把鼠标移到当前显示器右上角
-fn - n : pos=$(yabai -m query --displays --display | jq -r '[.frame.x + .frame.w - 80, .frame.y + 20] | @csv' | tr -d '"'); \
-             cliclick "m:$pos" "w:100" "c:$pos"
+# 后来homerow就足够好用了
+# # fn + n 打开通知中心，并把鼠标移到当前显示器右上角
+# fn - n : pos=$(yabai -m query --displays --display | jq -r '[.frame.x + .frame.w - 80, .frame.y + 20] | @csv' | tr -d '"'); \
+#              cliclick "m:$pos" "w:100" "c:$pos"
 
 # fn - 2 [
 #     "clash-verge" : osascript -e 'tell application "System Events" to set frontApp to name of first application process whose frontmost is true' \

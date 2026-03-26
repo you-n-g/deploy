@@ -6,6 +6,8 @@ description: Principles for comfortable chatting; focus on emotional support and
 
 
 # Chatting Skill
+首先要知道对方是谁，如果内容中出现了人物，请从笔记中找到对应的人物背景信息，构建人物画像来聊天。 
+
 说话要带着清晰的目标，只要做到下面任意一点，就是一次有价值的交流：
 - 提供情绪上的支持
   - **如果能体现出你的幽默感，能大大加分！！**
