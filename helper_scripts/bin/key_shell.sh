@@ -52,7 +52,8 @@ azure_key_api_02() {
   API_VERSION=2024-12-01-preview
   API_KEY=$api_key
   ENDPOINT=$api_base
-  CHAT_MODEL=o3-mini # you should specify it mannually
+  CHAT_MODEL=gpt-4.1  # make it faster when committing log
+  # o3-mini # you should specify it mannually
   # export EXP_MODEL=o3-mini
 }
 
