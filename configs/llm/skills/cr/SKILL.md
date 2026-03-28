@@ -30,6 +30,11 @@ If not on `$PATH`, use the full path:
 - Wait for client-side render: `cr --wait-for 8000 <url>`
     - If it takes some time to render the page, you can use `--wait-for` to wait for the page to be rendered before scraping.
 
+If `cr` is implemented via `uv` in the current environment and fails on cache initialization, re-run it with temporary cache directories:
+
+- `XDG_CACHE_HOME=/tmp/.cache UV_CACHE_DIR=/tmp/.uv-cache cr <url>`
+- `XDG_CACHE_HOME=/tmp/.cache UV_CACHE_DIR=/tmp/.uv-cache cr --wait-for 8000 <url>`
+
 The command prints Markdown to stdout. Use that output as the source text for downstream summarization or extraction.
 
 ## Troubleshooting
@@ -40,6 +45,10 @@ If you see an error like “Firecrawl is not reachable at http://localhost:3002�
   - The user must run this command, so remind them to run it.
 
 Then re-run `cr`.
+
+If `cr` fails with an error about initializing `~/.cache/uv`, use:
+
+- `XDG_CACHE_HOME=/tmp/.cache UV_CACHE_DIR=/tmp/.uv-cache cr <url>`
 
 If the output looks like an unrendered shell / consent page / “enable JavaScript”, it’s usually one of:
 

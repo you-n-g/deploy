@@ -6,7 +6,7 @@ try:
     from pypdf import PdfReader
 except ImportError:
     print("Error: pypdf is not installed.")
-    print("Please run with: uv run --with pypdf python <script_path> <pdf_path>")
+    print("Please run with: XDG_CACHE_HOME=/tmp/.cache UV_CACHE_DIR=/tmp/.uv-cache uv run --with pypdf python <script_path> <pdf_path>")
     sys.exit(1)
 
 def read_pdf(file_path, page_limit=None):

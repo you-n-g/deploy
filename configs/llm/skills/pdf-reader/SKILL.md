@@ -13,6 +13,7 @@ This skill allows you to extract and read text content from PDF files using `pyp
 To read a PDF file, execute the following command using `uv`:
 
 ```bash
+XDG_CACHE_HOME=/tmp/.cache UV_CACHE_DIR=/tmp/.uv-cache \
 uv run --with pypdf python3 ~/deploy/configs/llm/skills/pdf-reader/scripts/read_pdf.py <path_to_pdf> [--pages <number_of_pages>]
 ```
 
@@ -20,15 +21,23 @@ uv run --with pypdf python3 ~/deploy/configs/llm/skills/pdf-reader/scripts/read_
 
 **Read an entire PDF:**
 ```bash
+XDG_CACHE_HOME=/tmp/.cache UV_CACHE_DIR=/tmp/.uv-cache \
 uv run --with pypdf python3 ~/deploy/configs/llm/skills/pdf-reader/scripts/read_pdf.py /path/to/document.pdf
 ```
 
 **Read only the first 5 pages:**
 ```bash
+XDG_CACHE_HOME=/tmp/.cache UV_CACHE_DIR=/tmp/.uv-cache \
 uv run --with pypdf python3 ~/deploy/configs/llm/skills/pdf-reader/scripts/read_pdf.py /path/to/document.pdf --pages 5
 ```
 
 ## Troubleshooting
+If `uv` fails because it cannot write to `~/.cache/uv` (common in sandboxed sessions), re-run with temporary cache directories:
+```bash
+XDG_CACHE_HOME=/tmp/.cache UV_CACHE_DIR=/tmp/.uv-cache \
+uv run --with pypdf python3 ~/deploy/configs/llm/skills/pdf-reader/scripts/read_pdf.py <path_to_pdf> [--pages <number_of_pages>]
+```
+
 If `uv` is not available, ensure `pypdf` is installed via pip:
 ```bash
 pip install pypdf

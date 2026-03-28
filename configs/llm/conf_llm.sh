@@ -47,6 +47,14 @@ if [ -d "$OBSIDIAN_SKILLS_DIR/skills" ]; then
     done
 fi
 
+# Farside skills
+FARSIDE_SKILLS_DIR="$HOME/farside/llm/skills"
+if [ -d "$FARSIDE_SKILLS_DIR" ]; then
+    for skill in "$FARSIDE_SKILLS_DIR"/*/; do
+        [ -d "$skill" ] && link_skill "$skill"
+    done
+fi
+
 echo "Merged skills: $(ls "$MERGED_SKILLS_DIR" | wc -l) skills linked."
 
 # ── Environment-based skill exclusions ───────────────────────────────────────

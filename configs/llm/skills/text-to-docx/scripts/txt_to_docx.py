@@ -6,7 +6,7 @@ try:
     from docx import Document
 except ImportError:
     print("Error: python-docx is not installed.")
-    print("Please run with: uv run --with python-docx python <script_path> <input_txt> <output_docx>")
+    print("Please run with: XDG_CACHE_HOME=/tmp/.cache UV_CACHE_DIR=/tmp/.uv-cache uv run --with python-docx python <script_path> <input_txt> <output_docx>")
     sys.exit(1)
 
 def convert_txt_to_docx(input_path, output_path):

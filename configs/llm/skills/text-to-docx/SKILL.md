@@ -13,6 +13,7 @@ This skill converts plain text files into `.docx` format using the `python-docx`
 To convert a text file, execute the following command using `uv`:
 
 ```bash
+XDG_CACHE_HOME=/tmp/.cache UV_CACHE_DIR=/tmp/.uv-cache \
 uv run --with python-docx python3 ~/deploy/configs/llm/skills/text-to-docx/scripts/txt_to_docx.py <input_txt> <output_docx>
 ```
 
@@ -20,10 +21,17 @@ uv run --with python-docx python3 ~/deploy/configs/llm/skills/text-to-docx/scrip
 
 **Convert a log file to Word:**
 ```bash
+XDG_CACHE_HOME=/tmp/.cache UV_CACHE_DIR=/tmp/.uv-cache \
 uv run --with python-docx python3 ~/deploy/configs/llm/skills/text-to-docx/scripts/txt_to_docx.py notes.txt notes.docx
 ```
 
 ## Troubleshooting
+If `uv` fails because it cannot write to `~/.cache/uv`, use temporary cache directories:
+```bash
+XDG_CACHE_HOME=/tmp/.cache UV_CACHE_DIR=/tmp/.uv-cache \
+uv run --with python-docx python3 ~/deploy/configs/llm/skills/text-to-docx/scripts/txt_to_docx.py <input_txt> <output_docx>
+```
+
 If `uv` is not available, ensure `python-docx` is installed via pip:
 ```bash
 pip install python-docx

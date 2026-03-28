@@ -4,6 +4,15 @@ DIR="$( cd "$(dirname "$(readlink -f "$0")")" || exit ; pwd -P )"
 
 cd $DIR
 
+SSH_FLAG=""
+while getopts ":s" opt; do
+    case $opt in
+    s) SSH_FLAG="-s" ;;
+    \?) echo "Invalid option: -$OPTARG" >&2; exit 1 ;;
+    :)  echo "Option -$OPTARG requires an argument." >&2; exit 1 ;;
+    esac
+done
+
 deploy_apps/install_homebrew.sh
 xcode-select --install
 
@@ -35,6 +44,9 @@ bash ./configs/llm/conf_llm.sh
 bash ./deploy_apps/install_zsh.sh
 
 bash ./deploy_apps/config_git.sh
+
+# clone repos (-s for SSH, required for private repos like farside)
+bash ./deploy_apps/clone_repos.sh $SSH_FLAG
 
 bash ./deploy_apps/nonauto/install_lazyvim.sh deploy_mac
 

@@ -11,25 +11,15 @@ cd $REPO_PATH
 
 sudo bash -c "echo -e '\$nrconf{kernelhints} = -1;\n\$nrconf{restart} = \"l\";' > /etc/needrestart/conf.d/99mychanges.conf"  # disble popups
 
-CHEATSHEET_URI=https://github.com/you-n-g/cheatsheets
+SSH_FLAG=""
 while getopts ":s" opt; do
 	case $opt in
-	s)
-		CHEATSHEET_URI=git@github.com:you-n-g/cheatsheets.git
-		;;
-	\?)
-		echo "Invalid option: -$OPTARG" >&2
-		exit 1
-		;;
-	:)
-		echo "Option -$OPTARG requires an argument." >&2
-		exit 1
-		;;
+	s) SSH_FLAG="-s" ;;
+	\?) echo "Invalid option: -$OPTARG" >&2; exit 1 ;;
+	:)  echo "Option -$OPTARG requires an argument." >&2; exit 1 ;;
 	esac
 done
 # Ref: https://wiki.bash-hackers.org/howto/getopts_tutorial
-
-if which apt-get; then
 	bash Debian-based.sh
 fi
 
@@ -48,10 +38,7 @@ fi
 ./deploy_apps/config_git.sh
 
 # clone repos
-cd ~
-if [ ! -e cheatsheets ]; then
-	git clone --recursive $CHEATSHEET_URI
-fi
+bash "$REPO_PATH/deploy_apps/clone_repos.sh" $SSH_FLAG
 
 # config bashrc
 if ! grep "^export PS1" ~/.bashrc; then
