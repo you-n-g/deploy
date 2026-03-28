@@ -251,8 +251,107 @@ class CodexProvider(Provider):
         return "\n".join(chunks).strip()
 
 
+class ClaudeProvider(Provider):
+    name = "claude"
+
+    def latest_session(self) -> Optional[SessionRef]:
+        search_path = pathlib.Path.home().joinpath(".claude", "projects", "**", "*.jsonl")
+        path = latest_file(str(search_path))
+        if not path:
+            return None
+        return SessionRef(provider=self.name, path=path, mtime=os.path.getmtime(path))
+
+    def load_timeline(self, session_path: str) -> List[TimelineItem]:
+        timeline: List[TimelineItem] = []
+        try:
+            with open(session_path, "r", encoding="utf-8") as f:
+                for line_no, line in enumerate(f, start=1):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        ev = json.loads(line)
+                    except json.JSONDecodeError:
+                        eprint(f"Error decoding JSON on line {line_no} of {session_path}")
+                        continue
+                    timeline.extend(self._event_to_items(ev))
+        except OSError as exc:
+            eprint(f"Error reading {session_path}: {exc}")
+            return []
+        return timeline
+
+    @staticmethod
+    def _event_to_items(ev: Any) -> List[TimelineItem]:
+        if not isinstance(ev, dict) or ev.get("type") not in ("user", "assistant"):
+            return []
+        if ev.get("isMeta"):
+            return []
+
+        message = ev.get("message")
+        if not isinstance(message, dict):
+            return []
+        role = message.get("role")
+        content = message.get("content")
+
+        if role == "user":
+            text = ClaudeProvider._extract_text(content)
+            if text and not text.startswith("<"):
+                return [UserInput(text=text)]
+            return []
+
+        if role == "assistant" and isinstance(content, list):
+            items: List[TimelineItem] = []
+            for block in content:
+                if not isinstance(block, dict) or block.get("type") != "tool_use":
+                    continue
+                inp = block.get("input") or {}
+                if not isinstance(inp, dict):
+                    continue
+                cmd = ClaudeProvider._tool_command(block.get("name", ""), inp)
+                if cmd:
+                    items.append(ToolCommand(command=cmd))
+            return items
+
+        return []
+
+    @staticmethod
+    def _extract_text(content: Any) -> str:
+        if isinstance(content, str):
+            return content.strip()
+        if isinstance(content, list):
+            chunks: List[str] = []
+            for item in content:
+                if isinstance(item, str):
+                    chunks.append(item)
+                elif isinstance(item, dict) and item.get("type") == "text":
+                    text = item.get("text", "")
+                    if isinstance(text, str) and text:
+                        chunks.append(text)
+            return "\n".join(chunks).strip()
+        return ""
+
+    @staticmethod
+    def _tool_command(name: str, inp: dict) -> Optional[str]:
+        if name == "Bash":
+            cmd = inp.get("command")
+            return cmd if isinstance(cmd, str) else None
+        if name == "Read":
+            path = inp.get("file_path")
+            return f'cat "{path}"' if isinstance(path, str) else None
+        if name == "Glob":
+            pattern = inp.get("pattern")
+            return f'glob "{pattern}"' if isinstance(pattern, str) else None
+        if name == "Grep":
+            query = inp.get("pattern") or inp.get("query")
+            return f'grep "{query}"' if isinstance(query, str) else None
+        if name in ("Write", "Edit"):
+            path = inp.get("file_path")
+            return f'# {name} "{path}"' if isinstance(path, str) else None
+        return None
+
+
 def providers() -> List[Provider]:
-    return [GeminiProvider(), CodexProvider()]
+    return [GeminiProvider(), CodexProvider(), ClaudeProvider()]
 
 
 def select_session(provider_name: str, verbose: bool) -> Optional[SessionRef]:
@@ -261,7 +360,7 @@ def select_session(provider_name: str, verbose: bool) -> Optional[SessionRef]:
     if provider_name != "auto":
         prov = by_name.get(provider_name)
         if not prov:
-            eprint(f"Unknown provider: {provider_name} (expected: auto|gemini|codex)")
+            eprint(f"Unknown provider: {provider_name} (expected: auto|gemini|codex|claude)")
             return None
         return prov.latest_session()
 
@@ -308,8 +407,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument(
         "--provider",
         default="auto",
-        choices=["auto", "gemini", "codex"],
-        help="Which provider to read from (default: auto = newest session between gemini and codex)",
+        choices=["auto", "gemini", "codex", "claude"],
+        help="Which provider to read from (default: auto = newest session between gemini/codex/claude)",
     )
     parser.add_argument(
         "-F",
