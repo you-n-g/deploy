@@ -14,7 +14,7 @@ Use this skill when the user wants to improve a skill’s behavior based on feed
 
 ## Guardrails
 
-- Only edit skills that are **locally maintained** under `~/deploy/configs/llm/skills/`.
+- Only edit skills that are **locally maintained** under `~/deploy/configs/llm/skills/` or `~/farside/llm/skills/`.
 - If the target skill directory (or the file to be edited) is a **symlink**, do **not** modify it; explain why and ask the user to copy it into a non-symlink folder if they want customization.
 
 ## Operating principles

@@ -84,6 +84,8 @@ fi
 if ! _can_run_containers; then
     echo "No container runtime, disabling container-dependent skills..."
     disable_skill "cr"
+else
+    disable_skill "defuddle"
 fi
 
 echo "Active skills: $(ls "$MERGED_SKILLS_DIR" | wc -l)"

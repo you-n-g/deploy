@@ -1,12 +1,36 @@
 #!/bin/bash
-osascript << 'EOF'
-tell application "System Events"
-    set frontApp to name of first application process whose frontmost is true
-end tell
-tell application "iTerm" to activate
-delay 0.08
-tell application "System Events" to key code 36
-if frontApp is not "iTerm2" and frontApp is not "iTerm" then
-    tell application frontApp to activate
-end if
+settle_delay="${SETTLE_DELAY:-0.18}"
+
+orig_window_json="$(yabai -m query --windows --window 2>/dev/null || true)"
+orig_window_id="$(printf '%s' "$orig_window_json" | jq -r '.id // empty' 2>/dev/null || true)"
+orig_app="$(printf '%s' "$orig_window_json" | jq -r '.app // empty' 2>/dev/null || true)"
+
+osascript << EOF
+set settleDelay to ${settle_delay}
+try
+    tell application "iTerm2" to activate
+on error
+    tell application "iTerm" to activate
+end try
+repeat 30 times
+    tell application "System Events"
+        set curFront to name of first application process whose frontmost is true
+    end tell
+    if curFront is "iTerm2" or curFront is "iTerm" then exit repeat
+    delay 0.05
+end repeat
+tell application "System Events" to keystroke "1" using {option down, command down} -- ⌥⌘1
+delay settleDelay
+tell application "System Events" to key code 36 -- Enter
 EOF
+
+if [[ -n "$orig_window_id" ]]; then
+  for _ in {1..20}; do
+    yabai -m window --focus "$orig_window_id" >/dev/null 2>&1 && exit 0
+    sleep 0.05
+  done
+fi
+
+if [[ -n "$orig_app" && "$orig_app" != "iTerm2" && "$orig_app" != "iTerm" ]]; then
+  osascript -e "tell application \"${orig_app}\" to activate" >/dev/null 2>&1 || true
+fi

@@ -119,3 +119,5 @@ brew install --cask iterm2
 brew install --cask homerow
 # 🙌
 # 手动启动，开启相应权限，开机启动
+
+brew install --cask zotero
