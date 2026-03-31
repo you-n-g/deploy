@@ -27,6 +27,9 @@ brew install uv
 uv tool install ranger-fm  # will brew be a better choice?
 brew install bat
 
+mkdir -p ~/.config/ranger
+ln -sfn ~/deploy/configs/ranger/rc.conf ~/.config/ranger/rc.conf
+
 # Common CLI tools (use brew instead of Linux-only install scripts).
 brew install ripgrep fzf fd tmux lazygit
 

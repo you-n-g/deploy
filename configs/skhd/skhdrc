@@ -45,6 +45,12 @@ fn - 4 [
 # 定义小键盘 Enter (0x4c) 的行为（切到 iTerm2 -> 发送 Enter -> 切回原程序）
 0x4C : ~/deploy/configs/skhd/numpad-enter.sh
 
+# F16-F19: 切到 iTerm2 对应标签页（⌥⌘1~4），发送 Enter，再切回原程序
+f16 : ~/deploy/configs/skhd/numpad-enter.sh 1
+f17 : ~/deploy/configs/skhd/numpad-enter.sh 2
+f18 : ~/deploy/configs/skhd/numpad-enter.sh 3
+f19 : ~/deploy/configs/skhd/numpad-enter.sh 4
+
 # 定义小键盘 7 (0x59) 的行为（飞书 / Lark）
 0x59 [
     "Feishu" : skhd -k "cmd - h"      # 如果飞书已在前台，则隐藏

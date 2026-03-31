@@ -1,5 +1,6 @@
 #!/bin/bash
 settle_delay="${SETTLE_DELAY:-0.18}"
+win_num="${1:-1}"
 
 orig_window_json="$(yabai -m query --windows --window 2>/dev/null || true)"
 orig_window_id="$(printf '%s' "$orig_window_json" | jq -r '.id // empty' 2>/dev/null || true)"
@@ -19,7 +20,7 @@ repeat 30 times
     if curFront is "iTerm2" or curFront is "iTerm" then exit repeat
     delay 0.05
 end repeat
-tell application "System Events" to keystroke "1" using {option down, command down} -- ⌥⌘1
+tell application "System Events" to keystroke "${win_num}" using {option down, command down} -- ⌥⌘${win_num}
 delay settleDelay
 tell application "System Events" to key code 36 -- Enter
 EOF
