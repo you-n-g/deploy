@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to get Azure credentials from GPG encrypted files
-# Usage: get-cred [key|base|model] [filename.gpg]
+# Usage: get-cred [key|base|model|xyz_base|xyz_key] [filename.gpg]
 # Default: get-cred key gpt.gpg
 
 TYPE="${1:-key}"
@@ -23,8 +23,14 @@ case "$TYPE" in
     key)
         LINE=3
         ;;
+    xyz_base)
+        LINE=4
+        ;;
+    xyz_key)
+        LINE=5
+        ;;
     *)
-        echo "Usage: $0 [base|model|key] [filename.gpg]" >&2
+        echo "Usage: $0 [base|model|key|xyz_base|xyz_key] [filename.gpg]" >&2
         exit 1
         ;;
 esac

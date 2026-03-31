@@ -27,12 +27,26 @@ def get_credentials(fname="gpt.gpg"):
         if len(lines) < 3:
             print("Error: Decrypted file has fewer than 3 lines.")
             return None
-        
-        return {
+
+        cred = {
             "api_base": lines[0].strip(),
             "model": lines[1].strip(),
             "api_key": lines[2].strip()
         }
+
+        # Optional extra lines (for additional providers/keys).
+        # Current convention in ~/deploy/keys/gpt.gpg:
+        # 1) azure api_base
+        # 2) model
+        # 3) azure api_key
+        # 4) xyz api_base (optional)
+        # 5) xyz api_key  (optional)
+        if len(lines) >= 4:
+            cred["xyz_api_base"] = lines[3].strip()
+        if len(lines) >= 5:
+            cred["xyz_api_key"] = lines[4].strip()
+
+        return cred
     except subprocess.CalledProcessError as e:
         print(f"Error decrypting {key_path}: {e}")
         return None
@@ -76,6 +90,27 @@ def update_config_toml(cred):
     azure["wire_api"] = "responses"
     
     doc["model_providers"]["azure"] = azure
+
+    # Optional extra provider config.
+    if "xyz_api_base" in cred:
+        xyz_provider = tomlkit.table()
+        xyz_provider["name"] = "xyz"
+        xyz_base_url = cred["xyz_api_base"].rstrip("/")
+        if not xyz_base_url.endswith("/v1"):
+            xyz_base_url = f"{xyz_base_url}/v1"
+        xyz_provider["base_url"] = xyz_base_url
+        xyz_provider["env_key"] = "XYZ_API_KEY"
+        xyz_provider["wire_api"] = "responses"
+        doc["model_providers"]["xyz"] = xyz_provider
+
+    # Store additional key under a separate section (Codex ignores unknown sections).
+    # This is mainly for local tooling that wants a single config entry point.
+    if "xyz_api_key" in cred:
+        if "xyz" not in doc:
+            doc["xyz"] = tomlkit.table()
+        doc["xyz"]["api_key"] = cred["xyz_api_key"]
+        if "xyz_api_base" in cred:
+            doc["xyz"]["api_base"] = cred["xyz_api_base"]
 
     with open(config_path, "w") as f:
         f.write(tomlkit.dumps(doc))

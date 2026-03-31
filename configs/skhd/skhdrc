@@ -42,6 +42,9 @@ fn - 4 [
     * : open -a "iTerm"            # 否则启动/切到 iTerm2
 ]
 
+# # F15: 唤醒飞书 -> Cmd+K -> 搜索 Drumstick AI -> 输入 🍗
+# f15 : ~/deploy/configs/skhd/feishu-drumstick.sh
+
 # 定义小键盘 Enter (0x4c) 的行为（切到 iTerm2 -> 发送 Enter -> 切回原程序）
 0x4C : ~/deploy/configs/skhd/numpad-enter.sh
 
