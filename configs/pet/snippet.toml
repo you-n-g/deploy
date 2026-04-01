@@ -189,7 +189,7 @@
   Description = "python minimal install after create conda env"
   Output = ""
   Tag = []
-  command = "<cmd=|_pip install_||_uv pip install pip_|> ipdb ipython neovim fire yapf pylint black uv"
+  command = "<cmd=|_pip install_||_uv pip install pip_|> ipdb ipython neovim fire yapf pylint black uv ranger-fm"
 
 [[Snippets]]
   Description = "conda remove"

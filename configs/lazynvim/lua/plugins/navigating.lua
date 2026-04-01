@@ -156,6 +156,12 @@ return {
       --   left = "{{",
       --   right = "}}"
       -- },
+      -- keymaps = {
+      --   nav_mode = {
+      --     -- open_enter = "<localleader><cr>",
+      --     open_enter = "<S-CR>",  -- use Shift+Enter to open (not distingishable from <cr>)
+      --   },
+      -- },
       enable_block = true,
       default_tmux_target = function()
         local script = vim.fn.expand("~/deploy/configs/tmux/ai/get_ai_window.sh")
