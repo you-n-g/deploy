@@ -77,6 +77,10 @@ curl -L https://iterm2.com/shell_integration/install_shell_integration_and_utili
 # This is very important for tmux-pet. otherwise, tmux-pet with variables will not work
 sudo ./deploy_apps/set_code.sh
 
+# For setting up iterm2 with imgcat
+curl -L https://iterm2.com/utilities/imgcat -o ~/bin/imgcat
+chmod +x ~/bin/imgcat
+
 sudo rm /etc/needrestart/conf.d/99mychanges.conf
 
 cat <<EOF
