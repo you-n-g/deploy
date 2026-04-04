@@ -1,36 +1,39 @@
 #!/bin/bash
-# Select and switch to a tmux window for AI tools (gemini, codex, claude, etc.)
-# Usage: tmuxg [tool_pattern]
-# Default pattern matches all known AI tools
+# Select and switch to a tmux window running an AI agent.
+# Usage: tmuxg
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-PATTERN=${1:-$("$SCRIPT_DIR/get_ai_window.sh" -p)}
+source "$SCRIPT_DIR/lib.sh"
 
-# Get the list of windows matching the pattern, sorted by last activity
-LIST=$(tmux list-windows -a -F '#{window_activity} #{session_name}:#{window_index} #{window_name}' | grep -E " ${PATTERN}$" | sort -nr | cut -d' ' -f2-)
+_ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null)
+
+LIST=$(
+    while IFS=' ' read -r wact sess_win wname pane_pid; do
+        _has_ai_proc "$pane_pid" && echo "$wact $sess_win $wname"
+    done < <(tmux list-panes -a \
+        -F '#{window_activity} #{session_name}:#{window_index} #{window_name} #{pane_pid}' 2>/dev/null |
+        sort -nr) |
+    awk '!seen[$2]++' |
+    cut -d' ' -f2-
+)
 
 if [[ -z "$LIST" ]]; then
-    echo "No windows matching '${PATTERN}' found."
+    echo "No AI agent windows found."
     exit 0
 fi
 
-# Use fzf to select a window
 SELECTED=$(echo "$LIST" | fzf \
     --reverse \
     --header "Select an AI window (Enter to switch)" \
     --preview 'tmux capture-pane -ept {1}' \
     --preview-window 'up:70%,follow')
 
-# Exit if nothing was selected
 [[ -z "$SELECTED" ]] && exit 0
 
-# Extract the target (session:window_index)
 TARGET=$(echo "$SELECTED" | cut -d' ' -f1)
 
 if [[ -n "$TMUX" ]]; then
     tmux switch-client -t "$TARGET"
 else
-    # Outside tmux: attach to session and select window
-    SESSION="${TARGET%%:*}"
-    tmux attach-session -t "$SESSION" \; select-window -t "$TARGET"
+    tmux attach-session -t "${TARGET%%:*}" \; select-window -t "$TARGET"
 fi
