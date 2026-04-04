@@ -124,3 +124,7 @@ brew install --cask homerow
 # 手动启动，开启相应权限，开机启动
 
 brew install --cask zotero
+
+
+# 🙌 其他手动操作的事情
+# - battery -> options -> Prevent automatic sleeping ...

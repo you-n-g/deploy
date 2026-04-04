@@ -282,11 +282,11 @@ function geminir() {
 # codex with rename
 function codexr() {
     # _with_tmux_rename codex codex --dangerously-bypass-approvals-and-sandbox "$@"
-    AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) XYZ_API_KEY=$(get-cred xyz_key gpt.gpg) _with_tmux_rename codex "$MYPROXY_CODEX" codex "$@"
+    NODE_TLS_REJECT_UNAUTHORIZED=0 AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) XYZ_API_KEY=$(get-cred xyz_key gpt.gpg) _with_tmux_rename codex "$MYPROXY_CODEX" codex "$@"
 }
 
 function codexyz() {
-    AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) XYZ_API_KEY=$(get-cred xyz_key gpt.gpg) _with_tmux_rename codex "$MYPROXY_CODEX" codex -c 'model_provider="xyz"' "$@"
+    NODE_TLS_REJECT_UNAUTHORIZED=0 AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) XYZ_API_KEY=$(get-cred xyz_key gpt.gpg) _with_tmux_rename codex "$MYPROXY_CODEX" codex -c 'model_provider="xyz"' "$@"
 }
 
 function clauder() {

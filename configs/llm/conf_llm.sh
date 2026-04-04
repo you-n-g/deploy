@@ -19,8 +19,10 @@ if [ ! -d "$OBSIDIAN_SKILLS_DIR" ]; then
     git clone --depth 1 https://github.com/kepano/obsidian-skills "$OBSIDIAN_SKILLS_DIR"
 else
     echo "Updating external skills from kepano/obsidian-skills..."
-    (cd "$OBSIDIAN_SKILLS_DIR" && git pull)
+    (cd "$OBSIDIAN_SKILLS_DIR" && git pull --ff-only)
 fi
+
+bash "$SCRIPT_DIR/install_rednote.sh"
 
 npm install -g defuddle-cli
 
@@ -37,6 +39,11 @@ link_skill() {
 
 # Custom skills
 for skill in "$CUSTOM_SKILLS_DIR"/*/; do
+    [ -d "$skill" ] && link_skill "$skill"
+done
+
+# External repos with a root-level SKILL.md
+for skill in "$EXTERNAL_REPOS_DIR"/*; do
     [ -d "$skill" ] && link_skill "$skill"
 done
 
