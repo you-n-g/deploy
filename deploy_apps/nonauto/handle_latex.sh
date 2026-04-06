@@ -28,6 +28,14 @@ function intall_zathura ()
   sudo apt-get install -y zathura zathura-pdf-poppler
 }
 
+function install_latexmk_mac() {
+  # Install MacTeX (full distribution, includes latexmk, xelatex, lualatex, ctex, fonts, etc.)
+  # latexmk is already bundled — no need to install it separately via tlmgr
+  brew install --cask mactex-no-gui
+  # Reload PATH so TeX binaries (latexmk, xelatex, etc.) are available immediately
+  eval "$(/usr/libexec/path_helper)"
+}
+
 function install_latexmk() {
   # NOTE: This is the preferred solution(recommanded by offical repo).
   # this support continuous compilation

@@ -73,6 +73,18 @@ EOF
     # antigen bundle zsh-users/zsh-syntax-highlighting
     antigen apply
 
+    OMZ_GIT_PLUGIN_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/oh-my-zsh/plugins/git"
+    OMZ_GIT_PLUGIN_FILE="$OMZ_GIT_PLUGIN_DIR/git.plugin.zsh"
+    OMZ_GIT_PLUGIN_URL="https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/plugins/git/git.plugin.zsh"
+    # Reuse oh-my-zsh's git aliases/functions without depending on the full framework.
+    if [ ! -f "$OMZ_GIT_PLUGIN_FILE" ]; then
+        mkdir -p "$OMZ_GIT_PLUGIN_DIR"
+        curl -fsSL "$OMZ_GIT_PLUGIN_URL" -o "$OMZ_GIT_PLUGIN_FILE.tmp" && mv "$OMZ_GIT_PLUGIN_FILE.tmp" "$OMZ_GIT_PLUGIN_FILE"
+    fi
+    if [ -f "$OMZ_GIT_PLUGIN_FILE" ]; then
+        source "$OMZ_GIT_PLUGIN_FILE"
+    fi
+
     # 后面遇到问题是不是用 zplug可以替代
 
     # DEBUG:
