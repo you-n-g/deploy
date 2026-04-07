@@ -180,6 +180,47 @@ function M.open_file_in_largest_non_terminal_win(force)
   end
 end
 
+-- Normal mode gf: open file under cursor with optional line number extraction
+function M.open_file_with_line_in_normal()
+  local file = vim.fn.expand("<cfile>")
+  if file == "" then
+    vim.cmd("normal! gf")
+    return
+  end
+
+  local current_line = vim.api.nvim_get_current_line()
+  local line = nil
+
+  -- Extract line number after the file path (e.g. "foo/bar.py:42" or "foo/bar.py line 42")
+  local escaped_file = file:gsub("([^%w])", "%%%1")
+  local pattern = escaped_file .. "[^%d]*(%d+)"
+  local match_start, match_end = string.find(current_line, pattern)
+  if match_start and match_end then
+    line = tonumber(string.match(current_line, pattern))
+    -- Briefly highlight the matched region
+    local ns_id = vim.api.nvim_create_namespace("")
+    local cur_buf = vim.api.nvim_get_current_buf()
+    vim.api.nvim_buf_add_highlight(cur_buf, ns_id, "Search", vim.fn.line(".") - 1, match_start - 1, match_end)
+    vim.defer_fn(function()
+      vim.api.nvim_buf_clear_namespace(cur_buf, ns_id, 0, -1)
+    end, 500)
+  end
+
+  -- Open in current window (normal gf behaviour), then jump to line
+  local ok = pcall(vim.cmd, "edit " .. vim.fn.fnameescape(file))
+  if not ok then
+    vim.cmd("normal! gf")
+    return
+  end
+  if line then
+    vim.api.nvim_win_set_cursor(0, { line, 0 })
+  end
+end
+
+vim.keymap.set("n", "gf", function()
+  require("extra_fea.term_utils").open_file_with_line_in_normal()
+end, { noremap = true, silent = true, desc = "Go to file (with line)" })
+
 -- vim.api.nvim_set_keymap('n', 'gf',
 --   '<cmd>lua require"extra_fea.term_utils".open_file_in_last_non_terminal_window()<CR>',
 --   { noremap = true, silent = true })
