@@ -20,19 +20,12 @@ while getopts ":s" opt; do
 	esac
 done
 # Ref: https://wiki.bash-hackers.org/howto/getopts_tutorial
+if which apt-get; then
 	bash Debian-based.sh
 fi
 
 if which yum; then
 	bash RPM-based.sh
-fi
-
-if which brew; then
-	bash MAC-based.sh
-fi
-
-if which jumbo; then
-	bash jumbo-based.sh
 fi
 
 ./deploy_apps/config_git.sh

@@ -305,15 +305,22 @@ function codexyz() {
     NODE_TLS_REJECT_UNAUTHORIZED=0 AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) XYZ_API_KEY=$(get-cred xyz_key gpt.gpg) _with_tmux_rename codex-xyz "$MYPROXY_CODEX" codex -c 'model_provider="xyz"' "$@"
 }
 
+_claude_env() {
+    ANTHROPIC_BASE_URL='https://xyzlapi.boyuerichdata.com' \
+    ANTHROPIC_AUTH_TOKEN=$(get-cred xyz_key gpt.gpg) \
+    CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1 \
+    "$@"
+}
+
 function clauder() {
     # IS_SANDBOX=1  claude --dangerously-skip-permissions
     # 这个进去后，需要shfit+tab切换才行
-    _with_tmux_rename claude "$MYPROXY_CLAUDE" claude --enable-auto-mode "$@"
+    _claude_env _with_tmux_rename claude "$MYPROXY_CLAUDE" claude --enable-auto-mode "$@"
 }
 
 function claudeyolo() {
     # very aggressive mode
-    IS_SANDBOX=1 _with_tmux_rename claude "$MYPROXY_CLAUDE" claude --dangerously-skip-permissions "$@"
+    IS_SANDBOX=1 _claude_env _with_tmux_rename claude "$MYPROXY_CLAUDE" claude --dangerously-skip-permissions "$@"
 }
 
 # for fzf
@@ -537,11 +544,6 @@ export AIDER_GITIGNORE=False
 # export LC_ALL=en_US.UTF-8
 # export LANGUAGE=en_US:en
 # export TERM=xterm-256color
-
-# Failed to use due to quota limitations
-# export ANTHROPIC_BASE_URL="http://10.100.193.46:4004"
-# export ANTHROPIC_AUTH_TOKEN="sk-1234"
-# export ANTHROPIC_DEFAULT_SONNET_MODEL="openrouter/anthropic/claude-sonnet-4.5"
 
 # # Outlines: 准备删掉的
 

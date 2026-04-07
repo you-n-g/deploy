@@ -36,12 +36,13 @@ else
 fi
 
 mkdir -p "$HOME/.config/pet"
-rm -f "$HOME/.config/pet/snippet.toml"
-ln -snf "$HOME/deploy/configs/pet/snippet.toml" "$HOME/.config/pet/snippet.toml"
 
+# 先让 pet 以默认路径初始化（避免 first-run 写入时通过 symlink 清空真实文件）
+rm -f "$HOME/.config/pet/snippet.toml"
 if command -v pet >/dev/null 2>&1; then
-	pet list || true
+	pet list > /dev/null 2>&1 || true
 fi
 
-# pet 可能会清空 snippet.toml，这里尽量还原
-cd "$HOME/deploy/configs/pet" && git checkout snippet.toml
+# pet 初始化完成后，再替换为 symlink
+rm -f "$HOME/.config/pet/snippet.toml"
+ln -snf "$HOME/deploy/configs/pet/snippet.toml" "$HOME/.config/pet/snippet.toml"

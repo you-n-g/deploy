@@ -28,7 +28,7 @@ install_user_deps() {
   # So Python version confliction problem is solved
   # NOTE: we should 
   pip install uv
-  uv tool install ranger
+  uv tool install ranger-fm
   # NOTE: ranger hardcode to disable preview for root users, so we need to patch it
   # # Fix: ranger disables preview for root users by default, patch it to allow previews
   # sed -i "s/        if fm.username == 'root':/        if False:  # root preview enabled/" \

@@ -84,13 +84,23 @@ install_or_update_neovim_app() {
   # generate a redable unique string based on datetime
   # NAME="nvim-latest-$(date +%Y%m%d%H%M%S)"
   NAME="nvim-stable-$(date +%Y%m%d%H%M%S)"
-  curl -L -o ~/bin/$NAME https://github.com/neovim/neovim/releases/download/stable/nvim-linux-x86_64.appimage
-  chmod a+x ~/bin/$NAME
+  APPIMAGE=~/bin/$NAME.appimage
+  curl -L -o "$APPIMAGE" https://github.com/neovim/neovim/releases/download/stable/nvim-linux-x86_64.appimage
+  chmod a+x "$APPIMAGE"
+
+  # Extract AppImage to support environments without FUSE (e.g. containers)
+  # Some environments like docker does not support FUSE
+  EXTRACT_DIR=~/bin/${NAME}-extracted
+  cd ~/bin
+  "$APPIMAGE" --appimage-extract
+  mv squashfs-root "$EXTRACT_DIR"
+  rm "$APPIMAGE"
+
   for target in vim nvim; do
     if [ -e ~/bin/$target ] ; then
       unlink ~/bin/$target
     fi
-    ln -s ~/bin/$NAME ~/bin/$target
+    ln -s "$EXTRACT_DIR/usr/bin/nvim" ~/bin/$target
   done
 }
 
