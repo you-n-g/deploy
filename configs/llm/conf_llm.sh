@@ -23,6 +23,7 @@ else
 fi
 
 bash "$SCRIPT_DIR/install_rednote.sh"
+bash "$SCRIPT_DIR/install_excalidraw_diagram_skill.sh"
 
 npm install -g defuddle-cli
 
@@ -86,6 +87,8 @@ if [ "$(uname)" != "Darwin" ]; then
     for s in "$MERGED_SKILLS_DIR"/obsidian-*; do
         [ -L "$s" ] && disable_skill "$(basename "$s")"
     done
+
+    disable_skill "excalidraw-diagram-skill"
 fi
 
 if ! _can_run_containers; then

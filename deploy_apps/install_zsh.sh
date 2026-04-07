@@ -5,6 +5,22 @@ DIR_PATH="$(cd "$(dirname "$0")" && pwd)"
 RC_FILE="$HOME/.zshrc"
 ANTIGEN_FILE="$HOME/.antigen.zsh"
 
+ensure_login_shell_is_zsh() {
+  local zsh_path
+  zsh_path="$(which zsh 2>/dev/null || true)"
+  [ -n "${zsh_path}" ] || return 0
+
+  # Already configured.
+  [ "${SHELL:-}" = "${zsh_path}" ] && return 0
+
+  echo "Setting login shell to zsh: ${zsh_path}"
+  if command -v sudo >/dev/null 2>&1; then
+    sudo chsh -s "${zsh_path}" "${USER:-$(id -un)}"
+  else
+    chsh -s "${zsh_path}"
+  fi
+}
+
 # Ensure zsh rc exists, then source shared shell config from it.
 touch "$RC_FILE"
 cd "$DIR_PATH"
@@ -26,5 +42,7 @@ fi
 # Personal tools.
 mkdir -p "$HOME/.dotfiles"
 ln -snf "$HOME/deploy/configs/shell/notifiers.yaml" "$HOME/.dotfiles/.notifiers.yaml"
+
+ensure_login_shell_is_zsh
 
 echo "install_zsh.sh completed."

@@ -294,15 +294,20 @@ function geminir() {
 # codex with rename
 function codexr() {
     # _with_tmux_rename codex codex --dangerously-bypass-approvals-and-sandbox "$@"
+    if [[ "${PWD:l}" != *obsidian* ]]; then
+        codexyz "$@"
+        return
+    fi
     NODE_TLS_REJECT_UNAUTHORIZED=0 AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) XYZ_API_KEY=$(get-cred xyz_key gpt.gpg) _with_tmux_rename codex "$MYPROXY_CODEX" codex "$@"
 }
 
 function codexyz() {
-    NODE_TLS_REJECT_UNAUTHORIZED=0 AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) XYZ_API_KEY=$(get-cred xyz_key gpt.gpg) _with_tmux_rename codex "$MYPROXY_CODEX" codex -c 'model_provider="xyz"' "$@"
+    NODE_TLS_REJECT_UNAUTHORIZED=0 AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) XYZ_API_KEY=$(get-cred xyz_key gpt.gpg) _with_tmux_rename codex-xyz "$MYPROXY_CODEX" codex -c 'model_provider="xyz"' "$@"
 }
 
 function clauder() {
     # IS_SANDBOX=1  claude --dangerously-skip-permissions
+    # 这个进去后，需要shfit+tab切换才行
     _with_tmux_rename claude "$MYPROXY_CLAUDE" claude --enable-auto-mode "$@"
 }
 
