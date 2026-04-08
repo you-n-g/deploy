@@ -1,7 +1,7 @@
 #!/bin/bash
 # Shared helpers for AI window detection
 
-AI_PROC_PAT='(^|\/)(claude|gemini|codex)$'
+AI_PROC_PAT='(^|/)(claude|gemini|codex)$'
 
 # Populate once before calling _has_ai_proc in a loop.
 # Usage: _ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null)

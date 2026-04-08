@@ -38,6 +38,7 @@ if ! grep "^export PS1" ~/.bashrc; then
 	echo 'export PS1="[\\D{%T}]"$PS1' >>~/.bashrc
 fi
 
+./deploy_apps/install_fzf.sh # NOTE: fzf should comebe before source rc config file in `~/.zshrc`.
 RC_FILE=~/.bashrc
 . $REPO_PATH/helper_scripts/config_rc.sh
 
@@ -58,7 +59,6 @@ chmod a+x ./deploy_apps/*
 # - FIXME: rcfile does not appear after conda on 2024-10
 ./deploy_apps/install_homebrew.sh
 ./deploy_apps/install_tmux.sh # 现在打算放在miniconda之后了 # 确保按安装新代码
-./deploy_apps/install_fzf.sh
 ./deploy_apps/install_pet.sh
 ./keys/deploy.sh
 ./tools.py/install.sh
@@ -69,10 +69,6 @@ curl -L https://iterm2.com/shell_integration/install_shell_integration_and_utili
 
 # This is very important for tmux-pet. otherwise, tmux-pet with variables will not work
 sudo ./deploy_apps/set_code.sh
-
-# For setting up iterm2 with imgcat
-curl -L https://iterm2.com/utilities/imgcat -o ~/bin/imgcat
-chmod +x ~/bin/imgcat
 
 sudo rm /etc/needrestart/conf.d/99mychanges.conf
 
