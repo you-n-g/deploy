@@ -1,4 +1,4 @@
-#!/usr/bin/env -S uv run --no-project --with firecrawl-py --with typer --with rdagent --with pypdf --with xytb[crawl]>=1.3.0 python
+#!/usr/bin/env -S uv run --no-project --with firecrawl-py==4.22.1 --with typer --with rdagent --with pypdf --with xytb[crawl]>=1.3.0 python
 
 from typing import Callable
 import typer
@@ -51,8 +51,8 @@ from firecrawl import FirecrawlApp
 
 def firecrawl_get(url: str):
     firecrawl_app = FirecrawlApp(api_key="fc-YOUR_API_KEY", api_url="http://localhost:3002")
-    scrape_result = firecrawl_app.scrape_url(url, params={'formats': ['markdown']})
-    content = scrape_result["markdown"]
+    scrape_result = firecrawl_app.scrape(url, formats=["markdown"])
+    content = scrape_result.markdown
     return content
 
 

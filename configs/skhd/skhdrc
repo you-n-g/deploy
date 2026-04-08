@@ -36,6 +36,16 @@ fn - 2 [
     * : open -a "iTerm"            # 否则启动/切到 iTerm2
 ]
 
+# 小键盘 0 (0x52) / . (0x41)
+# NOTE: skhd 只能“触发动作/发送具体按键”，做不到把一个键改成“纯修饰键(按住=Fn+Cmd)”。
+# 如果你是想按一下小键盘 0 来发送某个具体组合键，把下面这一行里的 <key> 换成你要的按键即可。
+# 0x52 : skhd -k "fn + cmd - <key>"
+# 0x41 : skhd -k "fn + cmd"
+
+# 小键盘 . (0x41) -> Ctrl+B 再 Ctrl+G（适合 tmux 这类需要按键序列的场景）
+# 0x41 : skhd -k "ctrl - b"; skhd -k "ctrl - g"
+0x52 : skhd -k "ctrl - b"; skhd -k "ctrl - g"
+
 # 定义 fn + 主键盘 4 的行为（iTerm2）
 fn - 4 [
     "iTerm2" : skhd -k "cmd - h"    # 如果 iTerm2 已在前台，则隐藏
@@ -46,7 +56,7 @@ fn - 4 [
 # f15 : ~/deploy/configs/skhd/feishu-drumstick.sh
 
 # 定义小键盘 Enter (0x4c) 的行为（切到 iTerm2 -> 发送 Enter -> 切回原程序）
-0x4C : ~/deploy/configs/skhd/numpad-enter.sh
+# 0x4C : ~/deploy/configs/skhd/numpad-enter.sh
 
 # F16-F19: 切到 iTerm2 对应标签页（⌥⌘1~4），发送 Enter，再切回原程序
 f16 : ~/deploy/configs/skhd/numpad-enter.sh 1
