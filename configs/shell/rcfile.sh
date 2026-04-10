@@ -302,13 +302,21 @@ function codexr() {
     fi
 }
 
+_codex_auto_flag() {
+    if [[ "$(uname)" == "Linux" ]]; then
+        echo "--dangerously-bypass-approvals-and-sandbox"
+    else
+        echo "--full-auto"
+    fi
+}
+
 function codexa() {
     # run my azure codex
-    NODE_TLS_REJECT_UNAUTHORIZED=0 AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) XYZ_API_KEY=$(get-cred xyz_key gpt.gpg) _with_tmux_rename codex "$MYPROXY_CODEX" codex --full-auto "$@"
+    NODE_TLS_REJECT_UNAUTHORIZED=0 AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) XYZ_API_KEY=$(get-cred xyz_key gpt.gpg) _with_tmux_rename codex "$MYPROXY_CODEX" codex $(_codex_auto_flag) "$@"
 }
 
 function codexyz() {
-    NODE_TLS_REJECT_UNAUTHORIZED=0 AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) XYZ_API_KEY=$(get-cred xyz_key gpt.gpg) _with_tmux_rename codex-xyz "$MYPROXY_CODEX" codex --full-auto -c 'model_provider="xyz"' "$@"
+    NODE_TLS_REJECT_UNAUTHORIZED=0 AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) XYZ_API_KEY=$(get-cred xyz_key gpt.gpg) _with_tmux_rename codex-xyz "$MYPROXY_CODEX" codex $(_codex_auto_flag) -c 'model_provider="xyz"' "$@"
 }
 
 _claude_env() {
