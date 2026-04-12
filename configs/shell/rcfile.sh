@@ -185,6 +185,21 @@ EOF
     zstyle ':completion:*:*:-command-:*:*' matcher-list 'm:{a-z}={A-Z}' 'r:|[._-_-]=* r:|=*' 'l:|=* r:|=*'
 
     source <(fzf --zsh)
+
+    # Auto-refresh DISPLAY from tmux session env on each prompt.
+    # When SSH reconnects, tmux updates its session-level DISPLAY (via
+    # update-environment) on attach, but existing shells keep the stale value.
+    # This hook keeps every pane in sync so xclip/X11 tools keep working.
+    if [ -n "$TMUX" ]; then
+        function _refresh_tmux_display() {
+            local new_display
+            new_display=$(tmux show-environment DISPLAY 2>/dev/null | sed -n 's/^DISPLAY=//p')
+            if [ -n "$new_display" ] && [ "$new_display" != "$DISPLAY" ]; then
+                export DISPLAY="$new_display"
+            fi
+        }
+        precmd_functions+=(_refresh_tmux_display)
+    fi
 fi
 
 

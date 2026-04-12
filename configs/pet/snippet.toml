@@ -447,13 +447,13 @@
   Description = "from sys to tmux clipboard"
   Output = ""
   Tag = []
-  command = "xsel --clipboard --output | tmux load-buffer -w -"
+  command = "eval export $(tmux show-env DISPLAY 2>/dev/null); xsel --clipboard --output | tmux load-buffer -w -"
 
 [[Snippets]]
   Description = "from tmux to sys clipboard"
   Output = ""
   Tag = []
-  command = "tmux save-buffer - | xsel --clipboard --input"
+  command = "eval export $(tmux show-env DISPLAY 2>/dev/null); tmux save-buffer - | xsel --clipboard --input"
 
 [[Snippets]]
   Description = "git log for orphan commits"
@@ -690,13 +690,13 @@
   command = "/mnt/c/Users/xiaoyang/OneDrive/APP/marktext-x64-win/MarkText.exe chat.md"
 
 [[Snippets]]
-  Description = "test if we cross the GFW"
+  Description = "test/check if we cross the GFW"
   Output = ""
   Tag = []
   command = "curl -I https://www.google.com"
 
 [[Snippets]]
-  Description = "check X forward's clipboard"
+  Description = "test/check X forward's clipboard"
   Output = ""
   Tag = []
-  command = "xclip -out -selection clipboard"
+  command = "eval export $(tmux show-env DISPLAY 2>/dev/null); xclip -out -selection clipboard"

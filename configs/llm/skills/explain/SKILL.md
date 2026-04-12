@@ -1,11 +1,12 @@
 ---
 name: explain
 description: >
-  Explain a codebase in two modes: `framework` produces a high-level architecture
+  Explain a codebase in three modes: `framework` produces a high-level architecture
   walkthrough saved to `codebase-walkthrough.md`; `impl <path>` explains a specific
-  implementation saved to `codebase-impl-explain.md`.
+  implementation saved to `codebase-impl-explain.md`; `run <identifier>` explains
+  a specific execution run by tracing code + logs, saved to `codebase-run-explain.md`.
 metadata:
-  short-description: Codebase architecture & implementation explainer
+  short-description: Codebase architecture, implementation & run explainer
 ---
 
 # `explain` — Codebase Explainer
@@ -15,7 +16,11 @@ metadata:
 ```
 /explain framework
 /explain impl <path>
+/explain run <identifier>
 ```
+
+`<identifier>` can be a run ID, log directory, timestamp, workspace name, or any hint
+that helps locate the specific run to explain. If omitted, explain the most recent run.
 
 ---
 
@@ -42,8 +47,6 @@ Produce a full architecture walkthrough and write it to **`codebase-walkthrough.
 
 ## Mode: `impl <path>`
 
-Explain the specific implementation at `<path>` and write it to **`codebase-impl-explain.md`**.
-
 ### Steps
 
 1. **内部结构** — 说明该实现内部主要分哪几个大块（类、函数组、文件）。
@@ -51,6 +54,48 @@ Explain the specific implementation at `<path>` and write it to **`codebase-impl
 2. **技巧与注意事项** — 对于实现的核心功能，提炼出关键技巧和注意事项，使得初级程序员也能实现相同功能。排列时**把大多数人不知道的放在前面**。
 
 3. **运行环境** — 如果涉及特殊环境（uv/conda/docker/虚拟机），说明在哪个环境哪台机器上运行。
+
+---
+
+## Mode: `run <identifier>`
+
+Explain how a specific execution run actually worked, tracing code paths against real
+log output. Write to **`codebase-run-explain.md`**.
+
+### Locating the run
+
+1. Use `<identifier>` (run ID, log dir, timestamp, workspace name) to find the run's
+   log files and output artifacts. Search log directories, workspace dirs, etc.
+2. If `<identifier>` is omitted, find the most recent run (latest log dir by timestamp).
+
+### Steps
+
+1. **Architecture Overview** — Draw the execution flow as an ASCII diagram showing the
+   entry point, each stage/step, and which sub-processes or agents are spawned. Include
+   full paths to the source files that define each stage.
+
+2. **逐步追踪** — For each stage of the run, in execution order:
+   - **代码入口**: which code file + line triggers this stage (full path:line).
+   - **实际命令**: the shell command or function call that was executed.
+   - **Log 摘要**: read the stage's log file; report:
+     - First few lines (startup, config, banner).
+     - Key events (what the agent/process actually did, decisions made).
+     - Last few lines (final status, exit code, token usage if applicable).
+     - Error messages if any.
+   - **产出文件**: list the files this stage created or modified (full paths).
+
+3. **Timeline & Metrics** — Summarize wall-clock timing per stage and overall, plus any
+   resource metrics found in logs (token counts, GPU usage, data sizes, etc.) as a table.
+
+4. **Data Flow** — ASCII diagram showing how data/artifacts flow between stages: what
+   each stage reads as input and what it produces as output.
+
+5. **结果判定** — Explain the final outcome: success/failure classification, why, and
+   what the key evidence was. If the run failed, pinpoint where and likely why.
+
+6. **Key File Index** — A final section listing every referenced file path with line
+   number, grouped by category (code, logs, outputs, config). This section is the
+   primary navigation aid for Vim users.
 
 ---
 

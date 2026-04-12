@@ -5,15 +5,19 @@ if not (has_display and has_xclip) then
   return
 end
 
+-- Refresh DISPLAY from tmux session env before each xclip call,
+-- so long-running nvim instances survive SSH reconnects.
+local refresh = "eval export $(tmux show-env DISPLAY 2>/dev/null);"
+
 vim.g.clipboard = {
   name = "xclip-x11-forward",
   copy = {
-    ["+"] = "xclip -quiet -in -selection clipboard",
-    ["*"] = "xclip -quiet -in -selection primary",
+    ["+"] = { "bash", "-c", refresh .. " xclip -quiet -in -selection clipboard" },
+    ["*"] = { "bash", "-c", refresh .. " xclip -quiet -in -selection primary" },
   },
   paste = {
-    ["+"] = "xclip -out -selection clipboard",
-    ["*"] = "xclip -out -selection primary",
+    ["+"] = { "bash", "-c", refresh .. " xclip -out -selection clipboard" },
+    ["*"] = { "bash", "-c", refresh .. " xclip -out -selection primary" },
   },
   cache_enabled = 0,
 }
