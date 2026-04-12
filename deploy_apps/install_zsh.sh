@@ -3,6 +3,7 @@ set -euo pipefail
 
 DIR_PATH="$(cd "$(dirname "$0")" && pwd)"
 RC_FILE="$HOME/.zshrc"
+ZSHENV_FILE="$HOME/.zshenv"
 ANTIGEN_FILE="$HOME/.antigen.zsh"
 
 ensure_login_shell_is_zsh() {
@@ -23,7 +24,9 @@ ensure_login_shell_is_zsh() {
 
 # Ensure zsh rc exists, then source shared shell config from it.
 touch "$RC_FILE"
+touch "$ZSHENV_FILE"
 cd "$DIR_PATH"
+. ../helper_scripts/config_zshenv.sh
 . ../helper_scripts/config_rc.sh
 
 # TODO: use zinit in the future.

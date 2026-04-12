@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+"$HOME/deploy/configs/tmux/ai/new_or_create_codex_qa_window.sh" "${1:-code-learn}"

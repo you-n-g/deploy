@@ -32,6 +32,9 @@ ln -sfn ~/deploy/configs/ranger/rc.conf ~/.config/ranger/rc.conf
 
 # Common CLI tools (use brew instead of Linux-only install scripts).
 brew install ripgrep fzf fd tmux lazygit
+brew install iproute2mac # 
+
+# bash ./deploy_apps/install_macos_ssh.sh
 
 brew install gnupg # it takes very long time
 mkdir -p ~/.gnupg

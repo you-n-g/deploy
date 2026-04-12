@@ -195,12 +195,12 @@ fi
 
 # # Outlines: Common config
 
+source "$HOME/deploy/configs/shell/env.sh"
+
 alias gitlog="git log --all --oneline --graph --decorate"
 alias gitlogs="git log --all --pretty=short --abbrev-commit --graph --decorate"
 alias mux=tmuxinator
 alias mx=tmux
-export PATH="$HOME/deploy/helper_scripts/bin/:$HOME/bin/:$HOME/apps/nodejs/bin/:$HOME/.luarocks/bin/:$PATH"
-export PATH="$PATH:$HOME/.local/bin"  # this is for pipx
 export MANPATH="$HOME/.local/share/man/:$MANPATH"
 export EDITOR=`which vim`
 # sudo -E will keep the environment when run sudo. Many env variables like http_proxy need it.
@@ -310,13 +310,40 @@ _codex_auto_flag() {
     fi
 }
 
+_codex_env() {
+    NODE_TLS_REJECT_UNAUTHORIZED=0 \
+    AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) \
+    XYZ_API_KEY=$(get-cred xyz_key gpt.gpg) \
+    "$@"
+}
+
+_codex_run() {
+    local title="$1"
+    shift
+    local auto_flag
+    auto_flag=$(_codex_auto_flag)
+    _codex_env _with_tmux_rename "$title" "$MYPROXY_CODEX" codex "$auto_flag" "$@"
+}
+
 function codexa() {
     # run my azure codex
-    NODE_TLS_REJECT_UNAUTHORIZED=0 AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) XYZ_API_KEY=$(get-cred xyz_key gpt.gpg) _with_tmux_rename codex "$MYPROXY_CODEX" codex $(_codex_auto_flag) "$@"
+    _codex_run codex "$@"
 }
 
 function codexyz() {
-    NODE_TLS_REJECT_UNAUTHORIZED=0 AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) XYZ_API_KEY=$(get-cred xyz_key gpt.gpg) _with_tmux_rename codex-xyz "$MYPROXY_CODEX" codex $(_codex_auto_flag) -c 'model_provider="xyz"' "$@"
+    _codex_run codex-xyz -c 'model_provider="xyz"' "$@"
+}
+
+function codextmp() {
+    # run my azure codex
+    _codex_run codex-tmp "$@"
+}
+
+function c() {
+    "$HOME/deploy/helper_scripts/bin/c" "$@"
+}
+function v() {
+    "$HOME/deploy/helper_scripts/bin/v" "$@"
 }
 
 _claude_env() {
