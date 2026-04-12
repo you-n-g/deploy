@@ -23,8 +23,6 @@ ensure_login_shell_is_zsh() {
 }
 
 # Ensure zsh rc exists, then source shared shell config from it.
-touch "$RC_FILE"
-touch "$ZSHENV_FILE"
 cd "$DIR_PATH"
 . ../helper_scripts/config_zshenv.sh
 . ../helper_scripts/config_rc.sh
