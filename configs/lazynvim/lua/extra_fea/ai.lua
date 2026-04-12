@@ -28,13 +28,33 @@ local function get_current_tmux_target_path()
   return target ~= "" and target or nil
 end
 
-local function get_ai_window(session)
-  if not session then return nil end
+local function get_ai_window(session, callback)
+  if not session then return callback(nil) end
   local script = vim.fn.expand("~/deploy/configs/tmux/ai/get_ai_window.sh")
-  local window = vim.fn.system(script .. " " .. session)
-  if vim.v.shell_error ~= 0 then return nil end
-  window = trim(window)
-  return window ~= "" and window or nil
+  local output = vim.fn.system(script .. " -a " .. session)
+  if vim.v.shell_error ~= 0 then return callback(nil) end
+
+  local windows = {}
+  for line in output:gmatch("[^\n]+") do
+    local w = trim(line)
+    if w ~= "" then table.insert(windows, w) end
+  end
+
+  if #windows == 0 then
+    callback(nil)
+  elseif #windows == 1 then
+    -- "code:3 (claude)" → extract window index "3"
+    local idx = windows[1]:match("^[^:]+:(%d+)")
+    callback(idx)
+  else
+    vim.schedule(function()
+      vim.ui.select(windows, { prompt = "Select AI window:" }, function(choice)
+        if not choice then return end
+        local idx = choice:match("^[^:]+:(%d+)")
+        callback(idx)
+      end)
+    end)
+  end
 end
 
 local function get_relative_path()
@@ -82,32 +102,28 @@ local function get_current_or_visual_content()
   return content
 end
 
-local function get_target_tmux()
+local function get_target_tmux(callback)
   local current_session = get_current_tmux_session()
-  local target_session = nil
-  local target_window = nil
 
-  local ai_window = get_ai_window(current_session)
-  if current_session and ai_window then
-    target_session = current_session
-    target_window = ai_window
-  else
-    local input = vim.fn.input("Target tmux session (session.window): ")
-    if input == "" then
-      print(" Canceled")
-      return nil, nil
-    end
-
-    -- Support session.window format
-    local s, w = string.match(input, "([^%.]+)%.?(.*)")
-    if s then
-      target_session = s
-      target_window = w
+  get_ai_window(current_session, function(ai_window)
+    if current_session and ai_window then
+      callback(current_session, ai_window)
     else
-      target_session = input
+      local input = vim.fn.input("Target tmux session (session.window): ")
+      if input == "" then
+        print(" Canceled")
+        return
+      end
+
+      -- Support session.window format
+      local s, w = string.match(input, "([^%.]+)%.?(.*)")
+      if s then
+        callback(s, w)
+      else
+        callback(input, nil)
+      end
     end
-  end
-  return target_session, target_window
+  end)
 end
 
 
@@ -122,10 +138,9 @@ end
 
 function M.send_path_to_ai()
   local relative_path = get_relative_path()
-  local target_session, target_window = get_target_tmux()
-  if target_session then
+  get_target_tmux(function(target_session, target_window)
     tmux.send_to_tmux("@" .. relative_path, target_session, target_window)
-  end
+  end)
 end
 
 function M.send_current_tmux_target_to_ai()
@@ -135,10 +150,9 @@ function M.send_current_tmux_target_to_ai()
     return
   end
 
-  local target_session, target_window = get_target_tmux()
-  if target_session then
+  get_target_tmux(function(target_session, target_window)
     tmux.send_to_tmux(string.format("请capture我的Tmux的这个pane[%s]的内容", tmux_target), target_session, target_window)
-  end
+  end)
 end
 
 function M.send_to_ai(raw, post_action)
@@ -150,11 +164,10 @@ function M.send_to_ai(raw, post_action)
     local content = get_current_or_visual_content()
     final_content = raw and content or format_ai_prompt(content)
   end
-  local target_session, target_window = get_target_tmux()
 
-  if target_session then
+  get_target_tmux(function(target_session, target_window)
     tmux.send_to_tmux(final_content, target_session, target_window, nil, post_action)
-  end
+  end)
 end
 
 function M.send_to_last_window(raw, post_action)
@@ -172,10 +185,9 @@ function M.send_to_last_window(raw, post_action)
 end
 
 function M.send_literal_to_ai(content, post_action)
-  local target_session, target_window = get_target_tmux()
-  if target_session then
+  get_target_tmux(function(target_session, target_window)
     tmux.send_to_tmux(content, target_session, target_window, nil, post_action)
-  end
+  end)
 end
 
 

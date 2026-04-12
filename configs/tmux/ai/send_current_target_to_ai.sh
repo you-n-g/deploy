@@ -24,5 +24,3 @@ tmux select-window -t "$AI_WINDOW_ID"
 if [[ -n "$AI_PANE_ID" ]]; then
     tmux select-pane -t "$AI_PANE_ID"
 fi
-
-# tmux display-message "Sent tmux target to AI: $CURRENT_TARGET"
