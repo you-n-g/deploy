@@ -60,7 +60,7 @@
   "rainbow_csv.nvim": { "branch": "main", "commit": "26de78d8324f7ac6a3e478319d1eb1f17123eb5b" },
   "render-markdown.nvim": { "branch": "main", "commit": "e3c18ddd27a853f85a6f513a864cf4f2982b9f26" },
   "showkeys": { "branch": "main", "commit": "cb0a50296f11f1e585acffba8c253b9e8afc1f84" },
-  "simplegpt.nvim": { "branch": "main", "commit": "68cdf645283200ee8cdcffd9b7dd170b5ae51aeb" },
+  "simplegpt.nvim": { "branch": "main", "commit": "fe062eb61f7be6bacd8083fbcd864f5eb588f709" },
   "snacks.nvim": { "branch": "main", "commit": "ad9ede6a9cddf16cedbd31b8932d6dcdee9b716e" },
   "supermaven-nvim": { "branch": "main", "commit": "be9d9c1ad8e7a4250e5ed668e3e7b9147bbf9f36" },
   "symbols-outline.nvim": { "branch": "master", "commit": "564ee65dfc9024bdde73a6621820866987cbb256" },

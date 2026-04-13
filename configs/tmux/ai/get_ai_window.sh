@@ -28,6 +28,11 @@ done
 SESSION=${1:-$(tmux display-message -p '#S' 2>/dev/null)}
 [[ -z "$SESSION" ]] && exit 1
 
+CURRENT_TARGET=""
+if [[ -n "$TMUX" ]]; then
+    CURRENT_TARGET=$(tmux display-message -p '#{session_name}:#{window_index}' 2>/dev/null)
+fi
+
 _ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null)
 
 # Collect unique AI windows (dedup by window_id, sorted by most recent activity)
@@ -74,12 +79,17 @@ LISTFILE=$(mktemp)
 trap "rm -f '$LISTFILE'" EXIT
 for i in "${!WIDS[@]}"; do
     sess_win=$(tmux display-message -t "${WIDS[$i]}" -p '#{session_name}:#{window_index}')
-    echo "${WIDS[$i]} $sess_win ${WNAMES[$i]}" >> "$LISTFILE"
+    if [[ "$sess_win" == "$CURRENT_TARGET" ]]; then
+        current_label=$'\033[1;30;43m current \033[0m '
+    else
+        current_label=""
+    fi
+    echo "${WIDS[$i]} $sess_win ${current_label}${WNAMES[$i]}" >> "$LISTFILE"
 done
 
 if [[ -t 0 ]]; then
     # Interactive: fzf directly
-    SELECTED=$(fzf --reverse \
+    SELECTED=$(fzf --ansi --reverse \
         --header "Select AI window" \
         --preview 'tmux capture-pane -ept {1}' \
         --preview-window 'up:60%' < "$LISTFILE")
@@ -91,7 +101,7 @@ else
 
     tmux display-popup -E -w 80% -h 80% "\
         trap 'tmux wait-for -S \"$CHANNEL\"' EXIT; \
-        fzf --reverse \
+        fzf --ansi --reverse \
             --header 'Select AI window' \
             --preview 'tmux capture-pane -ept {1}' \
             --preview-window 'up:60%' < '$LISTFILE' > '$RESULTFILE'"

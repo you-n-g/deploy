@@ -27,7 +27,8 @@ LIST=$(
             else
                 current_label=""
             fi
-            echo "$wact $sess_win ${current_label}${wname}  [$(date -r "$wact" '+%m-%d %H:%M'), ${_rel}]"
+            _date_str=$(date -d "@$wact" '+%m-%d %H:%M' 2>/dev/null || date -r "$wact" '+%m-%d %H:%M' 2>/dev/null)
+            echo "$wact $sess_win ${current_label}${wname}  [${_date_str}, ${_rel}]"
         fi
     done < <(tmux list-panes -a \
         -F '#{window_activity} #{session_name}:#{window_index} #{window_name} #{pane_pid}' 2>/dev/null |

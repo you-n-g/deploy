@@ -131,7 +131,14 @@ echo "Skills linking complete."
 
 # ── Install agents ────────────────────────────────────────────────────────────
 
+# ── Deploy default .sgpt.md to home directory ────────────────────────────────
+ln -snf "$SCRIPT_DIR/.sgpt.md" "$HOME/.sgpt.md"
+echo "Linked: ~/.sgpt.md -> $SCRIPT_DIR/.sgpt.md"
+
 command -v gemini &>/dev/null || npm install -g @google/gemini-cli
 command -v codex  &>/dev/null || npm install -g @openai/codex
 command -v claude &>/dev/null || curl -fsSL https://claude.ai/install.sh | bash
 ~/deploy/deploy_apps/config_codex.py
+
+# 🙌🏻
+# https://github.com/jarrodwatts/claude-hud
