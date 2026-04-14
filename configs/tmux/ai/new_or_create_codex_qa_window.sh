@@ -5,7 +5,19 @@
 # - If the session does not exist, create it first.
 # - Inside tmux, switch the current client.
 # - Outside tmux, attach to the target session/window.
-# Usage: new_or_create_codex_qa_window.sh [session_name]
+#
+# Usage: new_or_create_codex_qa_window.sh [-q] [session_name]
+# -q: quiet mode — always exit 0 (suppress non-zero exit codes).
+#     Useful when called from tmux run-shell to avoid status-bar flash.
+
+QUIET=false
+while [[ "$1" == -* ]]; do
+    case "$1" in
+        -q) QUIET=true; shift ;;
+        *)  shift ;;
+    esac
+done
+[[ "$QUIET" == true ]] && trap 'exit 0' EXIT
 
 set -euo pipefail
 

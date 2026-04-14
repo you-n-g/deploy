@@ -368,15 +368,20 @@ _claude_env() {
     "$@"
 }
 
-function clauder() {
-    # IS_SANDBOX=1  claude --dangerously-skip-permissions
-    # 这个进去后，需要shfit+tab切换才行
+function claudeauto() {
     _claude_env _with_tmux_rename claude "$MYPROXY_CLAUDE" claude --enable-auto-mode "$@"
 }
 
 function claudeyolo() {
-    # very aggressive mode
     IS_SANDBOX=1 _claude_env _with_tmux_rename claude "$MYPROXY_CLAUDE" claude --dangerously-skip-permissions "$@"
+}
+
+function clauder() {
+    if [[ "$(uname)" == "Linux" ]]; then
+        claudeyolo "$@"
+    else
+        claudeauto "$@"
+    fi
 }
 
 # for fzf

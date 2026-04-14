@@ -188,6 +188,17 @@ function M.open_file_with_line_in_normal()
     return
   end
 
+  -- If the file doesn't exist on disk, fall back to fzf-lua file search
+  if vim.fn.filereadable(file) == 0 then
+    local ok_fzf, fzf = pcall(require, "fzf-lua")
+    if ok_fzf then
+      fzf.files({ query = file })
+    else
+      vim.cmd("normal! gf")
+    end
+    return
+  end
+
   local current_line = vim.api.nvim_get_current_line()
   local line = nil
 

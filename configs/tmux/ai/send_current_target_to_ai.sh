@@ -1,4 +1,16 @@
 #!/bin/bash
+#
+# -q: quiet mode — always exit 0 (suppress non-zero exit codes).
+#     Useful when called from tmux run-shell to avoid status-bar flash.
+
+QUIET=false
+while [[ "$1" == -* ]]; do
+    case "$1" in
+        -q) QUIET=true; shift ;;
+        *)  shift ;;
+    esac
+done
+[[ "$QUIET" == true ]] && trap 'exit 0' EXIT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
