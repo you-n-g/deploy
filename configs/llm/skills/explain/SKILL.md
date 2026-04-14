@@ -1,12 +1,14 @@
 ---
 name: explain
 description: >
-  Explain a codebase in three modes: `framework` produces a high-level architecture
+  Explain a codebase in four modes: `framework` produces a high-level architecture
   walkthrough saved to `codebase-walkthrough.md`; `impl <path>` explains a specific
   implementation saved to `codebase-impl-explain.md`; `run <identifier>` explains
-  a specific execution run by tracing code + logs, saved to `codebase-run-explain.md`.
+  a specific execution run by tracing code + logs, saved to `codebase-run-explain.md`;
+  `debug [<identifier>] [<question>]` diagnoses failures and verifies fixes, saved to
+  `codebase-debug.md`.
 metadata:
-  short-description: Codebase architecture, implementation & run explainer
+  short-description: Codebase architecture, implementation, run & debug explainer
 ---
 
 # `explain` — Codebase Explainer
@@ -17,10 +19,16 @@ metadata:
 /explain framework
 /explain impl <path>
 /explain run <identifier>
+/explain debug [<identifier>] [<question>]
 ```
 
-`<identifier>` can be a run ID, log directory, timestamp, workspace name, or any hint
-that helps locate the specific run to explain. If omitted, explain the most recent run.
+`<identifier>` can be a run ID, log directory, timestamp, workspace name, tmux pane
+(e.g. `MySession:7.0`), or any hint that helps locate the specific run to explain.
+If omitted, explain the most recent run.
+
+`<question>` is an optional free-text focus: a hypothesis to verify ("是不是 Codex
+提前退出了"), a feature to check ("resume 机制是否生效"), or a specific failure to
+investigate ("为什么 exit 23").
 
 ---
 
@@ -54,6 +62,83 @@ Produce a full architecture walkthrough and write it to **`codebase-walkthrough.
 2. **技巧与注意事项** — 对于实现的核心功能，提炼出关键技巧和注意事项，使得初级程序员也能实现相同功能。排列时**把大多数人不知道的放在前面**。
 
 3. **运行环境** — 如果涉及特殊环境（uv/conda/docker/虚拟机），说明在哪个环境哪台机器上运行。
+
+---
+
+## Mode: `debug [<identifier>] [<question>]`
+
+诊断一次运行的失败原因，验证特定功能/修复是否生效。写入 **`codebase-debug.md`**。
+
+与 `run` 模式的关系：两者结构类似（都是从启动到结束逐步追踪），区别在于**侧重点**：
+- `run` 没有特别重的侧重点，均匀地解释每个阶段做了什么。
+- `debug` 的侧重点是**异常**：重点展开异常之处，追踪这个异常是如何一步步引导出最终
+  bug 的；正常运行的部分一行带过。
+
+### Locating the run
+
+1. 如果 `<identifier>` 是 tmux pane（如 `MySession:7.0`），先 capture pane 内容。
+2. 如果是 log dir / workspace name / timestamp，定位日志文件。
+3. 如果省略，取最近一次运行。
+
+### Steps
+
+1. **Triage（快速总览）** — 一张表，不写废话：
+
+   | Workspace | 阶段 | Exit Code | 一句话原因 |
+   |-----------|------|-----------|-----------|
+
+   标注几个成功几个失败。
+
+2. **从启动到出错的完整链条** — 这是 debug 模式的核心。对**每个失败的
+   workspace**，按执行顺序逐步追踪，从入口一直到报错那一行。每一步都必须包含：
+
+   a. **源码位置** — `完整路径/file.py:行号` + `Class->function` 可读路径
+   b. **参考代码** — 摘出该步的关键代码片段（3-10 行），让读者不用打开文件就能理解逻辑
+   c. **运行时证据** — 如果该步产生了 log 输出，原文摘录相关行（不转述）
+   d. **跳转说明** — 这一步结束后控制流去了哪里（正常路径 vs 实际走的路径）
+
+   格式示例：
+   ```
+   ### Step N: <简述>
+
+   **源码**: `ai4ai/agents/developer/run.sh:210` → `run_codex_on_gpu()`
+   **代码**:
+   ​```bash
+   rsync -azL -e "ssh ... -p ${REMOTE_PORT}" \
+     "${WORKSPACE_DIR}/" "${REMOTE_USER}@${REMOTE_HOST}:${remote_root}/"
+   ​```
+   **Log 证据**:
+   > symlink has no referent: ".../model/artifacts/snapshot"
+   > rsync error: ... (code 23) at main.c(1338) [sender=3.2.7]
+
+   **跳转**: rsync exit 23 → `set -e` (run.sh:26) 终止脚本 → EXIT trap (run.sh:368)
+   ```
+
+   要求：
+   - 链条必须从程序入口开始（`run.sh` / `loop.py:main()`），不能从中间开始
+   - 链条必须到达实际报错的那一行，不能在中间停下
+   - 每步之间的调用关系必须显式写出（谁调了谁、在哪一行）
+   - 如果某个步骤是"正常通过"的，一行带过即可（如 "setup_remote_codex 成功"）
+   - 在失败点之后，追踪错误是如何传播的（exit code 如何传递、是否被捕获或丢弃）
+
+3. **Root Cause 总结** — 用一段话明确回答"为什么失败了"：
+   - 出错的值是什么，正确的值应该是什么
+   - 如果有计算/路径错误，列出推导过程
+   - 如果是外部原因（API 错误、机器不可达），引用原始错误信息
+
+4. **Feature 验证**（仅当 `<question>` 涉及功能检查时）:
+
+   对每个要验证的功能：
+   - **是否触发了？** — 日志中触发的证据（原文引用）或缺失的证据
+   - **行为是否正确？** — 对比代码预期 vs 实际表现
+   - **效果如何？** — 带来了什么实际改善或没有改善
+
+5. **修复建议** — 按优先级排列：
+
+   | 优先级 | 问题 | 修复位置 (`file:line`) | 具体改法 |
+   |--------|------|----------------------|---------|
+
+6. **Key File Index** — 所有引用的文件路径 + 行号，按类别分组。
 
 ---
 

@@ -142,3 +142,4 @@ command -v claude &>/dev/null || curl -fsSL https://claude.ai/install.sh | bash
 
 # 🙌🏻
 # https://github.com/jarrodwatts/claude-hud
+# 注意得完成setup会生效： `/claude-hud:setup`
