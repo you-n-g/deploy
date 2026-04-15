@@ -9,6 +9,16 @@ REPO_PATH=$(
 
 cd $REPO_PATH
 
+refresh_runtime_path() {
+	. "$REPO_PATH/configs/shell/env.sh"
+
+	if [ -x "$HOME/homebrew/bin/brew" ]; then
+		export PATH="$HOME/homebrew/bin:$PATH"
+	fi
+
+	hash -r
+}
+
 sudo bash -c "echo -e '\$nrconf{kernelhints} = -1;\n\$nrconf{restart} = \"l\";' > /etc/needrestart/conf.d/99mychanges.conf"  # disble popups
 
 SSH_FLAG=""
@@ -54,10 +64,12 @@ cd $REPO_PATH
 chmod a+x ./deploy_apps/*
 
 ./deploy_apps/deploy_nodejs.sh # this is for other packages
+refresh_runtime_path
 ./deploy_apps/deploy_miniconda.sh
 ./deploy_apps/install_zsh.sh  # zsh加的 `configs/shell/rcfile.sh` 的性能得在 conda 之后
 # - FIXME: rcfile does not appear after conda on 2024-10
 ./deploy_apps/install_homebrew.sh
+refresh_runtime_path
 ./deploy_apps/install_tmux.sh # 现在打算放在miniconda之后了 # 确保按安装新代码
 ./deploy_apps/install_pet.sh
 ./keys/deploy.sh

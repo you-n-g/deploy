@@ -34,6 +34,9 @@ If `cr` is implemented via `uv` in the current environment and fails on cache in
 
 - `XDG_CACHE_HOME=/tmp/.cache UV_CACHE_DIR=/tmp/.uv-cache cr <url>`
 - `XDG_CACHE_HOME=/tmp/.cache UV_CACHE_DIR=/tmp/.uv-cache cr --wait-for 8000 <url>`
+- If that still fails with missing `*.dist-info/METADATA` or similar archive/cache errors, use fresh unique temp directories instead of reusing the same cache path:
+    - `mkdir -p /tmp/cr-cache-$$ /tmp/cr-uv-$$ && XDG_CACHE_HOME=/tmp/cr-cache-$$ UV_CACHE_DIR=/tmp/cr-uv-$$ cr <url>`
+    - `mkdir -p /tmp/cr-cache-$$ /tmp/cr-uv-$$ && XDG_CACHE_HOME=/tmp/cr-cache-$$ UV_CACHE_DIR=/tmp/cr-uv-$$ cr --wait-for 8000 <url>`
 
 The command prints Markdown to stdout. Use that output as the source text for downstream summarization or extraction.
 
@@ -49,6 +52,10 @@ Then re-run `cr`.
 If `cr` fails with an error about initializing `~/.cache/uv`, use:
 
 - `XDG_CACHE_HOME=/tmp/.cache UV_CACHE_DIR=/tmp/.uv-cache cr <url>`
+
+If `cr` still fails with package install errors mentioning missing `METADATA`, `archive-v0`, or similar broken uv cache state, retry with fresh cache dirs:
+
+- `mkdir -p /tmp/cr-cache-$$ /tmp/cr-uv-$$ && XDG_CACHE_HOME=/tmp/cr-cache-$$ UV_CACHE_DIR=/tmp/cr-uv-$$ cr <url>`
 
 If the output looks like an unrendered shell / consent page / “enable JavaScript”, it’s usually one of:
 

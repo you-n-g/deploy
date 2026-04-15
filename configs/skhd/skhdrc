@@ -42,6 +42,10 @@ fn - 2 [
 # 0x52 : skhd -k "fn + cmd - <key>"
 # 0x41 : skhd -k "fn + cmd"
 
+# fn + / / 小键盘 /：插入一段“下面开始纠正语音转文本”的说明
+fn - 0x2C : ~/deploy/configs/skhd/type-prefill-text.sh
+0x4B : ~/deploy/configs/skhd/type-prefill-text.sh
+
 # 小键盘 . (0x41) -> Ctrl+B 再 Ctrl+G（适合 tmux 这类需要按键序列的场景）
 # 0x41 : skhd -k "ctrl - b"; skhd -k "ctrl - g"
 0x52 : skhd -k "ctrl - b"; skhd -k "ctrl - g"
