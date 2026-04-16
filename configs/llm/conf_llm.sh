@@ -140,6 +140,14 @@ command -v codex  &>/dev/null || npm install -g @openai/codex
 command -v claude &>/dev/null || curl -fsSL https://claude.ai/install.sh | bash
 ~/deploy/deploy_apps/config_codex.py
 
-# 🙌🏻
+# 🙌🏻 得手动一次输入下面的命令
 # https://github.com/jarrodwatts/claude-hud
-# 注意得完成setup会生效： `/claude-hud:setup`
+# 注意得完成setup会生效：
+false << "EOF" > /dev/null
+clauder
+/plugin marketplace add jarrodwatts/claude-hud
+/plugin install claude-hud
+/reload-plugins
+/claude-hud:setup
+/claude-hud:setup
+EOF

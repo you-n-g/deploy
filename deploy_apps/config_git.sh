@@ -2,7 +2,7 @@
 
 # 本来之前这么配置
 # config git
-# git config --global user.name Young Yang
+# git config --global user.name xiaoyang
 # git config --global user.email afe.young@gmail.com
 # git config --global merge.tool vimdiff
 # git config --global mergetool.prompt false
