@@ -41,6 +41,9 @@ install_lazyvim() {
 	# link the lazyvim config
 	TARGET="$DIR/../../configs/lazynvim"
 	ln -s "$TARGET" ~/.config/nvim
+
+	# Remove potentially incomplete lazy.nvim bootstrap dir so nvim re-clones it on first launch
+	rm -rf ~/.local/share/nvim/lazy/lazy.nvim
 }
 
 docker_mount() {

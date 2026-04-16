@@ -73,6 +73,15 @@ function M.get_largest_non_terminal_win()
   return largest_win
 end
 
+function M.normalize_path_for_edit(path)
+  if path == nil or path == "" then
+    return path
+  end
+
+  -- Expand ~/... and $VAR/... before checking existence or editing.
+  return vim.fn.expand(path)
+end
+
 -- Function to append the current line to the largest non-terminal buffer
 function M.append_current_line_to_largest_buf()
   local largest_win = M.get_largest_non_terminal_win()
@@ -145,7 +154,7 @@ vim.api.nvim_create_autocmd("TermOpen", {
 function M.open_file_in_largest_non_terminal_win(force)
   local largest_win = M.get_largest_non_terminal_win()
   -- Attempt to extract a file path and line number from the surrounding text
-  local file = vim.fn.expand("<cfile>")
+  local file = M.normalize_path_for_edit(vim.fn.expand("<cfile>"))
   local line = nil
   local current_line = vim.api.nvim_get_current_line()
 
@@ -170,7 +179,7 @@ function M.open_file_in_largest_non_terminal_win(force)
 
     -- 2. goto the file.
     vim.api.nvim_set_current_win(largest_win)
-    vim.cmd("edit " .. file)
+    vim.cmd("edit " .. vim.fn.fnameescape(file))
     if line then
       vim.api.nvim_win_set_cursor(0, { line, 0 })
     end
@@ -182,7 +191,7 @@ end
 
 -- Normal mode gf: open file under cursor with optional line number extraction
 function M.open_file_with_line_in_normal()
-  local file = vim.fn.expand("<cfile>")
+  local file = M.normalize_path_for_edit(vim.fn.expand("<cfile>"))
   if file == "" then
     vim.cmd("normal! gf")
     return
