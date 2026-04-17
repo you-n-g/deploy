@@ -76,6 +76,15 @@ return {
       -- 这里可以配置插件的全局变量
       vim.g.mkdp_auto_close = 1 -- 切换 buffer 时自动关闭预览浏览器
       vim.g.mkdp_theme = 'dark' -- 强制使用暗色主题
+      if vim.fn.has('linux') == 1 then
+        vim.cmd([[
+          function! OpenMarkdownPreview(url) abort
+            echom '[mkdp] ' . a:url
+          endfunction
+        ]])
+        vim.g.mkdp_browserfunc = 'OpenMarkdownPreview'
+        vim.g.mkdp_echo_preview_url = 1
+      end
     end,
   },
 }
