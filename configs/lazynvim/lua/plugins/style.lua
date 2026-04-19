@@ -58,11 +58,8 @@ return {
     cmd = { "MarkdownPreviewToggle", "MarkdownPreview", "MarkdownPreviewStop" },
     -- 或者在打开 Markdown 文件时按需加载
     ft = { "markdown" },
-    -- 安装或更新插件时自动运行底层的构建脚本
-    build = function()
-      -- NOTE: 我发现这个好像得事后调用 `call mkdp#util#install()` 才能成功安装
-      vim.fn["mkdp#util#install"]()
-    end,
+    -- 安装或更新插件时自动运行 npm install 安装依赖
+    build = "cd app && npm install",
     -- 绑定你的专属快捷键 (这里设定为 <leader>mp 也就是 空格+m+p)
     keys = {
       {
@@ -76,6 +73,8 @@ return {
       -- 这里可以配置插件的全局变量
       vim.g.mkdp_auto_close = 1 -- 切换 buffer 时自动关闭预览浏览器
       vim.g.mkdp_theme = 'dark' -- 强制使用暗色主题
+      vim.g.mkdp_open_to_the_world = 1 -- 监听 0.0.0.0，允许远程访问
+      vim.g.mkdp_open_ip = vim.fn.system("hostname -I | awk '{print $1}'"):gsub("%s+", "") -- URL 中使用实际 IP
       if vim.fn.has('linux') == 1 then
         vim.cmd([[
           function! OpenMarkdownPreview(url) abort

@@ -17,7 +17,8 @@ LIST=$(
     while IFS=' ' read -r wact sess_win wname pane_pid; do
         if _has_ai_proc "$pane_pid"; then
             _diff=$(( _now - wact ))
-            if   (( _diff < 60 ));    then _rel="${_diff}s ago"
+            if   (( _diff < 1 ));     then _rel=$'\033[2;33m'"${_diff}s ago"$'\033[0m'
+            elif (( _diff < 60 ));    then _rel="${_diff}s ago"
             elif (( _diff < 3600 ));  then _rel="$((_diff / 60))m ago"
             elif (( _diff < 86400 )); then _rel="$((_diff / 3600))h ago"
             else                           _rel="$((_diff / 86400))d ago"
