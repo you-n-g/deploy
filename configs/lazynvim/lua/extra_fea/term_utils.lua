@@ -228,6 +228,12 @@ function M.open_file_with_line_in_normal()
     return
   end
 
+  -- Directories and symlinks to directories: let default gf handle them
+  if vim.fn.isdirectory(file) == 1 then
+    vim.cmd("normal! gf")
+    return
+  end
+
   -- If the file doesn't exist on disk, fall back to fzf-lua file search
   if vim.fn.filereadable(file) == 0 then
     local ok_fzf, fzf = pcall(require, "fzf-lua")
