@@ -135,6 +135,11 @@ echo "Skills linking complete."
 ln -snf "$SCRIPT_DIR/.sgpt.md" "$HOME/.sgpt.md"
 echo "Linked: ~/.sgpt.md -> $SCRIPT_DIR/.sgpt.md"
 
+# ── Deploy global CLAUDE.md to ~/.claude/CLAUDE.md ───────────────────────────
+mkdir -p "$HOME/.claude"
+ln -snf "$SCRIPT_DIR/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
+echo "Linked: ~/.claude/CLAUDE.md -> $SCRIPT_DIR/CLAUDE.md"
+
 command -v gemini &>/dev/null || npm install -g @google/gemini-cli
 command -v codex  &>/dev/null || npm install -g @openai/codex
 command -v claude &>/dev/null || curl -fsSL https://claude.ai/install.sh | bash
