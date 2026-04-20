@@ -14,28 +14,44 @@ fi
 
 _now=$(date +%s)
 LIST=$(
-    while IFS=' ' read -r wact sess_win wname pane_pid; do
+    while IFS=' ' read -r wact sess_win wname pane_pid wact_raw; do
         if _has_ai_proc "$pane_pid"; then
-            _diff=$(( _now - wact ))
-            if   (( _diff < 1 ));     then _rel=$'\033[2;33m'"${_diff}s ago"$'\033[0m'
-            elif (( _diff < 60 ));    then _rel="${_diff}s ago"
-            elif (( _diff < 3600 ));  then _rel="$((_diff / 60))m ago"
-            elif (( _diff < 86400 )); then _rel="$((_diff / 3600))h ago"
-            else                           _rel="$((_diff / 86400))d ago"
-            fi
             if [[ "$sess_win" == "$CURRENT_TARGET" ]]; then
-                current_label=$'\033[1;30;43m current \033[0m '
+                _sort_key=0
+                _status=$'\033[36m◆\033[0m '
+            elif (( _now - wact_raw > 1 )); then
+                _sort_key=1
+                _status=$'\033[32m●\033[0m '
             else
-                current_label=""
+                _sort_key=05
+                _status=$'\033[33m○\033[0m '
             fi
-            _date_str=$(date -d "@$wact" '+%m-%d %H:%M' 2>/dev/null || date -r "$wact" '+%m-%d %H:%M' 2>/dev/null)
-            echo "$wact $sess_win ${current_label}${wname}  [${_date_str}, ${_rel}]"
+
+            _diff_visit=$(( _now - wact ))
+            if   (( _diff_visit < 60 ));    then _rel_visit="${_diff_visit}s"
+            elif (( _diff_visit < 3600 ));  then _rel_visit="$((_diff_visit / 60))m"
+            elif (( _diff_visit < 86400 )); then _rel_visit="$((_diff_visit / 3600))h"
+            else                                 _rel_visit="$((_diff_visit / 86400))d"
+            fi
+
+            _diff_act=$(( _now - wact_raw ))
+            if   (( _diff_act < 60 ));    then _rel_act="${_diff_act}s"
+            elif (( _diff_act < 3600 ));  then _rel_act="$((_diff_act / 60))m"
+            elif (( _diff_act < 86400 )); then _rel_act="$((_diff_act / 3600))h"
+            else                               _rel_act="$((_diff_act / 86400))d"
+            fi
+            if (( wact == wact_raw )); then
+                _time_info="[act ${_rel_act}]"
+            else
+                _time_info="[visit ${_rel_visit} | act ${_rel_act}]"
+            fi
+            echo "$_sort_key $wact $sess_win ${_status}${wname}  "$'\033[2m'"${_time_info}"$'\033[0m'
         fi
     done < <(tmux list-panes -a \
-        -F '#{window_activity} #{session_name}:#{window_index} #{window_name} #{pane_pid}' 2>/dev/null |
-        sort -nr) |
-    awk '!seen[$2]++' |
-    cut -d' ' -f2-
+        -F '#{?@last_visit,#{@last_visit},#{window_activity}} #{session_name}:#{window_index} #{window_name} #{pane_pid} #{window_activity}' 2>/dev/null) |
+    sort -k1,1 -k2,2nr |
+    awk '!seen[$3]++' |
+    cut -d' ' -f3-
 )
 
 if [[ -z "$LIST" ]]; then
@@ -43,10 +59,20 @@ if [[ -z "$LIST" ]]; then
     exit 0
 fi
 
+SKIP_COUNT=$(printf '%s\n' "$LIST" | grep -cvF $'\033[32m●' || true)
+
+if (( SKIP_COUNT > 0 )); then
+    _downs=$(printf '+down%.0s' $(seq 1 "$SKIP_COUNT"))
+    _start_bind="--bind=load:${_downs#+}"
+else
+    _start_bind=""
+fi
+
 SELECTED=$(echo "$LIST" | fzf \
     --ansi \
     --reverse \
-    --header "Select an AI window (Enter to switch)" \
+    $_start_bind \
+    --header $'\033[36m◆\033[0m current  \033[33m○\033[0m busy  \033[32m●\033[0m ready  |  Enter to switch' \
     --preview 'tmux capture-pane -ept {1}' \
     --preview-window 'up:70%,follow')
 
