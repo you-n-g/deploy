@@ -31,3 +31,71 @@ _find_ai_pid() {
 _has_ai_proc() {
     _find_ai_pid "$1" > /dev/null
 }
+
+_tmux_current_target() {
+    if [[ -n "$TMUX" ]]; then
+        tmux display-message -p '#{session_name}:#{window_index}' 2>/dev/null
+    fi
+}
+
+_format_relative_age() {
+    local diff="$1"
+
+    if   (( diff < 60 ));    then printf '%ss' "$diff"
+    elif (( diff < 3600 ));  then printf '%sm' "$((diff / 60))"
+    elif (( diff < 86400 )); then printf '%sh' "$((diff / 3600))"
+    else                          printf '%sd' "$((diff / 86400))"
+    fi
+}
+
+# Print unique AI windows as tab-separated rows:
+#   last_visit  session:index  window_name  window_id  pane_pid  window_activity
+_ai_window_rows() {
+    _ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null)
+    tmux list-panes "$@" \
+        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}\t#{window_name}\t#{window_id}\t#{pane_pid}\t#{window_activity}' 2>/dev/null |
+    while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw; do
+        if _has_ai_proc "$pane_pid"; then
+            printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+                "$wvisit" "$sess_win" "$wname" "$wid" "$pane_pid" "$wact_raw"
+        fi
+    done |
+    sort -t $'\t' -k1,1nr -k6,6nr |
+    awk -F '\t' '!seen[$4]++'
+}
+
+# Read _ai_window_rows from stdin and print fzf-ready lines:
+#   window_id session:index <ansi-decorated label>
+_ai_window_fzf_list() {
+    local current_target="${1:-}"
+    local now="${2:-$(date +%s)}"
+
+    while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw; do
+        local sort_key status rel_visit rel_act time_info
+
+        if [[ "$sess_win" == "$current_target" ]]; then
+            sort_key=0
+            status=$'\033[36m◆\033[0m '
+        elif (( now - wact_raw > 1 )); then
+            sort_key=1
+            status=$'\033[32m●\033[0m '
+        else
+            sort_key=05
+            status=$'\033[33m○\033[0m '
+        fi
+
+        rel_visit=$(_format_relative_age $((now - wvisit)))
+        rel_act=$(_format_relative_age $((now - wact_raw)))
+
+        if (( wvisit == wact_raw )); then
+            time_info="[act ${rel_act}]"
+        else
+            time_info="[visit ${rel_visit} | act ${rel_act}]"
+        fi
+
+        printf '%s\t%s\t%s %s %b%s  \033[2m%s\033[0m\n' \
+            "$sort_key" "$wvisit" "$wid" "$sess_win" "$status" "$wname" "$time_info"
+    done |
+    sort -t $'\t' -k1,1 -k2,2nr |
+    cut -f3-
+}

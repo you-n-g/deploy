@@ -33,84 +33,74 @@ if [[ -n "$TMUX" ]]; then
     CURRENT_TARGET=$(tmux display-message -p '#{session_name}:#{window_index}' 2>/dev/null)
 fi
 
-_ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null)
-
-# Collect unique AI windows (dedup by window_id, sorted by most recent activity)
-WIDS=()
-WNAMES=()
-while IFS=' ' read -r wname wact wid pane_pid; do
-    if _has_ai_proc "$pane_pid"; then
-        WIDS+=("$wid")
-        WNAMES+=("$wname")
-    fi
-done < <(tmux list-panes -s -t "$SESSION" \
-    -F '#{window_name} #{window_activity} #{window_id} #{pane_pid}' 2>/dev/null |
-    sort -k2,2nr | awk '!seen[$3]++')
-
-COUNT=${#WIDS[@]}
-
-if [[ $COUNT -eq 0 ]]; then
-    exit 1
-fi
-
 _output_result() {
     [[ "$RETURN_ID" == true ]] && echo "$1" || echo "$2"
 }
 
-# -a: list all in "session:index (name)" format, let caller handle selection
+# Collect rows: last_visit<TAB>session:index<TAB>window_name<TAB>window_id<TAB>pane_pid<TAB>window_activity
+ROWS=$(_ai_window_rows -s -t "$SESSION")
+[[ -z "$ROWS" ]] && exit 1
+
+# -a: list all, let caller handle selection
 if [[ "$LIST_ALL" == true ]]; then
-    for i in "${!WIDS[@]}"; do
-        sess_win=$(tmux display-message -t "${WIDS[$i]}" -p '#{session_name}:#{window_index}')
-        _output_result "${WIDS[$i]}" "$sess_win (${WNAMES[$i]})"
-    done
+    while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw; do
+        _output_result "$wid" "$sess_win ($wname)"
+    done <<< "$ROWS"
     exit 0
 fi
 
+COUNT=$(echo "$ROWS" | wc -l | tr -d ' ')
+
 # Single window — return directly
-if [[ $COUNT -eq 1 ]]; then
-    _output_result "${WIDS[0]}" "${WNAMES[0]}"
+if [[ "$COUNT" -eq 1 ]]; then
+    IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw <<< "$ROWS"
+    _output_result "$wid" "$wname"
     exit 0
 fi
 
 # Multiple AI windows — need fzf selection
+LIST=$(echo "$ROWS" | _ai_window_fzf_list "$CURRENT_TARGET")
 
-# Build list for fzf
 LISTFILE=$(mktemp)
 trap "rm -f '$LISTFILE'" EXIT
-for i in "${!WIDS[@]}"; do
-    sess_win=$(tmux display-message -t "${WIDS[$i]}" -p '#{session_name}:#{window_index}')
-    if [[ "$sess_win" == "$CURRENT_TARGET" ]]; then
-        current_label=$'\033[1;30;43m current \033[0m '
-    else
-        current_label=""
-    fi
-    echo "${WIDS[$i]} $sess_win ${current_label}${WNAMES[$i]}" >> "$LISTFILE"
-done
+printf '%s\n' "$LIST" > "$LISTFILE"
+
+SKIP_COUNT=$(printf '%s\n' "$LIST" | grep -cvF $'\033[32m●' || true)
+
+if (( SKIP_COUNT > 0 )); then
+    _downs=$(printf '+down%.0s' $(seq 1 "$SKIP_COUNT"))
+    _start_bind="--bind=load:${_downs#+}"
+else
+    _start_bind=""
+fi
 
 if [[ -t 0 ]]; then
     # Interactive: fzf directly
     SELECTED=$(fzf --ansi --reverse \
-        --header "Select AI window" \
+        $_start_bind \
+        --header '◆ current  ○ busy  ● ready  |  Enter to switch' \
         --preview 'tmux capture-pane -ept {1}' \
-        --preview-window 'up:60%' < "$LISTFILE")
+        --preview-window 'up:70%,follow' < "$LISTFILE")
 else
     # Non-interactive (run-shell): launch popup, use wait-for to block until done
     RESULTFILE=$(mktemp)
     CHANNEL="get_ai_window_$$"
     trap "rm -f '$LISTFILE' '$RESULTFILE'" EXIT
 
-    tmux display-popup -E -w 80% -h 80% "\
+    tmux display-popup -E -w 100% -h 100% "\
         trap 'tmux wait-for -S \"$CHANNEL\"' EXIT; \
         fzf --ansi --reverse \
-            --header 'Select AI window' \
+            $_start_bind \
+            --header '◆ current  ○ busy  ● ready  |  Enter to switch' \
             --preview 'tmux capture-pane -ept {1}' \
-            --preview-window 'up:60%' < '$LISTFILE' > '$RESULTFILE'"
+            --preview-window 'up:70%,follow' < '$LISTFILE' > '$RESULTFILE'"
 
     tmux wait-for "$CHANNEL"
     SELECTED=$(cat "$RESULTFILE")
 fi
 
 [[ -z "$SELECTED" ]] && exit 2
+# Output format: $wid $sess_win <visual>
 WID=$(echo "$SELECTED" | cut -d' ' -f1)
 WNAME=$(tmux display-message -t "$WID" -p '#{window_name}')
 _output_result "$WID" "$WNAME"
