@@ -28,20 +28,12 @@ echo_keys() {
   gpg -d keys/gpt4.gpg
 }
 
-add_line() {
-  # Usage: add_line <new_key> [gpg_file]
-  local new_key="$1"
-  local file="${2:-keys/gpt-4.1.gpg}"
-
-  if [[ -z "$new_key" ]]; then
-    echo "Usage: $0 add_line <new_key> [gpg_file]"
-    return 1
-  fi
-
+edit() {
+  local file="${1:-keys/gpt-4.1.gpg}"
   local tmp
   tmp=$(mktemp)
   gpg -d "$file" > "$tmp" || { rm -f "$tmp"; return 1; }
-  echo "$new_key" >> "$tmp"
+  vim "$tmp"
   gpg -c --batch --yes -o "${file}.new" "$tmp" && mv "${file}.new" "$file"
   rm -f "$tmp"
 }

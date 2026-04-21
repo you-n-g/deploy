@@ -362,7 +362,7 @@ function v() {
 }
 
 _claude_env() {
-    ANTHROPIC_BASE_URL='https://xyzlapi.boyuerichdata.com' \
+    ANTHROPIC_BASE_URL=$(get-cred xyz_base gpt.gpg) \
     ANTHROPIC_AUTH_TOKEN=$(get-cred xyz_key gpt.gpg) \
     CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1 \
     "$@"
