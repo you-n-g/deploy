@@ -3,9 +3,10 @@
 # If multiple AI windows exist, show fzf to pick one.
 # Works in both interactive and non-interactive (run-shell) contexts.
 #
-# Usage: ./get_ai_window.sh [-i] [-a] [session_name]
+# Usage: ./get_ai_window.sh [-i] [-a] [-A] [session_name]
 # -i: return window_id instead of window_name
 # -a: list ALL AI windows (one per line), skip interactive selection
+# -A: scan across all tmux sessions (ignores [session_name])
 #
 # Exit codes:
 #   0  success (window found/selected)
@@ -17,16 +18,20 @@ source "$SCRIPT_DIR/lib.sh"
 
 RETURN_ID=false
 LIST_ALL=false
+ALL_SESSIONS=false
 while [[ "$1" == -* ]]; do
     case "$1" in
         -i) RETURN_ID=true; shift ;;
         -a) LIST_ALL=true; shift ;;
+        -A) ALL_SESSIONS=true; shift ;;
         *)  shift ;;
     esac
 done
 
 SESSION=${1:-$(tmux display-message -p '#S' 2>/dev/null)}
-[[ -z "$SESSION" ]] && exit 1
+if [[ "$ALL_SESSIONS" != true ]]; then
+    [[ -z "$SESSION" ]] && exit 1
+fi
 
 CURRENT_TARGET=""
 if [[ -n "$TMUX" ]]; then
@@ -38,7 +43,11 @@ _output_result() {
 }
 
 # Collect rows: last_visit<TAB>session:index<TAB>window_name<TAB>window_id<TAB>pane_pid<TAB>window_activity
-ROWS=$(_ai_window_rows -s -t "$SESSION")
+if [[ "$ALL_SESSIONS" == true ]]; then
+    ROWS=$(_ai_window_rows -a)
+else
+    ROWS=$(_ai_window_rows -s -t "$SESSION")
+fi
 [[ -z "$ROWS" ]] && exit 1
 
 # -a: list all, let caller handle selection
