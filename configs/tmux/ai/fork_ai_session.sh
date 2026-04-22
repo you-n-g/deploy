@@ -37,11 +37,23 @@ fork_name="${win_name}-fork"
 
 case "$ai_name" in
     claude)
-        # Active session ID from /proc/fd (session file can be stale after /resume)
-        session_id=$(ls -la /proc/"$ai_pid"/fd/ \
-            | grep -oP '\.claude/tasks/\K[0-9a-f-]{36}' \
-            | head -1)
-        cmd="clauder --resume '$session_id' --fork-session"
+        # Intentionally no session id -- the Resume picker handles it.
+        #
+        # If you're tempted to "fix" this by auto-detecting the current session,
+        # the obvious leads have all been tried and ruled out:
+        #   1. /proc/<pid>/fd + grep '.claude/tasks/<UUID>'
+        #      Only populated while a subagent (Task tool) is running, and the
+        #      UUID there is the subagent task id, NOT the parent session id.
+        #   2. ~/.claude/sessions/<pid>.json (.sessionId field)
+        #      Written once at startup; not refreshed after /clear, /resume,
+        #      --fork-session, /new. Empirically stale for most long-lived pids.
+        #   3. ls -t ~/.claude/projects/<cwd-hash>/*.jsonl | head -1
+        #      Works for a single claude per cwd, but gets polluted when
+        #      multiple claude instances share the cwd (common: axrd-3rd etc.).
+        # Claude Code doesn't keep the session jsonl fd open, so there's no
+        # reliable external anchor. Picker is time-sorted -- two Enters on the
+        # top row forks the current session.
+        cmd="clauder --resume --fork-session"
         ;;
     codex)
         # Codex session file path: .codex/sessions/YYYY/MM/DD/rollout-...-<UUID>.jsonl

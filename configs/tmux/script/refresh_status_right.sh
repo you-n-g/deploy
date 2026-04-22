@@ -10,6 +10,8 @@ if [ -z "$mount_path" ]; then
   mount_path="/"
 fi
 
+lib_path="$HOME/deploy/configs/tmux/ai/lib.sh"
+
 theme="$(tmux show-options -gqv @tmux-gruvbox 2>/dev/null || true)"
 if [ -z "$theme" ]; then
   theme="dark"
@@ -37,5 +39,6 @@ esac
 
 status_right="${status_right}#[fg=green]#(\$TMUX_PLUGIN_MANAGER_PATH/tmux-mem-cpu-load/tmux-mem-cpu-load --colors --powerline-right -g 0 -t 1 --interval 2)#[default]"
 status_right="${status_right} #[fg=yellow]#(df -h ${mount_path} 2>/dev/null | awk 'NR==2 {print \"${mount_path} \" \$(NF-1) \" \" \$4}')#[default]"
+status_right="${status_right} #[fg=cyan]🤖 #(bash -c 'source \"${lib_path}\" && _ai_running_count')#[default]"
 
 tmux set-option -g status-right "$status_right"

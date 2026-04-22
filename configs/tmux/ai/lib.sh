@@ -64,6 +64,15 @@ _ai_window_rows() {
     awk -F '\t' '!seen[$4]++'
 }
 
+# Count AI windows that are actively producing output right now.
+# Matches the yellow ○ "running" case in _ai_window_fzf_list: window_activity
+# within the last 1 second.
+_ai_running_count() {
+    local now
+    now=$(date +%s)
+    _ai_window_rows -a | awk -F '\t' -v now="$now" '(now - $6) <= 1 { c++ } END { print c+0 }'
+}
+
 # Read _ai_window_rows from stdin and print fzf-ready lines:
 #   window_id session:index <ansi-decorated label>
 _ai_window_fzf_list() {
