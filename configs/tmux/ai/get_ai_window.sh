@@ -52,7 +52,7 @@ fi
 
 # -a: list all, let caller handle selection
 if [[ "$LIST_ALL" == true ]]; then
-    while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw; do
+    while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw _unread; do
         _output_result "$wid" "$sess_win ($wname)"
     done <<< "$ROWS"
     exit 0
@@ -62,7 +62,7 @@ COUNT=$(echo "$ROWS" | wc -l | tr -d ' ')
 
 # Single window — return directly
 if [[ "$COUNT" -eq 1 ]]; then
-    IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw <<< "$ROWS"
+    IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw _unread <<< "$ROWS"
     _output_result "$wid" "$wname"
     exit 0
 fi
