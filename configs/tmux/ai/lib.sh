@@ -82,15 +82,22 @@ _ai_window_fzf_list() {
     while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw; do
         local sort_key status rel_visit rel_act time_info
 
+        local is_busy=false
+        (( now - wact_raw <= 1 )) && is_busy=true
+
         if [[ "$sess_win" == "$current_target" ]]; then
             sort_key=0
-            status=$'\033[36m◆\033[0m '
-        elif (( now - wact_raw > 1 )); then
-            sort_key=1
-            status=$'\033[32m●\033[0m '
-        else
+            if $is_busy; then
+                status=$'\033[36m◇\033[0m '
+            else
+                status=$'\033[36m◆\033[0m '
+            fi
+        elif $is_busy; then
             sort_key=05
             status=$'\033[33m○\033[0m '
+        else
+            sort_key=1
+            status=$'\033[32m●\033[0m '
         fi
 
         rel_visit=$(_format_relative_age $((now - wvisit)))

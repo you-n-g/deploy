@@ -87,7 +87,7 @@ if [[ -t 0 ]]; then
     # Interactive: fzf directly
     SELECTED=$(fzf --ansi --reverse \
         $_start_bind \
-        --header '◆ current  ○ busy  ● ready  |  Enter to switch' \
+        --header '◆/◇ current  ● ready  ○ busy  |  Enter to switch' \
         --preview 'tmux capture-pane -ept {1}' \
         --preview-window 'up:70%,follow' < "$LISTFILE")
 else
@@ -100,7 +100,7 @@ else
         trap 'tmux wait-for -S \"$CHANNEL\"' EXIT; \
         fzf --ansi --reverse \
             $_start_bind \
-            --header '◆ current  ○ busy  ● ready  |  Enter to switch' \
+            --header '◆/◇ current  ● ready  ○ busy  |  Enter to switch' \
             --preview 'tmux capture-pane -ept {1}' \
             --preview-window 'up:70%,follow' < '$LISTFILE' > '$RESULTFILE'"
 
