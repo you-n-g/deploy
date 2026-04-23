@@ -33,9 +33,9 @@ openai_key_api_01() {
 }
 
 azure_key_api_01() {
-  api_base=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 1p)
-  azure_engine=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 2p)
-  api_key=$(gpg -q --decrypt $HOME/deploy/keys/gpt.gpg | sed -n 3p)
+  api_base=$(get-cred base gpt.gpg)
+  azure_engine=$(get-cred model gpt.gpg)
+  api_key=$(get-cred key gpt.gpg)
 
   API_VERSION=2023-03-15-preview
   API_KEY=$api_key
@@ -45,9 +45,9 @@ azure_key_api_01() {
 }
 
 azure_key_api_02() {
-  api_base=$(gpg -q --decrypt $HOME/deploy/keys/gpt-4.1.gpg | sed -n 1p)
-  azure_engine=$(gpg -q --decrypt $HOME/deploy/keys/gpt-4.1.gpg | sed -n 2p)
-  api_key=$(gpg -q --decrypt $HOME/deploy/keys/gpt-4.1.gpg | sed -n 3p)
+  api_base=$(get-cred base gpt-4.1.gpg)
+  azure_engine=$(get-cred model gpt-4.1.gpg)
+  api_key=$(get-cred key gpt-4.1.gpg)
 
   API_VERSION=2024-12-01-preview
   API_KEY=$api_key
@@ -125,9 +125,9 @@ azure() {
 }
 
 azure_o4_mini() {
-  api_base=$(gpg -q --decrypt $HOME/deploy/keys/gpt-o4-mini.gpg | sed -n 1p)
-  azure_engine=$(gpg -q --decrypt $HOME/deploy/keys/gpt-o4-mini.gpg | sed -n 2p)
-  api_key=$(gpg -q --decrypt $HOME/deploy/keys/gpt-o4-mini.gpg | sed -n 3p)
+  api_base=$(get-cred base gpt-o4-mini.gpg)
+  azure_engine=$(get-cred model gpt-o4-mini.gpg)
+  api_key=$(get-cred key gpt-o4-mini.gpg)
   export OPENAI_API_VERSION="2024-12-01-preview"
   export AZURE_OPENAI_API_KEY=$api_key
   export AZURE_OPENAI_ENDPOINT=$api_base

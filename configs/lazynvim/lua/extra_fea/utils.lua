@@ -77,15 +77,9 @@ function M.get_cred(fname)
   else
     return {
       type = "azure",
-      api_base = string.gsub(vim.fn.system(
-        "gpg -q --decrypt " .. vim.fn.expand("$HOME") .. "/deploy/keys/" .. fname .. " | sed -n 1p"
-      ), "\n$", ""),
-      model = string.gsub(vim.fn.system(
-        "gpg -q --decrypt " .. vim.fn.expand("$HOME") .. "/deploy/keys/" .. fname .. " | sed -n 2p"
-      ), "\n$", ""),
-      api_key = string.gsub(vim.fn.system(
-        "gpg -q --decrypt " .. vim.fn.expand("$HOME") .. "/deploy/keys/" .. fname .. " | sed -n 3p"
-      ), "\n$", ""),
+      api_base = string.gsub(vim.fn.system("get-cred base " .. fname), "\n$", ""),
+      model = string.gsub(vim.fn.system("get-cred model " .. fname), "\n$", ""),
+      api_key = string.gsub(vim.fn.system("get-cred key " .. fname), "\n$", ""),
     }
   end
 end
