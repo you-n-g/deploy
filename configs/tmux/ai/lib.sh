@@ -2,7 +2,7 @@
 # Shared helpers for AI window detection
 
 AI_PROC_PAT='(^|/)(claude|gemini|codex)$'
-_AI_UNREAD_THRESHOLD=3  # consecutive running samples before marking a window unread
+_AI_UNREAD_THRESHOLD=5  # consecutive running samples before marking a window unread
 
 # Find the first AI process in the subtree rooted at a pane PID.
 # Prints "PID COMM" (e.g. "12345 claude") and returns 0, or returns 1 if none.

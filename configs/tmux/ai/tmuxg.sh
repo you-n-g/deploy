@@ -18,7 +18,7 @@ if [[ -z "$LIST" ]]; then
     exit 0
 fi
 
-SKIP_COUNT=$(printf '%s\n' "$LIST" | grep -cvF $'\033[32m●' || true)
+SKIP_COUNT=$(printf '%s\n' "$LIST" | grep -cvE $'\033\\[3[23]m●' || true)
 
 if (( SKIP_COUNT > 0 )); then
     _downs=$(printf '+down%.0s' $(seq 1 "$SKIP_COUNT"))
