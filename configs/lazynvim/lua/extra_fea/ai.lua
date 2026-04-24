@@ -127,13 +127,61 @@ local function get_target_tmux(callback)
 end
 
 
-local function format_ai_prompt(content)
-  local relative_path = get_relative_path()
-  return string.format(
-    "We are edit the file @%s\nYou are focusing the following block\n```\n%s\n```",
-    relative_path,
-    content
-  )
+local templates = {
+  edit = function(content)
+    local relative_path = get_relative_path()
+    return string.format(
+      "We are edit the file @%s\nYou are focusing the following block\n```\n%s\n```",
+      relative_path,
+      content
+    )
+  end,
+  focus = function(content)
+    local relative_path = get_relative_path()
+    return string.format(
+      "Please pay attention to @%s, specifically this block:\n```\n%s\n```",
+      relative_path,
+      content
+    )
+  end,
+}
+
+local function pick_template(callback)
+  local names = {}
+  for k in pairs(templates) do table.insert(names, k) end
+  table.sort(names)
+  if #names == 0 then
+    callback(nil)
+  elseif #names == 1 then
+    callback(templates[names[1]])
+  else
+    vim.schedule(function()
+      vim.ui.select(names, { prompt = "Select template:" }, function(choice)
+        if not choice then callback(nil); return end
+        callback(templates[choice])
+      end)
+    end)
+  end
+end
+
+local function resolve_and_send(template, raw_content, send)
+  if template == nil or template == "" then
+    send(raw_content)
+    return
+  end
+  if type(template) == "string" then
+    local fn = templates[template]
+    if not fn then
+      print("Unknown template: " .. template)
+      return
+    end
+    send(fn(raw_content))
+    return
+  end
+  pick_template(function(fn)
+    if not fn then return end
+    send(fn(raw_content))
+  end)
 end
 
 function M.send_path_to_ai()
@@ -155,33 +203,25 @@ function M.send_current_tmux_target_to_ai()
   end)
 end
 
-function M.send_to_ai(raw, post_action)
-  if raw == nil then raw = true end
-  local final_content
-  if type(raw) == "string" then
-    final_content = raw
-  else
-    local content = get_current_or_visual_content()
-    final_content = raw and content or format_ai_prompt(content)
-  end
-
-  get_target_tmux(function(target_session, target_window)
-    tmux.send_to_tmux(final_content, target_session, target_window, nil, post_action)
+function M.send_to_ai(template, post_action)
+  local content = get_current_or_visual_content()
+  resolve_and_send(template, content, function(final_content)
+    get_target_tmux(function(target_session, target_window)
+      tmux.send_to_tmux(final_content, target_session, target_window, nil, post_action)
+    end)
   end)
 end
 
-function M.send_to_last_window(raw, post_action)
-  if raw == nil then raw = true end
-  local content = get_current_or_visual_content()
-
-  local final_content = raw and content or format_ai_prompt(content)
+function M.send_to_last_window(template, post_action)
   local session, window = get_last_window_in_current_session()
   if not session then
     print("No tmux session/window found")
     return
   end
-
-  tmux.send_to_tmux(final_content, session, window, nil, post_action)
+  local content = get_current_or_visual_content()
+  resolve_and_send(template, content, function(final_content)
+    tmux.send_to_tmux(final_content, session, window, nil, post_action)
+  end)
 end
 
 function M.send_literal_to_ai(content, post_action)
@@ -194,14 +234,15 @@ end
 function M.setup()
   vim.keymap.set({ "n", "v" }, "<Localleader>c", function() end, { desc = "Send to AI/Tmux" })
   -- when it contains chinese, "<Localleader>cc" does not work. But  "<Localleader>ce" works
-  vim.keymap.set({ "n", "v" }, "<Localleader>c<Localleader>", function() M.send_to_ai("", "enter") end, { desc = "Send Enter to AI/Tmux" })
-  vim.keymap.set({ "n", "v" }, "<Localleader>cc", function() M.send_to_ai(true) end, { desc = "Send to AI/Tmux (Raw)" })
-  vim.keymap.set({ "n", "v" }, "<Localleader>cC", function() M.send_to_ai(true, "enter") end, { desc = "Send to AI/Tmux (Raw, no switch)" })
-  vim.keymap.set({ "n", "v" }, "<Localleader>ce", function() M.send_to_ai(false) end, { desc = "Send to AI/Tmux (edit with Context)" })
+  vim.keymap.set({ "n", "v" }, "<Localleader>c<Localleader>", function() M.send_literal_to_ai("", "enter") end, { desc = "Send Enter to AI/Tmux" })
+  vim.keymap.set({ "n", "v" }, "<Localleader>cc", function() M.send_to_ai() end, { desc = "Send to AI/Tmux (Raw)" })
+  vim.keymap.set({ "n", "v" }, "<Localleader>cC", function() M.send_to_ai(nil, "enter") end, { desc = "Send to AI/Tmux (Raw, no switch)" })
+  vim.keymap.set({ "n", "v" }, "<Localleader>ce", function() M.send_to_ai("focus") end, { desc = "Send to AI/Tmux (focus template)" })
+  vim.keymap.set({ "n", "v" }, "<Localleader>cE", function() M.send_to_ai(true) end, { desc = "Send to AI/Tmux (pick template)" })
   vim.keymap.set({ "n", "v" }, "<Localleader>cp", function() M.send_path_to_ai() end, { desc = "Send Path to AI/Tmux" })
   vim.keymap.set({ "n", "v" }, "<Localleader>ct", function() M.send_current_tmux_target_to_ai() end, { desc = "Send current tmux target to AI/Tmux" })
-  vim.keymap.set({ "n", "v" }, "<Localleader>cl", function() M.send_to_last_window(true) end, { desc = "Send to last tmux window in current session (Raw, line/visual)" })
-  vim.keymap.set({ "n", "v" }, "<Localleader>cL", function() M.send_to_last_window(true, "enter") end, { desc = "Send to last tmux window (Raw, no switch)" })
+  vim.keymap.set({ "n", "v" }, "<Localleader>cl", function() M.send_to_last_window() end, { desc = "Send to last tmux window in current session (Raw, line/visual)" })
+  vim.keymap.set({ "n", "v" }, "<Localleader>cL", function() M.send_to_last_window(nil, "enter") end, { desc = "Send to last tmux window (Raw, no switch)" })
   -- NOTE: this does not work in navigate-note, because the number leading command is defined by other shortcut.
   vim.keymap.set({ "n" }, "<Localleader>ch", function()
     local count = vim.v.count1

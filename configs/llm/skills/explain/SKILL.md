@@ -2,11 +2,13 @@
 name: explain
 description: >
   Explain a codebase in four modes: `framework` produces a high-level architecture
-  walkthrough saved to `codebase-walkthrough.md`; `impl <path>` explains a specific
-  implementation saved to `codebase-impl-explain.md`; `run <identifier>` explains
-  a specific execution run by tracing code + logs, saved to `codebase-run-explain.md`;
-  `debug [<identifier>] [<question>]` diagnoses failures and verifies fixes, saved to
-  `codebase-debug.md`.
+  walkthrough saved to `codebase-walkthrough[-<slug>].md`; `impl <path>` explains a
+  specific implementation saved to `codebase-impl-<slug>.md`; `run <identifier>`
+  explains a specific execution run by tracing code + logs, saved to
+  `codebase-run-<slug>.md`; `debug [<identifier>] [<question>]` diagnoses failures
+  and verifies fixes, saved to `codebase-debug-<slug>.md`. `<slug>` is a short
+  (≤12 chars) tag derived from the identifier so repeated runs don't overwrite
+  each other.
 metadata:
   short-description: Codebase architecture, implementation, run & debug explainer
 ---
@@ -34,7 +36,8 @@ investigate ("为什么 exit 23").
 
 ## Mode: `framework`
 
-Produce a full architecture walkthrough and write it to **`codebase-walkthrough.md`**.
+Produce a full architecture walkthrough and write it to **`codebase-walkthrough[-<slug>].md`**
+（`<slug>` 可省略；如果同一个仓库里想比较多个子模块的框架视图，用被考察的子目录/模块名作为 slug）。
 
 ### Steps
 
@@ -55,6 +58,8 @@ Produce a full architecture walkthrough and write it to **`codebase-walkthrough.
 
 ## Mode: `impl <path>`
 
+写入 **`codebase-impl-<slug>.md`**（`<slug>` 从 `<path>` 的 basename 派生，见「输出文件命名」一节）。
+
 ### Steps
 
 1. **内部结构** — 说明该实现内部主要分哪几个大块（类、函数组、文件）。
@@ -67,7 +72,8 @@ Produce a full architecture walkthrough and write it to **`codebase-walkthrough.
 
 ## Mode: `debug [<identifier>] [<question>]`
 
-诊断一次运行的失败原因，验证特定功能/修复是否生效。写入 **`codebase-debug.md`**。
+诊断一次运行的失败原因，验证特定功能/修复是否生效。写入 **`codebase-debug-<slug>.md`**
+（`<slug>` 从 `<identifier>` 派生；若 identifier 省略，用最近一次运行的 run id / 时间戳末段）。
 
 与 `run` 模式的关系：两者结构类似（都是从启动到结束逐步追踪），区别在于**侧重点**：
 - `run` 没有特别重的侧重点，均匀地解释每个阶段做了什么。
@@ -145,7 +151,8 @@ Produce a full architecture walkthrough and write it to **`codebase-walkthrough.
 ## Mode: `run <identifier>`
 
 Explain how a specific execution run actually worked, tracing code paths against real
-log output. Write to **`codebase-run-explain.md`**.
+log output. Write to **`codebase-run-<slug>.md`**（`<slug>` 从 `<identifier>` 派生；若
+identifier 省略，用最近一次运行的 run id / 时间戳末段）。
 
 ### Locating the run
 
@@ -186,6 +193,33 @@ log output. Write to **`codebase-run-explain.md`**.
 
 ## General rules
 
+### 输出文件命名
+
+- 每个模式的输出文件都带一个短 `<slug>` 后缀，这样多次 explain 不同对象时不会互相覆盖。
+- `<slug>` 规则：
+  - **长度 ≤ 12 个字符**，宁可信息略少也不要长。
+  - 只保留 `[A-Za-z0-9_.-]`；其他字符（`/`、`:`、空格等）统一替换为 `-`，并把连续的 `-` 折叠成一个。
+  - 从 identifier 里取**最能区分本次调用**的那一段，通常是末段：
+    - `impl ai4ai/agents/developer/run.sh` → `run.sh`
+    - `run logs/2026-04-23-1530/dev-a` → `dev-a` 或 `1530-dev-a`
+    - `debug MySession:7.0` → `7.0` 或 `mys-7.0`
+    - `debug 2026-04-23T15:30 exit23` → `exit23`（`<question>` 的关键词比时间戳更有辨识度时优先用它）
+  - 如果截断后和项目里已有的同类文件重名，再追加一个短区分段（如时间戳末 4 位）。
+- `framework` 模式默认不加 slug（通常一个仓库只会跑一次）；只有当你要对同仓库的多个子模块分别生成框架视图时才加。
+- 文件名中的 `<slug>` 用连字符和前缀连接，**不**用下划线：`codebase-impl-run.sh.md` 而不是 `codebase_impl_run.sh.md`。
+
+### 每一句断言都要挂证据
+
+这条是硬约束，适用于**全部四个模式**的**所有段落**（不只是 debug/run 的 per-step 区块）：
+
+- 正文里每一句对代码行为、运行结果、时间、数字、配置值的陈述，后面必须紧跟一个证据：要么是 `完整路径/file:line`（或 `:a-b` 行段），要么是一段**原文摘录**的 log/代码片段（用 `>` 引用或围栏代码块，不要转述）。
+- 如果同一个 claim 需要多个证据，就列全；不要"见附录"式的集中堆在最后。
+- Root Cause / Feature 验证 / 修复建议 / Triage 表的"一句话原因"列 —— 也必须带证据，**不能只有结论**。
+- 数字必须可复现：每个数字（步数、次数、大小、耗时）都要注明是从哪个文件 / 哪条命令 / 哪段 log 数出来的。
+- 找不到证据就写"无直接证据，推断依据是 X"并把 X 也挂证据；**不允许无依据的结论**。
+- 重要或需要整理的片段（函数定义、关键 log 行、JSON 子对象）直接内联贴内容——读者不打开文件也能看懂。
+
+### 路径格式
 - 文件引用始终写**从项目根目录开始的完整相对路径**，格式：`path/to/file.py:line`。
   - **所有位置**都必须用完整路径：正文、表格、代码块注释、执行流图、Key File Index，无一例外。
     - 正确：`configs/tmux/ai/lib.sh:11`
@@ -193,5 +227,7 @@ log output. Write to **`codebase-run-explain.md`**.
   - 一定要写清楚行数，方便我定位；最好能带上能定位到代码的更容易读的路径，比如`AAAA[class]->BBBB[func]`
   - 我平时会使用 vim 的 gf 来做代码跳转，请务必保证用**完整路径**，让我跳转的时候能到准确位置。
     - **一定不要省略路径**！ 如果你写成 `path/a......z/file.py:line`，我就会很难定位到它。
+
+### 其他
 - 输出文件直接写在**项目根目录**，Markdown 格式，不要写在子目录里。
 - 语言跟随用户：用户用中文问就用中文写，用英文问就用英文写。
