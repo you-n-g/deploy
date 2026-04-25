@@ -7,6 +7,7 @@
 TYPE="${1:-key}"
 FNAME="${2:-gpt.gpg}"
 KEY_PATH="$HOME/deploy/keys/$FNAME"
+OS_NAME="$(uname)"
 
 if [ ! -f "$KEY_PATH" ]; then
     echo "Error: Key file $KEY_PATH not found." >&2
@@ -24,10 +25,18 @@ case "$TYPE" in
         LINE=3
         ;;
     xyz_base)
-        LINE=4
+        if [ "$OS_NAME" = "Darwin" ]; then
+            LINE=6
+        else
+            LINE=4
+        fi
         ;;
     xyz_key)
-        LINE=5
+        if [ "$OS_NAME" = "Darwin" ]; then
+            LINE=7
+        else
+            LINE=5
+        fi
         ;;
     *)
         echo "Usage: $0 [base|model|key|xyz_base|xyz_key] [filename.gpg]" >&2

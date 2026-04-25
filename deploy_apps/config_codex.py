@@ -59,7 +59,8 @@ def update_config_toml():
     doc["model_providers"]["azure"] = azure
 
     # Optional extra provider (xyz). Convention in ~/deploy/keys/gpt.gpg:
-    #   line 4 = xyz api_base, line 5 = xyz api_key (both optional).
+    #   Linux: line 4 = xyz api_base, line 5 = xyz api_key
+    #   macOS: line 6 = xyz api_base, line 7 = xyz api_key
     xyz_base = get_cred("xyz_base")
     xyz_key = get_cred("xyz_key")
 

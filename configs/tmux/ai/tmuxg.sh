@@ -32,7 +32,7 @@ SELECTED=$(echo "$LIST" | fzf \
     --reverse \
     $_start_bind \
     --header $'\033[36m◆\033[0m/\033[36m◇\033[0m current  \033[32m●\033[0m ready  \033[33m○\033[0m busy  |  Enter to switch' \
-    --preview 'tmux capture-pane -ept {1} | sed -e :a -e "/^\s*$/{\$d;N;ba;}"' \
+    --preview 'tmux capture-pane -ept {1} | perl -0777 -pe "s/\s+\z/\n/"' \
     --preview-window 'up:70%,follow')
 
 [[ -z "$SELECTED" ]] && exit 0

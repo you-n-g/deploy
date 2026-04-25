@@ -24,6 +24,7 @@ fi
 
 bash "$SCRIPT_DIR/install_rednote.sh"
 bash "$SCRIPT_DIR/install_excalidraw_diagram_skill.sh"
+# bash "$SCRIPT_DIR/install_x_research.sh"
 
 npm install -g defuddle-cli
 

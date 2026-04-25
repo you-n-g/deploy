@@ -88,7 +88,7 @@ if [[ -t 0 ]]; then
     SELECTED=$(fzf --ansi --reverse \
         $_start_bind \
         --header '◆/◇ current  ● ready  ○ busy  |  Enter to switch' \
-        --preview 'tmux capture-pane -ept {1}' \
+        --preview 'tmux capture-pane -ept {1} | perl -0777 -pe "s/\s+\z/\n/"' \
         --preview-window 'up:70%,follow' < "$LISTFILE")
 else
     # Non-interactive (run-shell): launch popup, use wait-for to block until done
@@ -101,7 +101,7 @@ else
         fzf --ansi --reverse \
             $_start_bind \
             --header '◆/◇ current  ● ready  ○ busy  |  Enter to switch' \
-            --preview 'tmux capture-pane -ept {1}' \
+            --preview 'tmux capture-pane -ept {1} | perl -0777 -pe \"s/\s+\z/\n/\"' \
             --preview-window 'up:70%,follow' < '$LISTFILE' > '$RESULTFILE'"
 
     tmux wait-for "$CHANNEL"

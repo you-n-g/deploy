@@ -110,10 +110,13 @@ _ai_window_rows() {
 }
 
 # Format for tmux status bar: "N" normally, "N !M" when M windows are waiting.
+# The current window is excluded from both counts — the user already knows about it.
 _ai_status_label() {
-    local now r w
+    local now r w cur
     now=$(date +%s)
-    read -r r w < <(_ai_window_rows -a | awk -F '\t' -v now="$now" '
+    cur=$(tmux display-message -p '#{session_name}:#{window_index}' 2>/dev/null)
+    read -r r w < <(_ai_window_rows -a | awk -F '\t' -v now="$now" -v cur="$cur" '
+        $2 == cur      { next }
         { is_run = (now - $6+0) <= 1 }
         is_run         { running++ }
         $7==1 && !is_run { waiting++ }
