@@ -6,14 +6,20 @@
 # - Inside tmux, switch the current client.
 # - Outside tmux, attach to the target session/window.
 #
-# Usage: new_or_create_codex_qa_window.sh [-q] [session_name]
+# Usage: new_or_create_codex_qa_window.sh [-q] [--cmd CMD] [--window-name NAME] [session_name]
 # -q: quiet mode — always exit 0 (suppress non-zero exit codes).
 #     Useful when called from tmux run-shell to avoid status-bar flash.
+# --cmd: shell command to run in the window (default: codextmp)
+# --window-name: tmux window name (default: codex-tmp)
 
 QUIET=false
+OVERRIDE_CMD=""
+OVERRIDE_WINDOW_NAME=""
 while [[ "$1" == -* ]]; do
     case "$1" in
         -q) QUIET=true; shift ;;
+        --cmd) OVERRIDE_CMD="$2"; shift 2 ;;
+        --window-name) OVERRIDE_WINDOW_NAME="$2"; shift 2 ;;
         *)  shift ;;
     esac
 done
@@ -22,7 +28,7 @@ done
 set -euo pipefail
 
 SESSION="${1:-learn}"
-WINDOW_NAME="codex-tmp"
+WINDOW_NAME="${OVERRIDE_WINDOW_NAME:-codex-tmp}"
 TARGET="${SESSION}:0.0"
 
 _resolve_workdir() {
@@ -48,8 +54,9 @@ _resolve_workdir() {
 WORKDIR="$(_resolve_workdir)"
 WORKDIR="${WORKDIR:-$HOME}"
 
-# Start an interactive zsh so existing shell init loads codextmp.
-CMD="zsh -ic 'codextmp'"
+# Start an interactive zsh so existing shell init loads the AI tool.
+_ai_cmd="${OVERRIDE_CMD:-codextmp}"
+CMD="zsh -ic '$_ai_cmd'"
 
 if tmux has-session -t "$SESSION" 2>/dev/null; then
     EXISTING_WINDOW_ID="$(tmux list-windows -t "$SESSION" -F '#{window_id} #{window_name}' 2>/dev/null | awk -v name="$WINDOW_NAME" '$2==name{print $1; exit}')"

@@ -25,14 +25,16 @@ case "$TYPE" in
         LINE=3
         ;;
     xyz_base)
-        if [ "$OS_NAME" = "Darwin" ]; then
+        TMUX_SESSION="$([ -n "$TMUX" ] && tmux display-message -p '#S' 2>/dev/null)"
+        if [ "$TMUX_SESSION" = "learn" ] || [ "$OS_NAME" = "Darwin" ]; then
             LINE=6
         else
             LINE=4
         fi
         ;;
     xyz_key)
-        if [ "$OS_NAME" = "Darwin" ]; then
+        TMUX_SESSION="$([ -n "$TMUX" ] && tmux display-message -p '#S' 2>/dev/null)"
+        if [ "$TMUX_SESSION" = "learn" ] || [ "$OS_NAME" = "Darwin" ]; then
             LINE=7
         else
             LINE=5

@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-"$HOME/deploy/configs/tmux/ai/new_or_create_codex_qa_window.sh" "${1:-learn}"
+AI_TOOL="$(tmux show-environment AI_TOOL 2>/dev/null | sed 's/^AI_TOOL=//' || true)"
+case "$AI_TOOL" in
+    claude) TOOL_CMD="clauder"; WINDOW_NAME="claude-tmp" ;;
+    *)      TOOL_CMD="codextmp"; WINDOW_NAME="codex-tmp" ;;
+esac
+
+"$HOME/deploy/configs/tmux/ai/new_or_create_codex_qa_window.sh" \
+    --cmd "$TOOL_CMD" --window-name "$WINDOW_NAME" "${1:-learn}"
