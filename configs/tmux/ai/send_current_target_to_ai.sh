@@ -29,19 +29,10 @@ fi
 
 if [[ "$ALL_SESSIONS" == true ]]; then
     AI_WINDOW_ID=$("$SCRIPT_DIR/get_ai_window.sh" -i -A)
-    RC=$?
-    if [[ -z "$AI_WINDOW_ID" ]]; then
-        [[ "$RC" -eq 2 ]] && exit 0  # user canceled selection
-        tmux display-message "No AI window found"
-        exit 1
-    fi
 else
     AI_WINDOW_ID=$("$SCRIPT_DIR/get_ai_window.sh" -i "$CURRENT_SESSION")
-    if [[ -z "$AI_WINDOW_ID" ]]; then
-        tmux display-message "No AI window found in session: $CURRENT_SESSION"
-        exit 1
-    fi
 fi
+[[ -z "$AI_WINDOW_ID" ]] && exit 0
 
 AI_PANE_ID=$(tmux list-panes -t "$AI_WINDOW_ID" -F '#{?pane_active,#{pane_id},}' 2>/dev/null | grep -v '^$' | head -n 1)
 TARGET=${AI_PANE_ID:-$AI_WINDOW_ID}

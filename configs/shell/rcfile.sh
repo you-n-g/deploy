@@ -384,6 +384,14 @@ function clauder() {
     fi
 }
 
+function claudetmp() {
+    if [[ "$(uname)" == "Linux" ]]; then
+        IS_SANDBOX=1 _claude_env _with_tmux_rename claude-tmp "$MYPROXY_CLAUDE" claude --dangerously-skip-permissions "$@"
+    else
+        _claude_env _with_tmux_rename claude-tmp "$MYPROXY_CLAUDE" claude --enable-auto-mode "$@"
+    fi
+}
+
 # for fzf
 # 文件太大常常没法正常运行
 export FZF_ALT_C_COMMAND="command find -L . -maxdepth 1 \\( -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune \

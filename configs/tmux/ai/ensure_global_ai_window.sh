@@ -1,12 +1,14 @@
 #!/bin/bash
 
-# Create or reuse a temporary Codex window in a given session (default: learn).
+# Ensure a named AI window exists in a given session (global — targets any
+# session by name, not just the current one), creating the session and/or
+# window if needed, then switch to it.
 # - If the session exists, reuse its first pane path as workdir.
 # - If the session does not exist, create it first.
 # - Inside tmux, switch the current client.
 # - Outside tmux, attach to the target session/window.
 #
-# Usage: new_or_create_codex_qa_window.sh [-q] [--cmd CMD] [--window-name NAME] [session_name]
+# Usage: ensure_global_ai_window.sh [-q] [--cmd CMD] [--window-name NAME] [session_name]
 # -q: quiet mode — always exit 0 (suppress non-zero exit codes).
 #     Useful when called from tmux run-shell to avoid status-bar flash.
 # --cmd: shell command to run in the window (default: codextmp)
@@ -43,7 +45,7 @@ _resolve_workdir() {
         return
     fi
 
-    if [ -n "${TMUX:-}" ]; then
+    if [ -n "${TMUX_PANE:-}" ]; then
         tmux display-message -p -t "$TMUX_PANE" '#{pane_current_path}' 2>/dev/null || printf '%s\n' "$PWD"
         return
     fi

@@ -1,16 +1,26 @@
 #!/bin/bash
-# Fork the current AI session into a new tmux window (background).
+# Fork an AI session into a new tmux window (background).
 # Supports Claude Code (clauder) and Codex (codextmp).
-# Usage: fork_ai_session.sh [-q]
+#
+# Usage: fork_ai_session.sh [-q] [--suffix SUFFIX] [window_name]
+#   window_name  — name of a window in the CURRENT session whose AI pane to
+#                  fork. When omitted, fork the AI in the current pane.
+#   --suffix     — suffix appended to the target window name for the new
+#                  forked window (default: -fork).
+#   -q           — quiet mode (always exit 0, suppress status-bar flash).
 
 QUIET=false
+SUFFIX="-fork"
 while [[ "$1" == -* ]]; do
     case "$1" in
         -q) QUIET=true; shift ;;
+        --suffix) SUFFIX="$2"; shift 2 ;;
         *)  shift ;;
     esac
 done
 [[ "$QUIET" == true ]] && trap 'exit 0' EXIT
+
+TARGET_WIN_NAME="${1:-}"
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source "$SCRIPT_DIR/lib.sh"
@@ -21,19 +31,47 @@ if [[ -z "$TMUX" ]]; then
     exit 1
 fi
 
-pane_pid=$(tmux display-message -p '#{pane_pid}')
+# Resolve the source pane that hosts the AI process.
+if [[ -n "$TARGET_WIN_NAME" ]]; then
+    SESSION=$(tmux display-message -p '#S')
+    target_win_id=$(tmux list-windows -t "$SESSION" \
+        -F '#{window_id} #{window_name}' \
+        | awk -v name="$TARGET_WIN_NAME" '$2==name{print $1; exit}')
+    if [[ -z "$target_win_id" ]]; then
+        tmux display-message "Fork: window '$TARGET_WIN_NAME' not found in session $SESSION"
+        exit 1
+    fi
+
+    # Pick the first pane with an AI process in the target window.
+    _ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null)
+    pane_pid=""
+    workdir=""
+    while IFS=$'\t' read -r pid path; do
+        if _has_ai_proc "$pid"; then
+            pane_pid="$pid"; workdir="$path"; break
+        fi
+    done < <(tmux list-panes -t "$target_win_id" -F $'#{pane_pid}\t#{pane_current_path}')
+
+    if [[ -z "$pane_pid" ]]; then
+        tmux display-message "Fork: no AI process in window '$TARGET_WIN_NAME'"
+        exit 1
+    fi
+    base_name="$TARGET_WIN_NAME"
+else
+    pane_pid=$(tmux display-message -p '#{pane_pid}')
+    workdir=$(tmux display-message -p '#{pane_current_path}')
+    base_name=$(tmux display-message -p '#{window_name}')
+fi
 
 result=$(_find_ai_pid "$pane_pid")
 if [[ -z "$result" ]]; then
-    tmux display-message "Fork: no AI process in current pane"
+    tmux display-message "Fork: no AI process detected"
     exit 1
 fi
 
 ai_pid="${result%% *}"
 ai_name="${result##* }"
-workdir=$(tmux display-message -p '#{pane_current_path}')
-win_name=$(tmux display-message -p '#{window_name}')
-fork_name="${win_name}-fork"
+fork_name="${base_name}${SUFFIX}"
 
 case "$ai_name" in
     claude)
