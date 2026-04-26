@@ -142,7 +142,7 @@ deploy() {
   # nodejs is necessary for language servers
   deploy_apps/deploy_nodejs.sh
   
-  deploy_apps/install_rg.sh
+  brew install ripgrep
   # - frequently used by nvim
 
   install_or_update_neovim_app
