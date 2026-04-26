@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-AI_TOOL="$(tmux show-environment AI_TOOL 2>/dev/null | sed 's/^AI_TOOL=//' || true)"
+AI_TOOL="$(tmux show-environment -g TMUX_AI_TOOL 2>/dev/null | sed 's/^TMUX_AI_TOOL=//' || true)"
 case "$AI_TOOL" in
     claude) TOOL_CMD="clauder"; WINDOW_NAME="claude-tmp" ;;
     *)      TOOL_CMD="codextmp"; WINDOW_NAME="codex-tmp" ;;

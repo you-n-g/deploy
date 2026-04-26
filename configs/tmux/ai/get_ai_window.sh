@@ -89,7 +89,7 @@ if [[ -t 0 ]]; then
         $_start_bind \
         --header '◆/◇ current  ● ready  ○ busy  |  Enter to switch' \
         --preview 'tmux capture-pane -ept {1} | perl -0777 -pe "s/\s+\z/\n/"' \
-        --preview-window 'up:70%,follow' < "$LISTFILE")
+        --preview-window "up:${_AI_FZF_PREVIEW_HEIGHT},follow" < "$LISTFILE")
 else
     # Non-interactive (run-shell): launch popup, use wait-for to block until done
     RESULTFILE=$(mktemp)
@@ -102,7 +102,7 @@ else
             $_start_bind \
             --header '◆/◇ current  ● ready  ○ busy  |  Enter to switch' \
             --preview 'tmux capture-pane -ept {1} | perl -0777 -pe \"s/\s+\z/\n/\"' \
-            --preview-window 'up:70%,follow' < '$LISTFILE' > '$RESULTFILE'"
+            --preview-window 'up:${_AI_FZF_PREVIEW_HEIGHT},follow' < '$LISTFILE' > '$RESULTFILE'"
 
     tmux wait-for "$CHANNEL"
     SELECTED=$(cat "$RESULTFILE")
