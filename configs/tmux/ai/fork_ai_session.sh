@@ -72,4 +72,4 @@ win_id=$(tmux new-window -d -P -F '#{window_id}' -n "$fork_name" -c "$workdir" \
     "zsh -ic \"$cmd\"")
 # Block TUI escape-sequence renames, then override _with_tmux_rename's rename
 tmux set-window-option -t "$win_id" allow-rename off
-(sleep 3 && tmux rename-window -t "$win_id" "$fork_name") &
+(sleep 1 && tmux rename-window -t "$win_id" "$fork_name") &
