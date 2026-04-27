@@ -70,7 +70,7 @@ if [[ -z "$result" ]]; then
 fi
 
 ai_pid="${result%% *}"
-ai_name="${result##* }"
+ai_name=$(basename "${result##* }")
 fork_name="${base_name}${SUFFIX}"
 
 case "$ai_name" in
@@ -95,10 +95,16 @@ case "$ai_name" in
         ;;
     codex)
         # Codex session file path: .codex/sessions/YYYY/MM/DD/rollout-...-<UUID>.jsonl
-        session_id=$(ls -la /proc/"$ai_pid"/fd/ \
-            | grep -oP '\.codex/sessions/.*-\K[0-9a-f-]{36}(?=\.jsonl)' \
+        # Use lsof (macOS) to find the open session file, then extract the UUID.
+        session_id=$(lsof -p "$ai_pid" 2>/dev/null \
+            | awk '{print $NF}' \
+            | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
             | head -1)
-        cmd="codexr fork '$session_id'"
+        if [[ -n "$session_id" ]]; then
+            cmd="codexr fork '$session_id'"
+        else
+            cmd="codexr fork --last"
+        fi
         ;;
     *)
         tmux display-message "Fork: unsupported AI tool ($ai_name)"

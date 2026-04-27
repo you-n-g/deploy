@@ -25,19 +25,27 @@ case "$TYPE" in
         LINE=3
         ;;
     xyz_base)
-        TMUX_SESSION="$([ -n "$TMUX" ] && tmux display-message -p '#S' 2>/dev/null)"
-        if [ "$TMUX_SESSION" = "learn" ] || [ "$OS_NAME" = "Darwin" ]; then
-            LINE=6
+        if [[ -n "${LEVEL+x}" ]]; then
+            LINE=$((LEVEL == 0 ? 6 : 4))
         else
-            LINE=4
+            TMUX_SESSION="$([ -n "$TMUX" ] && tmux display-message -p '#S' 2>/dev/null)"
+            if [ "$TMUX_SESSION" = "learn" ] || [ "$OS_NAME" = "Darwin" ]; then
+                LINE=6
+            else
+                LINE=4
+            fi
         fi
         ;;
     xyz_key)
-        TMUX_SESSION="$([ -n "$TMUX" ] && tmux display-message -p '#S' 2>/dev/null)"
-        if [ "$TMUX_SESSION" = "learn" ] || [ "$OS_NAME" = "Darwin" ]; then
-            LINE=7
+        if [[ -n "${LEVEL+x}" ]]; then
+            LINE=$((LEVEL == 0 ? 7 : 5))
         else
-            LINE=5
+            TMUX_SESSION="$([ -n "$TMUX" ] && tmux display-message -p '#S' 2>/dev/null)"
+            if [ "$TMUX_SESSION" = "learn" ] || [ "$OS_NAME" = "Darwin" ]; then
+                LINE=7
+            else
+                LINE=5
+            fi
         fi
         ;;
     *)

@@ -2,12 +2,19 @@
 # /// script
 # dependencies = [
 #   "tomlkit",
+#   "typer",
 # ]
 # ///
 
 import subprocess
 from pathlib import Path
 import tomlkit
+import typer
+
+
+CONFIG_PATH = Path.home() / ".codex/config.toml"
+DEFAULT_MODEL = "gpt-5.2"
+app = typer.Typer(add_completion=False)
 
 
 def get_cred(field, fname="gpt.gpg"):
@@ -19,19 +26,25 @@ def get_cred(field, fname="gpt.gpg"):
     return result.stdout.strip()
 
 
-def update_config_toml():
-    config_path = Path.home() / ".codex/config.toml"
-    config_path.parent.mkdir(parents=True, exist_ok=True)
+def load_config():
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    if config_path.exists():
-        with open(config_path, "r") as f:
+    if CONFIG_PATH.exists():
+        with open(CONFIG_PATH, "r") as f:
             doc = tomlkit.parse(f.read())
     else:
         doc = tomlkit.document()
+    return doc
 
-    # Set top-level fields
-    doc["model"] = "gpt-5.2"
-    doc["model_provider"] = "azure"
+
+def write_config(doc):
+    with open(CONFIG_PATH, "w") as f:
+        f.write(tomlkit.dumps(doc))
+    print(f"Updated {CONFIG_PATH}")
+
+
+def ensure_common_config(doc):
+    doc["model"] = doc.get("model", DEFAULT_MODEL)
     doc["project_doc_fallback_filenames"] = ["GEMINI.md"]
 
     # Ensure [sandbox_workspace_write] exists and enable network access
@@ -42,6 +55,14 @@ def update_config_toml():
     # Ensure [model_providers] exists
     if "model_providers" not in doc:
         doc["model_providers"] = tomlkit.table()
+
+
+def update_config_toml_for_api():
+    doc = load_config()
+    ensure_common_config(doc)
+
+    # Set top-level fields
+    doc["model_provider"] = "azure"
 
     # Update [model_providers.azure]
     azure = tomlkit.table()
@@ -84,14 +105,35 @@ def update_config_toml():
         if xyz_base:
             doc["xyz"]["api_base"] = xyz_base
 
-    with open(config_path, "w") as f:
-        f.write(tomlkit.dumps(doc))
-    print(f"Updated {config_path}")
+    write_config(doc)
 
 
-def main():
-    update_config_toml()
+def update_config_toml_for_login():
+    doc = load_config()
+    ensure_common_config(doc)
+    doc["model_provider"] = "openai"
+    write_config(doc)
+    print("Default provider switched to Codex login. Run `codex login` if needed.")
+
+
+@app.callback(invoke_without_command=True)
+def main(ctx: typer.Context):
+    """Configure ~/.codex/config.toml for API mode or Codex account login."""
+    if ctx.invoked_subcommand is None:
+        update_config_toml_for_api()
+
+
+@app.command()
+def api():
+    """Use the existing Azure API-based Codex setup."""
+    update_config_toml_for_api()
+
+
+@app.command()
+def login():
+    """Switch the default provider back to the built-in Codex/ChatGPT login."""
+    update_config_toml_for_login()
 
 
 if __name__ == "__main__":
-    main()
+    app()

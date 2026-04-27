@@ -700,3 +700,9 @@
   Output = ""
   Tag = []
   command = "eval export $(tmux show-env DISPLAY 2>/dev/null); xclip -out -selection clipboard"
+
+[[Snippets]]
+  Description = "list available models"
+  Output = ""
+  Tag = []
+  command = "(export LEVEL=0; curl -sf \"$(get-cred xyz_base)/v1/models\"  -H \"Authorization: Bearer $(get-cred xyz_key)\")"

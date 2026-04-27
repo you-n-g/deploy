@@ -144,7 +144,7 @@ echo "Linked: ~/.claude/CLAUDE.md -> $SCRIPT_DIR/CLAUDE.md"
 command -v gemini &>/dev/null || npm install -g @google/gemini-cli
 command -v codex  &>/dev/null || npm install -g @openai/codex
 command -v claude &>/dev/null || curl -fsSL https://claude.ai/install.sh | bash
-~/deploy/deploy_apps/config_codex.py
+# ~/deploy/deploy_apps/config_codex.py  # The latest usage of codex depends on login now
 
 # 🙌🏻 得手动一次输入下面的命令
 # https://github.com/jarrodwatts/claude-hud
