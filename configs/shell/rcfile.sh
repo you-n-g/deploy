@@ -308,13 +308,22 @@ function geminir() {
 
 # codex with rename
 function codexr() {
-    # run codex auto
-    # _with_tmux_rename codex codex --dangerously-bypass-approvals-and-sandbox "$@"
-    if [[ "${PWD:l}" != *obsidian* ]]; then
-        codexyz "$@"
-    else
-        codexa "$@"
-    fi
+    local provider
+    provider=$(_codex_default_provider)
+
+    case "$provider" in
+        openai)
+            # only default openai provider needs login
+            _codex_run_login codex "$@"
+            ;;
+        *)
+            if [[ "${PWD:l}" != *obsidian* ]]; then
+                codexyz "$@"
+            else
+                codexa "$@"
+            fi
+            ;;
+    esac
 }
 
 _codex_auto_flag() {
@@ -325,6 +334,17 @@ _codex_auto_flag() {
     fi
 }
 
+_codex_default_provider() {
+    local config_path="${CODEX_HOME:-$HOME/.codex}/config.toml"
+    local provider
+
+    if [[ -f "$config_path" ]]; then
+        provider=$(sed -nE 's/^[[:space:]]*model_provider[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' "$config_path" | head -n 1)
+    fi
+
+    echo "${provider:-openai}"
+}
+
 _codex_env() {
     NODE_TLS_REJECT_UNAUTHORIZED=0 \
     AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) \
@@ -332,7 +352,15 @@ _codex_env() {
     "$@"
 }
 
-_codex_run() {
+_codex_run_login() {
+    local title="$1"
+    shift
+    local auto_flag
+    auto_flag=$(_codex_auto_flag)
+    _with_tmux_rename "$title" "$MYPROXY_CODEX" codex "$auto_flag" "$@"
+}
+
+_codex_run_api() {
     local title="$1"
     shift
     local auto_flag
@@ -342,16 +370,16 @@ _codex_run() {
 
 function codexa() {
     # run my azure codex
-    _codex_run codex "$@"
+    _codex_run_api codex "$@"
 }
 
 function codexyz() {
-    _codex_run codex-xyz -c 'model_provider="xyz"' "$@"
+    _codex_run_api codex-xyz -c 'model_provider="xyz"' "$@"
 }
 
 function codextmp() {
     # run my azure codex
-    _codex_run codex-tmp "$@"
+    _codex_run_api codex-tmp "$@"
 }
 
 function c() {
