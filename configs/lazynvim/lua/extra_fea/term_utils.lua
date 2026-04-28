@@ -82,21 +82,93 @@ function M.normalize_path_for_edit(path)
   return vim.fn.expand(path)
 end
 
--- Extract line range (e.g. "123-321" or "123") after file path
-local function extract_line_range(current_line, escaped_file)
-  -- Try range pattern first: file:123-321
-  local range_pattern = escaped_file .. "[^%d]*(%d+)%-(%d+)"
-  local ms, me, start_str, end_str = string.find(current_line, range_pattern)
-  if ms then
-    return tonumber(start_str), tonumber(end_str), ms, me
+local function cursor_distance(match_start, match_end, cursor_idx)
+  if not cursor_idx then
+    return 0
   end
-  -- Fall back to single line: file:123
-  local single_pattern = escaped_file .. "[^%d]*(%d+)"
-  ms, me = string.find(current_line, single_pattern)
-  if ms then
-    return tonumber(string.match(current_line, single_pattern)), nil, ms, me
+  if cursor_idx < match_start then
+    return match_start - cursor_idx
   end
-  return nil, nil, nil, nil
+  if cursor_idx > match_end then
+    return cursor_idx - match_end
+  end
+  return 0
+end
+
+local function extract_file_line_ref()
+  local current_line = vim.api.nvim_get_current_line()
+  local cursor_col = vim.api.nvim_win_get_cursor(0)[2]
+  local raw_file = vim.fn.expand("<cfile>")
+  local cursor_idx = cursor_col and cursor_col + 1 or nil
+  local best_match = nil
+  local best_distance = nil
+
+  local function update_best_match(file, start_str, range_sep, end_str, match_start, match_end)
+    local distance = cursor_distance(match_start, match_end, cursor_idx)
+    local end_line = nil
+    if range_sep == "-" and end_str ~= "" then
+      end_line = tonumber(end_str)
+    end
+
+    if best_distance == nil or distance < best_distance then
+      best_match = {
+        file = file,
+        start_line = tonumber(start_str),
+        end_line = end_line,
+        match_start = match_start,
+        match_end = match_end,
+      }
+      best_distance = distance
+    end
+
+    return distance
+  end
+
+  -- When <cfile> is the path, only match line numbers attached to that path.
+  if raw_file ~= "" and not raw_file:match("^%d+$") then
+    local pattern = raw_file:gsub("([^%w])", "%%%1") .. "[^%d]*(%d+)(%-?)(%d*)"
+    local search_start = 1
+    while true do
+      local ms, me, start_str, range_sep, end_str = string.find(current_line, pattern, search_start)
+      if not ms then
+        break
+      end
+
+      if update_best_match(raw_file, start_str, range_sep, end_str, ms, me) == 0 then
+        break
+      end
+
+      search_start = me + 1
+    end
+
+    if best_match then
+      return best_match.file, best_match.start_line, best_match.end_line, best_match.match_start, best_match.match_end
+    end
+    return raw_file, nil, nil, nil, nil
+  end
+
+  -- When the cursor is on the line number, <cfile> is only "123"; recover the
+  -- surrounding file:line reference from the current line.
+  local pattern = "([^%s`'\"%(%)%[%]{}<>]+):(%d+)(%-?)(%d*)"
+  local search_start = 1
+  while true do
+    local ms, me, file, start_str, range_sep, end_str = string.find(current_line, pattern, search_start)
+    if not ms then
+      break
+    end
+
+    if update_best_match(file, start_str, range_sep, end_str, ms, me) == 0 then
+      break
+    end
+
+    search_start = me + 1
+  end
+
+  if best_match then
+    return best_match.file, best_match.start_line, best_match.end_line, best_match.match_start, best_match.match_end
+  end
+
+  return raw_file, nil, nil, nil, nil
 end
 
 -- Briefly highlight a range of lines in the current buffer
@@ -185,17 +257,14 @@ vim.api.nvim_create_autocmd("TermOpen", {
 function M.open_file_in_largest_non_terminal_win(force)
   local largest_win = M.get_largest_non_terminal_win()
   -- Attempt to extract a file path and line number from the surrounding text
-  local file = M.normalize_path_for_edit(vim.fn.expand("<cfile>"))
   local line = nil
-  local current_line = vim.api.nvim_get_current_line()
+  local extracted_file, start_line, end_line, match_start, match_end = extract_file_line_ref()
+  local file = M.normalize_path_for_edit(extracted_file)
 
   -- If a largest non-terminal window was found, open the file there
   local buftype = vim.bo.buftype
   if largest_win ~= nil and (force == true or buftype == "terminal" and file ~= "") then
     -- 1. Goto the file and highlight it.
-    -- Escape special characters in the file path for exact matching
-    local escaped_file = file:gsub("([^%w])", "%%%1")
-    local start_line, end_line, match_start, match_end = extract_line_range(current_line, escaped_file)
     if match_start then
       line = start_line
       -- Highlight the matched file path and line number temporarily
@@ -222,7 +291,8 @@ end
 
 -- Normal mode gf: open file under cursor with optional line number extraction
 function M.open_file_with_line_in_normal()
-  local file = M.normalize_path_for_edit(vim.fn.expand("<cfile>"))
+  local extracted_file, start_line, end_line, match_start, match_end = extract_file_line_ref()
+  local file = M.normalize_path_for_edit(extracted_file)
   if file == "" then
     vim.cmd("normal! gf")
     return
@@ -245,12 +315,8 @@ function M.open_file_with_line_in_normal()
     return
   end
 
-  local current_line = vim.api.nvim_get_current_line()
   local line = nil
 
-  -- Extract line number after the file path (e.g. "foo/bar.py:42" or "foo/bar.py:42-100")
-  local escaped_file = file:gsub("([^%w])", "%%%1")
-  local start_line, end_line, match_start, match_end = extract_line_range(current_line, escaped_file)
   if match_start then
     line = start_line
     -- Briefly highlight the matched region
