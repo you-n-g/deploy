@@ -5,8 +5,9 @@ AI_PROC_PAT='(^|/)(claude|gemini|codex)$'
 _AI_UNREAD_THRESHOLD=5  # consecutive running samples before marking a window unread
 _AI_FZF_PREVIEW_HEIGHT=85%  # fzf preview-window height for AI-window selectors
 _AI_FZF_SESSION_COLOR_CODES=(31 32 33 34 35 36 91 92 93 94 95 96)
-declare -A _ai_fzf_session_colors=()
-declare -A _ai_fzf_used_session_colors=()
+_ai_fzf_session_color_names=()
+_ai_fzf_session_color_values=()
+_ai_fzf_used_session_color_codes=()
 
 # Find the first AI process in the subtree rooted at a pane PID.
 # Prints "PID COMM" (e.g. "12345 claude") and returns 0, or returns 1 if none.
@@ -54,16 +55,54 @@ _format_relative_age() {
 }
 
 _ai_fzf_reset_session_colors() {
-    _ai_fzf_session_colors=()
-    _ai_fzf_used_session_colors=()
+    _ai_fzf_session_color_names=()
+    _ai_fzf_session_color_values=()
+    _ai_fzf_used_session_color_codes=()
+}
+
+_ai_fzf_get_session_color() {
+    local session_name="$1"
+    local out_var="$2"
+    local i
+
+    for ((i = 0; i < ${#_ai_fzf_session_color_names[@]}; i++)); do
+        if [[ "${_ai_fzf_session_color_names[$i]}" == "$session_name" ]]; then
+            printf -v "$out_var" '%s' "${_ai_fzf_session_color_values[$i]}"
+            return 0
+        fi
+    done
+
+    printf -v "$out_var" '%s' ""
+    return 1
+}
+
+_ai_fzf_set_session_color() {
+    local session_name="$1"
+    local color="$2"
+
+    _ai_fzf_session_color_names+=("$session_name")
+    _ai_fzf_session_color_values+=("$color")
+    _ai_fzf_used_session_color_codes+=("$color")
+}
+
+_ai_fzf_color_is_used() {
+    local color="$1"
+    local used
+
+    for used in "${_ai_fzf_used_session_color_codes[@]}"; do
+        [[ "$used" == "$color" ]] && return 0
+    done
+
+    return 1
 }
 
 _ai_fzf_session_color_code() {
     local session_name="$1"
     local out_var="$2"
-    local color="${_ai_fzf_session_colors[$session_name]}"
+    local color
     local checksum start offset candidate color_count
 
+    _ai_fzf_get_session_color "$session_name" color
     [[ -n "$color" ]] && { printf -v "$out_var" '%s' "$color"; return; }
 
     color_count="${#_AI_FZF_SESSION_COLOR_CODES[@]}"
@@ -73,15 +112,14 @@ _ai_fzf_session_color_code() {
 
     for ((offset = 0; offset < color_count; offset++)); do
         candidate="${_AI_FZF_SESSION_COLOR_CODES[$(((start + offset) % color_count))]}"
-        if [[ -z "${_ai_fzf_used_session_colors[$candidate]}" ]]; then
+        if ! _ai_fzf_color_is_used "$candidate"; then
             color="$candidate"
             break
         fi
     done
 
     [[ -z "$color" ]] && color="${_AI_FZF_SESSION_COLOR_CODES[$start]}"
-    _ai_fzf_session_colors[$session_name]="$color"
-    _ai_fzf_used_session_colors[$color]=1
+    _ai_fzf_set_session_color "$session_name" "$color"
     printf -v "$out_var" '%s' "$color"
 }
 
@@ -117,10 +155,13 @@ _ai_fzf_colored_session_target() {
 #   1745000100  work:3   claude   @7   12345   1745000099   1
 #   1744999800  work:1   gemini   @2   67890   1744999800   0
 _ai_window_rows() {
-    local now state_file tmp_file
+    local now state_dir state_file tmp_file
     now=$(date +%s)
-    state_file="${HOME}/.tmux/ai_unread_state"
+    state_dir="${HOME}/.tmux"
+    state_file="${state_dir}/ai_unread_state"
     tmp_file="${state_file}.${BASHPID:-$$}"
+
+    mkdir -p "$state_dir"
 
     _ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null)
     tmux list-panes "$@" \
