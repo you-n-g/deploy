@@ -37,7 +37,7 @@ SELECTED=$(echo "$LIST" | fzf \
 
 [[ -z "$SELECTED" ]] && exit 0
 
-TARGET=$(echo "$SELECTED" | cut -d' ' -f2)
+TARGET=$(echo "$SELECTED" | cut -d' ' -f2 | perl -pe 's/\e\[[0-9;]*m//g')
 
 if [[ -n "$TMUX" ]]; then
     tmux switch-client -t "$TARGET"

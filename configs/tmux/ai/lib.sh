@@ -4,6 +4,9 @@
 AI_PROC_PAT='(^|/)(claude|gemini|codex)$'
 _AI_UNREAD_THRESHOLD=5  # consecutive running samples before marking a window unread
 _AI_FZF_PREVIEW_HEIGHT=85%  # fzf preview-window height for AI-window selectors
+_AI_FZF_SESSION_COLOR_CODES=(31 32 33 34 35 36 91 92 93 94 95 96)
+declare -A _ai_fzf_session_colors=()
+declare -A _ai_fzf_used_session_colors=()
 
 # Find the first AI process in the subtree rooted at a pane PID.
 # Prints "PID COMM" (e.g. "12345 claude") and returns 0, or returns 1 if none.
@@ -48,6 +51,49 @@ _format_relative_age() {
     elif (( diff < 86400 )); then printf '%sh' "$((diff / 3600))"
     else                          printf '%sd' "$((diff / 86400))"
     fi
+}
+
+_ai_fzf_reset_session_colors() {
+    _ai_fzf_session_colors=()
+    _ai_fzf_used_session_colors=()
+}
+
+_ai_fzf_session_color_code() {
+    local session_name="$1"
+    local out_var="$2"
+    local color="${_ai_fzf_session_colors[$session_name]}"
+    local checksum start offset candidate color_count
+
+    [[ -n "$color" ]] && { printf -v "$out_var" '%s' "$color"; return; }
+
+    color_count="${#_AI_FZF_SESSION_COLOR_CODES[@]}"
+    checksum=$(printf '%s' "$session_name" | cksum)
+    checksum="${checksum%% *}"
+    start=$((checksum % color_count))
+
+    for ((offset = 0; offset < color_count; offset++)); do
+        candidate="${_AI_FZF_SESSION_COLOR_CODES[$(((start + offset) % color_count))]}"
+        if [[ -z "${_ai_fzf_used_session_colors[$candidate]}" ]]; then
+            color="$candidate"
+            break
+        fi
+    done
+
+    [[ -z "$color" ]] && color="${_AI_FZF_SESSION_COLOR_CODES[$start]}"
+    _ai_fzf_session_colors[$session_name]="$color"
+    _ai_fzf_used_session_colors[$color]=1
+    printf -v "$out_var" '%s' "$color"
+}
+
+_ai_fzf_colored_session_target() {
+    local sess_win="$1"
+    local out_var="$2"
+    local session_name="${sess_win%:*}"
+    local window_index="${sess_win##*:}"
+    local session_color
+
+    _ai_fzf_session_color_code "$session_name" session_color
+    printf -v "$out_var" '\033[%sm%s\033[0m:%s' "$session_color" "$session_name" "$window_index"
 }
 
 # Print unique AI windows as tab-separated rows, sorted by last_visit desc.
@@ -144,7 +190,7 @@ _ai_running_count() {
 #
 # Output columns (SPACE-separated, ready for fzf --ansi):
 #   $1 window_id      e.g. "@7"
-#   $2 session:index  e.g. "work:3"
+#   $2 session:index  e.g. "work:3" (session name is ANSI-colored)
 #   $3+  ANSI label   status-symbol + window_name + unread mark + time info
 #
 # Status symbols:
@@ -161,8 +207,10 @@ _ai_window_fzf_list() {
     local current_target="${1:-}"
     local now="${2:-$(date +%s)}"
 
+    _ai_fzf_reset_session_colors
+
     while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw unread_flag; do
-        local sort_key status rel_visit rel_act time_info
+        local sort_key status rel_visit rel_act time_info colored_sess_win
         local is_unread=0
         [[ "$unread_flag" == "1" ]] && is_unread=1
 
@@ -189,6 +237,7 @@ _ai_window_fzf_list() {
 
         rel_visit=$(_format_relative_age $((now - wvisit)))
         rel_act=$(_format_relative_age $((now - wact_raw)))
+        _ai_fzf_colored_session_target "$sess_win" colored_sess_win
 
         if (( wvisit == wact_raw )); then
             time_info="[act ${rel_act}]"
@@ -200,7 +249,7 @@ _ai_window_fzf_list() {
         (( is_unread )) && unread_mark=$' \033[33m[!]\033[0m'
 
         printf '%s\t%s\t%s %s %b%s%b  \033[2m%s\033[0m\n' \
-            "$sort_key" "$wvisit" "$wid" "$sess_win" "$status" "$wname" "$unread_mark" "$time_info"
+            "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$wname" "$unread_mark" "$time_info"
     done |
     sort -t $'\t' -k1,1 -k2,2nr |
     cut -f3-
