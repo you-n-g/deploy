@@ -11,7 +11,7 @@
 # Usage: ensure_global_ai_window.sh [-q] [--cmd CMD] [--window-name NAME] [session_name]
 # -q: quiet mode — always exit 0 (suppress non-zero exit codes).
 #     Useful when called from tmux run-shell to avoid status-bar flash.
-# --cmd: shell command to run in the window (default: codextmp)
+# --cmd: shell command to run in the window (default: codexr)
 # --window-name: tmux window name (default: codex-tmp)
 
 QUIET=false
@@ -57,8 +57,8 @@ WORKDIR="$(_resolve_workdir)"
 WORKDIR="${WORKDIR:-$HOME}"
 
 # Start an interactive zsh so existing shell init loads the AI tool.
-_ai_cmd="${OVERRIDE_CMD:-codextmp}"
-CMD="zsh -ic '$_ai_cmd'"
+_ai_cmd="${OVERRIDE_CMD:-codexr}"
+printf -v CMD 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$WINDOW_NAME" "$_ai_cmd"
 
 if tmux has-session -t "$SESSION" 2>/dev/null; then
     EXISTING_WINDOW_ID="$(tmux list-windows -t "$SESSION" -F '#{window_id} #{window_name}' 2>/dev/null | awk -v name="$WINDOW_NAME" '$2==name{print $1; exit}')"

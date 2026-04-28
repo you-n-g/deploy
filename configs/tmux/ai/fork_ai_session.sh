@@ -1,6 +1,6 @@
 #!/bin/bash
 # Fork an AI session into a new tmux window (background).
-# Supports Claude Code (clauder) and Codex (codextmp).
+# Supports Claude Code (clauder) and Codex (codexr).
 #
 # Usage: fork_ai_session.sh [-q] [--suffix SUFFIX] [window_name]
 #   window_name  — name of a window in the CURRENT session whose AI pane to
@@ -112,8 +112,8 @@ case "$ai_name" in
         ;;
 esac
 
-win_id=$(tmux new-window -d -P -F '#{window_id}' -n "$fork_name" -c "$workdir" \
-    "zsh -ic \"$cmd\"")
-# Block TUI escape-sequence renames, then override _with_tmux_rename's rename
+printf -v launch_cmd 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$fork_name" "$cmd"
+win_id=$(tmux new-window -d -P -F '#{window_id}' -n "$fork_name" -c "$workdir" "$launch_cmd")
+# Block TUI escape-sequence renames; _with_tmux_rename receives the target name
+# through TMUX_AI_WINDOW_NAME.
 tmux set-window-option -t "$win_id" allow-rename off
-(sleep 1 && tmux rename-window -t "$win_id" "$fork_name") &

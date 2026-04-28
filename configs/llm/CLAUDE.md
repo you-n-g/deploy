@@ -10,3 +10,11 @@
 ## 我是谁
 我是 xiao / xiaoyang  
 如果在提交代码或处理内容时需要确认我的身份，请参考这里。
+
+
+## 我的 Tmux Multi-Agent 系统(简称TMA)
+我平时会用 multi-agent system 来完成复杂任务。对我来说，每个 Agent 都类似一个独立的 Claude 或 Codex session，并对应 tmux session 里的一个 window。服务于同一任务的一组 Agent 通常会放在同一个 tmux session 中，其中一个 tmux window 会作为 orchestrator Agent，负责协调、分派和汇总。
+
+这套组织方式的好处是，Agent 之间可以直接通过 tmux 命令通信：例如读取另一个 window 中某个 Agent 的完整历史，或者用 `send-keys` 向其他 Agent 发送消息。基于 tmux 的这种管理方式，我可以很方便地搭建、调整和观察各种 agent system，也更容易让人随时加入互动或进行干预。
+
+当我有一些重复任务时，我倾向于把它包装成一个 multi-agent system。对于我在 skill 中描述或沉淀下来的 multi-agent system，你可以尽量基于这套 tmux + Agent 的机制来实现，而不是重新发明另一套协作方式。

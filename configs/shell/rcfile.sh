@@ -287,7 +287,7 @@ function _myp_run() {
 
 # unified runner with tmux rename; args: title proxy_mode cmd...
 function _with_tmux_rename() {
-    local title="$1"
+    local title="${TMUX_AI_WINDOW_NAME:-$1}"
     local proxy_mode="$2"
     shift 2
     if [ -n "$TMUX" ]; then
@@ -377,11 +377,6 @@ function codexyz() {
     _codex_run_api codex-xyz -c 'model_provider="xyz"' "$@"
 }
 
-function codextmp() {
-    # run my azure codex
-    _codex_run_api codex-tmp "$@"
-}
-
 function c() {
     "$HOME/deploy/helper_scripts/bin/c" "$@"
 }
@@ -409,14 +404,6 @@ function clauder() {
         claudeyolo "$@"
     else
         claudeauto "$@"
-    fi
-}
-
-function claudetmp() {
-    if [[ "$(uname)" == "Linux" ]]; then
-        IS_SANDBOX=1 _claude_env _with_tmux_rename claude-tmp "$MYPROXY_CLAUDE" claude --dangerously-skip-permissions "$@"
-    else
-        _claude_env _with_tmux_rename claude-tmp "$MYPROXY_CLAUDE" claude --enable-auto-mode "$@"
     fi
 }
 
