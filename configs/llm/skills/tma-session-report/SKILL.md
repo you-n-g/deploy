@@ -2,7 +2,7 @@
 name: tma-session-report
 description: >
   Analyzes the current AXRD tmux session by using the shared TMA mechanism from
-  /home/xiaoyang/deploy/configs/llm/CLAUDE.md: one top-level summary TMA Agent
+  $HOME/deploy/configs/llm/CLAUDE.md: one top-level summary TMA Agent
   summarizes the run, and one workspace TMA analysis Agent deeply analyzes each
   AXRD workspace.
 metadata:
@@ -19,7 +19,7 @@ metadata:
 
 TMA Agent 的定义、创建方式、交互式 `codexr` / `clauder` 启动方式、tmux window/pane 通信方式，都使用共享文件中的「TMA Agent 创建与通信约定」：
 
-`/home/xiaoyang/deploy/configs/llm/CLAUDE.md`
+`$HOME/deploy/configs/llm/CLAUDE.md`
 
 这个 skill 不重复通用 TMA 机制，只定义 AXRD 运行分析这套 TMA 的角色和任务。
 
