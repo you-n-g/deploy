@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+source "$SCRIPT_DIR/../../configs/tmux/ai/lib.sh"
+
+_ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null)
+ROWS=$(
+    tmux list-panes -a \
+        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}\t#{window_id}\t#{pane_pid}\t#{window_activity}' |
+    while IFS=$'\t' read -r last_visit target window_id pane_pid window_activity; do
+        if _has_ai_proc "$pane_pid"; then
+            printf '%s\t%s\t%s\t%s\n' "$last_visit" "$target" "$window_id" "$window_activity"
+        fi
+    done |
+    sort -t $'\t' -k1,1nr -k4,4nr |
+    awk -F $'\t' '!seen[$3]++'
+)
+if [[ -z "$ROWS" ]]; then
+    echo "No AI agent windows found." >&2
+    exit 1
+fi
+
+IFS=$'\n' read -r ROW _rest <<< "$ROWS"
+IFS=$'\t' read -r _last_visit target _window_id _window_activity <<< "$ROW"
+
+if [[ -n "${TMUX:-}" ]]; then
+    tmux switch-client -t "$target"
+else
+    exec tmux attach-session -t "${target%%:*}" \; select-window -t "$target"
+fi

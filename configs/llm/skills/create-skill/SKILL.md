@@ -3,7 +3,7 @@ name: create-skill
 description: >
   Turn a manually-guided workflow from the current conversation into a reusable
   skill. Analyzes what the user has been doing, extracts the pattern, and writes
-  a SKILL.md installed to ~/deploy/configs/llm/skills/.
+  a SKILL.md installed to ~/deploy/configs/llm/skills/ or ~/farside/llm/skills/.
   The user may specify the skill name, inputs, and outputs explicitly.
 metadata:
   short-description: Package a conversation workflow into a reusable skill
@@ -31,11 +31,12 @@ metadata:
 | 字段 | 来源 |
 |------|------|
 | **名称** | 用户明确指定，或从任务动词推断（kebab-case） |
+| **安装位置** | 默认 `~/deploy/configs/llm/skills/`；如果用户提到 farside、聊天/个人知识库相关流程，或明确要求放进 `~/farside`，使用 `~/farside/llm/skills/` |
 | **输入** | 用户指定；或从对话中分析"用户每次需要提供什么" |
 | **输出** | 用户指定；或从对话中分析"最终产物是什么" |
 | **触发场景** | 从对话中提炼"什么情况下会用到这个 skill" |
 
-如果名称、输入、输出任意一项不明确，**先从对话推断，不要打断用户询问**。
+如果名称、安装位置、输入、输出任意一项不明确，**先从对话推断，不要打断用户询问**。安装位置推断不到时使用默认位置。
 
 ### 2. 分析对话，提炼核心流程
 
@@ -83,10 +84,17 @@ metadata:
 
 ### 4. 安装
 
+根据第 1 步确定的安装位置设置 `SKILL_DIR`：
+
+- 默认：`SKILL_DIR=~/deploy/configs/llm/skills/<skill-name>`
+- farside：`SKILL_DIR=~/farside/llm/skills/<skill-name>`
+
 ```bash
-mkdir -p ~/deploy/configs/llm/skills/<skill-name>
+mkdir -p "$SKILL_DIR"
 # 写入 SKILL.md
 
 # 建 symlink 让当前 session 立即可用
-ln -s ~/deploy/configs/llm/skills/<skill-name> ~/deploy/configs/llm/merged-skills/<skill-name>
+ln -s "$SKILL_DIR" ~/deploy/configs/llm/merged-skills/<skill-name>
 ```
+
+如果 `~/deploy/configs/llm/merged-skills/<skill-name>` 已存在，直接报错说明冲突，让用户决定是否覆盖或改名，不要静默跳过或自动覆盖。
