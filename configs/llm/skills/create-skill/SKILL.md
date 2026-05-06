@@ -1,100 +1,107 @@
 ---
 name: create-skill
 description: >
-  Turn a manually-guided workflow from the current conversation into a reusable
-  skill. Analyzes what the user has been doing, extracts the pattern, and writes
-  a SKILL.md installed to ~/deploy/configs/llm/skills/ or ~/farside/llm/skills/.
-  The user may specify the skill name, inputs, and outputs explicitly.
+  Create or refine a concise, locally maintained Codex skill. Use when the user
+  wants to turn a repeated workflow into a reusable skill, or update an existing
+  skill from recent feedback. Does not create TMA agents; for TMA collaboration
+  skills, use tma-skill-creator.
 metadata:
-  short-description: Package a conversation workflow into a reusable skill
+  short-description: 创建/改进技能
 ---
 
-# `create-skill` — 把手动流程打包成 Skill
+# `create-skill` — 创建 / 改进普通 Skill
 
 ## 触发时机
 
-用户想把本次对话中反复引导的某个流程固化下来，方便下次直接用 `/skill-name` 调用。
+- 创建：用户想把某个手动流程、反复交互方式或固定任务沉淀成 skill。
+- 改进：用户想根据最近一次使用中的反馈，更新已有 skill。
 
-典型触发方式：
-- `/create-skill`
-- "把这个流程做成一个 skill，叫 xxx"
-- "我希望创建一个 skill，输入是 X，输出是 Y"
+如果任务是 tmux multi-agent / TMA 协作流程，改用 `tma-skill-creator`。本 skill 只处理普通 Codex skill，不创建 TMA Agent。
 
----
+## 背景
 
-## 执行步骤
+create 模式默认安装到 `$HOME/deploy/configs/llm/skills/<skill-name>`；如果用户提到 farside、聊天/个人知识库相关流程，或明确要求放进 farside，则安装到 `$HOME/farside/llm/skills/<skill-name>`。
 
-### 1. 确定 Skill 的基本信息
+refine 模式优先编辑已有 skill 本体：`$HOME/deploy/configs/llm/skills/<target>/SKILL.md` 或 `$HOME/farside/llm/skills/<target>/SKILL.md`。如果入口来自 `merged-skills`，先用 `readlink` 找真实目录；如果目标目录或 `SKILL.md` 本身是 symlink，不要修改。
 
-从用户的指令和对话上下文中提取：
+## 核心判断
 
-| 字段 | 来源 |
-|------|------|
-| **名称** | 用户明确指定，或从任务动词推断（kebab-case） |
-| **安装位置** | 默认 `~/deploy/configs/llm/skills/`；如果用户提到 farside、聊天/个人知识库相关流程，或明确要求放进 `~/farside`，使用 `~/farside/llm/skills/` |
-| **输入** | 用户指定；或从对话中分析"用户每次需要提供什么" |
-| **输出** | 用户指定；或从对话中分析"最终产物是什么" |
-| **触发场景** | 从对话中提炼"什么情况下会用到这个 skill" |
+创建或 refine skill 时，除了任务、背景定义外，只重点写两类东西。其他尽量保持简略，不要把一次性细节、长解释或模型本来就懂的常识塞进 skill。
 
-如果名称、安装位置、输入、输出任意一项不明确，**先从对话推断，不要打断用户询问**。安装位置推断不到时使用默认位置。
+### 1. 意图约束
 
-### 2. 分析对话，提炼核心流程
+当 Agent 会做错，需要用户反馈纠正时，要从用户交互中推断背后的真实意图，并改写成下次同类任务也适用的约束。
 
-回顾本次对话中用户手动引导的步骤，识别：
+- 不要只复制用户原话；要总结“用户为什么纠正”。
+- 不要写一次性事实、路径、论文名或临时结论。
+- 优先落到触发时机、执行边界、输出格式或禁止事项中。
+- 只有确实跨步骤通用时，才写成全局规则。
 
-- **固定步骤**：每次都必须做的操作（写入 SKILL.md 的主体）
-- **可变参数**：每次调用时不同的输入（用 `ARGUMENTS` 或占位符表示）
-- **判断逻辑**：遇到什么情况走哪条路
-- **验证步骤**：如何确认流程成功完成
+例子：
 
-### 3. 编写 SKILL.md
+- 用户说：“这个 skill 不应该每次都问我，能从上下文推断就推断。”
+- 写进 skill 时应变成：缺失参数优先从当前对话和本地文件推断；只有推断会导致高风险写入或不可逆操作时才询问。
 
-使用以下模板：
+### 2. 提效提示
 
-````markdown
+当 Agent 不一定会做错，但会反复走弯路、重复探索或低效等待时，可以记录提示，让下次更快。
+
+- 只记录能稳定节省时间的信息。
+- 不要因为一次偶然情况增加复杂流程。
+- 提示要短，最好直接落到执行步骤里。
+- 对命令、文件位置、验证方式可以写得具体；对判断结论要保持可泛化。
+
+## 推荐结构
+
+```markdown
 ---
 name: <skill-name>
 description: >
-  <一句话描述这个 skill 做什么，以及何时触发它>
+  <这个 skill 做什么；什么时候触发>
 metadata:
-  short-description: <10字内的极简描述>
+  short-description: <简短中文名>
 ---
 
 # `<skill-name>` — <中文标题>
 
 ## 触发时机
-（什么场景下使用这个 skill，给出 2-3 个典型触发短语）
+<任务域和触发语>
 
 ## 输入
-（如果 skill 需要参数，说明格式；如果从上下文推断，说明推断规则）
-
-## 输出
-（产物是什么：文件、命令输出、配置变更等）
+<用户需要给什么；哪些内容可从上下文推断>
 
 ## 执行步骤
-（有序的操作步骤，每步附带具体命令/代码示例）
+<稳定步骤、关键命令、必要的提效提示>
+
+## 输出
+<最终产物、文件路径或回复格式>
 
 ## 验证
-（如何确认 skill 执行成功）
+<如何确认成功>
 
-## 注意事项
-（常见错误、环境依赖、边界情况）
-````
-
-
-### 4. 安装
-
-根据第 1 步确定的安装位置设置 `SKILL_DIR`：
-
-- 默认：`SKILL_DIR=~/deploy/configs/llm/skills/<skill-name>`
-- farside：`SKILL_DIR=~/farside/llm/skills/<skill-name>`
-
-```bash
-mkdir -p "$SKILL_DIR"
-# 写入 SKILL.md
-
-# 建 symlink 让当前 session 立即可用
-ln -s "$SKILL_DIR" ~/deploy/configs/llm/merged-skills/<skill-name>
+## 约束
+<禁止事项、边界、依赖前提>
 ```
 
-如果 `~/deploy/configs/llm/merged-skills/<skill-name>` 已存在，直接报错说明冲突，让用户决定是否覆盖或改名，不要静默跳过或自动覆盖。
+不需要每个 skill 都完整保留所有小节；没有实际内容的小节直接删掉。
+
+## 安装与验证
+
+create 模式：
+
+```bash
+SKILL_DIR=<install_root>/<skill-name>
+mkdir -p "$SKILL_DIR"
+ln -s "$SKILL_DIR" "$HOME/deploy/configs/llm/merged-skills/<skill-name>"
+test -f "$SKILL_DIR/SKILL.md"
+test -L "$HOME/deploy/configs/llm/merged-skills/<skill-name>"
+```
+
+如果 `merged-skills` 下同名 symlink 已存在，确认它指向 `$SKILL_DIR`；如果指向不同目录，直接报错，让用户决定覆盖或改名。
+
+refine 模式：
+
+- 不重新安装 skill。
+- 小范围修改已有 `SKILL.md`，除非用户明确要求重写。
+- 验证新增内容是否确实对应这次用户反馈里的意图约束或提效提示。
+- 最终回复只说明应用了哪些反馈、改了哪些文件、还有什么未决问题。

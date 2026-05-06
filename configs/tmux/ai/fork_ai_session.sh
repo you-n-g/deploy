@@ -1,5 +1,5 @@
 #!/bin/bash
-# Fork an AI session into a new tmux window (background).
+# Fork an AI session into a new tmux window and switch to it.
 # Supports Claude Code (clauder) and Codex (codexr).
 #
 # Usage: fork_ai_session.sh [-q] [--suffix SUFFIX] [window_name]
@@ -117,3 +117,4 @@ win_id=$(tmux new-window -d -P -F '#{window_id}' -n "$fork_name" -c "$workdir" "
 # Block TUI escape-sequence renames; _with_tmux_rename receives the target name
 # through TMUX_AI_WINDOW_NAME.
 tmux set-window-option -t "$win_id" allow-rename off
+tmux select-window -t "$win_id"
