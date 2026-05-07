@@ -10,7 +10,6 @@ if [ -z "${TMUX_PANE:-}" ]; then
 fi
 
 window_id="$(tmux display-message -p -t "$TMUX_PANE" '#{window_id}')"
-tmux set-window-option -q -t "$window_id" @ai_agent_hook_state 1
 tmux set-window-option -q -t "$window_id" @ai_agent_last_activity "$now"
 
 is_window_visible() {
@@ -25,14 +24,12 @@ case "$state" in
     ;;
   running)
     tmux set-window-option -q -t "$window_id" @ai_agent_running 1
-    tmux set-window-option -q -t "$window_id" @ai_agent_last_start "$now"
     if is_window_visible; then
       tmux set-window-option -q -t "$window_id" @ai_agent_unread 0
     fi
     ;;
   idle)
     tmux set-window-option -q -t "$window_id" @ai_agent_running 0
-    tmux set-window-option -q -t "$window_id" @ai_agent_last_stop "$now"
     if is_window_visible; then
       tmux set-window-option -q -t "$window_id" @ai_agent_unread 0
     else
