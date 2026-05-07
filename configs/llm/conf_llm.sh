@@ -156,30 +156,33 @@ deploy_sgpt_prompt() {
 }
 
 # ── Deploy global CLAUDE.md to ~/.claude/CLAUDE.md ───────────────────────────
-deploy_claude_prompt() {
+deploy_claude() {
     mkdir -p "$HOME/.claude"
     ln -snf "$SCRIPT_DIR/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
     echo "Linked: ~/.claude/CLAUDE.md -> $SCRIPT_DIR/CLAUDE.md"
+    "$SCRIPT_DIR/config_claude.py"
 }
 
 # ── Deploy global AGENTS.md to ~/.codex/AGENTS.md ───────────────────────────
-deploy_codex_agents() {
+deploy_codex() {
     mkdir -p "$HOME/.codex"
     ln -snf "$SCRIPT_DIR/CLAUDE.md" "$HOME/.codex/AGENTS.md"
     echo "Linked: ~/.codex/AGENTS.md -> $SCRIPT_DIR/CLAUDE.md"
+    ln -snf "$SCRIPT_DIR/codex/hooks.json" "$HOME/.codex/hooks.json"
+    echo "Linked: ~/.codex/hooks.json -> $SCRIPT_DIR/codex/hooks.json"
+    "$SCRIPT_DIR/config_codex.py" hooks
 }
 
-deploy_prompts() {
+deploy_llm_configs() {
     deploy_sgpt_prompt
-    deploy_claude_prompt
-    deploy_codex_agents
+    deploy_claude
+    deploy_codex
 }
 
 install_agents() {
     command -v gemini &>/dev/null || npm install -g @google/gemini-cli
     command -v codex  &>/dev/null || npm install -g @openai/codex
     command -v claude &>/dev/null || curl -fsSL https://claude.ai/install.sh | bash
-    # ~/deploy/deploy_apps/config_codex.py  # The latest usage of codex depends on login now
 }
 
 # 🙌🏻 得手动一次输入下面的命令
@@ -201,7 +204,7 @@ run_all() {
     merge_skills
     apply_skill_exclusions
     link_all_skills
-    deploy_prompts
+    deploy_llm_configs
     install_agents
 }
 
@@ -216,9 +219,9 @@ Commands:
   skill-exclusions Disable skills that do not apply to this environment.
   link-skills      Link merged-skills/ into ~/.gemini, ~/.codex, and ~/.claude.
   skills           Run external-skills, merge-skills, skill-exclusions, and link-skills.
-  prompts          Link .sgpt.md, Claude CLAUDE.md, and Codex AGENTS.md.
-  codex-agents     Link only ~/.codex/AGENTS.md.
-  claude-prompt    Link only ~/.claude/CLAUDE.md.
+  configs          Link LLM CLI configs and install Codex/Claude hooks.
+  codex            Link ~/.codex/AGENTS.md and install Codex hooks.
+  claude           Link ~/.claude/CLAUDE.md and install Claude hooks.
   sgpt-prompt      Link only ~/.sgpt.md.
   install-agents   Install gemini, codex, and claude CLIs if missing.
   claude-hud       Print the manual claude-hud setup commands.
@@ -239,9 +242,9 @@ run_command() {
             apply_skill_exclusions
             link_all_skills
             ;;
-        prompts) deploy_prompts ;;
-        codex-agents) deploy_codex_agents ;;
-        claude-prompt) deploy_claude_prompt ;;
+        configs) deploy_llm_configs ;;
+        codex) deploy_codex ;;
+        claude) deploy_claude ;;
         sgpt-prompt) deploy_sgpt_prompt ;;
         install-agents) install_agents ;;
         claude-hud) print_claude_hud_instructions ;;

@@ -3,8 +3,8 @@
 # Switch to the globally most recently visited AI window, excluding the current
 # window.
 #
-# Uses @last_visit maintained by update_last_visit.sh. Unlike get_ai_window.sh,
-# this is intentionally non-interactive: it never opens fzf.
+# Uses @last_visit maintained by update_last_visit.sh. This is intentionally
+# non-interactive: it never opens fzf.
 
 set -euo pipefail
 
@@ -27,5 +27,5 @@ if [[ -z "$row" ]]; then
     exit 1
 fi
 
-IFS=$'\t' read -r _wvisit sess_win _wname _wid _pane_pid _wact_raw _unread _running <<< "$row"
+IFS=$'\t' read -r _last_visit sess_win _wname _wid _pane_pid _wact_raw _unread _running <<< "$row"
 tmux switch-client -t "$sess_win"

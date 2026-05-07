@@ -2,7 +2,6 @@
 # Shared helpers for AI window detection
 
 AI_PROC_PAT='(^|/)(claude|gemini|codex)$'
-_AI_UNREAD_THRESHOLD=5  # consecutive running samples before marking a window unread
 _AI_FZF_PREVIEW_HEIGHT=85%  # fzf preview-window height for AI-window selectors
 _AI_FZF_SESSION_COLOR_CODES=(31 32 33 34 35 36 91 92 93 94 95 96)
 _ai_fzf_session_color_names=()
@@ -135,7 +134,6 @@ _ai_fzf_colored_session_target() {
 }
 
 # Print unique AI windows as tab-separated rows, sorted by last_visit desc.
-# Also maintains per-window unread state in ~/.tmux/ai_unread_state.
 #
 # Usage: _ai_window_rows [-a] [-s -t SESSION] [tmux list-panes options]
 #   -a              scan all sessions
@@ -147,65 +145,38 @@ _ai_fzf_colored_session_target() {
 #   $3 window_name     e.g. "claude"
 #   $4 window_id       e.g. "@7"
 #   $5 pane_pid        root PID of the pane
-#   $6 window_activity epoch of last output
-#   $7 unread_flag     1 if >= _AI_UNREAD_THRESHOLD consecutive running samples
-#                      occurred after last_visit and window is now idle; else 0
+#   $6 activity_epoch  hook-tracked agent activity
+#   $7 unread_flag     1 if the agent finished while not visible
+#   $8 running_flag    1 if the agent hook says this window is running
 #
 # Example output:
-#   1745000100  work:3   claude   @7   12345   1745000099   1
-#   1744999800  work:1   gemini   @2   67890   1744999800   0
+#   1745000100  work:3   claude   @7   12345   1745000099   1   0
+#   1744999800  work:1   gemini   @2   67890   1744999800   0   1
 _ai_window_rows() {
-    local now state_dir state_file tmp_file
-    now=$(date +%s)
-    state_dir="${HOME}/.tmux"
-    state_file="${state_dir}/ai_unread_state"
-    tmp_file="${state_file}.${BASHPID:-$$}"
-
-    mkdir -p "$state_dir"
-
     _ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null)
     tmux list-panes "$@" \
-        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}\t#{window_name}\t#{window_id}\t#{pane_pid}\t#{window_activity}' 2>/dev/null |
-    while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw; do
+        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}\t#{window_name}\t#{window_id}\t#{pane_pid}\t#{@ai_agent_last_activity}\t#{@ai_agent_running}\t#{@ai_agent_unread}' 2>/dev/null |
+    while IFS=$'\t' read -r last_visit sess_win wname wid pane_pid hook_activity hook_running hook_unread; do
         if _has_ai_proc "$pane_pid"; then
-            printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
-                "$wvisit" "$sess_win" "$wname" "$wid" "$pane_pid" "$wact_raw"
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+                "$last_visit" "$sess_win" "$wname" "$wid" "$pane_pid" \
+                "$hook_activity" "$hook_unread" "$hook_running"
         fi
     done |
     sort -t $'\t' -k1,1nr -k6,6nr |
     awk -F '\t' '!seen[$4]++' |
-    awk -v now="$now" -v thr="${_AI_UNREAD_THRESHOLD}" -v sf="$state_file" -v tf="$tmp_file" -F '\t' '
-    BEGIN {
-        while ((getline line < sf) > 0) {
-            n = split(line, a, ":")
-            if (n >= 4) { cr[a[1]]=a[2]+0; uf[a[1]]=a[3]+0; lvs[a[1]]=a[4]+0 }
-        }
-        close(sf); printf "" > tf
-    }
+    awk -F '\t' '
     {
-        wvisit=$1+0; wid=$4; wact=$6+0
-        c=cr[wid]+0; u=uf[wid]+0; l=lvs[wid]+0
-        if (wvisit > l) { c=0; u=0 }
-        is_run = ((now-wact)<=1 && wact>wvisit) ? 1 : 0
-        if (is_run) { if (++c >= thr) u=1 } else { c=0 }
-        print wid ":" c ":" u ":" wvisit > tf
-        print $0 "\t" u
+        print $1+0 "\t" $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6+0 "\t" $7+0 "\t" $8+0
     }
-    END { close(tf) }
     '
-
-    [[ -f "$tmp_file" ]] && mv -f "$tmp_file" "$state_file" 2>/dev/null || rm -f "$tmp_file" 2>/dev/null
 }
 
 # Format for tmux status bar: "N" normally, "N !M" when M windows are waiting.
-# The current window is excluded from both counts — the user already knows about it.
 _ai_status_label() {
-    local now r w cur
-    now=$(date +%s)
-    cur=$(tmux display-message -p '#{session_name}:#{window_index}' 2>/dev/null)
-    read -r r w < <(_ai_window_rows -a | awk -F '\t' -v now="$now" -v cur="$cur" '
-        $2 == cur      { next }
-        { is_run = (now - $6+0) <= 1 }
+    local r w
+    read -r r w < <(_ai_window_rows -a | awk -F '\t' '
+        { is_run = ($8 == 1) }
         is_run         { running++ }
         $7==1 && !is_run { waiting++ }
         END { print running+0 " " waiting+0 }
@@ -218,9 +189,7 @@ _ai_status_label() {
 
 # Count AI windows that are actively producing output right now.
 _ai_running_count() {
-    local now
-    now=$(date +%s)
-    _ai_window_rows -a | awk -F '\t' -v now="$now" '(now - $6) <= 1 { c++ } END { print c+0 }'
+    _ai_window_rows -a | awk -F '\t' '$8 == 1 { c++ } END { print c+0 }'
 }
 
 # Format _ai_window_rows output (read from stdin) into fzf-ready lines.
@@ -236,27 +205,27 @@ _ai_running_count() {
 #
 # Status symbols:
 #   ◆/◇ (cyan)   current window (◇ = currently running)
-#   ○   (yellow) running (activity within last 1s)
-#   ●   (yellow) unread — was running after last visit, now idle
+#   ○   (yellow) running
+#   ●   (yellow) unread — finished while not visible
 #   ●   (green)  idle, nothing new since last visit
 #
 # Example output (after ANSI codes stripped):
-#   @7 work:3 ◆ claude          [visit 2s | act 5s]
+#   @7 work:3 ◆ claude          [act 5s]
 #   @2 work:1 ○ gemini          [act 0s]
-#   @5 learn:0 ● codex [!]      [visit 3m | act 1m]
+#   @5 learn:0 ● codex [!]      [act 1m]
 _ai_window_fzf_list() {
     local current_target="${1:-}"
     local now="${2:-$(date +%s)}"
 
     _ai_fzf_reset_session_colors
 
-    while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw unread_flag; do
+    while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw unread_flag running_flag; do
         local sort_key status rel_visit rel_act time_info colored_sess_win
         local is_unread=0
         [[ "$unread_flag" == "1" ]] && is_unread=1
 
         local is_busy=false
-        (( now - wact_raw <= 1 )) && is_busy=true
+        [[ "$running_flag" == "1" ]] && is_busy=true
 
         if [[ "$sess_win" == "$current_target" ]]; then
             sort_key=0

@@ -57,9 +57,16 @@ def ensure_common_config(doc):
         doc["model_providers"] = tomlkit.table()
 
 
+def ensure_codex_hooks_feature(doc):
+    if "features" not in doc:
+        doc["features"] = tomlkit.table()
+    doc["features"]["codex_hooks"] = True
+
+
 def update_config_toml_for_api():
     doc = load_config()
     ensure_common_config(doc)
+    ensure_codex_hooks_feature(doc)
 
     # Set top-level fields
     doc["model_provider"] = "azure"
@@ -111,9 +118,16 @@ def update_config_toml_for_api():
 def update_config_toml_for_login():
     doc = load_config()
     ensure_common_config(doc)
+    ensure_codex_hooks_feature(doc)
     doc["model_provider"] = "openai"
     write_config(doc)
     print("Default provider switched to Codex login. Run `codex login` if needed.")
+
+
+def enable_hooks_feature():
+    doc = load_config()
+    ensure_codex_hooks_feature(doc)
+    write_config(doc)
 
 
 @app.callback(invoke_without_command=True)
@@ -133,6 +147,12 @@ def api():
 def login():
     """Switch the default provider back to the built-in Codex/ChatGPT login."""
     update_config_toml_for_login()
+
+
+@app.command()
+def hooks():
+    """Enable Codex lifecycle hooks without changing provider settings."""
+    enable_hooks_feature()
 
 
 if __name__ == "__main__":
