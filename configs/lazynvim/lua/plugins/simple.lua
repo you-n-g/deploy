@@ -8,7 +8,30 @@
 -- hot chatgpt plugins: https://github.com/jackMort/ChatGPT.nvim
 -- Comparision related repos: https://github.com/search?q=gpt%20nvim&type=repositories
 
+local function has_document_symbol_provider()
+  for _, client in ipairs(vim.lsp.get_clients({ bufnr = 0 })) do
+    if client.server_capabilities.documentSymbolProvider then
+      return true
+    end
+  end
+  return false
+end
+
+local function open_symbols_outline()
+  if has_document_symbol_provider() then
+    vim.cmd("Trouble symbols toggle")
+  else
+    vim.cmd("SymbolsOutline")
+  end
+end
+
 return {
+  {
+    "folke/trouble.nvim",
+    keys = {
+      { "<leader>cs", false },
+    },
+  },
   {
     -- It can't attach to a specific buffer and run code in another one
     "rafcamlet/nvim-luapad",
@@ -127,7 +150,7 @@ return {
     -- 这个功能的preview功能似乎还是有bug
     "simrat39/symbols-outline.nvim",
     cmd = "SymbolsOutline",
-    keys = { { "<leader>cs", "<cmd>SymbolsOutline<cr>", desc = "Symbols Outline" } },
+    keys = { { "<leader>cs", open_symbols_outline, desc = "Symbols (Trouble/Outline)" } },
     config = true,
   },
   -- {
