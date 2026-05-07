@@ -22,6 +22,9 @@ case "$button" in
   sb_mf)
     tmux run-shell -b "~/deploy/configs/tmux/ai/fork_ai_session.sh -q"
     ;;
+  sb_ml)
+    tmux run-shell -b "~/deploy/configs/tmux/ai/switch_to_last_ai_window.sh -q"
+    ;;
   sb_cc)
     tmux run-shell -b "~/deploy/helper_scripts/bin/c"
     ;;
