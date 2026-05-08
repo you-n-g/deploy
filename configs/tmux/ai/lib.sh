@@ -172,21 +172,6 @@ _ai_window_rows() {
     '
 }
 
-# Format for tmux status bar: "N" normally, "N !M" when M windows are waiting.
-_ai_status_label() {
-    local r w
-    read -r r w < <(_ai_window_rows -a | awk -F '\t' '
-        { is_run = ($8 == 1) }
-        is_run         { running++ }
-        $7==1 && !is_run { waiting++ }
-        END { print running+0 " " waiting+0 }
-    ')
-    if   (( w > 0 && r > 0 )); then printf '%d !%d' "$r" "$w"
-    elif (( w > 0 ));           then printf '!%d' "$w"
-    else                             printf '%d' "$r"
-    fi
-}
-
 # Count AI windows that are actively producing output right now.
 _ai_running_count() {
     _ai_window_rows -a | awk -F '\t' '$8 == 1 { c++ } END { print c+0 }'

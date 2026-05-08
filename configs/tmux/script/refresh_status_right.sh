@@ -50,7 +50,7 @@ esac
 
 status_right="${status_right}#[fg=green]#(\$TMUX_PLUGIN_MANAGER_PATH/tmux-mem-cpu-load/tmux-mem-cpu-load --colors --powerline-right -g 0 -t 1 --interval 2)#[default]"
 status_right="${status_right} #[fg=yellow]#(df -h ${mount_path} 2>/dev/null | awk 'NR==2 {print \"${display_path} \" \$5 \" \" \$4}')#[default]"
-status_right="${status_right} #[fg=cyan]🤖 #{@ai_status_label}#[default]"
+status_right="${status_right} #[fg=cyan]🤖 #(${SCRIPT_DIR}/refresh_ai_status.sh)#[default]"
 
 tmux set-option -g status-right "$status_right"
-"$SCRIPT_DIR/refresh_ai_status.sh"
+"$SCRIPT_DIR/refresh_ai_status.sh" --refresh >/dev/null

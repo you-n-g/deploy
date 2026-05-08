@@ -43,4 +43,4 @@ case "$state" in
     ;;
 esac
 
-"$SCRIPT_DIR/refresh_ai_status.sh"
+"$SCRIPT_DIR/refresh_ai_status.sh" --refresh >/dev/null
