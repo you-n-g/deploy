@@ -2,6 +2,8 @@
 
 set -eu
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
 # Wait for TPM/theme plugins to finish populating status-right first.
 sleep 1
 
@@ -20,8 +22,6 @@ display_path="$(printf '%s' "${mount_path}" | awk -F'/' '{
   for (i = 2; i < NF; i++) r = r "/" substr($i, 1, 1)
   print r "/" $NF
 }')"
-
-lib_path="$HOME/deploy/configs/tmux/ai/lib.sh"
 
 theme="$(tmux show-options -gqv @tmux-gruvbox 2>/dev/null || true)"
 if [ -z "$theme" ]; then
@@ -50,6 +50,7 @@ esac
 
 status_right="${status_right}#[fg=green]#(\$TMUX_PLUGIN_MANAGER_PATH/tmux-mem-cpu-load/tmux-mem-cpu-load --colors --powerline-right -g 0 -t 1 --interval 2)#[default]"
 status_right="${status_right} #[fg=yellow]#(df -h ${mount_path} 2>/dev/null | awk 'NR==2 {print \"${display_path} \" \$5 \" \" \$4}')#[default]"
-status_right="${status_right} #[fg=cyan]🤖 #(bash -c 'source \"${lib_path}\" && _ai_status_label')#[default]"
+status_right="${status_right} #[fg=cyan]🤖 #{@ai_status_label}#[default]"
 
 tmux set-option -g status-right "$status_right"
+"$SCRIPT_DIR/refresh_ai_status.sh"

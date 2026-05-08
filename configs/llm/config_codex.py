@@ -57,16 +57,17 @@ def ensure_common_config(doc):
         doc["model_providers"] = tomlkit.table()
 
 
-def ensure_codex_hooks_feature(doc):
+def ensure_hooks_feature(doc):
     if "features" not in doc:
         doc["features"] = tomlkit.table()
-    doc["features"]["codex_hooks"] = True
+    doc["features"].pop("codex_hooks", None)
+    doc["features"]["hooks"] = True
 
 
 def update_config_toml_for_api():
     doc = load_config()
     ensure_common_config(doc)
-    ensure_codex_hooks_feature(doc)
+    ensure_hooks_feature(doc)
 
     # Set top-level fields
     doc["model_provider"] = "azure"
@@ -118,7 +119,7 @@ def update_config_toml_for_api():
 def update_config_toml_for_login():
     doc = load_config()
     ensure_common_config(doc)
-    ensure_codex_hooks_feature(doc)
+    ensure_hooks_feature(doc)
     doc["model_provider"] = "openai"
     write_config(doc)
     print("Default provider switched to Codex login. Run `codex login` if needed.")
@@ -126,7 +127,7 @@ def update_config_toml_for_login():
 
 def enable_hooks_feature():
     doc = load_config()
-    ensure_codex_hooks_feature(doc)
+    ensure_hooks_feature(doc)
     write_config(doc)
 
 

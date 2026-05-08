@@ -102,7 +102,9 @@ apply_skill_exclusions() {
             [ -L "$s" ] && disable_skill "$(basename "$s")"
         done
 
-        disable_skill "excalidraw-diagram-skill"
+        disable_skill "rednote"
+
+        # disable_skill "excalidraw-diagram-skill"
     fi
 
     if ! _can_run_containers; then
