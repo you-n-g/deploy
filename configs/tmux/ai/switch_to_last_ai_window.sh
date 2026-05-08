@@ -21,7 +21,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source "$SCRIPT_DIR/lib.sh"
 
 current_target="$(tmux display-message -p '#{session_name}:#{window_index}' 2>/dev/null || true)"
-row="$(_ai_window_rows -a | awk -F $'\t' -v cur="$current_target" '$2 != cur { print; exit }')"
+row="$(_ai_window_rows -a | awk -F $'\t' -v cur="$current_target" '$2 != cur && !found { print; found=1 }')"
 if [[ -z "$row" ]]; then
     tmux display-message "No other AI window found"
     exit 1

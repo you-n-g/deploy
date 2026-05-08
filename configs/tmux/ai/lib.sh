@@ -10,10 +10,11 @@ _ai_fzf_used_session_color_codes=()
 
 # Find the first AI process in the subtree rooted at a pane PID.
 # Prints "PID COMM" (e.g. "12345 claude") and returns 0, or returns 1 if none.
-# For loops, pre-set _ps_cache to avoid repeated ps calls:
-#   _ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null)
+# For loops, pass one ps snapshot to avoid repeated ps calls:
+#   ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null)
+#   _has_ai_proc "$pane_pid" "$ps_cache"
 _find_ai_pid() {
-    local ps_data="${_ps_cache:-$(ps -ax -o pid,ppid,comm 2>/dev/null)}"
+    local ps_data="${2:-$(ps -ax -o pid,ppid,comm 2>/dev/null)}"
     echo "$ps_data" | awk -v root="$1" -v pat="$AI_PROC_PAT" '
         { children[$2] = children[$2] " " $1; name[$1] = $3 }
         END {
@@ -34,7 +35,7 @@ _find_ai_pid() {
 
 # Check if a pane has an AI process (boolean wrapper around _find_ai_pid).
 _has_ai_proc() {
-    _find_ai_pid "$1" > /dev/null
+    _find_ai_pid "$1" "${2:-}" > /dev/null
 }
 
 _tmux_current_target() {
@@ -133,6 +134,40 @@ _ai_fzf_colored_session_target() {
     printf -v "$out_var" '\033[%sm%s\033[0m:%s' "$session_color" "$session_name" "$window_index"
 }
 
+_ai_pane_pid_set() {
+    local pane_pids="$1"
+    local ps_data="$2"
+
+    awk -v pat="$AI_PROC_PAT" '
+    FNR == NR {
+        if ($1 ~ /^[0-9]+$/) pane_pid[$1] = 1
+        next
+    }
+    {
+        line = $0
+        sub(/^[[:space:]]+/, "", line)
+        split(line, proc, /[[:space:]]+/)
+        if (proc[1] !~ /^[0-9]+$/) next
+        parent[proc[1]] = proc[2]
+        name[proc[1]] = proc[3]
+    }
+    END {
+        for (pid in name) {
+            if (name[pid] !~ pat) continue
+            current = pid
+            while (current in parent) {
+                if (current in pane_pid) {
+                    found[current] = 1
+                    break
+                }
+                current = parent[current]
+            }
+        }
+        for (pid in found) print pid
+    }
+    ' <(printf '%s\n' "$pane_pids") <(printf '%s\n' "$ps_data")
+}
+
 # Print unique AI windows as tab-separated rows, sorted by last_visit desc.
 #
 # Usage: _ai_window_rows [-a] [-s -t SESSION] [tmux list-panes options]
@@ -153,16 +188,26 @@ _ai_fzf_colored_session_target() {
 #   1745000100  work:3   claude   @7   12345   1745000099   1   0
 #   1744999800  work:1   gemini   @2   67890   1744999800   0   1
 _ai_window_rows() {
-    _ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null)
-    tmux list-panes "$@" \
-        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}\t#{window_name}\t#{window_id}\t#{pane_pid}\t#{window_activity}\t#{@ai_agent_running}\t#{@ai_agent_unread}' 2>/dev/null |
+    local pane_rows pane_pids ps_cache ai_pane_pids pane_pid
+
+    pane_rows=$(tmux list-panes "$@" \
+        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}\t#{window_name}\t#{window_id}\t#{pane_pid}\t#{window_activity}\t#{@ai_agent_running}\t#{@ai_agent_unread}' 2>/dev/null) || return 1
+    pane_pids=$(printf '%s\n' "$pane_rows" | awk -F '\t' '{ print $5 }')
+    ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null) || return 1
+    ai_pane_pids=$(_ai_pane_pid_set "$pane_pids" "$ps_cache")
+
+    declare -A has_ai_proc_by_pane=()
+    while IFS= read -r pane_pid; do
+        [[ -n "$pane_pid" ]] && has_ai_proc_by_pane["$pane_pid"]=1
+    done <<< "$ai_pane_pids"
+
     while IFS=$'\t' read -r last_visit sess_win wname wid pane_pid window_activity hook_running hook_unread; do
-        if _has_ai_proc "$pane_pid"; then
+        if [[ "${has_ai_proc_by_pane[$pane_pid]:-}" == 1 ]]; then
             printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
                 "$last_visit" "$sess_win" "$wname" "$wid" "$pane_pid" \
                 "$window_activity" "$hook_unread" "$hook_running"
         fi
-    done |
+    done <<< "$pane_rows" |
     sort -t $'\t' -k1,1nr -k6,6nr |
     awk -F '\t' '!seen[$4]++' |
     awk -F '\t' '
