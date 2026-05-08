@@ -6,7 +6,22 @@ button="${1:-}"
 session="${2:-}"
 path="${3:-$HOME}"
 
+set_buttons_expanded() {
+  value="$1"
+  if [ -n "$session" ]; then
+    tmux set-option -t "${session}:" @status-buttons-expanded "$value" >/dev/null
+  else
+    tmux set-option -g @status-buttons-expanded "$value" >/dev/null
+  fi
+}
+
 case "$button" in
+  sb_more)
+    set_buttons_expanded 1
+    ;;
+  sb_less)
+    set_buttons_expanded 0
+    ;;
   sb_g)
     tmux run-shell -b "cd '$path' && ~/deploy/configs/tmux/ai/switch_to_or_create.sh -q"
     ;;
