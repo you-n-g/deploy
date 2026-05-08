@@ -3,11 +3,11 @@
 set -eu
 
 read -r running waiting < <(
-  tmux list-windows -a -F '#{@ai_agent_last_activity}	#{@ai_agent_running}	#{@ai_agent_unread}' |
+  tmux list-windows -a -F '#{@ai_agent_running}	#{@ai_agent_unread}' |
     awk -F '\t' '
       $1 != "" {
-        if ($2 == 1) running++
-        else if ($3 == 1) waiting++
+        if ($1 == 1) running++
+        else if ($2 == 1) waiting++
       }
       END { print running+0 " " waiting+0 }
     '

@@ -145,7 +145,7 @@ _ai_fzf_colored_session_target() {
 #   $3 window_name     e.g. "claude"
 #   $4 window_id       e.g. "@7"
 #   $5 pane_pid        root PID of the pane
-#   $6 activity_epoch  hook-tracked agent activity
+#   $6 activity_epoch  tmux window activity
 #   $7 unread_flag     1 if the agent finished while not visible
 #   $8 running_flag    1 if the agent hook says this window is running
 #
@@ -155,12 +155,12 @@ _ai_fzf_colored_session_target() {
 _ai_window_rows() {
     _ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null)
     tmux list-panes "$@" \
-        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}\t#{window_name}\t#{window_id}\t#{pane_pid}\t#{@ai_agent_last_activity}\t#{@ai_agent_running}\t#{@ai_agent_unread}' 2>/dev/null |
-    while IFS=$'\t' read -r last_visit sess_win wname wid pane_pid hook_activity hook_running hook_unread; do
+        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}\t#{window_name}\t#{window_id}\t#{pane_pid}\t#{window_activity}\t#{@ai_agent_running}\t#{@ai_agent_unread}' 2>/dev/null |
+    while IFS=$'\t' read -r last_visit sess_win wname wid pane_pid window_activity hook_running hook_unread; do
         if _has_ai_proc "$pane_pid"; then
             printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
                 "$last_visit" "$sess_win" "$wname" "$wid" "$pane_pid" \
-                "$hook_activity" "$hook_unread" "$hook_running"
+                "$window_activity" "$hook_unread" "$hook_running"
         fi
     done |
     sort -t $'\t' -k1,1nr -k6,6nr |
