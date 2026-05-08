@@ -3,7 +3,6 @@
 set -eu
 
 state="${1:?usage: track_ai_agent_state.sh init|running|idle|visit TARGET}"
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 target="${2:-${TMUX_PANE:?usage: track_ai_agent_state.sh init|running|idle|visit TARGET}}"
 window_id="$(tmux display-message -p -t "$target" '#{window_id}')"
@@ -43,4 +42,4 @@ case "$state" in
     ;;
 esac
 
-"$SCRIPT_DIR/refresh_ai_status.sh" --refresh >/dev/null
+tmux refresh-client -S

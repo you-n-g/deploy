@@ -2,11 +2,6 @@
 
 set -eu
 
-refresh_client=0
-if [ "${1:-}" = "--refresh" ]; then
-  refresh_client=1
-fi
-
 now="$(date +%s)"
 stale_seconds="$(tmux show-options -gqv @ai_agent_stale_seconds 2>/dev/null || true)"
 case "$stale_seconds" in
@@ -50,6 +45,3 @@ else
 fi
 
 printf '%s\n' "$label"
-if [ "$refresh_client" = "1" ]; then
-  tmux refresh-client -S
-fi
