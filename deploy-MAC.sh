@@ -95,7 +95,7 @@ skhd --start-service
 if [ -f ~/.skhdrc ]; then
   rm ~/.skhdrc
 fi
-ln -s ~/deploy/configs/skhdrc ~/.skhdrc
+ln -s ~/deploy/configs/skhd/skhdrc ~/.skhdrc
 skhd --restart-service
 # 🙌 If the hotkey still doesn't work:
 # - System Settings -> Privacy & Security -> Accessibility -> enable for skhd

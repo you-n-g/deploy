@@ -7,31 +7,6 @@ LOG_FILE="/tmp/skhd-type-prefill.log"
 
 {
   printf '%s invoke text_length=%s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$(printf '%s' "$TEXT" | wc -m | tr -d ' ')"
-
-  osascript <<EOF
-on run
-    set textToPaste to "$(printf '%s' "$TEXT" | sed 's/\\/\\\\/g; s/"/\\"/g')"
-    set savedClipboard to missing value
-    set hasSavedClipboard to false
-
-    try
-        set savedClipboard to the clipboard
-        set hasSavedClipboard to true
-    end try
-
-    set the clipboard to textToPaste
-    delay 0.05
-
-    tell application "System Events"
-        keystroke "v" using {command down}
-    end tell
-
-    if hasSavedClipboard then
-        delay 0.15
-        try
-            set the clipboard to savedClipboard
-        end try
-    end if
-end run
-EOF
+  skhd -t "$TEXT"
+  printf '%s done\n' "$(date '+%Y-%m-%d %H:%M:%S')"
 } >>"$LOG_FILE" 2>&1

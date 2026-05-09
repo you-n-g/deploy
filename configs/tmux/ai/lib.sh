@@ -197,19 +197,17 @@ _ai_window_rows() {
     ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null) || return 1
     ai_pane_pids=$(_ai_pane_pid_set "$pane_pids" "$ps_cache")
 
-    declare -A has_ai_proc_by_pane=()
-    while IFS= read -r pane_pid; do
-        [[ -n "$pane_pid" ]] && has_ai_proc_by_pane["$pane_pid"]=1
-    done <<< "$ai_pane_pids"
-
-    while IFS=$'\t' read -r last_visit sess_win wname wid pane_pid window_activity hook_running hook_unread attribute; do
-        if [[ "${has_ai_proc_by_pane[$pane_pid]:-}" == 1 ]]; then
-            attribute=${attribute//$'\t'/ }
-            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-                "$last_visit" "$sess_win" "$wname" "$wid" "$pane_pid" \
-                "$window_activity" "$hook_unread" "$hook_running" "$attribute"
-        fi
-    done <<< "$pane_rows" |
+    awk -F '\t' '
+        FNR == NR {
+            if ($1 != "") has_ai_proc_by_pane[$1] = 1
+            next
+        }
+        has_ai_proc_by_pane[$5] {
+            attribute = $9
+            for (i = 10; i <= NF; i++) attribute = attribute " " $i
+            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $1, $2, $3, $4, $5, $6, $8, $7, attribute
+        }
+    ' <(printf '%s\n' "$ai_pane_pids") <(printf '%s\n' "$pane_rows") |
     sort -t $'\t' -k1,1nr -k6,6nr |
     awk -F '\t' '!seen[$4]++' |
     awk -F '\t' '

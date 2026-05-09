@@ -46,6 +46,7 @@ def write_config(doc):
 def ensure_common_config(doc):
     doc["model"] = doc.get("model", DEFAULT_MODEL)
     doc["project_doc_fallback_filenames"] = ["GEMINI.md"]
+    doc["service_tier"] = "fast"
 
     # Ensure [sandbox_workspace_write] exists and enable network access
     if "sandbox_workspace_write" not in doc:
