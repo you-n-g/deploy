@@ -3,3 +3,6 @@ snippet cnans "answer the quesiton with Chinse"
 
 autosnippet dotrun "use dot env to run a command"
   dotenv -f .env run -- 
+
+autosnippet sshno "ssh without fingerprint check"
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null 

@@ -25,6 +25,9 @@ case "$button" in
   sb_g)
     tmux run-shell -b "cd '$path' && ~/deploy/configs/tmux/ai/switch_to_or_create.sh -q"
     ;;
+  sb_mc)
+    tmux run-shell -b "~/deploy/configs/tmux/ai/switch_to_or_create.sh --force-new -q"
+    ;;
   sb_cg)
     tmux display-popup -E -w 100% -h 100% "~/deploy/configs/tmux/ai/tmuxg.sh"
     ;;

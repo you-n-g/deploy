@@ -27,19 +27,21 @@ button() {
 compact_buttons="$(
   button sb_g "$button_light" ' g '
   button sb_cg "$button_dark" 'C-g'
-  button sb_ml "$button_light" 'M-l'
-  button sb_cc "$button_dark" 'C-c'
-  button sb_more "$button_light" '>>>'
+  button sb_mc "$button_light" 'M-c'
+  button sb_ml "$button_dark" 'M-l'
+  button sb_cc "$button_light" 'C-c'
+  button sb_more "$button_dark" '>>>'
 )"
 expanded_buttons="$(
   button sb_g "$button_light" ' g '
   button sb_cg "$button_dark" 'C-g'
-  button sb_t "$button_light" ' t '
-  button sb_ct "$button_dark" 'C-t'
-  button sb_mf "$button_light" 'M-f'
-  button sb_ml "$button_dark" 'M-l'
-  button sb_cc "$button_light" 'C-c'
-  button sb_less "$button_dark" '<<<'
+  button sb_mc "$button_light" 'M-c'
+  button sb_t "$button_dark" ' t '
+  button sb_ct "$button_light" 'C-t'
+  button sb_mf "$button_dark" 'M-f'
+  button sb_ml "$button_light" 'M-l'
+  button sb_cc "$button_dark" 'C-c'
+  button sb_less "$button_light" '<<<'
 )"
 tmux set-option -g @status-buttons-compact "$compact_buttons"
 tmux set-option -g @status-buttons-full "$expanded_buttons"
