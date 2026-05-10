@@ -330,7 +330,7 @@ _codex_auto_flag() {
     if [[ "$(uname)" == "Linux" ]]; then
         echo "--dangerously-bypass-approvals-and-sandbox"
     else
-        echo "--sandbox workspace-write --ask-for-approval on-request"
+        echo "--sandbox danger-full-access --ask-for-approval on-request"
     fi
 }
 
@@ -357,7 +357,7 @@ _codex_run_login() {
     shift
     local auto_flag
     # 将 auto_flag 拆成数组，而不是一个字符串
-    auto_flag=($(_codex_auto_flag))  # 例如返回 "--sandbox workspace-write --ask-for-approval on-request"
+    auto_flag=($(_codex_auto_flag))  # 例如返回 "--sandbox danger-full-access --ask-for-approval on-request"
 
     # 展开数组，用 "${auto_flag[@]}"，这样每个 flag 都是独立参数
     _with_tmux_rename "$title" "$MYPROXY_CODEX" codex "${auto_flag[@]}" "$@"

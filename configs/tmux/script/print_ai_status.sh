@@ -10,23 +10,23 @@ case "$stale_seconds" in
     ;;
 esac
 
-tmux list-windows -a -F '#{window_id}	#{window_activity}	#{window_active}	#{session_attached}	#{@ai_agent_running}' |
-  while IFS=$'\t' read -r window_id window_activity window_active session_attached running; do
+tmux list-panes -a -F '#{pane_id}	#{window_activity}	#{window_active}	#{session_attached}	#{@ai_agent_running}' |
+  while IFS=$'\t' read -r pane_id window_activity window_active session_attached running; do
     [ "$running" = "1" ] || continue
     [ "$window_activity" -gt 0 ] || continue
 
     if [ $((now - window_activity)) -ge "$stale_seconds" ]; then
-      tmux set-window-option -q -t "$window_id" @ai_agent_running 0
+      tmux set-option -pq -t "$pane_id" @ai_agent_running 0
       if [ "$window_active" = "1" ] && [ "$session_attached" != "0" ]; then
-        tmux set-window-option -q -t "$window_id" @ai_agent_unread 0
+        tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
       else
-        tmux set-window-option -q -t "$window_id" @ai_agent_unread 1
+        tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
       fi
     fi
   done
 
 read -r running waiting < <(
-  tmux list-windows -a -F '#{@ai_agent_running}	#{@ai_agent_unread}' |
+  tmux list-panes -a -F '#{@ai_agent_running}	#{@ai_agent_unread}' |
     awk -F '\t' '
       $1 != "" {
         if ($1 == 1) running++

@@ -192,7 +192,7 @@ _ai_window_rows() {
     local pane_rows pane_pids ps_cache ai_pane_pids pane_pid
 
     pane_rows=$(tmux list-panes "$@" \
-        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}\t#{window_name}\t#{window_id}\t#{pane_pid}\t#{window_activity}\t#{@ai_agent_running}\t#{@ai_agent_unread}\t#{@ai_agent_attribute}' 2>/dev/null) || return 1
+        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}\t#{window_name}\t#{window_id}\t#{pane_pid}\t#{window_activity}\t#{@ai_agent_unread}\t#{@ai_agent_running}\t#{@ai_agent_attribute}' 2>/dev/null) || return 1
     pane_pids=$(printf '%s\n' "$pane_rows" | awk -F '\t' '{ print $5 }')
     ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null) || return 1
     ai_pane_pids=$(_ai_pane_pid_set "$pane_pids" "$ps_cache")
@@ -205,7 +205,7 @@ _ai_window_rows() {
         has_ai_proc_by_pane[$5] {
             attribute = $9
             for (i = 10; i <= NF; i++) attribute = attribute " " $i
-            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $1, $2, $3, $4, $5, $6, $8, $7, attribute
+            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $1, $2, $3, $4, $5, $6, $7, $8, attribute
         }
     ' <(printf '%s\n' "$ai_pane_pids") <(printf '%s\n' "$pane_rows") |
     sort -t $'\t' -k1,1nr -k6,6nr |

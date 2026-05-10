@@ -25,6 +25,16 @@ TARGET_WIN_NAME="${1:-}"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source "$SCRIPT_DIR/lib.sh"
 
+_fork_ai_agent_attribute() {
+    local source_pane_id="$1"
+    local attribute
+
+    attribute="$(tmux show -pv -t "$source_pane_id" @ai_agent_attribute 2>/dev/null)"
+    [[ -z "$attribute" ]] && return
+
+    printf '%s fork\n' "$attribute"
+}
+
 # Must be inside tmux
 if [[ -z "$TMUX" ]]; then
     echo "Not inside tmux." >&2
@@ -41,16 +51,16 @@ if [[ -n "$TARGET_WIN_NAME" ]]; then
         tmux display-message "Fork: window '$TARGET_WIN_NAME' not found in session $SESSION"
         exit 1
     fi
-
     # Pick the first pane with an AI process in the target window.
     _ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null)
     pane_pid=""
     workdir=""
-    while IFS=$'\t' read -r pid path; do
+    source_pane_id=""
+    while IFS=$'\t' read -r pid path pane_id; do
         if _has_ai_proc "$pid"; then
-            pane_pid="$pid"; workdir="$path"; break
+            pane_pid="$pid"; workdir="$path"; source_pane_id="$pane_id"; break
         fi
-    done < <(tmux list-panes -t "$target_win_id" -F $'#{pane_pid}\t#{pane_current_path}')
+    done < <(tmux list-panes -t "$target_win_id" -F $'#{pane_pid}\t#{pane_current_path}\t#{pane_id}')
 
     if [[ -z "$pane_pid" ]]; then
         tmux display-message "Fork: no AI process in window '$TARGET_WIN_NAME'"
@@ -58,6 +68,7 @@ if [[ -n "$TARGET_WIN_NAME" ]]; then
     fi
     base_name="$TARGET_WIN_NAME"
 else
+    source_pane_id=$(tmux display-message -p '#{pane_id}')
     pane_pid=$(tmux display-message -p '#{pane_pid}')
     workdir=$(tmux display-message -p '#{pane_current_path}')
     base_name=$(tmux display-message -p '#{window_name}')
@@ -112,7 +123,12 @@ case "$ai_name" in
         ;;
 esac
 
-printf -v launch_cmd 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$fork_name" "$cmd"
+fork_attribute="$(_fork_ai_agent_attribute "$source_pane_id")"
+if [[ -n "$fork_attribute" ]]; then
+    printf -v launch_cmd 'TMUX_AI_WINDOW_NAME=%q TMUX_AI_FORK_ATTRIBUTE=%q zsh -ic %q' "$fork_name" "$fork_attribute" "$cmd"
+else
+    printf -v launch_cmd 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$fork_name" "$cmd"
+fi
 win_id=$(tmux new-window -d -P -F '#{window_id}' -n "$fork_name" -c "$workdir" "$launch_cmd")
 # Block TUI escape-sequence renames; _with_tmux_rename receives the target name
 # through TMUX_AI_WINDOW_NAME.
