@@ -26,25 +26,25 @@ case "$TYPE" in
         ;;
     xyz_base)
         if [[ -n "${LEVEL+x}" ]]; then
-            LINE=$((LEVEL == 0 ? 6 : 4))
+            LINE=$((LEVEL * 2 + 4))
         else
             TMUX_SESSION="$([ -n "$TMUX" ] && tmux display-message -p '#S' 2>/dev/null)"
             if [ "$TMUX_SESSION" = "learn" ] || [ "$OS_NAME" = "Darwin" ]; then
-                LINE=6
-            else
                 LINE=4
+            else
+                LINE=6
             fi
         fi
         ;;
     xyz_key)
         if [[ -n "${LEVEL+x}" ]]; then
-            LINE=$((LEVEL == 0 ? 7 : 5))
+            LINE=$((LEVEL * 2 + 5))
         else
             TMUX_SESSION="$([ -n "$TMUX" ] && tmux display-message -p '#S' 2>/dev/null)"
             if [ "$TMUX_SESSION" = "learn" ] || [ "$OS_NAME" = "Darwin" ]; then
-                LINE=7
-            else
                 LINE=5
+            else
+                LINE=7
             fi
         fi
         ;;
