@@ -42,7 +42,7 @@ _output_result() {
     [[ "$RETURN_ID" == true ]] && echo "$1" || echo "$2"
 }
 
-# Collect rows: last_visit<TAB>session:index<TAB>window_name<TAB>window_id<TAB>pane_pid<TAB>activity_epoch
+# Collect rows: last_visit<TAB>session:index<TAB>window_name<TAB>window_id<TAB>pane_pid<TAB>activity_epoch<TAB>unread<TAB>running<TAB>attribute
 if [[ "$ALL_SESSIONS" == true ]]; then
     ROWS=$(_ai_window_rows -a)
 else
@@ -52,7 +52,7 @@ fi
 
 # -a: list all, let caller handle selection
 if [[ "$LIST_ALL" == true ]]; then
-    while IFS=$'\t' read -r _last_visit sess_win wname wid _pane_pid _wact_raw _unread _running; do
+    while IFS=$'\t' read -r _last_visit sess_win wname wid _pane_pid _wact_raw _unread _running _attribute; do
         _output_result "$wid" "$sess_win ($wname)"
     done <<< "$ROWS"
     exit 0
@@ -62,7 +62,7 @@ COUNT=$(echo "$ROWS" | wc -l | tr -d ' ')
 
 # Single window — return directly
 if [[ "$COUNT" -eq 1 ]]; then
-    IFS=$'\t' read -r _last_visit _sess_win wname wid _pane_pid _wact_raw _unread _running <<< "$ROWS"
+    IFS=$'\t' read -r _last_visit _sess_win wname wid _pane_pid _wact_raw _unread _running _attribute <<< "$ROWS"
     _output_result "$wid" "$wname"
     exit 0
 fi

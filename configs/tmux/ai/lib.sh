@@ -183,15 +183,16 @@ _ai_pane_pid_set() {
 #   $6 activity_epoch  tmux window activity
 #   $7 unread_flag     1 if the agent finished while not visible
 #   $8 running_flag    1 if the agent hook says this window is running
+#   $9 attribute       short description generated once after first stop
 #
 # Example output:
-#   1745000100  work:3   claude   @7   12345   1745000099   1   0
-#   1744999800  work:1   gemini   @2   67890   1744999800   0   1
+#   1745000100  work:3   claude   @7   12345   1745000099   1   0   edits tmux hooks
+#   1744999800  work:1   gemini   @2   67890   1744999800   0   1   reviews config
 _ai_window_rows() {
     local pane_rows pane_pids ps_cache ai_pane_pids pane_pid
 
     pane_rows=$(tmux list-panes "$@" \
-        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}\t#{window_name}\t#{window_id}\t#{pane_pid}\t#{window_activity}\t#{@ai_agent_running}\t#{@ai_agent_unread}' 2>/dev/null) || return 1
+        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}\t#{window_name}\t#{window_id}\t#{pane_pid}\t#{window_activity}\t#{@ai_agent_running}\t#{@ai_agent_unread}\t#{@ai_agent_attribute}' 2>/dev/null) || return 1
     pane_pids=$(printf '%s\n' "$pane_rows" | awk -F '\t' '{ print $5 }')
     ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null) || return 1
     ai_pane_pids=$(_ai_pane_pid_set "$pane_pids" "$ps_cache")
@@ -201,18 +202,19 @@ _ai_window_rows() {
         [[ -n "$pane_pid" ]] && has_ai_proc_by_pane["$pane_pid"]=1
     done <<< "$ai_pane_pids"
 
-    while IFS=$'\t' read -r last_visit sess_win wname wid pane_pid window_activity hook_running hook_unread; do
+    while IFS=$'\t' read -r last_visit sess_win wname wid pane_pid window_activity hook_running hook_unread attribute; do
         if [[ "${has_ai_proc_by_pane[$pane_pid]:-}" == 1 ]]; then
-            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+            attribute=${attribute//$'\t'/ }
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
                 "$last_visit" "$sess_win" "$wname" "$wid" "$pane_pid" \
-                "$window_activity" "$hook_unread" "$hook_running"
+                "$window_activity" "$hook_unread" "$hook_running" "$attribute"
         fi
     done <<< "$pane_rows" |
     sort -t $'\t' -k1,1nr -k6,6nr |
     awk -F '\t' '!seen[$4]++' |
     awk -F '\t' '
     {
-        print $1+0 "\t" $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6+0 "\t" $7+0 "\t" $8+0
+        print $1+0 "\t" $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6+0 "\t" $7+0 "\t" $8+0 "\t" $9
     }
     '
 }
@@ -249,7 +251,7 @@ _ai_window_fzf_list() {
 
     _ai_fzf_reset_session_colors
 
-    while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw unread_flag running_flag; do
+    while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw unread_flag running_flag attribute; do
         local sort_key status rel_visit rel_act time_info colored_sess_win
         local is_unread=0
         [[ "$unread_flag" == "1" ]] && is_unread=1
@@ -288,8 +290,11 @@ _ai_window_fzf_list() {
         local unread_mark=""
         (( is_unread )) && unread_mark=$' \033[33m[!]\033[0m'
 
-        printf '%s\t%s\t%s %s %b%s%b  \033[2m%s\033[0m\n' \
-            "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$wname" "$unread_mark" "$time_info"
+        local attribute_info=""
+        [[ -n "$attribute" ]] && attribute_info="  · ${attribute}"
+
+        printf '%s\t%s\t%s %s %b%s%b  \033[2m%s%s\033[0m\n' \
+            "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$wname" "$unread_mark" "$time_info" "$attribute_info"
     done |
     sort -t $'\t' -k1,1 -k2,2nr |
     cut -f3-

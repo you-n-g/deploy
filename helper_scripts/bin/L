@@ -11,7 +11,7 @@ if [[ -z "$ROWS" ]]; then
 fi
 
 IFS=$'\n' read -r ROW _rest <<< "$ROWS"
-IFS=$'\t' read -r _last_visit target _wname _window_id _pane_pid _activity_epoch _unread _running <<< "$ROW"
+IFS=$'\t' read -r _last_visit target _wname _window_id _pane_pid _activity_epoch _unread _running _attribute <<< "$ROW"
 
 if [[ -n "${TMUX:-}" ]]; then
     tmux switch-client -t "$target"

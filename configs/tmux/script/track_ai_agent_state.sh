@@ -3,6 +3,7 @@
 set -eu
 
 state="${1:?usage: track_ai_agent_state.sh init|running|idle|visit TARGET}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 target="${2:-${TMUX_PANE:?usage: track_ai_agent_state.sh init|running|idle|visit TARGET}}"
 if ! window_id="$(tmux display-message -p -t "$target" '#{window_id}')" || [ -z "$window_id" ]; then
@@ -11,6 +12,19 @@ if ! window_id="$(tmux display-message -p -t "$target" '#{window_id}')" || [ -z 
   fi
   exit 1
 fi
+
+ensure_ai_agent_attribute() {
+  if [ -n "$(tmux display-message -p -t "$window_id" '#{@ai_agent_attribute}' 2>/dev/null)" ]; then
+    return
+  fi
+  if [ -n "$(tmux display-message -p -t "$window_id" '#{@ai_agent_attribute_pending}' 2>/dev/null)" ]; then
+    return
+  fi
+
+  local cmd
+  printf -v cmd '%q %q' "$SCRIPT_DIR/generate_ai_window_attribute.sh" "$window_id"
+  tmux run-shell -b "$cmd"
+}
 
 is_window_visible() {
   [ "$(tmux display-message -p -t "$window_id" '#{window_active}')" = "1" ] \
@@ -35,6 +49,7 @@ case "$state" in
     else
       tmux set-window-option -q -t "$window_id" @ai_agent_unread 1
     fi
+    ensure_ai_agent_attribute
     ;;
   visit)
     if [ -n "$(tmux display-message -p -t "$window_id" '#{@ai_agent_running}' 2>/dev/null)" ]; then

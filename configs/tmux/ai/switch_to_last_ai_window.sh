@@ -27,5 +27,5 @@ if [[ -z "$row" ]]; then
     exit 1
 fi
 
-IFS=$'\t' read -r _last_visit sess_win _wname _wid _pane_pid _wact_raw _unread _running <<< "$row"
+IFS=$'\t' read -r _last_visit sess_win _wname _wid _pane_pid _wact_raw _unread _running _attribute <<< "$row"
 tmux switch-client -t "$sess_win"
