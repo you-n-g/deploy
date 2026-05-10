@@ -480,6 +480,12 @@
   command = "key_shell.sh <cred=|_azure_lite_||_openai_lite_gpt_5_||_openai_lite_o4_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_deepseek_lite_||_openai_lite_gpt_4_1_|> bash -c 'uvx -p 3.12 --from aider-chat aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> <commit_conf=|_--dirty-commits_||_--no-dirty-commits_|> -m \"<command=/commit>\"'"
 
 [[Snippets]]
+  Description = "codex command"
+  Output = ""
+  Tag = []
+  command = "codexr exec \"<command=Commit the relevant code changes. Focus only on in-place git changes and relevant git stash entries. If files are clearly missing from those in-place or stashed changes and are needed for the same change, stage and commit them too. Do not stage or commit unrelated files.>\""
+
+[[Snippets]]
   Description = "health check for openai & llm"
   Output = ""
   Tag = []
