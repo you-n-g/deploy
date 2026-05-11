@@ -5,8 +5,9 @@ root: ~/
 windows:
   - code_repo: cd ~/cheatsheets/
   - deployment: cd ~/deploy/
-  - commit:
-        layout: even-horizontal
-        panes:
-            - cd ~/cheatsheets/
-            - cd ~/deploy/
+  - farside: cd ~/farside/
+  # - commit:
+  #       layout: even-horizontal
+  #       panes:
+  #           - cd ~/cheatsheets/
+  #           - cd ~/deploy/
