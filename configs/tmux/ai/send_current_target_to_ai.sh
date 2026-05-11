@@ -18,6 +18,7 @@ done
 [[ "$QUIET" == true ]] && trap 'exit 0' EXIT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib.sh"
 
 CURRENT_SESSION=$(tmux display-message -p '#S' 2>/dev/null)
 CURRENT_TARGET=$(tmux display-message -p '#S:#I.#P' 2>/dev/null)
@@ -34,16 +35,17 @@ else
 fi
 [[ -z "$AI_WINDOW_ID" ]] && exit 0
 
-AI_PANE_ID=$(tmux list-panes -t "$AI_WINDOW_ID" -F '#{?pane_active,#{pane_id},}' 2>/dev/null | grep -v '^$' | head -n 1)
-TARGET=${AI_PANE_ID:-$AI_WINDOW_ID}
+AI_PANE_ID=$(_find_ai_pane_in_window "$AI_WINDOW_ID")
+if [[ -z "$AI_PANE_ID" ]]; then
+    tmux display-message "Failed to find an AI pane in $AI_WINDOW_ID"
+    exit 1
+fi
 
-tmux send-keys -t "$TARGET" -- "请capture我的Tmux的这个pane[$CURRENT_TARGET]的内容"
+tmux send-keys -t "$AI_PANE_ID" -- "请capture我的Tmux的这个pane[$CURRENT_TARGET]的内容"
 
 if [[ "$ALL_SESSIONS" == true && -n "$TMUX" ]]; then
     tmux switch-client -t "$AI_WINDOW_ID"
 else
     tmux select-window -t "$AI_WINDOW_ID"
 fi
-if [[ -n "$AI_PANE_ID" ]]; then
-    tmux select-pane -t "$AI_PANE_ID"
-fi
+tmux select-pane -t "$AI_PANE_ID"

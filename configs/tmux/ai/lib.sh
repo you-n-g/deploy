@@ -38,6 +38,30 @@ _has_ai_proc() {
     _find_ai_pid "$1" "${2:-}" > /dev/null
 }
 
+_find_ai_pane_in_window() {
+    local window_id="$1"
+    local pane_rows ps_cache
+    local pane_id pane_pid pane_active
+    local first_ai_pane=""
+
+    pane_rows=$(tmux list-panes -t "$window_id" -F $'#{pane_id}\t#{pane_pid}\t#{pane_active}' 2>/dev/null) || return 1
+    ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null) || return 1
+
+    while IFS=$'\t' read -r pane_id pane_pid pane_active; do
+        [[ -z "$pane_id" || -z "$pane_pid" ]] && continue
+        if _has_ai_proc "$pane_pid" "$ps_cache"; then
+            if [[ "$pane_active" == "1" ]]; then
+                printf '%s\n' "$pane_id"
+                return 0
+            fi
+            [[ -z "$first_ai_pane" ]] && first_ai_pane="$pane_id"
+        fi
+    done <<< "$pane_rows"
+
+    [[ -n "$first_ai_pane" ]] || return 1
+    printf '%s\n' "$first_ai_pane"
+}
+
 _tmux_current_target() {
     if [[ -n "$TMUX" ]]; then
         tmux display-message -p '#{session_name}:#{window_index}' 2>/dev/null
