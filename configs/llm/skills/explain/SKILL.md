@@ -88,7 +88,8 @@ Produce a full architecture walkthrough and write it to **`codebase-walkthrough[
 
 ### Steps
 
-1. **Triage（快速总览）** — 一张表，不写废话：
+1. **Triage（快速总览）** — 不写废话，优先用短表；如果路径或证据会让表格在
+   terminal 里横向爆炸，就改用每个 workspace 一个小节/短 bullet：
 
    | Workspace | 阶段 | Exit Code | 一句话原因 |
    |-----------|------|-----------|-----------|
@@ -144,8 +145,6 @@ Produce a full architecture walkthrough and write it to **`codebase-walkthrough[
    | 优先级 | 问题 | 修复位置 (`file:line`) | 具体改法 |
    |--------|------|----------------------|---------|
 
-6. **Key File Index** — 所有引用的文件路径 + 行号，按类别分组。
-
 ---
 
 ## Mode: `run <identifier>`
@@ -185,10 +184,6 @@ identifier 省略，用最近一次运行的 run id / 时间戳末段）。
 5. **结果判定** — Explain the final outcome: success/failure classification, why, and
    what the key evidence was. If the run failed, pinpoint where and likely why.
 
-6. **Key File Index** — A final section listing every referenced file path with line
-   number, grouped by category (code, logs, outputs, config). This section is the
-   primary navigation aid for Vim users.
-
 ---
 
 ## General rules
@@ -219,9 +214,22 @@ identifier 省略，用最近一次运行的 run id / 时间戳末段）。
 - 找不到证据就写"无直接证据，推断依据是 X"并把 X 也挂证据；**不允许无依据的结论**。
 - 重要或需要整理的片段（函数定义、关键 log 行、JSON 子对象）直接内联贴内容——读者不打开文件也能看懂。
 
+### Terminal 友好输出
+
+- 报告默认面向 terminal / Vim 阅读：保留 heading、bullet、短段落等结构信息，避免大段长句。
+- 尽量避免过长行；长路径、长命令、长 JSON/log 片段单独放进 fenced code block。
+- 不要用会横向爆炸的宽表承载长路径或长证据；必要时把表格改成每项一个小节。
+- 区分代码/机制与运行/日志时，使用 Nerd Font 标记：
+  - `󰅩` 表示代码、机制、控制流、配置规则或修复位置。
+  - `󰄉` 表示某次运行的现场、日志、进程、指标、状态或输出。
+- 不使用 emoji 做结构标记，避免 terminal 中字符宽度不稳定。
+
 ### 路径格式
 - 文件引用始终写**从项目根目录开始的完整相对路径**，格式：`path/to/file.py:line`。
-  - **所有位置**都必须用完整路径：正文、表格、代码块注释、执行流图、Key File Index，无一例外。
+  - 指明功能范围或连续代码/日志范围时，使用 `path/to/file.py:start-end`。
+    - 正确：`ai4ai/agents/developer/run.sh:713-764`
+    - 错误：`ai4ai/agents/developer/run.sh:713` 到 `ai4ai/agents/developer/run.sh:764`
+  - **所有位置**都必须用完整路径：正文、表格、代码块注释、执行流图，无一例外。
     - 正确：`configs/tmux/ai/lib.sh:11`
     - 错误：`lib.sh:11`
   - 一定要写清楚行数，方便我定位；最好能带上能定位到代码的更容易读的路径，比如`AAAA[class]->BBBB[func]`
