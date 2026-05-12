@@ -24,6 +24,38 @@ while [[ "$1" == -* ]]; do
         -i) RETURN_ID=true; shift ;;
         -a) LIST_ALL=true; shift ;;
         -A) ALL_SESSIONS=true; shift ;;
+        --fzf-list)
+            shift
+            if [[ "${1:-}" == "-A" ]]; then
+                ALL_SESSIONS=true
+                shift
+            fi
+
+            SESSION=${1:-$(tmux display-message -p '#S' 2>/dev/null)}
+            if [[ "$ALL_SESSIONS" != true ]]; then
+                [[ -z "$SESSION" ]] && exit 1
+                ROWS=$(_ai_window_rows -s -t "$SESSION")
+            else
+                ROWS=$(_ai_window_rows -a)
+            fi
+            [[ -z "$ROWS" ]] && exit 1
+
+            CURRENT_TARGET=""
+            if [[ -n "$TMUX" ]]; then
+                CURRENT_TARGET=$(tmux display-message -p '#{session_name}:#{window_index}' 2>/dev/null)
+            fi
+
+            printf '%s\n' "$ROWS" | _ai_window_fzf_list "$CURRENT_TARGET" "$(date +%s)"
+            exit 0
+            ;;
+        --reset-pane-attribute)
+            if [[ -z "$2" ]]; then
+                echo "--reset-pane-attribute requires a target" >&2
+                exit 2
+            fi
+            _ai_reset_pane_attribute_in_window "$2"
+            exit $?
+            ;;
         *)  shift ;;
     esac
 done
@@ -42,12 +74,16 @@ _output_result() {
     [[ "$RETURN_ID" == true ]] && echo "$1" || echo "$2"
 }
 
+_get_ai_window_rows() {
+    if [[ "$ALL_SESSIONS" == true ]]; then
+        _ai_window_rows -a
+    else
+        _ai_window_rows -s -t "$SESSION"
+    fi
+}
+
 # Collect rows: last_visit<TAB>session:index<TAB>window_name<TAB>window_id<TAB>pane_pid<TAB>activity_epoch<TAB>unread<TAB>running<TAB>attribute
-if [[ "$ALL_SESSIONS" == true ]]; then
-    ROWS=$(_ai_window_rows -a)
-else
-    ROWS=$(_ai_window_rows -s -t "$SESSION")
-fi
+ROWS=$(_get_ai_window_rows)
 [[ -z "$ROWS" ]] && exit 1
 
 # -a: list all, let caller handle selection
@@ -74,6 +110,14 @@ LISTFILE=$(mktemp)
 trap "rm -f '$LISTFILE'" EXIT
 printf '%s\n' "$LIST" > "$LISTFILE"
 
+printf -v RESET_BIND_CMD '%q --reset-pane-attribute {1}' "$SCRIPT_DIR/get_ai_window.sh"
+if [[ "$ALL_SESSIONS" == true ]]; then
+    printf -v RELOAD_BIND_CMD '%q --fzf-list -A' "$SCRIPT_DIR/get_ai_window.sh"
+else
+    printf -v RELOAD_BIND_CMD '%q --fzf-list %q' "$SCRIPT_DIR/get_ai_window.sh" "$SESSION"
+fi
+RESET_ATTRIBUTE_BIND="ctrl-r:execute-silent($RESET_BIND_CMD)+reload($RELOAD_BIND_CMD)+refresh-preview"
+
 SKIP_COUNT=$(
     printf '%s\n' "$LIST" |
         perl -pe 's/\e\[[0-9;]*m//g' |
@@ -91,7 +135,8 @@ if [[ -t 0 ]]; then
     # Interactive: fzf directly
     SELECTED=$(fzf --ansi --reverse \
         $_start_bind \
-        --header '◆/◇ current  ● ready  ○ busy  |  Enter to switch' \
+        --header '◆/◇ current  ● ready  ○ busy  |  Enter switch  Ctrl-R reset desc' \
+        --bind "$RESET_ATTRIBUTE_BIND" \
         --preview 'tmux capture-pane -ept {1} | perl -0777 -pe "s/\s+\z/\n/"' \
         --preview-window "up:${_AI_FZF_PREVIEW_HEIGHT},follow" < "$LISTFILE")
 else
@@ -104,7 +149,8 @@ else
         trap 'tmux wait-for -S \"$CHANNEL\"' EXIT; \
         fzf --ansi --reverse \
             $_start_bind \
-            --header '◆/◇ current  ● ready  ○ busy  |  Enter to switch' \
+            --header '◆/◇ current  ● ready  ○ busy  |  Enter switch  Ctrl-R reset desc' \
+            --bind '$RESET_ATTRIBUTE_BIND' \
             --preview 'tmux capture-pane -ept {1} | perl -0777 -pe \"s/\s+\z/\n/\"' \
             --preview-window 'up:${_AI_FZF_PREVIEW_HEIGHT},follow' < '$LISTFILE' > '$RESULTFILE'"
 

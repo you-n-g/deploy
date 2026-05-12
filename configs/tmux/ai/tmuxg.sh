@@ -5,13 +5,28 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source "$SCRIPT_DIR/lib.sh"
 
-CURRENT_TARGET=""
-if [[ -n "$TMUX" ]]; then
-    CURRENT_TARGET=$(tmux display-message -p '#{session_name}:#{window_index}' 2>/dev/null)
-fi
+_tmuxg_list() {
+    local current_target=""
+    if [[ -n "$TMUX" ]]; then
+        current_target=$(tmux display-message -p '#{session_name}:#{window_index}' 2>/dev/null)
+    fi
 
-_now=$(date +%s)
-LIST=$(_ai_window_rows -a | _ai_window_fzf_list "$CURRENT_TARGET" "$_now")
+    _ai_window_rows -a | _ai_window_fzf_list "$current_target" "$(date +%s)"
+}
+
+case "${1:-}" in
+    --fzf-list)
+        _tmuxg_list
+        exit 0
+        ;;
+    --reset-pane-attribute)
+        shift
+        _ai_reset_pane_attribute_in_window "${1:?usage: tmuxg.sh --reset-pane-attribute TARGET}"
+        exit $?
+        ;;
+esac
+
+LIST=$(_tmuxg_list)
 
 if [[ -z "$LIST" ]]; then
     echo "No AI agent windows found."
@@ -31,7 +46,8 @@ SELECTED=$(echo "$LIST" | fzf \
     --ansi \
     --reverse \
     $_start_bind \
-    --header $'\033[36m◆\033[0m/\033[36m◇\033[0m current  \033[32m●\033[0m ready  \033[33m○\033[0m busy  |  Enter to switch' \
+    --header $'\033[36m◆\033[0m/\033[36m◇\033[0m current  \033[32m●\033[0m ready  \033[33m○\033[0m busy  |  Enter switch  Ctrl-R reset desc' \
+    --bind "ctrl-r:execute-silent($SCRIPT_DIR/tmuxg.sh --reset-pane-attribute {1})+reload($SCRIPT_DIR/tmuxg.sh --fzf-list)+refresh-preview" \
     --preview 'tmux capture-pane -ept {1} | perl -0777 -pe "s/\s+\z/\n/"' \
     --preview-window "up:${_AI_FZF_PREVIEW_HEIGHT},follow")
 

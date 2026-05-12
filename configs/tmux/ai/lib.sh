@@ -62,6 +62,23 @@ _find_ai_pane_in_window() {
     printf '%s\n' "$first_ai_pane"
 }
 
+_ai_reset_pane_attribute_in_window() {
+    local target="${1:?usage: _ai_reset_pane_attribute_in_window TARGET}"
+    local pane_id
+
+    if ! pane_id="$(_find_ai_pane_in_window "$target")" || [[ -z "$pane_id" ]]; then
+        tmux display-message "Failed to find an AI pane in $target"
+        return 1
+    fi
+
+    if ! tmux set-option -pqu -t "$pane_id" @ai_agent_attribute; then
+        tmux display-message "Failed to reset AI attribute for $pane_id"
+        return 1
+    fi
+
+    tmux refresh-client -S 2>/dev/null || true
+}
+
 _tmux_current_target() {
     if [[ -n "$TMUX" ]]; then
         tmux display-message -p '#{session_name}:#{window_index}' 2>/dev/null
