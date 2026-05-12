@@ -1,62 +1,104 @@
 #!/bin/bash
 # Select and switch to a tmux window running an AI agent.
-# Usage: tmuxg
+# Usage: tmuxg [-q] [-A] [--create-if-missing] [--force-new] [--window-name NAME]
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-source "$SCRIPT_DIR/lib.sh"
 
-_tmuxg_list() {
-    local current_target=""
-    if [[ -n "$TMUX" ]]; then
-        current_target=$(tmux display-message -p '#{session_name}:#{window_index}' 2>/dev/null)
+QUIET=false
+ALL_SESSIONS=false
+CREATE_IF_MISSING=false
+FORCE_NEW=false
+WINDOW_NAME=""
+while [[ "$1" == -* ]]; do
+    case "$1" in
+        -q) QUIET=true; shift ;;
+        -A) ALL_SESSIONS=true; shift ;;
+        --create-if-missing) CREATE_IF_MISSING=true; shift ;;
+        --force-new) FORCE_NEW=true; shift ;;
+        --window-name)
+            if [[ -z "$2" ]]; then
+                echo "--window-name requires a name" >&2
+                exit 2
+            fi
+            WINDOW_NAME="$2"
+            shift 2
+            ;;
+        *)  shift ;;
+    esac
+done
+[[ "$QUIET" == true ]] && trap 'exit 0' EXIT
+
+_create_new_ai_window() {
+    local tool workdir cmd initial_window_name
+    tool=$(tmux show-environment -g TMUX_AI_TOOL 2>/dev/null | cut -d= -f2)
+    [ -z "$tool" ] && tool=claude
+    initial_window_name="${WINDOW_NAME:-$tool}"
+    workdir=$(tmux display-message -p '#{pane_current_path}')
+
+    if [[ -n "$WINDOW_NAME" ]]; then
+        printf -v cmd 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$WINDOW_NAME" "${tool}r"
+    else
+        printf -v cmd 'zsh -ic %q' "${tool}r"
     fi
-
-    _ai_window_rows -a | _ai_window_fzf_list "$current_target" "$(date +%s)"
+    tmux new-window -n "$initial_window_name" -c "$workdir" "$cmd"
 }
 
-case "${1:-}" in
-    --fzf-list)
-        _tmuxg_list
+_switch_to_window() {
+    local target="${1:?usage: _switch_to_window TARGET}"
+    local session
+
+    if [[ -n "$TMUX" ]]; then
+        tmux switch-client -t "$target"
+    elif [[ -t 0 ]]; then
+        session=$(tmux display-message -t "$target" -p '#{session_name}')
+        tmux attach-session -t "$session" \; select-window -t "$target"
+    else
+        tmux switch-client -t "$target"
+    fi
+}
+
+if [[ "$FORCE_NEW" == true ]]; then
+    _create_new_ai_window
+    exit 0
+fi
+
+if [[ -n "$WINDOW_NAME" ]]; then
+    SESSION=$(tmux display-message -p '#{session_name}')
+    TARGET=$(
+        tmux list-windows -t "$SESSION" -F '#{window_name}	#{window_id}' |
+            awk -F '\t' -v name="$WINDOW_NAME" '$1 == name { print $2; exit }'
+    )
+
+    if [[ -n "$TARGET" ]]; then
+        _switch_to_window "$TARGET"
+    else
+        _create_new_ai_window
+    fi
+    exit 0
+fi
+
+GET_AI_WINDOW_ARGS=(-i)
+if [[ "$ALL_SESSIONS" == true ]]; then
+    GET_AI_WINDOW_ARGS+=(-A)
+fi
+
+TARGET=$("$SCRIPT_DIR/get_ai_window.sh" "${GET_AI_WINDOW_ARGS[@]}")
+rc=$?
+
+if [[ $rc -eq 1 ]]; then
+    if [[ "$CREATE_IF_MISSING" == true ]]; then
+        _create_new_ai_window
         exit 0
-        ;;
-    --reset-pane-attribute)
-        shift
-        _ai_reset_pane_attribute_in_window "${1:?usage: tmuxg.sh --reset-pane-attribute TARGET}"
-        exit $?
-        ;;
-esac
+    fi
 
-LIST=$(_tmuxg_list)
-
-if [[ -z "$LIST" ]]; then
     echo "No AI agent windows found."
     exit 0
 fi
 
-SKIP_COUNT=$(printf '%s\n' "$LIST" | grep -cvE $'\033\\[3[23]m●' || true)
-
-if (( SKIP_COUNT > 0 )); then
-    _downs=$(printf '+down%.0s' $(seq 1 "$SKIP_COUNT"))
-    _start_bind="--bind=load:${_downs#+}"
-else
-    _start_bind=""
+if [[ $rc -eq 2 ]]; then
+    exit 0
 fi
 
-SELECTED=$(echo "$LIST" | fzf \
-    --ansi \
-    --reverse \
-    $_start_bind \
-    --header $'\033[36m◆\033[0m/\033[36m◇\033[0m current  \033[32m●\033[0m ready  \033[33m○\033[0m busy  |  Enter switch  Ctrl-R reset desc' \
-    --bind "ctrl-r:execute-silent($SCRIPT_DIR/tmuxg.sh --reset-pane-attribute {1})+reload($SCRIPT_DIR/tmuxg.sh --fzf-list)+refresh-preview" \
-    --preview 'tmux capture-pane -ept {1} | perl -0777 -pe "s/\s+\z/\n/"' \
-    --preview-window "up:${_AI_FZF_PREVIEW_HEIGHT},follow")
+[[ $rc -eq 0 && -n "$TARGET" ]] || exit "$rc"
 
-[[ -z "$SELECTED" ]] && exit 0
-
-TARGET=$(echo "$SELECTED" | cut -d' ' -f2 | perl -pe 's/\e\[[0-9;]*m//g')
-
-if [[ -n "$TMUX" ]]; then
-    tmux switch-client -t "$TARGET"
-else
-    tmux attach-session -t "${TARGET%%:*}" \; select-window -t "$TARGET"
-fi
+_switch_to_window "$TARGET"

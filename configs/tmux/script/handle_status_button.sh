@@ -23,13 +23,13 @@ case "$button" in
     set_buttons_expanded 0
     ;;
   sb_g)
-    tmux run-shell -b "cd '$path' && ~/deploy/configs/tmux/ai/switch_to_or_create.sh -q"
+    tmux run-shell -b "cd '$path' && ~/deploy/configs/tmux/ai/tmuxg.sh --create-if-missing -q"
     ;;
   sb_mc)
-    tmux run-shell -b "~/deploy/configs/tmux/ai/switch_to_or_create.sh --force-new -q"
+    tmux run-shell -b "~/deploy/configs/tmux/ai/tmuxg.sh --force-new -q"
     ;;
   sb_cg)
-    tmux display-popup -E -w 100% -h 100% "~/deploy/configs/tmux/ai/tmuxg.sh"
+    tmux run-shell -b "~/deploy/configs/tmux/ai/tmuxg.sh -A -q"
     ;;
   sb_t)
     tmux run-shell -b "~/deploy/configs/tmux/ai/send_current_target_to_ai.sh -q"

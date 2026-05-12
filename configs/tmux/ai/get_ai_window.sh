@@ -16,6 +16,31 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source "$SCRIPT_DIR/lib.sh"
 
+_current_target() {
+    if [[ -n "$TMUX" ]]; then
+        tmux display-message -p '#{session_name}:#{window_index}' 2>/dev/null
+    fi
+}
+
+_get_ai_window_rows() {
+    if [[ "$ALL_SESSIONS" == true ]]; then
+        _ai_window_rows -a
+    else
+        _ai_window_rows -s -t "$SESSION"
+    fi
+}
+
+_get_fzf_list() {
+    local current_target
+    local rows
+
+    current_target="$(_current_target)"
+    rows=$(_get_ai_window_rows)
+    [[ -n "$rows" ]] || return 1
+
+    printf '%s\n' "$rows" | _ai_window_fzf_list "$current_target" "$(date +%s)"
+}
+
 RETURN_ID=false
 LIST_ALL=false
 ALL_SESSIONS=false
@@ -32,20 +57,8 @@ while [[ "$1" == -* ]]; do
             fi
 
             SESSION=${1:-$(tmux display-message -p '#S' 2>/dev/null)}
-            if [[ "$ALL_SESSIONS" != true ]]; then
-                [[ -z "$SESSION" ]] && exit 1
-                ROWS=$(_ai_window_rows -s -t "$SESSION")
-            else
-                ROWS=$(_ai_window_rows -a)
-            fi
-            [[ -z "$ROWS" ]] && exit 1
-
-            CURRENT_TARGET=""
-            if [[ -n "$TMUX" ]]; then
-                CURRENT_TARGET=$(tmux display-message -p '#{session_name}:#{window_index}' 2>/dev/null)
-            fi
-
-            printf '%s\n' "$ROWS" | _ai_window_fzf_list "$CURRENT_TARGET" "$(date +%s)"
+            [[ "$ALL_SESSIONS" == true || -n "$SESSION" ]] || exit 1
+            _get_fzf_list
             exit 0
             ;;
         --reset-pane-attribute)
@@ -65,21 +78,10 @@ if [[ "$ALL_SESSIONS" != true ]]; then
     [[ -z "$SESSION" ]] && exit 1
 fi
 
-CURRENT_TARGET=""
-if [[ -n "$TMUX" ]]; then
-    CURRENT_TARGET=$(tmux display-message -p '#{session_name}:#{window_index}' 2>/dev/null)
-fi
+CURRENT_TARGET="$(_current_target)"
 
 _output_result() {
     [[ "$RETURN_ID" == true ]] && echo "$1" || echo "$2"
-}
-
-_get_ai_window_rows() {
-    if [[ "$ALL_SESSIONS" == true ]]; then
-        _ai_window_rows -a
-    else
-        _ai_window_rows -s -t "$SESSION"
-    fi
 }
 
 # Collect rows: last_visit<TAB>session:index<TAB>window_name<TAB>window_id<TAB>pane_pid<TAB>activity_epoch<TAB>unread<TAB>running<TAB>attribute
