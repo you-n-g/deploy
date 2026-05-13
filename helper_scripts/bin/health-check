@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+check="${1:-}"
+if [ -z "$check" ]; then
+  find "$HOME/deploy/helper_scripts/health" -maxdepth 1 -type f -executable -printf '%f\n' | sort | while IFS= read -r check_name; do
+    echo "## health-check $check_name"
+    "$HOME/deploy/helper_scripts/health/$check_name"
+  done
+  exit 0
+fi
+
+if [ "$check" = "list" ]; then
+  find "$HOME/deploy/helper_scripts/health" -maxdepth 1 -type f -executable -printf '%f\n' | sort
+  exit 0
+fi
+
+script="$HOME/deploy/helper_scripts/health/$check"
+if [ ! -x "$script" ]; then
+  echo "FAIL: unknown health check: $check"
+  exit 1
+fi
+
+exec "$script" "${@:2}"

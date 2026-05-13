@@ -321,9 +321,9 @@ _ai_window_fzf_list() {
         _ai_fzf_colored_session_target "$sess_win" colored_sess_win
 
         if (( wvisit == wact_raw )); then
-            time_info="[act ${rel_act}]"
+            time_info="[va ${rel_act}]"
         else
-            time_info="[visit ${rel_visit} | act ${rel_act}]"
+            time_info="[v ${rel_visit} | a ${rel_act}]"
         fi
 
         local unread_mark=""

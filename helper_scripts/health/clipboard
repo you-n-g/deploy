@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ ! -t 0 ]; then
+  echo "FAIL: run health-check clipboard in an interactive terminal"
+  exit 1
+fi
+
+if [ -z "${TMUX:-}" ]; then
+  echo "FAIL: run health-check clipboard inside tmux"
+  exit 1
+fi
+
+display="$(tmux show-environment -g DISPLAY 2>/dev/null | sed -n 's/^DISPLAY=//p' || true)"
+if [ -n "$display" ]; then
+  export DISPLAY="$display"
+fi
+
+if ! command -v xclip >/dev/null 2>&1; then
+  echo "FAIL: xclip not found"
+  exit 1
+fi
+
+now_ms() {
+  date +%s%3N
+}
+
+log_elapsed() {
+  local label="$1"
+  local start_ms="$2"
+  local end_ms
+  end_ms="$(now_ms)"
+  echo "time[$label]=$((end_ms - start_ms))ms"
+}
+
+echo "== local -> server =="
+echo "Paste your local clipboard here, then press Enter:"
+IFS= read -r pasted_from_local
+
+if [ -z "$pasted_from_local" ]; then
+  echo "FAIL: server received an empty paste"
+  exit 1
+fi
+
+echo "server_received=$pasted_from_local"
+start_ms="$(now_ms)"
+if ! server_clipboard="$(xclip -selection clipboard -out -target UTF8_STRING 2>&1)"; then
+  log_elapsed "xclip-read-local-check" "$start_ms"
+  echo "FAIL: cannot read server X clipboard"
+  echo "$server_clipboard"
+  exit 1
+fi
+log_elapsed "xclip-read-local-check" "$start_ms"
+
+if [ "$server_clipboard" != "$pasted_from_local" ]; then
+  echo "FAIL: local clipboard != server X clipboard"
+  echo "pasted=$pasted_from_local"
+  echo "xclip=$server_clipboard"
+  exit 1
+fi
+
+echo "OK: local -> server X clipboard works"
+
+echo
+echo "== server -> local =="
+xclip_token="clipboard-xclip-$(hostname)-$$-$(date +%s%N)"
+
+start_ms="$(now_ms)"
+if ! printf '%s' "$xclip_token" | xclip -selection clipboard -loops 0 -in; then
+  log_elapsed "xclip-write" "$start_ms"
+  echo "FAIL: cannot write server X clipboard"
+  exit 1
+fi
+log_elapsed "xclip-write" "$start_ms"
+
+start_ms="$(now_ms)"
+if ! server_clipboard="$(xclip -selection clipboard -out -target UTF8_STRING 2>&1)"; then
+  log_elapsed "xclip-read-after-write" "$start_ms"
+  echo "FAIL: cannot read server X clipboard"
+  echo "$server_clipboard"
+  exit 1
+fi
+log_elapsed "xclip-read-after-write" "$start_ms"
+
+if [ "$server_clipboard" != "$xclip_token" ]; then
+  echo "FAIL: server X clipboard mismatch"
+  echo "expected=$xclip_token"
+  echo "xclip=$server_clipboard"
+  exit 1
+fi
+
+echo "server_xclip_wrote=$xclip_token"
+echo "Paste your local clipboard here, then press Enter:"
+IFS= read -r pasted_from_xclip
+
+if [ "$pasted_from_xclip" != "$xclip_token" ]; then
+  echo "FAIL: server X clipboard -> local clipboard mismatch"
+  echo "expected=$xclip_token"
+  echo "pasted=$pasted_from_xclip"
+  exit 1
+fi
+
+tmux_token="clipboard-tmux-$(hostname)-$$-$(date +%s%N)"
+start_ms="$(now_ms)"
+if ! printf '%s' "$tmux_token" | tmux load-buffer -w -; then
+  log_elapsed "tmux-load-buffer-write" "$start_ms"
+  echo "FAIL: tmux load-buffer -w failed"
+  exit 1
+fi
+log_elapsed "tmux-load-buffer-write" "$start_ms"
+
+echo "server_tmux_wrote=$tmux_token"
+echo "Paste your local clipboard here, then press Enter:"
+IFS= read -r pasted_from_tmux
+
+if [ "$pasted_from_tmux" != "$tmux_token" ]; then
+  echo "FAIL: server tmux -> local clipboard mismatch"
+  echo "expected=$tmux_token"
+  echo "pasted=$pasted_from_tmux"
+  exit 1
+fi
+
+echo "OK: server -> local clipboard works"

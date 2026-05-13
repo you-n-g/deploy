@@ -61,13 +61,13 @@ esac
 #   visible(status-left) + visible(hostname) + @status-non-window-fixed-right-width
 #
 # If non_window_width already crosses 90% of the client width, there is less
-# than 10% space left for window labels, so give the window list a second line.
+# than 10% space left for window labels, so enable the narrow three-line status.
 max_one_line_width=$((client_width * 90 / 100))
 
 # echo $non_window_width $max_one_line_width
 
 if [ "$non_window_width" -gt "$max_one_line_width" ]; then
-  tmux set-option -t "${session}:" status 2 >/dev/null
+  tmux set-option -t "${session}:" status 3 >/dev/null
 else
   tmux set-option -t "${session}:" status on >/dev/null
 fi

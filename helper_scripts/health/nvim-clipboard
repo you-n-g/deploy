@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ -z "${TMUX:-}" ]; then
+  echo "FAIL: run health-check nvim-clipboard inside tmux"
+  exit 1
+fi
+
+if [ ! -t 0 ]; then
+  echo "FAIL: run health-check nvim-clipboard in an interactive terminal"
+  exit 1
+fi
+
+display="$(tmux show-environment -g DISPLAY 2>/dev/null | sed -n 's/^DISPLAY=//p' || true)"
+if [ -n "$display" ]; then
+  export DISPLAY="$display"
+fi
+
+if ! command -v nvim >/dev/null 2>&1; then
+  echo "FAIL: nvim not found"
+  exit 1
+fi
+
+if ! command -v xclip >/dev/null 2>&1; then
+  echo "FAIL: xclip not found"
+  exit 1
+fi
+
+now_ms() {
+  date +%s%3N
+}
+
+log_elapsed() {
+  local label="$1"
+  local start_ms="$2"
+  local end_ms
+  end_ms="$(now_ms)"
+  echo "time[$label]=$((end_ms - start_ms))ms"
+}
+
+echo "== local -> nvim =="
+echo "Paste your local clipboard here, then press Enter:"
+IFS= read -r pasted_from_local
+
+if [ -z "$pasted_from_local" ]; then
+  echo "FAIL: nvim received an empty local paste sample"
+  exit 1
+fi
+
+start_ms="$(now_ms)"
+if ! nvim_read="$(nvim --headless +'lua io.write(vim.fn.getreg("+"))' +qa 2>&1)"; then
+  log_elapsed "nvim-read-plus-local-check" "$start_ms"
+  echo "FAIL: nvim + register read failed"
+  echo "$nvim_read"
+  exit 1
+fi
+log_elapsed "nvim-read-plus-local-check" "$start_ms"
+
+if [ "$nvim_read" != "$pasted_from_local" ]; then
+  echo "FAIL: local clipboard != nvim + register"
+  echo "pasted=$pasted_from_local"
+  echo "nvim_read=$nvim_read"
+  exit 1
+fi
+
+echo "OK: local -> nvim clipboard works"
+
+echo
+echo "== nvim -> local =="
+nvim_copy_token="clipboard-nvim-copy-$(hostname)-$$-$(date +%s%N)"
+start_ms="$(now_ms)"
+if ! TOKEN="$nvim_copy_token" nvim --headless +'lua vim.fn.setreg("+", vim.env.TOKEN)' +qa 2>&1; then
+  log_elapsed "nvim-copy-plus" "$start_ms"
+  echo "FAIL: nvim + register write failed"
+  exit 1
+fi
+log_elapsed "nvim-copy-plus" "$start_ms"
+
+tmux_buffer="$(tmux save-buffer -)"
+if [ "$tmux_buffer" != "$nvim_copy_token" ]; then
+  echo "FAIL: nvim copy did not update tmux clipboard"
+  echo "expected=$nvim_copy_token"
+  echo "tmux_buffer=$tmux_buffer"
+  exit 1
+fi
+
+echo "nvim_wrote=$nvim_copy_token"
+echo "Paste your local clipboard here, then press Enter:"
+IFS= read -r pasted_from_nvim
+
+if [ "$pasted_from_nvim" != "$nvim_copy_token" ]; then
+  echo "FAIL: nvim + register did not sync to local clipboard"
+  echo "expected=$nvim_copy_token"
+  echo "pasted=$pasted_from_nvim"
+  exit 1
+fi
+
+echo "OK: nvim clipboard works"

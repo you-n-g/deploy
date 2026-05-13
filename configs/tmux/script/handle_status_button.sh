@@ -5,17 +5,34 @@ set -eu
 button="${1:-}"
 session="${2:-}"
 path="${3:-$HOME}"
+refresh_all_sessions=0
+
+clear_buttons_expanded_overrides() {
+  tmux list-sessions -F '#S' 2>/dev/null | while IFS= read -r session_name; do
+    tmux set-option -qu -t "${session_name}:" @status-buttons-expanded 2>/dev/null || true
+  done
+}
 
 set_buttons_expanded() {
   value="$1"
-  if [ -n "$session" ]; then
-    tmux set-option -t "${session}:" @status-buttons-expanded "$value" >/dev/null
-  else
-    tmux set-option -g @status-buttons-expanded "$value" >/dev/null
-  fi
+  tmux set-option -g @status-buttons-expanded "$value" >/dev/null
+  clear_buttons_expanded_overrides
+  refresh_all_sessions=1
 }
 
 case "$button" in
+  aiw_*)
+    tmux switch-client -t "@${button#aiw_}"
+    ;;
+  sb_k)
+    tmux switch-client -t code
+    ;;
+  sb_l)
+    tmux last-window
+    ;;
+  sb_s)
+    tmux choose-window -Z
+    ;;
   sb_more)
     set_buttons_expanded 1
     ;;
@@ -51,6 +68,10 @@ case "$button" in
     ;;
 esac
 
-if [ -n "$session" ]; then
+if [ "$refresh_all_sessions" -eq 1 ]; then
+  tmux list-sessions -F '#S' 2>/dev/null | while IFS= read -r session_name; do
+    "$HOME/deploy/configs/tmux/script/refresh_status_lines.sh" "$session_name"
+  done
+elif [ -n "$session" ]; then
   "$HOME/deploy/configs/tmux/script/refresh_status_lines.sh" "$session"
 fi

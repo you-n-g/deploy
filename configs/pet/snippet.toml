@@ -447,13 +447,13 @@
   Description = "from sys to tmux clipboard"
   Output = ""
   Tag = []
-  command = "eval export $(tmux show-env DISPLAY 2>/dev/null); xsel --clipboard --output | tmux load-buffer -w -"
+  command = "eval export $(tmux show-env -g DISPLAY 2>/dev/null); xsel --clipboard --output | tmux load-buffer -w -"
 
 [[Snippets]]
   Description = "from tmux to sys clipboard"
   Output = ""
   Tag = []
-  command = "eval export $(tmux show-env DISPLAY 2>/dev/null); tmux save-buffer - | xsel --clipboard --input"
+  command = "eval export $(tmux show-env -g DISPLAY 2>/dev/null); tmux save-buffer - | xsel --clipboard --input"
 
 [[Snippets]]
   Description = "git log for orphan commits"
@@ -705,7 +705,7 @@
   Description = "test/check X forward's clipboard"
   Output = ""
   Tag = []
-  command = "eval export $(tmux show-env DISPLAY 2>/dev/null); xclip -out -selection clipboard"
+  command = "eval export $(tmux show-env -g DISPLAY 2>/dev/null); xclip -out -selection clipboard"
 
 [[Snippets]]
   Description = "list available models"

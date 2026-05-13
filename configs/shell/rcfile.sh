@@ -186,14 +186,13 @@ EOF
 
     source <(fzf --zsh)
 
-    # Auto-refresh DISPLAY from tmux session env on each prompt.
-    # When SSH reconnects, tmux updates its session-level DISPLAY (via
-    # update-environment) on attach, but existing shells keep the stale value.
+    # Auto-refresh DISPLAY from tmux global env on each prompt.
+    # Keep every pane on the same DISPLAY value after SSH reconnects.
     # This hook keeps every pane in sync so xclip/X11 tools keep working.
     if [ -n "$TMUX" ]; then
         function _refresh_tmux_display() {
             local new_display
-            new_display=$(tmux show-environment DISPLAY 2>/dev/null | sed -n 's/^DISPLAY=//p')
+            new_display=$(tmux show-environment -g DISPLAY 2>/dev/null | sed -n 's/^DISPLAY=//p')
             if [ -n "$new_display" ] && [ "$new_display" != "$DISPLAY" ]; then
                 export DISPLAY="$new_display"
             fi

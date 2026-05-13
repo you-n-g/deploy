@@ -28,16 +28,46 @@ local function get_current_tmux_target_path()
   return target ~= "" and target or nil
 end
 
+local function get_ai_window_attributes(session)
+  local attrs = {}
+  local cmd = "tmux list-panes -s -t "
+    .. vim.fn.shellescape(session)
+    .. " -F "
+    .. vim.fn.shellescape("#{session_name}:#{window_index}\t#{@ai_agent_attribute}")
+  local output = vim.fn.system(cmd)
+  if vim.v.shell_error ~= 0 then
+    return attrs
+  end
+
+  for line in output:gmatch("[^\n]+") do
+    local target, attr = line:match("^([^\t]+)\t(.*)$")
+    if target and attr and attr ~= "" and attrs[target] == nil then
+      attrs[target] = attr
+    end
+  end
+  return attrs
+end
+
+local function format_ai_window_choice(window, attrs)
+  local target = window:match("^([^%s]+)")
+  local attr = target and attrs[target] or nil
+  if attr and attr ~= "" then
+    return window .. " · " .. attr
+  end
+  return window
+end
+
 local function get_ai_window(session, callback)
   if not session then return callback(nil) end
   local script = vim.fn.expand("~/deploy/configs/tmux/ai/get_ai_window.sh")
-  local output = vim.fn.system(script .. " -a " .. session)
+  local output = vim.fn.system(vim.fn.shellescape(script) .. " -a " .. vim.fn.shellescape(session))
   if vim.v.shell_error ~= 0 then return callback(nil) end
 
+  local attrs = get_ai_window_attributes(session)
   local windows = {}
   for line in output:gmatch("[^\n]+") do
     local w = trim(line)
-    if w ~= "" then table.insert(windows, w) end
+    if w ~= "" then table.insert(windows, format_ai_window_choice(w, attrs)) end
   end
 
   if #windows == 0 then
