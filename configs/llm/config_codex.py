@@ -13,7 +13,18 @@ import typer
 
 
 CONFIG_PATH = Path.home() / ".codex/config.toml"
-DEFAULT_MODEL = "gpt-5.2"
+DEFAULT_MODEL = "gpt-5.5"
+DEFAULT_REASONING_EFFORT = "xhigh"
+DEFAULT_SERVICE_TIER = "fast"
+DEFAULT_STATUS_LINE = [
+    "model-with-reasoning",
+    "current-dir",
+    "context-remaining",
+    "five-hour-limit",
+    "weekly-limit",
+    "total-input-tokens",
+    "total-output-tokens",
+]
 app = typer.Typer(add_completion=False)
 
 
@@ -45,8 +56,12 @@ def write_config(doc):
 
 def ensure_common_config(doc):
     doc["model"] = doc.get("model", DEFAULT_MODEL)
+    doc["model_reasoning_effort"] = doc.get(
+        "model_reasoning_effort",
+        DEFAULT_REASONING_EFFORT,
+    )
     doc["project_doc_fallback_filenames"] = ["GEMINI.md"]
-    doc["service_tier"] = "fast"
+    doc["service_tier"] = DEFAULT_SERVICE_TIER
 
     # Ensure [sandbox_workspace_write] exists and enable network access
     if "sandbox_workspace_write" not in doc:
@@ -56,6 +71,13 @@ def ensure_common_config(doc):
     # Ensure [model_providers] exists
     if "model_providers" not in doc:
         doc["model_providers"] = tomlkit.table()
+
+
+def ensure_tui_config(doc):
+    if "tui" not in doc:
+        doc["tui"] = tomlkit.table()
+    doc["tui"]["status_line"] = DEFAULT_STATUS_LINE
+    doc["tui"]["status_line_use_colors"] = True
 
 
 def ensure_hooks_feature(doc):
@@ -68,6 +90,7 @@ def ensure_hooks_feature(doc):
 def update_config_toml_for_api():
     doc = load_config()
     ensure_common_config(doc)
+    ensure_tui_config(doc)
     ensure_hooks_feature(doc)
 
     # Set top-level fields
@@ -120,10 +143,19 @@ def update_config_toml_for_api():
 def update_config_toml_for_login():
     doc = load_config()
     ensure_common_config(doc)
+    ensure_tui_config(doc)
     ensure_hooks_feature(doc)
     doc["model_provider"] = "openai"
     write_config(doc)
     print("Default provider switched to Codex login. Run `codex login` if needed.")
+
+
+def apply_provider_neutral_defaults():
+    doc = load_config()
+    ensure_common_config(doc)
+    ensure_tui_config(doc)
+    ensure_hooks_feature(doc)
+    write_config(doc)
 
 
 def enable_hooks_feature():
@@ -149,6 +181,12 @@ def api():
 def login():
     """Switch the default provider back to the built-in Codex/ChatGPT login."""
     update_config_toml_for_login()
+
+
+@app.command()
+def defaults():
+    """Apply provider-neutral Codex defaults, including the TUI status line."""
+    apply_provider_neutral_defaults()
 
 
 @app.command()

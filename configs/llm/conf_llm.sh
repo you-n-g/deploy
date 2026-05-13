@@ -172,7 +172,7 @@ deploy_codex() {
     echo "Linked: ~/.codex/AGENTS.md -> $SCRIPT_DIR/CLAUDE.md"
     ln -snf "$SCRIPT_DIR/codex/hooks.json" "$HOME/.codex/hooks.json"
     echo "Linked: ~/.codex/hooks.json -> $SCRIPT_DIR/codex/hooks.json"
-    "$SCRIPT_DIR/config_codex.py" hooks
+    "$SCRIPT_DIR/config_codex.py" defaults
 }
 
 deploy_llm_configs() {
@@ -222,7 +222,7 @@ Commands:
   link-skills      Link merged-skills/ into ~/.gemini, ~/.codex, and ~/.claude.
   skills           Run external-skills, merge-skills, skill-exclusions, and link-skills.
   configs          Link LLM CLI configs and install Codex/Claude hooks.
-  codex            Link ~/.codex/AGENTS.md and install Codex hooks.
+  codex            Link ~/.codex/AGENTS.md, install hooks, and apply Codex defaults.
   claude           Link ~/.claude/CLAUDE.md and install Claude hooks.
   sgpt-prompt      Link only ~/.sgpt.md.
   install-agents   Install gemini, codex, and claude CLIs if missing.
