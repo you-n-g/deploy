@@ -22,7 +22,7 @@ if ! command -v xclip >/dev/null 2>&1; then
 fi
 
 now_ms() {
-  date +%s%3N
+  echo "$(date +%s)000"
 }
 
 log_elapsed() {
@@ -63,7 +63,7 @@ echo "OK: local -> server X clipboard works"
 
 echo
 echo "== server -> local =="
-xclip_token="clipboard-xclip-$(hostname)-$$-$(date +%s%N)"
+xclip_token="clipboard-xclip-$(hostname)-$$-$(date +%s)"
 
 start_ms="$(now_ms)"
 if ! printf '%s' "$xclip_token" | xclip -selection clipboard -loops 0 -in; then
@@ -100,7 +100,7 @@ if [ "$pasted_from_xclip" != "$xclip_token" ]; then
   exit 1
 fi
 
-tmux_token="clipboard-tmux-$(hostname)-$$-$(date +%s%N)"
+tmux_token="clipboard-tmux-$(hostname)-$$-$(date +%s)"
 start_ms="$(now_ms)"
 if ! printf '%s' "$tmux_token" | tmux load-buffer -w -; then
   log_elapsed "tmux-load-buffer-write" "$start_ms"

@@ -2,20 +2,31 @@
 set -euo pipefail
 
 check="${1:-}"
+health_dir="$HOME/deploy/helper_scripts/health"
+
+list_checks() {
+  for script in "$health_dir"/*; do
+    [ -e "$script" ] || continue
+    [ -f "$script" ] || continue
+    [ -x "$script" ] || continue
+    basename "$script"
+  done | sort
+}
+
 if [ -z "$check" ]; then
-  find "$HOME/deploy/helper_scripts/health" -maxdepth 1 -type f -executable -printf '%f\n' | sort | while IFS= read -r check_name; do
+  list_checks | while IFS= read -r check_name; do
     echo "## health-check $check_name"
-    "$HOME/deploy/helper_scripts/health/$check_name"
+    "$health_dir/$check_name"
   done
   exit 0
 fi
 
 if [ "$check" = "list" ]; then
-  find "$HOME/deploy/helper_scripts/health" -maxdepth 1 -type f -executable -printf '%f\n' | sort
+  list_checks
   exit 0
 fi
 
-script="$HOME/deploy/helper_scripts/health/$check"
+script="$health_dir/$check"
 if [ ! -x "$script" ]; then
   echo "FAIL: unknown health check: $check"
   exit 1

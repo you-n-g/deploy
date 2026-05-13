@@ -27,7 +27,7 @@ if ! command -v xclip >/dev/null 2>&1; then
 fi
 
 now_ms() {
-  date +%s%3N
+  echo "$(date +%s)000"
 }
 
 log_elapsed() {
@@ -67,7 +67,7 @@ echo "OK: local -> nvim clipboard works"
 
 echo
 echo "== nvim -> local =="
-nvim_copy_token="clipboard-nvim-copy-$(hostname)-$$-$(date +%s%N)"
+nvim_copy_token="clipboard-nvim-copy-$(hostname)-$$-$(date +%s)"
 start_ms="$(now_ms)"
 if ! TOKEN="$nvim_copy_token" nvim --headless +'lua vim.fn.setreg("+", vim.env.TOKEN)' +qa 2>&1; then
   log_elapsed "nvim-copy-plus" "$start_ms"
