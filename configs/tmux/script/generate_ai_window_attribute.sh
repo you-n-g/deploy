@@ -5,6 +5,8 @@ set -eu
 target="${1:?usage: generate_ai_window_attribute.sh TARGET}"
 pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')"
 window_id="$(tmux display-message -p -t "$pane_id" '#{window_id}')"
+ai_attribute_reasoning_effort="${AI_ATTRIBUTE_REASONING_EFFORT:-low}"
+ai_attribute_verbosity="${AI_ATTRIBUTE_VERBOSITY:-low}"
 
 if [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_attribute 2>/dev/null)" ]; then
   exit 0
@@ -43,8 +45,8 @@ EOF
 
 # shellcheck disable=SC2016
 if ! env -u TMUX -u TMUX_PANE zsh -ic \
-  'codexr --disable hooks exec --skip-git-repo-check --sandbox danger-full-access -C "$2" -o "$1" -' \
-  -- "$output_file" "$agent_cwd" < "$prompt_file" >/dev/null 2>"$error_file"; then
+  'codexr --disable hooks exec --skip-git-repo-check --sandbox danger-full-access -C "$2" -o "$1" -c "model_reasoning_effort=\"$3\"" -c "model_verbosity=\"$4\"" -' \
+  -- "$output_file" "$agent_cwd" "$ai_attribute_reasoning_effort" "$ai_attribute_verbosity" < "$prompt_file" >/dev/null 2>"$error_file"; then
   tmux display-message "AI attribute failed: $(tail -n 1 "$error_file")"
   exit 1
 fi

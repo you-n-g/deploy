@@ -120,23 +120,31 @@ else
 fi
 RESET_ATTRIBUTE_BIND="ctrl-r:execute-silent($RESET_BIND_CMD)+reload($RELOAD_BIND_CMD)+refresh-preview"
 
-SKIP_COUNT=$(
+START_POS=$(
     printf '%s\n' "$LIST" |
         perl -pe 's/\e\[[0-9;]*m//g' |
-        awk '$3=="◆" || $3=="◇" || $3=="○" { c++ } END { print c+0 }'
+        awk '
+            /\[!\]/ && unread == 0 { unread = NR }
+            $3 != "◆" && $3 != "◇" && $3 != "○" && ready == 0 { ready = NR }
+            END {
+                if (unread > 0) print unread
+                else if (ready > 0) print ready
+                else print 1
+            }
+        '
 )
 
-if (( SKIP_COUNT > 0 )); then
-    _downs=$(printf '+down%.0s' $(seq 1 "$SKIP_COUNT"))
-    _start_bind="--bind=load:${_downs#+}"
-else
-    _start_bind=""
+START_BIND_ARGS=()
+START_BIND_CMD=""
+if (( START_POS > 1 )); then
+    START_BIND_ARGS=(--bind "load:pos($START_POS)")
+    printf -v START_BIND_CMD ' --bind %q' "load:pos($START_POS)"
 fi
 
 if [[ -t 0 ]]; then
     # Interactive: fzf directly
     SELECTED=$(fzf --ansi --reverse \
-        $_start_bind \
+        "${START_BIND_ARGS[@]}" \
         --header '◆/◇ current  ● ready  ○ busy  |  Enter switch  Ctrl-R reset desc' \
         --bind "$RESET_ATTRIBUTE_BIND" \
         --preview 'tmux capture-pane -ept {1} | perl -0777 -pe "s/\s+\z/\n/"' \
@@ -150,7 +158,7 @@ else
     tmux display-popup -E -w 100% -h 100% "\
         trap 'tmux wait-for -S \"$CHANNEL\"' EXIT; \
         fzf --ansi --reverse \
-            $_start_bind \
+            $START_BIND_CMD \
             --header '◆/◇ current  ● ready  ○ busy  |  Enter switch  Ctrl-R reset desc' \
             --bind '$RESET_ATTRIBUTE_BIND' \
             --preview 'tmux capture-pane -ept {1} | perl -0777 -pe \"s/\s+\z/\n/\"' \
