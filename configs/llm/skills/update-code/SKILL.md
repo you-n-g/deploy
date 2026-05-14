@@ -21,17 +21,29 @@ metadata:
    git rev-parse --show-toplevel
    ```
 
-2. 在做任何后续分析、配置同步、脚本执行或修复前，先记录旧 HEAD 并拉取最新代码：
+2. 在做任何后续分析、配置同步、脚本执行或修复前，先记录旧 HEAD。若工作区已有本地改动，先把 tracked 和 untracked 改动一起 stash，再拉取最新代码：
 
    ```bash
    OLD_HEAD="$(git rev-parse HEAD)"
+   if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+     STASH_NAME="update-code before pull $(date -Is)"
+     git stash push -u -m "$STASH_NAME"
+   fi
    git pull --ff-only
    NEW_HEAD="$(git rev-parse HEAD)"
    ```
 
-   如果 `git pull --ff-only` 失败，停止并报告原因。不要自动 `stash`、`reset`、`checkout` 或改用非 fast-forward pull。
+   如果 `git pull --ff-only` 失败，停止并报告原因；若已经创建 stash，不要丢弃它。不要 `reset`、`checkout` 或改用非 fast-forward pull。
 
-3. 读一下新拉到的代码改了什么，再判断当前机器需要做哪些配置或环境调整：
+3. 如果第 2 步创建过 stash，拉取完成后立刻恢复它：
+
+   ```bash
+   git stash pop
+   ```
+
+   如果 `git stash pop` 产生冲突，不要停在“请用户处理”。继续检查冲突文件，按本地改动和新代码的意图解决冲突；解决后用 `git status` 确认工作区状态，并在最终回复中说明发生过 stash 冲突以及如何解决。`stash pop` 冲突时 stash 条目通常仍会保留；只有确认本地改动已经恢复且冲突已解决后，才清理对应的 update-code stash。若无法可靠判断某个冲突应保留哪边，保留冲突状态并明确说明卡点。
+
+4. 读一下新拉到的代码改了什么，再判断当前机器需要做哪些配置或环境调整：
 
    ```bash
    git log --oneline "$OLD_HEAD..$NEW_HEAD"
@@ -52,6 +64,6 @@ metadata:
 
 ## 约束
 
-- 更新流程最前面必须先 `git pull --ff-only`。
-- 不自动隐藏用户改动；遇到 dirty tracked files、冲突或非 fast-forward 时直接停下报告。
+- 更新流程前段必须先记录旧 HEAD、保护必要的本地改动，然后执行 `git pull --ff-only`。
+- dirty worktree 不作为阻塞；先用 `git stash push -u` 保护本地 tracked/untracked 改动，pull 后再 `git stash pop` 恢复。
 - 不重置或删除用户未提交改动，除非用户明确要求。

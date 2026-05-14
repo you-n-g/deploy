@@ -483,7 +483,7 @@
   Description = "codex command"
   Output = ""
   Tag = []
-  command = "codexr exec -c 'model_reasoning_effort=\"low\"' \"<command=Commit the relevant code changes. Focus only on in-place git changes and relevant git stash entries. If files are clearly missing from those in-place or stashed changes and are needed for the same change, stage and commit them too. Do not stage or commit unrelated files. Make only one commit and then stop. Do not go beyond that.>\""
+  command = "codexr exec -c 'model_reasoning_effort=\"low\"' '<command=|_Commit the relevant code changes. Focus only on in-place git changes and relevant git stash entries. If files are clearly missing from those in-place or stashed changes and are needed for the same change, stage and commit them too. Do not stage or commit unrelated files. Make only one commit and then stop. Do not go beyond that._||_$update-code_|>'"
 
 [[Snippets]]
   Description = "health check for openai & llm"
