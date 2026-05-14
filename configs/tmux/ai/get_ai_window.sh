@@ -125,7 +125,7 @@ START_POS=$(
         perl -pe 's/\e\[[0-9;]*m//g' |
         awk '
             /\[!\]/ && unread == 0 { unread = NR }
-            $3 != "◆" && $3 != "◇" && $3 != "○" && ready == 0 { ready = NR }
+            $3 == "○" && ready == 0 { ready = NR }
             END {
                 if (unread > 0) print unread
                 else if (ready > 0) print ready
@@ -145,7 +145,7 @@ if [[ -t 0 ]]; then
     # Interactive: fzf directly
     SELECTED=$(fzf --ansi --reverse \
         "${START_BIND_ARGS[@]}" \
-        --header '◆/◇ current  ● ready  ○ busy  |  Enter switch  Ctrl-R reset desc' \
+        --header '◆ current busy  ◇ current idle  ● busy  ◉ unread  ○ idle  |  Enter switch  Ctrl-R reset desc' \
         --bind "$RESET_ATTRIBUTE_BIND" \
         --preview 'tmux capture-pane -ept {1} | perl -0777 -pe "s/\s+\z/\n/"' \
         --preview-window "up:${_AI_FZF_PREVIEW_HEIGHT},follow" < "$LISTFILE")
@@ -159,7 +159,7 @@ else
         trap 'tmux wait-for -S \"$CHANNEL\"' EXIT; \
         fzf --ansi --reverse \
             $START_BIND_CMD \
-            --header '◆/◇ current  ● ready  ○ busy  |  Enter switch  Ctrl-R reset desc' \
+            --header '◆ current busy  ◇ current idle  ● busy  ◉ unread  ○ idle  |  Enter switch  Ctrl-R reset desc' \
             --bind '$RESET_ATTRIBUTE_BIND' \
             --preview 'tmux capture-pane -ept {1} | perl -0777 -pe \"s/\s+\z/\n/\"' \
             --preview-window 'up:${_AI_FZF_PREVIEW_HEIGHT},follow' < '$LISTFILE' > '$RESULTFILE'"

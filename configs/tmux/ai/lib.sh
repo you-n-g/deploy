@@ -275,15 +275,15 @@ _ai_running_count() {
 #   $3+  ANSI label   status-symbol + window_name + unread mark + time info
 #
 # Status symbols:
-#   ◆/◇ (cyan)   current window (◇ = currently running)
-#   ○   (yellow) running
-#   ●   (yellow) unread — finished while not visible
-#   ●   (green)  idle, nothing new since last visit
+#   ◆/◇ (cyan)   current window (◆ = running, ◇ = idle)
+#   ●   (yellow) running
+#   ◉   (yellow) unread — finished while not visible
+#   ○   (green)  idle, nothing new since last visit
 #
 # Example output (after ANSI codes stripped):
 #   @7 work:3 ◆ claude          [act 5s]
-#   @2 work:1 ○ gemini          [act 0s]
-#   @5 learn:0 ● codex [!]      [act 1m]
+#   @2 work:1 ● gemini          [act 0s]
+#   @5 learn:0 ◉ codex [!]      [act 1m]
 _ai_window_fzf_list() {
     local current_target="${1:-}"
     local now="${2:-$(date +%s)}"
@@ -301,19 +301,19 @@ _ai_window_fzf_list() {
         if [[ "$sess_win" == "$current_target" ]]; then
             sort_key=0
             if $is_busy; then
-                status=$'\033[36m◇\033[0m '
-            else
                 status=$'\033[36m◆\033[0m '
+            else
+                status=$'\033[36m◇\033[0m '
             fi
         elif $is_busy; then
             sort_key=05
-            status=$'\033[33m○\033[0m '
+            status=$'\033[33m●\033[0m '
         elif (( is_unread )); then
             sort_key=08
-            status=$'\033[33m●\033[0m '
+            status=$'\033[33m◉\033[0m '
         else
             sort_key=1
-            status=$'\033[32m●\033[0m '
+            status=$'\033[32m○\033[0m '
         fi
 
         rel_visit=$(_format_relative_age $((now - wvisit)))
