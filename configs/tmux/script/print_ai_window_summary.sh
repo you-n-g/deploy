@@ -4,6 +4,7 @@ set -eu
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../ai/lib.sh"
+source "$SCRIPT_DIR/ai_label.sh"
 
 max_items="$(tmux show-options -gqv @status-ai-window-summary-count 2>/dev/null || true)"
 case "$max_items" in
@@ -11,53 +12,6 @@ case "$max_items" in
     max_items=6
     ;;
 esac
-
-strip_tmux_format() {
-  sed -E 's/#\[[^]]*\]//g; s/[[:space:]]+/ /g; s/^ //; s/ $//'
-}
-
-compact_ai_label() {
-  local session_name="$1"
-  local window_name="$2"
-  local attribute="$3"
-
-  python3 - "$session_name" "$window_name" "$attribute" <<'PY'
-import sys
-import unicodedata
-
-
-def middle(text: str) -> str:
-    chars = list(text)
-    if len(chars) <= 4:
-        return text
-    return "".join(chars[:2]) + "." + "".join(chars[-2:])
-
-
-def width(ch: str) -> int:
-    if unicodedata.combining(ch):
-        return 0
-    return 2 if unicodedata.east_asian_width(ch) in ("F", "W") else 1
-
-
-def display_prefix(text: str, max_width: int) -> str:
-    used = 0
-    out = []
-    for ch in text:
-        w = width(ch)
-        if used + w > max_width:
-            break
-        out.append(ch)
-        used += w
-    return "".join(out)
-
-
-session_name, window_name, attribute = sys.argv[1:]
-if attribute:
-    print(display_prefix(attribute, 10), end="")
-else:
-    print(f"{middle(session_name)}:{middle(window_name)}", end="")
-PY
-}
 
 if ! rows="$(_ai_window_rows -a)"; then
   exit 0

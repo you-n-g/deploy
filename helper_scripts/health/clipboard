@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+false << "MARKDOWN" > /dev/null
+DEBUG:
+- 重启XQuartz
+MARKDOWN
+
 if [ ! -t 0 ]; then
   echo "FAIL: run health-check clipboard in an interactive terminal"
   exit 1
