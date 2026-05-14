@@ -65,6 +65,7 @@ _find_ai_pane_in_window() {
 _ai_reset_pane_attribute_in_window() {
     local target="${1:?usage: _ai_reset_pane_attribute_in_window TARGET}"
     local pane_id
+    local script_dir
 
     if ! pane_id="$(_find_ai_pane_in_window "$target")" || [[ -z "$pane_id" ]]; then
         tmux display-message "Failed to find an AI pane in $target"
@@ -76,7 +77,11 @@ _ai_reset_pane_attribute_in_window() {
         return 1
     fi
 
-    tmux refresh-client -S 2>/dev/null || true
+    script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+    if ! "$script_dir/../script/refresh_status_lines.sh" "$pane_id"; then
+        tmux display-message "Failed to refresh tmux status for $pane_id"
+        return 1
+    fi
 }
 
 _tmux_current_target() {

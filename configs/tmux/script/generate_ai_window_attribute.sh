@@ -2,6 +2,7 @@
 
 set -eu
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 target="${1:?usage: generate_ai_window_attribute.sh TARGET}"
 pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')"
 window_id="$(tmux display-message -p -t "$pane_id" '#{window_id}')"
@@ -64,6 +65,5 @@ fi
 
 if [ -z "$(tmux show -pv -t "$pane_id" @ai_agent_attribute 2>/dev/null)" ]; then
   tmux set-option -pq -t "$pane_id" @ai_agent_attribute "$attribute"
-  "$SCRIPT_DIR/refresh_terminal_title.sh" "$pane_id"
-  tmux refresh-client -S
+  "$SCRIPT_DIR/refresh_status_lines.sh" "$pane_id"
 fi

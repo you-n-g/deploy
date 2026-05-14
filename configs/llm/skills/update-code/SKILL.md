@@ -21,19 +21,21 @@ metadata:
    git rev-parse --show-toplevel
    ```
 
-2. 在做任何后续分析、配置同步、脚本执行或修复前，先记录旧 HEAD。若工作区已有本地改动，先把 tracked 和 untracked 改动一起 stash，再拉取最新代码：
+2. 在做任何后续分析、配置同步、脚本执行或修复前，先记录旧 HEAD 和旧 upstream。若工作区已有本地改动，先把 tracked 和 untracked 改动一起 stash，再按当前 repo / 用户的 git 配置拉取最新代码：
 
    ```bash
    OLD_HEAD="$(git rev-parse HEAD)"
+   OLD_UPSTREAM="$(git rev-parse --verify @{u} 2>/dev/null || true)"
    if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
      STASH_NAME="update-code before pull $(date -Is)"
      git stash push -u -m "$STASH_NAME"
    fi
-   git pull --ff-only
+   git pull
    NEW_HEAD="$(git rev-parse HEAD)"
+   NEW_UPSTREAM="$(git rev-parse --verify @{u} 2>/dev/null || true)"
    ```
 
-   如果 `git pull --ff-only` 失败，停止并报告原因；若已经创建 stash，不要丢弃它。不要 `reset`、`checkout` 或改用非 fast-forward pull。
+   `git pull` 要尊重仓库和用户已有配置，例如 rebase、merge 或 fast-forward 策略；不要额外强制 `--ff-only`。如果 `git pull` 失败，停止并报告原因；若已经创建 stash，不要丢弃它。不要 `reset`、`checkout` 或 force 更新。
 
 3. 如果第 2 步创建过 stash，拉取完成后立刻恢复它：
 
@@ -46,11 +48,16 @@ metadata:
 4. 读一下新拉到的代码改了什么，再判断当前机器需要做哪些配置或环境调整：
 
    ```bash
-   git log --oneline "$OLD_HEAD..$NEW_HEAD"
-   git diff --name-only "$OLD_HEAD..$NEW_HEAD"
+   if [ -n "$OLD_UPSTREAM" ] && [ -n "$NEW_UPSTREAM" ] && [ "$OLD_UPSTREAM" != "$NEW_UPSTREAM" ]; then
+     git log --oneline "$OLD_UPSTREAM..$NEW_UPSTREAM"
+     git diff --name-only "$OLD_UPSTREAM..$NEW_UPSTREAM"
+   else
+     git log --oneline "$OLD_HEAD..$NEW_HEAD"
+     git diff --name-only "$OLD_HEAD..$NEW_HEAD"
+   fi
    ```
 
-   如果没有新提交，再按用户语境查看最近几个提交或当前工作区，判断是否仍需要处理。
+   如果没有新远端提交，再按用户语境查看最近几个提交或当前工作区，判断是否仍需要处理。
 
 不要只停在 `git pull`，要主动把新提交映射到本机需要更新的依赖、配置、生成物、服务状态或验证动作。
 
@@ -64,6 +71,6 @@ metadata:
 
 ## 约束
 
-- 更新流程前段必须先记录旧 HEAD、保护必要的本地改动，然后执行 `git pull --ff-only`。
+- 更新流程前段必须先记录旧 HEAD / upstream、保护必要的本地改动，然后执行普通 `git pull`，尊重 repo / 用户配置。
 - dirty worktree 不作为阻塞；先用 `git stash push -u` 保护本地 tracked/untracked 改动，pull 后再 `git stash pop` 恢复。
 - 不重置或删除用户未提交改动，除非用户明确要求。

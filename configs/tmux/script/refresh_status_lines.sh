@@ -2,10 +2,14 @@
 
 set -eu
 
-session="${1:-}"
-if [ -z "$session" ]; then
-  session="$(tmux display-message -p '#{session_name}')"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+target="${1:-}"
+if [ -z "$target" ]; then
+  target="$(tmux display-message -p '#{session_name}')"
 fi
+
+session="$(tmux display-message -p -t "$target" '#{session_name}')"
 
 client_width="$(
   # Use the narrowest attached client so the session layout stays usable on all
@@ -71,3 +75,6 @@ if [ "$non_window_width" -gt "$max_one_line_width" ]; then
 else
   tmux set-option -t "${session}:" status on >/dev/null
 fi
+
+"$SCRIPT_DIR/refresh_terminal_title.sh" "$target"
+tmux refresh-client -S 2>/dev/null || true
