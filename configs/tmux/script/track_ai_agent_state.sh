@@ -71,4 +71,5 @@ esac
 
 # Hooks can run while a client is attaching/detaching, where tmux may have no
 # current client to refresh. State updates above are the meaningful work here.
+"$SCRIPT_DIR/refresh_terminal_title.sh" "$pane_id"
 tmux refresh-client -S 2>/dev/null || true

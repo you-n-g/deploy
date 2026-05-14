@@ -64,5 +64,6 @@ fi
 
 if [ -z "$(tmux show -pv -t "$pane_id" @ai_agent_attribute 2>/dev/null)" ]; then
   tmux set-option -pq -t "$pane_id" @ai_agent_attribute "$attribute"
+  "$SCRIPT_DIR/refresh_terminal_title.sh" "$pane_id"
   tmux refresh-client -S
 fi
