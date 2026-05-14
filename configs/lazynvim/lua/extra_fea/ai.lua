@@ -88,12 +88,15 @@ local function get_ai_window(session, callback)
 end
 
 local function get_relative_path()
-  local file_path = vim.fn.expand("%:p")
-  local project_root = vim.fn.getcwd()
-  -- Get relative path by removing project root + trailing slash
-  local relative_path = file_path:sub(#project_root + 2)
-  if relative_path == "" then relative_path = file_path end
-  return relative_path
+  local file_path = vim.fs.normalize(vim.fn.expand("%:p"))
+  local project_root = vim.fs.normalize(vim.fn.getcwd())
+  local project_prefix = project_root .. "/"
+
+  if file_path:sub(1, #project_prefix) == project_prefix then
+    return file_path:sub(#project_prefix + 1)
+  end
+
+  return file_path
 end
 
 local function get_last_window_in_current_session()

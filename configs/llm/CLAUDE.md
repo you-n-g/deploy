@@ -86,8 +86,10 @@ PROMPT_TEXT="你是 <role> TMA Agent。
 
 tmux set-buffer -b tma-agent-prompt "$PROMPT_TEXT"
 tmux paste-buffer -b tma-agent-prompt -t "$TARGET"
-tmux send-keys -t "$TARGET" C-m
+tmux send-keys -t "$TARGET" Enter
 ```
+
+> **注意**：必须用 `Enter`，不要用 `C-m`。Codex/Claude Code TUI 只响应键盘事件 `Enter`；`C-m`（原始回车字符）只会粘贴文本，不会触发提交。
 
 只向 orchestrator 自己创建的协作 window/pane 发送输入。不要向已有业务运行 window、训练 window、用户正在操作的 window 发送 `send-keys`，除非用户明确要求。
 
