@@ -175,6 +175,29 @@ end
 local function flash_line_range(start_line, end_line, duration_ms)
   end_line = end_line or start_line
   duration_ms = duration_ms or 300
+
+  local win_height = vim.api.nvim_win_get_height(0)
+  local range_height = end_line - start_line + 1
+  local view = vim.fn.winsaveview()
+  local target_topline = nil
+
+  if range_height > win_height then
+    target_topline = start_line
+  else
+    local visible_bottom = view.topline + win_height - 1
+    if start_line < view.topline then
+      target_topline = start_line
+    elseif end_line > visible_bottom then
+      local bottom_padding = math.min(2, win_height - range_height)
+      target_topline = end_line + bottom_padding - win_height + 1
+    end
+  end
+
+  if target_topline then
+    view.topline = math.max(1, target_topline)
+    vim.fn.winrestview(view)
+  end
+
   local ns_id = vim.api.nvim_create_namespace("")
   local buf = vim.api.nvim_get_current_buf()
   for lnum = start_line, end_line do

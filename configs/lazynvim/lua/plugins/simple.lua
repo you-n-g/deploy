@@ -8,28 +8,15 @@
 -- hot chatgpt plugins: https://github.com/jackMort/ChatGPT.nvim
 -- Comparision related repos: https://github.com/search?q=gpt%20nvim&type=repositories
 
-local function has_document_symbol_provider()
-  for _, client in ipairs(vim.lsp.get_clients({ bufnr = 0 })) do
-    if client.server_capabilities.documentSymbolProvider then
-      return true
-    end
-  end
-  return false
-end
-
-local function open_symbols_outline()
-  if has_document_symbol_provider() then
-    vim.cmd("Trouble symbols toggle")
-  else
-    vim.cmd("SymbolsOutline")
-  end
-end
-
 return {
   {
     "folke/trouble.nvim",
-    keys = {
-      { "<leader>cs", false },
+    opts = {
+      modes = {
+        symbols = {
+          win = { position = "right", size = 55 },
+        },
+      },
     },
   },
   {
@@ -145,13 +132,6 @@ return {
     -- Reference:
     -- - 快捷键大全 vm-quick-reference
     -- END   'mg979/vim-visual-multi' -----------------------------------------
-  },
-  {
-    -- 这个功能的preview功能似乎还是有bug
-    "simrat39/symbols-outline.nvim",
-    cmd = "SymbolsOutline",
-    keys = { { "<leader>cs", open_symbols_outline, desc = "Symbols (Trouble/Outline)" } },
-    config = true,
   },
   -- {
   --   -- 因为是lazy加载的，所以开始没有打开任何文件时用会报错
