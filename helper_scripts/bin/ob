@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+VAULT_NAME="markdown"
+VAULT_DIR="$HOME/Downloads/markdown"
+
+usage() {
+    echo "Usage: ob <file>" >&2
+    exit 2
+}
+
+if [ "$#" -ne 1 ]; then
+    usage
+fi
+
+src="$1"
+if [ ! -f "$src" ]; then
+    echo "ob: file not found: $src" >&2
+    exit 1
+fi
+
+if [ ! -d "$VAULT_DIR/.obsidian" ]; then
+    echo "ob: Obsidian vault not found: $VAULT_DIR" >&2
+    exit 1
+fi
+
+src_abs="$(python3 -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).resolve())' "$src")"
+vault_abs="$(python3 -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).resolve())' "$VAULT_DIR")"
+base="$(basename "$src_abs")"
+dest="$vault_abs/$base"
+
+if [ "$src_abs" = "$dest" ]; then
+    link_path="$base"
+else
+    if [ -e "$dest" ]; then
+        echo "ob: target already exists: $dest" >&2
+        exit 1
+    fi
+    ln -s "$src_abs" "$dest"
+    link_path="$base"
+fi
+
+encoded_file="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$link_path")"
+open "obsidian://open?vault=$VAULT_NAME&file=$encoded_file"

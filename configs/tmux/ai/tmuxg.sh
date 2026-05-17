@@ -31,7 +31,7 @@ done
 _create_new_ai_window() {
     local tool workdir cmd initial_window_name
     tool=$(tmux show-environment -g TMUX_AI_TOOL 2>/dev/null | cut -d= -f2)
-    [ -z "$tool" ] && tool=claude
+    [ -z "$tool" ] && tool=codex
     initial_window_name="${WINDOW_NAME:-$tool}"
     workdir=$(tmux display-message -p '#{pane_current_path}')
 

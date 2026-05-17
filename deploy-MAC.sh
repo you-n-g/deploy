@@ -129,5 +129,12 @@ brew install --cask homerow
 brew install --cask zotero
 
 
+# TODO: mount
+brew install --cask macfuse
+brew install gromgit/fuse/sshfs-mac
+# sshfs cpudev:~/repos/axrd-16 /Users/xiaoyang/repos/servers/axrd-16
+# 🙌 这个后面是需要重启电脑
+
+
 # 🙌 其他手动操作的事情
 # - battery -> options -> Prevent automatic sleeping ...
