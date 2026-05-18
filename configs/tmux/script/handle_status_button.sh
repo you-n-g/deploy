@@ -21,6 +21,9 @@ set_buttons_expanded() {
 }
 
 case "$button" in
+  aip_*)
+    tmux switch-client -t "%${button#aip_}"
+    ;;
   aiw_*)
     tmux switch-client -t "@${button#aiw_}"
     ;;

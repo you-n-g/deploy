@@ -45,15 +45,22 @@ _create_new_ai_window() {
 
 _switch_to_window() {
     local target="${1:?usage: _switch_to_window TARGET}"
-    local session
+    local session window_id pane_id
+
+    session=$(tmux display-message -t "$target" -p '#{session_name}') || exit 1
+    window_id=$(tmux display-message -t "$target" -p '#{window_id}') || exit 1
+    pane_id=$(tmux display-message -t "$target" -p '#{pane_id}') || exit 1
 
     if [[ -n "$TMUX" ]]; then
-        tmux switch-client -t "$target"
+        tmux switch-client -t "$session"
+        tmux select-window -t "$window_id"
+        tmux select-pane -t "$pane_id"
     elif [[ -t 0 ]]; then
-        session=$(tmux display-message -t "$target" -p '#{session_name}')
-        tmux attach-session -t "$session" \; select-window -t "$target"
+        tmux attach-session -t "$session" \; select-window -t "$window_id" \; select-pane -t "$pane_id"
     else
-        tmux switch-client -t "$target"
+        tmux switch-client -t "$session"
+        tmux select-window -t "$window_id"
+        tmux select-pane -t "$pane_id"
     fi
 }
 
@@ -77,12 +84,12 @@ if [[ -n "$WINDOW_NAME" ]]; then
     exit 0
 fi
 
-GET_AI_WINDOW_ARGS=(-i)
+GET_AI_PANE_ARGS=(-i)
 if [[ "$ALL_SESSIONS" == true ]]; then
-    GET_AI_WINDOW_ARGS+=(-A)
+    GET_AI_PANE_ARGS+=(-A)
 fi
 
-TARGET=$("$SCRIPT_DIR/get_ai_window.sh" "${GET_AI_WINDOW_ARGS[@]}")
+TARGET=$("$SCRIPT_DIR/get_ai_pane.sh" "${GET_AI_PANE_ARGS[@]}")
 rc=$?
 
 if [[ $rc -eq 1 ]]; then

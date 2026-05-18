@@ -28,12 +28,12 @@ local function get_current_tmux_target_path()
   return target ~= "" and target or nil
 end
 
-local function get_ai_window_attributes(session)
+local function get_ai_pane_attributes(session)
   local attrs = {}
   local cmd = "tmux list-panes -s -t "
     .. vim.fn.shellescape(session)
     .. " -F "
-    .. vim.fn.shellescape("#{session_name}:#{window_index}\t#{@ai_agent_attribute}")
+    .. vim.fn.shellescape("#{session_name}.#{window_index}.#{pane_index}\t#{@ai_agent_attribute}")
   local output = vim.fn.system(cmd)
   if vim.v.shell_error ~= 0 then
     return attrs
@@ -48,40 +48,46 @@ local function get_ai_window_attributes(session)
   return attrs
 end
 
-local function format_ai_window_choice(window, attrs)
-  local target = window:match("^([^%s]+)")
+local function format_ai_pane_choice(pane, attrs)
+  local target = pane:match("^([^%s]+)")
   local attr = target and attrs[target] or nil
   if attr and attr ~= "" then
-    return window .. " · " .. attr
+    return pane .. " · " .. attr
   end
-  return window
+  return pane
 end
 
-local function get_ai_window(session, callback)
+local function parse_ai_pane_choice(choice)
+  local target = choice and choice:match("^([^%s]+)") or nil
+  if not target then
+    return nil, nil, nil
+  end
+
+  return target:match("^([^%.]+)%.([^%.]+)%.([^%.]+)$")
+end
+
+local function get_ai_pane(session, callback)
   if not session then return callback(nil) end
-  local script = vim.fn.expand("~/deploy/configs/tmux/ai/get_ai_window.sh")
+  local script = vim.fn.expand("~/deploy/configs/tmux/ai/get_ai_pane.sh")
   local output = vim.fn.system(vim.fn.shellescape(script) .. " -a " .. vim.fn.shellescape(session))
   if vim.v.shell_error ~= 0 then return callback(nil) end
 
-  local attrs = get_ai_window_attributes(session)
-  local windows = {}
+  local attrs = get_ai_pane_attributes(session)
+  local panes = {}
   for line in output:gmatch("[^\n]+") do
-    local w = trim(line)
-    if w ~= "" then table.insert(windows, format_ai_window_choice(w, attrs)) end
+    local pane = trim(line)
+    if pane ~= "" then table.insert(panes, format_ai_pane_choice(pane, attrs)) end
   end
 
-  if #windows == 0 then
+  if #panes == 0 then
     callback(nil)
-  elseif #windows == 1 then
-    -- "code:3 (claude)" → extract window index "3"
-    local idx = windows[1]:match("^[^:]+:(%d+)")
-    callback(idx)
+  elseif #panes == 1 then
+    callback(parse_ai_pane_choice(panes[1]))
   else
     vim.schedule(function()
-      vim.ui.select(windows, { prompt = "Select AI window:" }, function(choice)
+      vim.ui.select(panes, { prompt = "Select AI pane:" }, function(choice)
         if not choice then return end
-        local idx = choice:match("^[^:]+:(%d+)")
-        callback(idx)
+        callback(parse_ai_pane_choice(choice))
       end)
     end)
   end
@@ -138,20 +144,20 @@ end
 local function get_target_tmux(callback)
   local current_session = get_current_tmux_session()
 
-  get_ai_window(current_session, function(ai_window)
-    if current_session and ai_window then
-      callback(current_session, ai_window)
+  get_ai_pane(current_session, function(ai_session, ai_window, ai_pane)
+    if ai_session and ai_window and ai_pane then
+      callback(ai_session, ai_window, ai_pane)
     else
-      local input = vim.fn.input("Target tmux session (session.window): ")
+      local input = vim.fn.input("Target tmux session (session.window[.pane]): ")
       if input == "" then
         print(" Canceled")
         return
       end
 
-      -- Support session.window format
-      local s, w = string.match(input, "([^%.]+)%.?(.*)")
+      -- Support session.window and session.window.pane format
+      local s, w, p = string.match(input, "([^%.]+)%.?([^%.]*)%.?(.*)")
       if s then
-        callback(s, w)
+        callback(s, w, p)
       else
         callback(input, nil)
       end
@@ -219,8 +225,8 @@ end
 
 function M.send_path_to_ai()
   local relative_path = get_relative_path()
-  get_target_tmux(function(target_session, target_window)
-    tmux.send_to_tmux("@" .. relative_path, target_session, target_window)
+  get_target_tmux(function(target_session, target_window, target_pane)
+    tmux.send_to_tmux("@" .. relative_path, target_session, target_window, target_pane)
   end)
 end
 
@@ -231,16 +237,16 @@ function M.send_current_tmux_target_to_ai()
     return
   end
 
-  get_target_tmux(function(target_session, target_window)
-    tmux.send_to_tmux(string.format("请capture我的Tmux的这个pane[%s]的内容", tmux_target), target_session, target_window)
+  get_target_tmux(function(target_session, target_window, target_pane)
+    tmux.send_to_tmux(string.format("请capture我的Tmux的这个pane[%s]的内容", tmux_target), target_session, target_window, target_pane)
   end)
 end
 
 function M.send_to_ai(template, post_action)
   local content = get_current_or_visual_content()
   resolve_and_send(template, content, function(final_content)
-    get_target_tmux(function(target_session, target_window)
-      tmux.send_to_tmux(final_content, target_session, target_window, nil, post_action)
+    get_target_tmux(function(target_session, target_window, target_pane)
+      tmux.send_to_tmux(final_content, target_session, target_window, target_pane, post_action)
     end)
   end)
 end
@@ -258,8 +264,8 @@ function M.send_to_last_window(template, post_action)
 end
 
 function M.send_literal_to_ai(content, post_action)
-  get_target_tmux(function(target_session, target_window)
-    tmux.send_to_tmux(content, target_session, target_window, nil, post_action)
+  get_target_tmux(function(target_session, target_window, target_pane)
+    tmux.send_to_tmux(content, target_session, target_window, target_pane, post_action)
   end)
 end
 

@@ -214,32 +214,28 @@ _ai_pane_pid_set() {
     ' <(printf '%s\n' "$pane_pids") <(printf '%s\n' "$ps_data")
 }
 
-# Print unique AI windows as tab-separated rows, sorted by last_visit desc.
+# Print unique AI panes as tab-separated rows, sorted by last_visit desc.
 #
-# Usage: _ai_window_rows [-a] [-s -t SESSION] [tmux list-panes options]
+# Usage: _ai_pane_rows [-a] [-s -t SESSION] [tmux list-panes options]
 #   -a              scan all sessions
 #   -s -t SESSION   scan a specific session only
 #
 # Output columns (TAB-separated):
 #   $1 last_visit      epoch of last user visit (falls back to window_activity)
-#   $2 session:index   e.g. "work:3"
+#   $2 session:index.pane   e.g. "work:3.0"
 #   $3 window_name     e.g. "claude"
-#   $4 window_id       e.g. "@7"
+#   $4 pane_id         e.g. "%12"
 #   $5 pane_pid        root PID of the pane
 #   $6 activity_epoch  tmux window activity
 #   $7 unread_flag     1 if the agent finished while not visible
 #   $8 running_flag    1 if the agent hook says this window is running
 #   $9 attribute       short description generated once after first stop
-#
-# Example output:
-#   1745000100  work:3   claude   @7   12345   1745000099   1   0   edits tmux hooks
-#   1744999800  work:1   gemini   @2   67890   1744999800   0   1   reviews config
-_ai_window_rows() {
-    local pane_rows pane_pids ps_cache ai_pane_pids pane_pid
+_ai_pane_rows() {
+    local pane_rows pane_pids ps_cache ai_pane_pids
 
     pane_rows=$(tmux list-panes "$@" \
-        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}\t#{window_name}\t#{window_id}\t#{pane_pid}\t#{window_activity}\t#{@ai_agent_unread}\t#{@ai_agent_running}\t#{@ai_agent_attribute}' 2>/dev/null) || return 1
-    pane_pids=$(printf '%s\n' "$pane_rows" | awk -F '\t' '{ print $5 }')
+        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}.#{pane_index}\t#{window_name}\t#{window_id}\t#{pane_id}\t#{pane_pid}\t#{pane_active}\t#{window_activity}\t#{@ai_agent_unread}\t#{@ai_agent_running}\t#{@ai_agent_attribute}' 2>/dev/null) || return 1
+    pane_pids=$(printf '%s\n' "$pane_rows" | awk -F '\t' '{ print $6 }')
     ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null) || return 1
     ai_pane_pids=$(_ai_pane_pid_set "$pane_pids" "$ps_cache")
 
@@ -248,35 +244,30 @@ _ai_window_rows() {
             if ($1 != "") has_ai_proc_by_pane[$1] = 1
             next
         }
-        has_ai_proc_by_pane[$5] {
-            attribute = $9
-            for (i = 10; i <= NF; i++) attribute = attribute " " $i
-            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $1, $2, $3, $4, $5, $6, $7, $8, attribute
+        has_ai_proc_by_pane[$6] {
+            attribute = $11
+            for (i = 12; i <= NF; i++) attribute = attribute " " $i
+            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, attribute
         }
     ' <(printf '%s\n' "$ai_pane_pids") <(printf '%s\n' "$pane_rows") |
-    sort -t $'\t' -k1,1nr -k6,6nr |
-    awk -F '\t' '!seen[$4]++' |
+    sort -t $'\t' -k1,1nr -k8,8nr -k7,7nr |
+    awk -F '\t' '!seen[$5]++' |
     awk -F '\t' '
     {
-        print $1+0 "\t" $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6+0 "\t" $7+0 "\t" $8+0 "\t" $9
+        print $1+0 "\t" $2 "\t" $3 "\t" $5 "\t" $6 "\t" $8+0 "\t" $9+0 "\t" $10+0 "\t" $11
     }
     '
 }
 
-# Count AI windows that are actively producing output right now.
-_ai_running_count() {
-    _ai_window_rows -a | awk -F '\t' '$8 == 1 { c++ } END { print c+0 }'
-}
-
-# Format _ai_window_rows output (read from stdin) into fzf-ready lines.
+# Format _ai_pane_rows output (read from stdin) into fzf-ready lines.
 #
-# Usage: _ai_window_rows [-a] | _ai_window_fzf_list [current_target [now]]
-#   current_target   session:index of the currently active window, e.g. "work:3"
+# Usage: _ai_pane_rows [-a] | _ai_pane_fzf_list [current_target [now]]
+#   current_target   session:index.pane of the current pane, e.g. "work:3.0"
 #   now              epoch seconds (defaults to $(date +%s))
 #
 # Output columns (SPACE-separated, ready for fzf --ansi):
-#   $1 window_id      e.g. "@7"
-#   $2 session:index  e.g. "work:3" (session name is ANSI-colored)
+#   $1 pane_id        e.g. "%12"
+#   $2 session:index.pane  e.g. "work:3.0" (session name is ANSI-colored)
 #   $3+  ANSI label   status-symbol + window_name + unread mark + time info
 #
 # Status symbols:
@@ -286,10 +277,10 @@ _ai_running_count() {
 #   ○   (green)  idle, nothing new since last visit
 #
 # Example output (after ANSI codes stripped):
-#   @7 work:3 ◆ claude          [act 5s]
-#   @2 work:1 ● gemini          [act 0s]
-#   @5 learn:0 ◉ codex [!]      [act 1m]
-_ai_window_fzf_list() {
+#   %12 work:3.0 ◆ claude          [act 5s]
+#   %13 work:3.1 ● gemini          [act 0s]
+#   %14 learn:0.0 ◉ codex [!]      [act 1m]
+_ai_pane_fzf_list() {
     local current_target="${1:-}"
     local now="${2:-$(date +%s)}"
 

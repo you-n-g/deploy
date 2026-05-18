@@ -44,20 +44,26 @@ case "$max_items" in
     ;;
 esac
 
-if rows="$(_ai_window_rows -a)" && [ -n "$rows" ]; then
+if rows="$(_ai_pane_rows -a)" && [ -n "$rows" ]; then
   count=0
   title=""
+  seen_windows=""
 
-  while IFS=$'\t' read -r _last_visit sess_win window_name _window_id _pane_pid _activity_epoch unread running attribute; do
-    [ -n "$sess_win" ] || continue
+  while IFS=$'\t' read -r _last_visit pane_target window_name _pane_id _pane_pid _activity_epoch unread running attribute; do
+    [ -n "$pane_target" ] || continue
+    window_target="${pane_target%.*}"
+    case "$seen_windows" in
+      *"|$window_target|"*) continue ;;
+    esac
+    seen_windows="${seen_windows}|${window_target}|"
 
     count=$((count + 1))
     [ "$count" -le "$max_items" ] || break
 
-    session_name="${sess_win%:*}"
+    session_name="${window_target%:*}"
     clean_attribute="$(printf '%s' "$attribute" | strip_tmux_format)"
     label="$(compact_ai_label "$session_name" "$window_name" "$clean_attribute")"
-    if [ "$sess_win" = "$current_target" ]; then
+    if [ "$window_target" = "$current_target" ]; then
       item="$(ai_title_status_prefix 1 "$unread" "$running")${label}"
     else
       item="$(ai_title_status_prefix 0 "$unread" "$running")${label}"
