@@ -76,5 +76,5 @@ else
   tmux set-option -t "${session}:" status on >/dev/null
 fi
 
-"$SCRIPT_DIR/refresh_terminal_title.sh" "$target"
+"$SCRIPT_DIR/refresh_terminal_title.sh"
 tmux refresh-client -S 2>/dev/null || true

@@ -2,6 +2,7 @@
 
 set -eu
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 now="$(date +%s)"
 stale_seconds="$(tmux show-options -gqv @ai_agent_stale_seconds 2>/dev/null || true)"
 case "$stale_seconds" in
@@ -10,20 +11,26 @@ case "$stale_seconds" in
     ;;
 esac
 
-tmux list-panes -a -F '#{pane_id}	#{window_activity}	#{window_active}	#{session_attached}	#{@ai_agent_running}' |
-  while IFS=$'\t' read -r pane_id window_activity window_active session_attached running; do
-    [ "$running" = "1" ] || continue
-    [ "$window_activity" -gt 0 ] || continue
+changed=0
 
-    if [ $((now - window_activity)) -ge "$stale_seconds" ]; then
-      tmux set-option -pq -t "$pane_id" @ai_agent_running 0
-      if [ "$window_active" = "1" ] && [ "$session_attached" != "0" ]; then
-        tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
-      else
-        tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
-      fi
+while IFS=$'\t' read -r pane_id window_activity window_active session_attached running; do
+  [ "$running" = "1" ] || continue
+  [ "$window_activity" -gt 0 ] || continue
+
+  if [ $((now - window_activity)) -ge "$stale_seconds" ]; then
+    tmux set-option -pq -t "$pane_id" @ai_agent_running 0
+    if [ "$window_active" = "1" ] && [ "$session_attached" != "0" ]; then
+      tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
+    else
+      tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
     fi
-  done
+    changed=1
+  fi
+done < <(tmux list-panes -a -F '#{pane_id}	#{window_activity}	#{window_active}	#{session_attached}	#{@ai_agent_running}')
+
+if [ "$changed" = "1" ]; then
+  "$SCRIPT_DIR/refresh_terminal_title.sh"
+fi
 
 read -r running waiting < <(
   tmux list-panes -a -F '#{@ai_agent_running}	#{@ai_agent_unread}' |

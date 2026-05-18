@@ -6,8 +6,6 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../ai/lib.sh"
 source "$SCRIPT_DIR/ai_label.sh"
 
-fallback_target="${1:-}"
-
 ai_title_status_prefix() {
   local is_current="$1"
   local unread="$2"
@@ -15,9 +13,9 @@ ai_title_status_prefix() {
 
   if [ "$is_current" = "1" ]; then
     if [ "$running" = "1" ]; then
-      printf '◆ '
+      printf '▶ '
     else
-      printf '◇ '
+      printf '▷ '
     fi
     return
   fi
@@ -31,11 +29,7 @@ ai_title_status_prefix() {
   fi
 }
 
-if [ -n "$fallback_target" ]; then
-  current_target="$(tmux display-message -p -t "$fallback_target" '#{session_name}:#{window_index}')"
-else
-  current_target="$(tmux display-message -p '#{session_name}:#{window_index}')"
-fi
+current_target="$(tmux display-message -p '#{session_name}:#{window_index}')"
 
 max_items="$(tmux show-options -gqv @status-ai-window-summary-count 2>/dev/null || true)"
 case "$max_items" in
@@ -82,8 +76,4 @@ if rows="$(_ai_pane_rows -a)" && [ -n "$rows" ]; then
   fi
 fi
 
-if [ -n "$fallback_target" ]; then
-  tmux display-message -p -t "$fallback_target" '#W' 2>/dev/null
-else
-  tmux display-message -p '#W' 2>/dev/null
-fi
+tmux display-message -p '#W' 2>/dev/null
