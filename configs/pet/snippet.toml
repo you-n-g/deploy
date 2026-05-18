@@ -712,3 +712,9 @@
   Output = ""
   Tag = []
   command = "(export LEVEL=0; curl -sf \"$(get-cred xyz_base)/v1/models\"  -H \"Authorization: Bearer $(get-cred xyz_key)\")"
+
+[[Snippets]]
+  Description = "capture tmux content into terminal"
+  Output = ""
+  Tag = []
+  command = "tmux capture-pane -t :<winid=1> -pJ -S -50"

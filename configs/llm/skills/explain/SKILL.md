@@ -161,11 +161,26 @@ identifier 省略，用最近一次运行的 run id / 时间戳末段）。
 
 ### Steps
 
-1. **Architecture Overview** — Draw the execution flow as an ASCII diagram showing the
-   entry point, each stage/step, and which sub-processes or agents are spawned. Include
-   full paths to the source files that define each stage.
+1. **Architecture Overview + 调用栈树** — Draw the execution flow as an ASCII diagram
+   showing the entry point, each stage/step, and which sub-processes or agents are
+   spawned. Include full paths to the source files that define each stage.
 
-2. **逐步追踪** — For each stage of the run, in execution order:
+   For `run` mode, also include a **调用栈树 / 调用树** before the prose walkthrough:
+   - The tree must show the concrete call order: entrypoint → stage runner → function /
+     method calls → subprocess / tmux / remote process / sidecar / agent.
+   - Each important tree node must include a jumpable source location
+     (`完整路径/file:line`), and, when the node was observed in the actual run, the
+     matching runtime evidence (`log/path:line`, pid, tmux session, command, or output
+     artifact).
+   - If the run contains multiple concrete cases (e.g. multiple workspaces, lanes,
+     sidecars, retries, shards, or agents), first show the shared mechanism tree, then
+     list a separate **actual call tree** for each concrete case. The per-case tree
+     should make it obvious which branches actually ran and which declared branches did
+     not run.
+   - The tree is not optional: it is the primary orientation device for understanding
+     the run's call order.
+
+2. **详细逐步追踪** — For each stage of the run, in execution order:
    - **代码入口**: which code file + line triggers this stage (full path:line).
    - **实际命令**: the shell command or function call that was executed.
    - **Log 摘要**: read the stage's log file; report:

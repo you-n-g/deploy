@@ -40,6 +40,9 @@ opt.relativenumber = false
 
 -- Filetypes
 vim.filetype.add {
+    extension = {
+        j2 = "jinja",
+    },
     pattern = {
         -- ssh config
         ['.*%/.*%.?ssh%.config']         = 'sshconfig',
@@ -49,5 +52,4 @@ vim.filetype.add {
         ['.*%/.*%.?ssh%/.*%/.*%.config'] = 'sshconfig',
     },
 }
-
 
