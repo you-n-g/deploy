@@ -85,14 +85,18 @@ wait_for_condition() {
   case "$mode" in
     ai-idle)
       while :; do
-        current="$(tmux show -pv -t "$target" @ai_agent_running 2>/dev/null)" || break
+        tmux display-message -p -t "$target" '#{pane_id}' >/dev/null 2>&1 || break
+        current="$(tmux show -pv -t "$target" @ai_agent_running 2>/dev/null)" \
+          || { echo "target $target is missing @ai_agent_running during ai-idle wait" >&2; exit 1; }
         [ "$current" = "1" ] || break
         sleep "$poll_seconds"
       done
       ;;
     ai-running)
       while :; do
-        current="$(tmux show -pv -t "$target" @ai_agent_running 2>/dev/null)" || break
+        tmux display-message -p -t "$target" '#{pane_id}' >/dev/null 2>&1 || break
+        current="$(tmux show -pv -t "$target" @ai_agent_running 2>/dev/null)" \
+          || { echo "target $target is missing @ai_agent_running during ai-running wait" >&2; exit 1; }
         pending="$(tmux show -pv -t "$target" @ai_agent_pending 2>/dev/null || true)"
         [ "$current" = "1" ] && break
         [ "$pending" = "1" ] && break

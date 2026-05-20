@@ -85,6 +85,8 @@ fi
 if [[ "$mode" == "ai-idle" || "$mode" == "ai-running" ]]; then
   [[ -n "$target" ]] || { echo "--target is required in $mode mode" >&2; usage; exit 2; }
   tmux display-message -p -t "$target" '#{pane_id}' >/dev/null
+  tmux show -pv -t "$target" @ai_agent_running >/dev/null 2>&1 \
+    || { echo "target $target is missing @ai_agent_running; cannot use $mode watcher" >&2; exit 2; }
 fi
 
 tmux display-message -p -t "$pane" '#{pane_id}' >/dev/null
