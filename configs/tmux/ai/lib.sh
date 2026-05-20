@@ -100,6 +100,24 @@ _format_relative_age() {
     fi
 }
 
+_strip_ai_window_state_prefix() {
+    local name="$1"
+
+    # Coupled with configs/tmux/script/track_ai_agent_state.sh, which prefixes
+    # AI window names with these state markers. The fzf list renders status in
+    # its own column, so strip the window-name prefix for display.
+    while :; do
+        case "$name" in
+            "● "*) name="${name#● }" ;;
+            "◉ "*) name="${name#◉ }" ;;
+            "○ "*) name="${name#○ }" ;;
+            *) break ;;
+        esac
+    done
+
+    printf '%s\n' "$name"
+}
+
 _ai_fzf_reset_session_colors() {
     _ai_fzf_session_color_names=()
     _ai_fzf_session_color_values=()
@@ -288,6 +306,7 @@ _ai_pane_fzf_list() {
 
     while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw unread_flag running_flag attribute; do
         local sort_key status rel_visit rel_act time_info colored_sess_win
+        local display_wname
         local is_unread=0
         [[ "$unread_flag" == "1" ]] && is_unread=1
 
@@ -327,9 +346,10 @@ _ai_pane_fzf_list() {
 
         local attribute_info=""
         [[ -n "$attribute" ]] && attribute_info="  · ${attribute}"
+        display_wname="$(_strip_ai_window_state_prefix "$wname")"
 
         printf '%s\t%s\t%s %s %b%s%b  \033[2m%s%s\033[0m\n' \
-            "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$wname" "$unread_mark" "$time_info" "$attribute_info"
+            "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$display_wname" "$unread_mark" "$time_info" "$attribute_info"
     done |
     sort -t $'\t' -k1,1 -k2,2nr |
     cut -f3-

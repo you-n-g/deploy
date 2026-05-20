@@ -29,6 +29,9 @@ done
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+source "$SCRIPT_DIR/lib.sh"
+
 SESSION="${1:-learn}"
 WINDOW_NAME="${OVERRIDE_WINDOW_NAME:-codex-tmp}"
 TARGET="${SESSION}:0.0"
@@ -61,7 +64,14 @@ _ai_cmd="${OVERRIDE_CMD:-codexr}"
 printf -v CMD 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$WINDOW_NAME" "$_ai_cmd"
 
 if tmux has-session -t "$SESSION" 2>/dev/null; then
-    EXISTING_WINDOW_ID="$(tmux list-windows -t "$SESSION" -F '#{window_id} #{window_name}' 2>/dev/null | awk -v name="$WINDOW_NAME" '$2==name{print $1; exit}')"
+    EXISTING_WINDOW_ID=""
+    while IFS=$'\t' read -r window_id window_name; do
+        base_name="$(_strip_ai_window_state_prefix "$window_name")"
+        if [ "$window_name" = "$WINDOW_NAME" ] || [ "$base_name" = "$WINDOW_NAME" ]; then
+            EXISTING_WINDOW_ID="$window_id"
+            break
+        fi
+    done < <(tmux list-windows -t "$SESSION" -F '#{window_id}	#{window_name}' 2>/dev/null)
     if [ -n "$EXISTING_WINDOW_ID" ]; then
         NEW_WINDOW_ID="$EXISTING_WINDOW_ID"
     else

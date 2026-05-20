@@ -3,6 +3,7 @@
 # Usage: tmuxg [-q] [-A] [--create-if-missing] [--force-new] [--window-name NAME]
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+source "$SCRIPT_DIR/lib.sh"
 
 QUIET=false
 ALL_SESSIONS=false
@@ -71,10 +72,14 @@ fi
 
 if [[ -n "$WINDOW_NAME" ]]; then
     SESSION=$(tmux display-message -p '#{session_name}')
-    TARGET=$(
-        tmux list-windows -t "$SESSION" -F '#{window_name}	#{window_id}' |
-            awk -F '\t' -v name="$WINDOW_NAME" '$1 == name { print $2; exit }'
-    )
+    TARGET=""
+    while IFS=$'\t' read -r window_name window_id; do
+        base_name="$(_strip_ai_window_state_prefix "$window_name")"
+        if [[ "$window_name" == "$WINDOW_NAME" || "$base_name" == "$WINDOW_NAME" ]]; then
+            TARGET="$window_id"
+            break
+        fi
+    done < <(tmux list-windows -t "$SESSION" -F '#{window_name}	#{window_id}')
 
     if [[ -n "$TARGET" ]]; then
         _switch_to_window "$TARGET"
