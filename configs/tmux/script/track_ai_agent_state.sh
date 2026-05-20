@@ -13,6 +13,7 @@ if ! pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')" || [ -z "$pa
   exit 1
 fi
 window_id="$(tmux display-message -p -t "$pane_id" '#{window_id}')"
+sync_window_name=1
 
 ensure_ai_agent_attribute() {
   if [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_attribute 2>/dev/null)" ]; then
@@ -35,6 +36,34 @@ reset_ai_agent_attribute() {
 is_window_visible() {
   [ "$(tmux display-message -p -t "$window_id" '#{window_active}')" = "1" ] \
     && [ "$(tmux display-message -p -t "$window_id" '#{session_attached}')" != "0" ]
+}
+
+sync_ai_window_name() {
+  local current_name base_name running unread prefix desired_name
+
+  current_name="$(tmux display-message -p -t "$window_id" '#W')"
+  base_name="$current_name"
+  while :; do
+    case "$base_name" in
+      "● "*) base_name="${base_name#● }" ;;
+      "◉ "*) base_name="${base_name#◉ }" ;;
+      "○ "*) base_name="${base_name#○ }" ;;
+      *) break ;;
+    esac
+  done
+
+  running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
+  unread="$(tmux show -pv -t "$pane_id" @ai_agent_unread 2>/dev/null || true)"
+  if [ "$running" = "1" ]; then
+    prefix="●"
+  elif [ "$unread" = "1" ]; then
+    prefix="◉"
+  else
+    prefix="○"
+  fi
+
+  desired_name="${prefix} ${base_name}"
+  [ "$current_name" = "$desired_name" ] || tmux rename-window -t "$window_id" "$desired_name"
 }
 
 case "$state" in
@@ -61,6 +90,8 @@ case "$state" in
   visit)
     if [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null)" ]; then
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
+    else
+      sync_window_name=0
     fi
     ;;
   *)
@@ -69,4 +100,7 @@ case "$state" in
     ;;
 esac
 
+if [ "$sync_window_name" = "1" ]; then
+  sync_ai_window_name
+fi
 "$SCRIPT_DIR/refresh_status_lines.sh" "$pane_id"
