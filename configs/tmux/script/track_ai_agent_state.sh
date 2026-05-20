@@ -2,10 +2,10 @@
 
 set -eu
 
-state="${1:?usage: track_ai_agent_state.sh init|running|idle|visit TARGET}"
+state="${1:?usage: track_ai_agent_state.sh init|running|idle|visit|unread|pending TARGET}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-target="${2:-${TMUX_PANE:?usage: track_ai_agent_state.sh init|running|idle|visit TARGET}}"
+target="${2:-${TMUX_PANE:?usage: track_ai_agent_state.sh init|running|idle|visit|unread|pending TARGET}}"
 if ! pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')" || [ -z "$pane_id" ]; then
   if [ "$state" = "visit" ]; then
     exit 0
@@ -27,6 +27,13 @@ ensure_ai_agent_attribute() {
 
 reset_ai_agent_attribute() {
   tmux set-option -pqu -t "$pane_id" @ai_agent_attribute 2>/dev/null || true
+}
+
+is_tracked_ai_pane() {
+  [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null)" ] \
+    || [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_unread 2>/dev/null)" ] \
+    || [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null)" ] \
+    || [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_attribute 2>/dev/null)" ]
 }
 
 is_window_visible() {
@@ -67,9 +74,11 @@ case "$state" in
     reset_ai_agent_attribute
     tmux set-option -pq -t "$pane_id" @ai_agent_running 0
     tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
+    tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
     ;;
   running)
     tmux set-option -pq -t "$pane_id" @ai_agent_running 1
+    tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
     if is_window_visible; then
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
     fi
@@ -87,6 +96,24 @@ case "$state" in
     if [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null)" ]; then
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
     else
+      sync_window_name=0
+    fi
+    ;;
+  unread)
+    if is_tracked_ai_pane; then
+      tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
+    else
+      tmux display-message -t "$pane_id" "Mark unread: current pane is not tracked as AI"
+      sync_window_name=0
+    fi
+    ;;
+  pending)
+    if is_tracked_ai_pane; then
+      tmux set-option -pq -t "$pane_id" @ai_agent_pending 1
+      tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
+      tmux display-message -t "$pane_id" "Auto-switch pending: excluded until this AI runs again"
+    else
+      tmux display-message -t "$pane_id" "Mark pending: current pane is not tracked as AI"
       sync_window_name=0
     fi
     ;;

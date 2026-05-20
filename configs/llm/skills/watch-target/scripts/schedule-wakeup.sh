@@ -6,13 +6,15 @@ usage() {
 Usage:
   schedule-wakeup.sh --seconds <seconds> --message <message> [--pane <watcher-pane>] [--buffer <name>] [--verbose]
   schedule-wakeup.sh --mode ai-idle --target <ai-pane> --message <message> [--pane <watcher-pane>] [--poll-seconds <seconds>] [--buffer <name>] [--verbose]
+  schedule-wakeup.sh --mode ai-running --target <ai-pane> --message <message> [--pane <watcher-pane>] [--poll-seconds <seconds>] [--buffer <name>] [--verbose]
 
 Schedule a one-shot tmux wakeup that pastes <message> into the watcher pane and
 submits it with Enter. When --pane is omitted, the watcher defaults to $TMUX_PANE.
 
 Modes:
-  timer    Sleep for --seconds, then wake the watcher. This is the default.
-  ai-idle  Watch --target until @ai_agent_running stops being 1, then wake the watcher.
+  timer       Sleep for --seconds, then wake the watcher. This is the default.
+  ai-idle     Watch --target until @ai_agent_running stops being 1 or the target closes, then wake the watcher.
+  ai-running  Watch --target until @ai_agent_running becomes 1, @ai_agent_pending becomes 1, or the target closes, then wake the watcher.
 USAGE
 }
 
@@ -71,7 +73,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ "$mode" == "timer" || "$mode" == "ai-idle" ]] || { echo "--mode must be timer or ai-idle" >&2; exit 2; }
+[[ "$mode" == "timer" || "$mode" == "ai-idle" || "$mode" == "ai-running" ]] || { echo "--mode must be timer, ai-idle, or ai-running" >&2; exit 2; }
 if [[ -z "$pane" ]]; then
   pane="${TMUX_PANE:-}"
 fi
@@ -80,8 +82,8 @@ fi
 [[ "$seconds" =~ ^[0-9]+$ ]] || { echo "--seconds must be a non-negative integer" >&2; exit 2; }
 [[ "$poll_seconds" =~ ^[0-9]+$ ]] || { echo "--poll-seconds must be a non-negative integer" >&2; exit 2; }
 (( poll_seconds > 0 )) || { echo "--poll-seconds must be greater than 0" >&2; exit 2; }
-if [[ "$mode" == "ai-idle" ]]; then
-  [[ -n "$target" ]] || { echo "--target is required in ai-idle mode" >&2; usage; exit 2; }
+if [[ "$mode" == "ai-idle" || "$mode" == "ai-running" ]]; then
+  [[ -n "$target" ]] || { echo "--target is required in $mode mode" >&2; usage; exit 2; }
   tmux display-message -p -t "$target" '#{pane_id}' >/dev/null
 fi
 
@@ -90,21 +92,21 @@ tmux display-message -p -t "$pane" '#{pane_id}' >/dev/null
 message_file="$(mktemp "${TMPDIR:-/tmp}/watch-target-wakeup.XXXXXX")"
 printf '%s' "$message" > "$message_file"
 
-quoted_mode="$(printf '%q' "$mode")"
-quoted_target="$(printf '%q' "$target")"
-quoted_seconds="$(printf '%q' "$seconds")"
-quoted_poll_seconds="$(printf '%q' "$poll_seconds")"
-quoted_buffer="$(printf '%q' "$buffer")"
-quoted_file="$(printf '%q' "$message_file")"
-quoted_pane="$(printf '%q' "$pane")"
 marker="watch-target-wakeup-${mode}"
-quoted_marker="$(printf '%q' "$marker")"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+runner="$script_dir/run-wakeup.sh"
 
-tmux run-shell -b "marker=$quoted_marker; mode=$quoted_mode; target=$quoted_target; seconds=$quoted_seconds; poll_seconds=$quoted_poll_seconds; buffer=$quoted_buffer; file=$quoted_file; pane=$quoted_pane; if [ \"\$mode\" = ai-idle ]; then while [ \"\$(tmux show -pv -t \"\$target\" @ai_agent_running 2>/dev/null || true)\" = \"1\" ]; do sleep \"\$poll_seconds\"; done; else sleep \"\$seconds\"; fi; tmux load-buffer -b \"\$buffer\" \"\$file\"; tmux paste-buffer -b \"\$buffer\" -t \"\$pane\"; sleep 1; tmux send-keys -t \"\$pane\" Enter; sleep 1; running=\"\$(tmux show -pv -t \"\$pane\" @ai_agent_running 2>/dev/null || true)\"; if [ \"\$running\" = \"0\" ]; then tmux send-keys -t \"\$pane\" Enter; sleep 1; running=\"\$(tmux show -pv -t \"\$pane\" @ai_agent_running 2>/dev/null || true)\"; fi; rm -f \"\$file\"; : \"\$marker\"; : \"\$running\""
+printf -v command '%q --mode %q --target %q --seconds %q --poll-seconds %q --buffer %q --file %q --pane %q --marker %q' \
+  "$runner" "$mode" "$target" "$seconds" "$poll_seconds" "$buffer" "$message_file" "$pane" "$marker"
+tmux run-shell -b "exec $command"
 
 if [[ "$mode" == "ai-idle" ]]; then
   if (( verbose )); then
-    echo "Scheduled AI-idle wakeup for watcher pane $pane when target $target stops running"
+    echo "Scheduled AI-idle wakeup for watcher pane $pane when target $target stops running or closes"
+  fi
+elif [[ "$mode" == "ai-running" ]]; then
+  if (( verbose )); then
+    echo "Scheduled AI-running wakeup for watcher pane $pane when target $target starts running, becomes pending, or closes"
   fi
 else
   if (( verbose )); then

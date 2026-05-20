@@ -34,7 +34,7 @@ estimate_non_window_width() {
   fixed_right_width="$(tmux show-options -gqv @status-non-window-fixed-right-width 2>/dev/null || true)"
   case "$fixed_right_width" in
     ''|*[!0-9]*)
-      fixed_right_width=58
+      fixed_right_width=61
       ;;
   esac
 
@@ -70,7 +70,10 @@ max_one_line_width=$((client_width * 90 / 100))
 
 # echo $non_window_width $max_one_line_width
 
-if [ "$non_window_width" -gt "$max_one_line_width" ]; then
+buttons_expanded="$(tmux show-options -gqv @status-buttons-expanded 2>/dev/null || true)"
+if [ "$buttons_expanded" = "1" ]; then
+  tmux set-option -t "${session}:" status 4 >/dev/null
+elif [ "$non_window_width" -gt "$max_one_line_width" ]; then
   tmux set-option -t "${session}:" status 3 >/dev/null
 else
   tmux set-option -t "${session}:" status on >/dev/null

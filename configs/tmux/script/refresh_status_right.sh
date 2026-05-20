@@ -35,8 +35,8 @@ case "$status_length" in
     ;;
 esac
 
-if [ "$status_length" -lt 155 ]; then
-  tmux set-option -g status-right-length 155
+if [ "$status_length" -lt 158 ]; then
+  tmux set-option -g status-right-length 158
 fi
 
 case "$theme" in
@@ -52,5 +52,6 @@ status_right="${status_right}#[fg=green]#(\$TMUX_PLUGIN_MANAGER_PATH/tmux-mem-cp
 status_right="${status_right} #[fg=yellow]#(df -h ${mount_path} 2>/dev/null | awk 'NR==2 {print \"${display_path} \" \$5 \" \" \$4}')#[default]"
 status_right="${status_right} #[fg=cyan]🤖 #(${SCRIPT_DIR}/print_ai_status.sh)#[default]"
 status_right="${status_right} #[fg=colour203]#(${SCRIPT_DIR}/print_current_window_hint.sh)#[default]"
+status_right="${status_right}#[range=user|sb_as]#[fg=yellow]#(${SCRIPT_DIR}/print_auto_switch_status.sh running)#(${SCRIPT_DIR}/print_auto_switch_status.sh unread)#[fg=green]#(${SCRIPT_DIR}/print_auto_switch_status.sh idle)#[norange default]"
 
 tmux set-option -g status-right "$status_right"

@@ -99,7 +99,11 @@ apply_skill_exclusions() {
     if [ "$(uname)" != "Darwin" ]; then
         echo "Not macOS, disabling Obsidian skills..."
         for s in "$MERGED_SKILLS_DIR"/obsidian-*; do
-            [ -L "$s" ] && disable_skill "$(basename "$s")"
+            [ -L "$s" ] || continue
+            case "$(basename "$s")" in
+                obsidian-markdown) continue ;;
+            esac
+            disable_skill "$(basename "$s")"
         done
 
         disable_skill "rednote"

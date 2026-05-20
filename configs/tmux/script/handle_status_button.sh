@@ -5,6 +5,8 @@ set -eu
 button="${1:-}"
 session="${2:-}"
 path="${3:-$HOME}"
+current_pane="${4:-}"
+last_session="${5:-}"
 refresh_all_sessions=0
 
 clear_buttons_expanded_overrides() {
@@ -36,6 +38,9 @@ case "$button" in
   sb_s)
     tmux choose-window -Z
     ;;
+  sb_pd)
+    tmux run-shell -b "~/deploy/configs/tmux/script/track_ai_agent_state.sh pending '$current_pane'"
+    ;;
   sb_more)
     set_buttons_expanded 1
     ;;
@@ -60,8 +65,23 @@ case "$button" in
   sb_mf)
     tmux run-shell -b "~/deploy/configs/tmux/ai/fork_ai_session.sh -q"
     ;;
+  sb_kp)
+    if [ -z "$current_pane" ]; then
+      tmux display-message "No current pane to kill"
+      exit 1
+    fi
+    tmux kill-pane -t "$current_pane"
+    refresh_all_sessions=1
+    ;;
+  sb_ks)
+    "$HOME/deploy/configs/tmux/script/close_current_session.sh" "$session" "$last_session"
+    refresh_all_sessions=1
+    ;;
   sb_ml)
     tmux run-shell -b "~/deploy/configs/tmux/ai/switch_to_last_ai_window.sh -q"
+    ;;
+  sb_as)
+    tmux run-shell -b "~/deploy/configs/tmux/ai/switch_to_marked_or_switcher_pane.sh '$current_pane'"
     ;;
   sb_cc)
     tmux run-shell -b "~/deploy/helper_scripts/bin/c"

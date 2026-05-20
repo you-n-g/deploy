@@ -3,7 +3,7 @@
 set -eu
 
 tmux set-option -g @status-window-second-line-reserve auto
-tmux set-option -g @status-non-window-fixed-right-width 58
+tmux set-option -g @status-non-window-fixed-right-width 61
 tmux set-option -g @status-ai-window-summary-count 6
 if [ -z "$(tmux show-options -gqv @status-buttons-expanded 2>/dev/null)" ]; then
   tmux set-option -g @status-buttons-expanded 0
@@ -22,6 +22,7 @@ window_bg_odd='colour220'
 window_fg_odd='colour235'
 window_active_bg='colour196'
 window_active_fg='colour231'
+pending_badge="#{?#{==:#{@ai_agent_pending},1},#[nounderscore]#[fg=colour201]#[bold] P#[nobold]#[underscore],}"
 
 button() {
   range="$1"
@@ -53,6 +54,7 @@ compact_buttons="$(
     sb_cg 'C-g' \
     sb_mc 'M-c' \
     sb_ml 'M-l' \
+    sb_as 'C-m' \
     sb_cc 'C-c' \
     sb_more '>>>'
 )"
@@ -62,19 +64,25 @@ expanded_buttons="$(
     sb_cg 'C-g' \
     sb_mc 'M-c' \
     sb_ml 'M-l' \
+    sb_as 'C-m' \
     sb_cc 'C-c' \
     sb_k ' k ' \
     sb_l ' l ' \
     sb_s ' S ' \
+    sb_pd 'Pnd' \
     sb_t ' t ' \
     sb_ct 'C-t' \
+    sb_kp 'K-p' \
+    sb_ks 'K-s' \
     sb_mf 'M-f' \
     sb_less '<<<'
 )"
 tmux set-option -g @status-buttons-compact "$compact_buttons"
 tmux set-option -g @status-buttons-full "$expanded_buttons"
 left_buttons="#{?#{==:#{@status-buttons-expanded},1},#{@status-buttons-full},#{@status-buttons-compact}}"
-window_format="#[list=on align=left]#{W:#[range=window|#{window_index}]#[bg=#{?#{==:#{e|m:#{window_index},2},0},${window_bg_even},${window_bg_odd}}]#[fg=#{?#{==:#{e|m:#{window_index},2},0},${window_fg_even},${window_fg_odd}}]#[bold]#I#[nobold]#[underscore]#W#{window_flags}#[nounderscore]#[norange list=on default],#[range=window|#{window_index} list=focus]#[bg=${window_active_bg}]#[fg=${window_active_fg}]#[bold]#I#[nobold]#[underscore]#W#{window_flags}#[nounderscore]#[norange list=on default]}"
+window_format="#[list=on align=left]#{W:#[range=window|#{window_index}]#[bg=#{?#{==:#{e|m:#{window_index},2},0},${window_bg_even},${window_bg_odd}}]#[fg=#{?#{==:#{e|m:#{window_index},2},0},${window_fg_even},${window_fg_odd}}]#[bold]#I#[nobold]#[underscore]#W${pending_badge}#[fg=#{?#{==:#{e|m:#{window_index},2},0},${window_fg_even},${window_fg_odd}}]#{window_flags}#[nounderscore]#[norange list=on default],#[range=window|#{window_index} list=focus]#[bg=${window_active_bg}]#[fg=${window_active_fg}]#[bold]#I#[nobold]#[underscore]#W${pending_badge}#[fg=${window_active_fg}]#{window_flags}#[nounderscore]#[norange list=on default]}"
+ai_summary="#[align=left]#(${HOME}/deploy/configs/tmux/script/print_ai_window_summary.sh)"
 
-tmux set-option -g status-format[1] "#[align=left]${left_buttons}#[default]${window_format}"
-tmux set-option -g status-format[2] "#[align=left]#(${HOME}/deploy/configs/tmux/script/print_ai_window_summary.sh)"
+tmux set-option -g status-format[1] "#{?#{==:#{@status-buttons-expanded},1},#[align=left]#{@status-buttons-full},#[align=left]${left_buttons}#[default]${window_format}}"
+tmux set-option -g status-format[2] "#{?#{==:#{@status-buttons-expanded},1},#[align=left]${window_format},${ai_summary}}"
+tmux set-option -g status-format[3] "$ai_summary"
