@@ -345,11 +345,11 @@ _ai_pane_fzf_list() {
         (( is_unread )) && unread_mark=$' \033[33m[!]\033[0m'
 
         local attribute_info=""
-        [[ -n "$attribute" ]] && attribute_info="  · ${attribute}"
+        [[ -n "$attribute" ]] && attribute_info="  ${attribute}"
         display_wname="$(_strip_ai_window_state_prefix "$wname")"
 
-        printf '%s\t%s\t%s %s %b%s%b  \033[2m%s%s\033[0m\n' \
-            "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$display_wname" "$unread_mark" "$time_info" "$attribute_info"
+        printf '%s\t%s\t%s %s %b%s\033[2m%s\033[0m  \033[2m%s%s\033[0m\n' \
+            "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$display_wname" "$attribute_info" "$time_info" "$unread_mark"
     done |
     sort -t $'\t' -k1,1 -k2,2nr |
     cut -f3-
