@@ -717,4 +717,4 @@
   Description = "capture tmux content into terminal"
   Output = ""
   Tag = []
-  command = "tmux capture-pane -t :<winid=1> -pJ -S -50"
+  command = "tmux capture-pane -t :<winid=1> -p  | tail -30"

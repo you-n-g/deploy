@@ -21,7 +21,7 @@ metadata:
 ## 输入
 
 - **target**：需要监控的对象。应优先根据用户的原话和当下情境来确定，并从上下文推断其完成标准。如果目标尚未完成、未达到标准，则应设法让其继续运行，直到满足要求。
-- **interval**：检查间隔，默认 `1800` 秒。
+- **interval**：检查间隔，默认 `1800` 秒。刚启动、重启或恢复的目标先使用 warm-up 短间隔递增复查，稳定后再回到用户给定间隔或默认间隔。
 - **policy**：完成、失败、卡住或健康运行时该怎么做。用户没说明时，默认只汇报异常，不打断运行中任务。
 
 只有在 target 或 policy 不清楚且可能导致中断用户任务、重复启动任务或破坏状态时才询问。
@@ -30,10 +30,13 @@ metadata:
 
 1. 每次唤醒都重新读取最新状态，不依赖上次结论。
 2. 用 Agent 判断状态：仍在运行就不打断；完成且 policy 允许才执行 continue/restart/follow-up；失败、资源不足、认证/额度问题、重复失败或需要人工选择时汇报原因。
-3. 只有目标未完成或后续动作未完成时，才安排下一次 one-shot 唤醒；不要写 `while true`、cron 或固定轮询守护进程。普通监控目标沿用用户给定 interval 或默认 interval，不要因为可能存在状态信号就擅自改成条件监控。
+3. 如果本轮启动、重启或恢复了目标，必须先确认目标确实正常跑起来，再安排睡眠或下一次唤醒。确认方式至少包括重新 capture 元信息和最近输出；如果刚启动时容易短暂报错，就等待一个有界短窗口后复查，看到进程仍活着且没有等待输入、认证失败、配置失败、立即退出等信号，才进入监控睡眠。
+4. 对刚启动、重启、恢复，或用户提示“刚起来容易出错”的普通监控目标，下一次唤醒不要直接使用默认 `1800` 秒。先使用 warm-up cadence：`60s -> 120s -> 180s -> 240s -> 480s`；每次健康复查后进入下一个间隔，出现失败/卡住/等待输入就立即诊断处理。完成 warm-up 且目标仍健康运行后，再回到用户给定 interval；如果用户没给 interval，回到默认 `1800` 秒。用户明确指定更短间隔时，以用户指定为上限，不要把 warm-up 调长。
+5. 安排 warm-up 唤醒时，把当前阶段和下一阶段写进唤醒消息里，例如 `warm-up 2/5, next interval 120s`，这样下一次被唤醒时能延续递增节奏，而不是丢失状态后直接退回默认间隔。
+6. 只有目标未完成或后续动作未完成时，才安排下一次 one-shot 唤醒；不要写 `while true`、cron 或固定轮询守护进程。普通监控目标沿用用户给定 interval 或默认 interval，不要因为可能存在状态信号就擅自改成条件监控。
    如果目标是 Codex/Claude 等 AI window，且当前 `@ai_agent_running=1`，不要使用默认 `1800` 秒 timer；必须使用 AI idle 条件唤醒，一旦 `@ai_agent_running` 从 `1` 变成非 `1` 就立即唤醒 watcher。
-4. 如果本轮已经达到终止状态（例如目标 idle、要求的 review/check 已完成、且没有需要发回目标继续改的问题），直接向用户汇报并结束，不要安排 30 分钟复查。
-5. 安排唤醒后立刻验证 timer/condition watcher 确实存在；如果没有成功创建，立即报告，不要假装已经进入监控。
+7. 如果本轮已经达到终止状态（例如目标 idle、要求的 review/check 已完成、且没有需要发回目标继续改的问题），直接向用户汇报并结束，不要安排 30 分钟复查。
+8. 安排唤醒后立刻验证 timer/condition watcher 确实存在；如果没有成功创建，立即报告，不要假装已经进入监控。
 
 tmux pane 常用检查：
 
@@ -78,13 +81,13 @@ AI window 目标正在运行时，优先用条件唤醒：
   --message '<下一次唤醒时要提交给 Agent 的检查指令>'
 ```
 
-脚本会通过 `tmux run-shell -b`、`tmux load-buffer`、`tmux paste-buffer` 和 `tmux send-keys Enter` 提交消息。不要改成 `send-keys ... C-m`，因为 Codex/Claude TUI 中可能只粘贴文本而没有真正提交。
+脚本会通过 `tmux run-shell -b`、`tmux load-buffer`、`tmux paste-buffer` 和 `tmux send-keys Enter` 提交消息。最后一步必须是键盘事件 `Enter`，并且要验证消息确实触发了 watcher；不要改成 `send-keys ... C-m`，因为 Codex/Claude TUI 中可能只粘贴文本而没有真正提交。
 
 `schedule-wakeup.sh` 是唯一唤醒入口，但必须用 `--mode` 把规则分清楚：默认 `timer` 只负责固定时间 one-shot 唤醒；`--mode ai-idle` 才轮询 AI window 的 `@ai_agent_running`、停下后立即唤醒，并在必要时补发 Enter。不要在默认 timer 模式里混入 AI Agent 状态判断。
 
 安排唤醒应尽量保持静默。不要把 `schedule-wakeup.sh ...` 这类长命令 paste/send 到 watcher pane 里执行，也不要让 watcher TUI 为了安排监控黑屏显示命令执行过程。应从当前 Agent 的 shell/tool 后台调用脚本；脚本默认不输出成功信息，只有调试时才加 `--verbose`。安排完成后的验证用 `ps` / `pgrep` 在后台检查，不要为了展示验证过程打断 watcher pane。
 
-自唤醒提交必须验证“消息已提交”，不能只验证“消息已粘贴”。Codex/Claude TUI 处理大段 paste 可能有延迟；如果手写 AI idle 条件 watcher，不要在 `paste-buffer` 后立刻发送最后一个回车。应在 paste 后短暂等待，再用单独的 `tmux send-keys -t '<watcher-pane>' Enter` 发送键盘事件；随后检查 watcher pane 的 `@ai_agent_running` 或 capture 内容。如果消息仍停留在输入区（例如只显示 `[Pasted Content ...]` / `› <message>`，且 `@ai_agent_running` 仍为 `0`），再补发一次 `Enter`，并重新验证。
+自唤醒提交必须验证“消息已提交”，不能只验证“消息已粘贴”。Codex/Claude TUI 处理大段 paste 可能有延迟；无论是 timer 还是 AI idle 条件 watcher，都不要在 `paste-buffer` 后立刻发送最后一个回车。应在 paste 后短暂等待，再用单独的 `tmux send-keys -t '<watcher-pane>' Enter` 发送键盘事件；随后检查 watcher pane 的 `@ai_agent_running` 或 capture 内容。如果消息仍停留在输入区（例如只显示 `[Pasted Content ...]` / `› <message>`，且 `@ai_agent_running` 仍为 `0`），再补发一次 `Enter`，并重新验证。若验证仍失败，必须明确报告自唤醒没有正常触发。
 
 如果这轮是手动触发，安排新 timer 前先检查是否已有自己创建的旧 timer；只清理能确认属于本 watcher 的旧 timer，不要误杀用户其它 sleep/monitor 进程。
 

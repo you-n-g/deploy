@@ -1,5 +1,5 @@
 #!/bin/bash
-# Select and switch to a tmux window running an AI agent.
+# Select and switch to a tmux pane running an AI agent.
 # Usage: tmuxg [-q] [-A] [--create-if-missing] [--force-new] [--window-name NAME]
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
@@ -98,7 +98,7 @@ if [[ $rc -eq 1 ]]; then
         exit 0
     fi
 
-    echo "No AI agent windows found."
+    echo "No AI agent panes found."
     exit 0
 fi
 

@@ -271,13 +271,13 @@ _ai_pane_rows() {
 #   $3+  ANSI label   status-symbol + window_name + unread mark + time info
 #
 # Status symbols:
-#   ◆/◇ (cyan)   current window (◆ = running, ◇ = idle)
+#   ▶/▷ (cyan)   current pane (▶ = running, ▷ = idle)
 #   ●   (yellow) running
 #   ◉   (yellow) unread — finished while not visible
 #   ○   (green)  idle, nothing new since last visit
 #
 # Example output (after ANSI codes stripped):
-#   %12 work:3.0 ◆ claude          [act 5s]
+#   %12 work:3.0 ▶ claude          [act 5s]
 #   %13 work:3.1 ● gemini          [act 0s]
 #   %14 learn:0.0 ◉ codex [!]      [act 1m]
 _ai_pane_fzf_list() {
@@ -297,9 +297,9 @@ _ai_pane_fzf_list() {
         if [[ "$sess_win" == "$current_target" ]]; then
             sort_key=0
             if $is_busy; then
-                status=$'\033[36m◆\033[0m '
+                status=$'\033[36m▶\033[0m '
             else
-                status=$'\033[36m◇\033[0m '
+                status=$'\033[36m▷\033[0m '
             fi
         elif $is_busy; then
             sort_key=05

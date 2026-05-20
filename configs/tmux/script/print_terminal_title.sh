@@ -29,7 +29,32 @@ ai_title_status_prefix() {
   fi
 }
 
-current_target="$(tmux display-message -p '#{session_name}:#{window_index}')"
+append_title_item() {
+  local item="$1"
+  if [ -n "$title" ]; then
+    title="${title} | ${item}"
+  else
+    title="$item"
+  fi
+}
+
+format_title_item() {
+  local pane_target="$1"
+  local window_name="$2"
+  local unread="$3"
+  local running="$4"
+  local attribute="$5"
+  local session_name clean_attribute label is_current
+
+  session_name="${pane_target%:*}"
+  clean_attribute="$(printf '%s' "$attribute" | strip_tmux_format)"
+  label="$(compact_ai_label "$session_name" "$window_name" "$clean_attribute")"
+  is_current=0
+  [ "$pane_target" = "$current_target" ] && is_current=1
+  printf '%s%s' "$(ai_title_status_prefix "$is_current" "$unread" "$running")" "$label"
+}
+
+current_target="$(tmux display-message -p '#{session_name}:#{window_index}.#{pane_index}' 2>/dev/null || true)"
 
 max_items="$(tmux show-options -gqv @status-ai-window-summary-count 2>/dev/null || true)"
 case "$max_items" in
@@ -41,33 +66,31 @@ esac
 if rows="$(_ai_pane_rows -a)" && [ -n "$rows" ]; then
   count=0
   title=""
-  seen_windows=""
+  current_row=""
+
+  if [ -n "$current_target" ]; then
+    while IFS=$'\t' read -r _last_visit pane_target window_name _pane_id _pane_pid _activity_epoch unread running attribute; do
+      if [ "$pane_target" = "$current_target" ]; then
+        current_row="$(printf '%s\t%s\t%s\t%s\t%s\n' "$pane_target" "$window_name" "$unread" "$running" "$attribute")"
+        break
+      fi
+    done <<< "$rows"
+  fi
+
+  if [ -n "$current_row" ]; then
+    IFS=$'\t' read -r pane_target window_name unread running attribute <<< "$current_row"
+    append_title_item "$(format_title_item "$pane_target" "$window_name" "$unread" "$running" "$attribute")"
+    count=$((count + 1))
+  fi
 
   while IFS=$'\t' read -r _last_visit pane_target window_name _pane_id _pane_pid _activity_epoch unread running attribute; do
     [ -n "$pane_target" ] || continue
-    window_target="${pane_target%.*}"
-    case "$seen_windows" in
-      *"|$window_target|"*) continue ;;
-    esac
-    seen_windows="${seen_windows}|${window_target}|"
+    [ "$pane_target" != "$current_target" ] || continue
 
     count=$((count + 1))
     [ "$count" -le "$max_items" ] || break
 
-    session_name="${window_target%:*}"
-    clean_attribute="$(printf '%s' "$attribute" | strip_tmux_format)"
-    label="$(compact_ai_label "$session_name" "$window_name" "$clean_attribute")"
-    if [ "$window_target" = "$current_target" ]; then
-      item="$(ai_title_status_prefix 1 "$unread" "$running")${label}"
-    else
-      item="$(ai_title_status_prefix 0 "$unread" "$running")${label}"
-    fi
-
-    if [ -n "$title" ]; then
-      title="${title} | ${item}"
-    else
-      title="$item"
-    fi
+    append_title_item "$(format_title_item "$pane_target" "$window_name" "$unread" "$running" "$attribute")"
   done <<< "$rows"
 
   if [ -n "$title" ]; then

@@ -178,7 +178,7 @@ if [[ -t 0 ]]; then
     SELECTED=$(fzf --ansi --reverse \
         "${START_BIND_ARGS[@]}" \
         --with-nth '2..' \
-        --header '◆ current busy  ◇ current idle  ● busy  ◉ unread  ○ idle  |  Enter switch  Ctrl-R reset desc' \
+        --header '▶ current pane busy  ▷ current pane idle  ● busy  ◉ unread  ○ idle  |  Enter switch  Ctrl-R reset desc' \
         --bind "$RESET_ATTRIBUTE_BIND" \
         --preview 'tmux capture-pane -ept {1} | perl -0777 -pe "s/\s+\z/\n/"' \
         --preview-window "up:${_AI_FZF_PREVIEW_HEIGHT},follow" < "$LISTFILE")
@@ -192,7 +192,7 @@ else
         fzf --ansi --reverse \
             $START_BIND_CMD \
             --with-nth '2..' \
-            --header '◆ current busy  ◇ current idle  ● busy  ◉ unread  ○ idle  |  Enter switch  Ctrl-R reset desc' \
+            --header '▶ current pane busy  ▷ current pane idle  ● busy  ◉ unread  ○ idle  |  Enter switch  Ctrl-R reset desc' \
             --bind '$RESET_ATTRIBUTE_BIND' \
             --preview 'tmux capture-pane -ept {1} | perl -0777 -pe \"s/\s+\z/\n/\"' \
             --preview-window 'up:${_AI_FZF_PREVIEW_HEIGHT},follow' < '$LISTFILE' > '$RESULTFILE'"
