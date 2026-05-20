@@ -25,16 +25,6 @@ TARGET_WIN_NAME="${1:-}"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source "$SCRIPT_DIR/lib.sh"
 
-_fork_ai_agent_attribute() {
-    local source_pane_id="$1"
-    local attribute
-
-    attribute="$(tmux show -pv -t "$source_pane_id" @ai_agent_attribute 2>/dev/null)"
-    [[ -z "$attribute" ]] && return
-
-    printf '%s fork\n' "$attribute"
-}
-
 # Must be inside tmux
 if [[ -z "$TMUX" ]]; then
     echo "Not inside tmux." >&2
@@ -123,12 +113,7 @@ case "$ai_name" in
         ;;
 esac
 
-fork_attribute="$(_fork_ai_agent_attribute "$source_pane_id")"
-if [[ -n "$fork_attribute" ]]; then
-    printf -v launch_cmd 'TMUX_AI_WINDOW_NAME=%q TMUX_AI_FORK_ATTRIBUTE=%q zsh -ic %q' "$fork_name" "$fork_attribute" "$cmd"
-else
-    printf -v launch_cmd 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$fork_name" "$cmd"
-fi
+printf -v launch_cmd 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$fork_name" "$cmd"
 win_id=$(tmux new-window -d -P -F '#{window_id}' -n "$fork_name" -c "$workdir" "$launch_cmd")
 # Block TUI escape-sequence renames; _with_tmux_rename receives the target name
 # through TMUX_AI_WINDOW_NAME.

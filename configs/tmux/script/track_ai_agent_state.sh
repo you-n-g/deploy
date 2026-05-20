@@ -26,11 +26,7 @@ ensure_ai_agent_attribute() {
 }
 
 reset_ai_agent_attribute() {
-  if [ -n "${TMUX_AI_FORK_ATTRIBUTE:-}" ]; then
-    tmux set-option -pq -t "$pane_id" @ai_agent_attribute "$TMUX_AI_FORK_ATTRIBUTE"
-  else
-    tmux set-option -pqu -t "$pane_id" @ai_agent_attribute 2>/dev/null || true
-  fi
+  tmux set-option -pqu -t "$pane_id" @ai_agent_attribute 2>/dev/null || true
 }
 
 is_window_visible() {
