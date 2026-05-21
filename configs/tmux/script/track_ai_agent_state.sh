@@ -77,8 +77,11 @@ case "$state" in
     tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
     ;;
   running)
+    was_running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
     tmux set-option -pq -t "$pane_id" @ai_agent_running 1
-    tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
+    if [ "$was_running" != "1" ]; then
+      tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
+    fi
     if is_window_visible; then
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
     fi
@@ -103,7 +106,6 @@ case "$state" in
     if is_tracked_ai_pane; then
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
     else
-      tmux display-message -t "$pane_id" "Mark unread: current pane is not tracked as AI"
       sync_window_name=0
     fi
     ;;
@@ -111,9 +113,7 @@ case "$state" in
     if is_tracked_ai_pane; then
       tmux set-option -pq -t "$pane_id" @ai_agent_pending 1
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
-      tmux display-message -t "$pane_id" "Auto-switch pending: excluded until this AI runs again"
     else
-      tmux display-message -t "$pane_id" "Mark pending: current pane is not tracked as AI"
       sync_window_name=0
     fi
     ;;

@@ -84,12 +84,16 @@ fi
 (( poll_seconds > 0 )) || { echo "--poll-seconds must be greater than 0" >&2; exit 2; }
 if [[ "$mode" == "ai-idle" || "$mode" == "ai-running" ]]; then
   [[ -n "$target" ]] || { echo "--target is required in $mode mode" >&2; usage; exit 2; }
-  tmux display-message -p -t "$target" '#{pane_id}' >/dev/null
+  target_pane_id="$(tmux display-message -p -t "$target" '#{pane_id}' 2>/dev/null)" \
+    && [[ -n "$target_pane_id" ]] \
+    || { echo "target $target does not resolve to a pane" >&2; exit 2; }
   tmux show -pv -t "$target" @ai_agent_running >/dev/null 2>&1 \
     || { echo "target $target is missing @ai_agent_running; cannot use $mode watcher" >&2; exit 2; }
 fi
 
-tmux display-message -p -t "$pane" '#{pane_id}' >/dev/null
+watcher_pane_id="$(tmux display-message -p -t "$pane" '#{pane_id}' 2>/dev/null)" \
+  && [[ -n "$watcher_pane_id" ]] \
+  || { echo "watcher pane $pane does not resolve to a pane" >&2; exit 2; }
 
 message_file="$(mktemp "${TMPDIR:-/tmp}/watch-target-wakeup.XXXXXX")"
 printf '%s' "$message" > "$message_file"

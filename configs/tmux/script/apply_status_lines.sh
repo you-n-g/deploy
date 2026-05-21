@@ -22,7 +22,7 @@ window_bg_odd='colour220'
 window_fg_odd='colour235'
 window_active_bg='colour196'
 window_active_fg='colour231'
-pending_badge="#{?#{==:#{@ai_agent_pending},1},#[nounderscore]#[fg=colour201]#[bold] P#[nobold]#[underscore],}"
+pending_badge="#{?#{==:#{@ai_agent_pending},1},#[nounderscore]#[fg=colour201]#[bold] #[nobold]#[underscore],}"
 
 button() {
   range="$1"
@@ -69,7 +69,7 @@ expanded_buttons="$(
     sb_k ' k ' \
     sb_l ' l ' \
     sb_s ' S ' \
-    sb_pd 'Pnd' \
+    sb_pd 'M-p' \
     sb_t ' t ' \
     sb_ct 'C-t' \
     sb_kp 'K-p' \

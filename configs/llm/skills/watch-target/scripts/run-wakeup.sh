@@ -79,13 +79,20 @@ cleanup() {
 trap 'cleanup; exit 0' TERM INT HUP
 trap cleanup EXIT
 
+target_exists() {
+  local pane_id
+
+  pane_id="$(tmux display-message -p -t "$target" '#{pane_id}' 2>/dev/null)" || return 1
+  [ -n "$pane_id" ]
+}
+
 wait_for_condition() {
   local current pending
 
   case "$mode" in
     ai-idle)
       while :; do
-        tmux display-message -p -t "$target" '#{pane_id}' >/dev/null 2>&1 || break
+        target_exists || break
         current="$(tmux show -pv -t "$target" @ai_agent_running 2>/dev/null)" \
           || { echo "target $target is missing @ai_agent_running during ai-idle wait" >&2; exit 1; }
         [ "$current" = "1" ] || break
@@ -94,7 +101,7 @@ wait_for_condition() {
       ;;
     ai-running)
       while :; do
-        tmux display-message -p -t "$target" '#{pane_id}' >/dev/null 2>&1 || break
+        target_exists || break
         current="$(tmux show -pv -t "$target" @ai_agent_running 2>/dev/null)" \
           || { echo "target $target is missing @ai_agent_running during ai-running wait" >&2; exit 1; }
         pending="$(tmux show -pv -t "$target" @ai_agent_pending 2>/dev/null || true)"

@@ -325,6 +325,10 @@ function codexr() {
     esac
 }
 
+function codexrl() {
+    codexr -c 'model_reasoning_effort="low"' "$@"
+}
+
 _codex_auto_flag() {
     if [[ "$(uname)" == "Linux" ]]; then
         echo "--dangerously-bypass-approvals-and-sandbox"

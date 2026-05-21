@@ -6,15 +6,24 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../ai/lib.sh"
 source "$SCRIPT_DIR/ai_label.sh"
 
-current_window="$(tmux display-message -p '#{window_id}' 2>/dev/null || true)"
+current_pane="$(tmux display-message -p '#{pane_id}' 2>/dev/null || true)"
+[ -n "$current_pane" ] || exit 0
+current_window="$(tmux display-message -p -t "$current_pane" '#{window_id}' 2>/dev/null || true)"
 [ -n "$current_window" ] || exit 0
 
 hint=""
 if ai_pane="$(_find_ai_pane_in_window "$current_window" 2>/dev/null)" && [ -n "$ai_pane" ]; then
   hint="$(tmux show -pv -t "$ai_pane" @ai_agent_attribute 2>/dev/null || true)"
 fi
+pending="$(tmux show -pv -t "$current_pane" @ai_agent_pending 2>/dev/null || true)"
 
-[ -n "$hint" ] || exit 0
-clean_hint="$(printf '%s' "$hint" | strip_tmux_format)"
-[ -n "$clean_hint" ] || exit 0
-ai_display_prefix "$clean_hint" 10
+if [ -n "$hint" ]; then
+  clean_hint="$(printf '%s' "$hint" | strip_tmux_format)"
+  if [ -n "$clean_hint" ]; then
+    ai_display_prefix "$clean_hint" 10
+  fi
+fi
+
+if [ "$pending" = "1" ]; then
+  printf '#[fg=colour201,bold] #[nobold,fg=colour203]'
+fi
