@@ -20,6 +20,7 @@ USAGE
 
 mode="timer"
 targets=()
+target_pane_ids=()
 pane=""
 seconds="1800"
 poll_seconds="5"
@@ -89,14 +90,16 @@ if [[ "$mode" == "ai-idle" || "$mode" == "ai-running" ]]; then
     target_pane_id="$(tmux display-message -p -t "$target" '#{pane_id}' 2>/dev/null)" \
       && [[ -n "$target_pane_id" ]] \
       || { echo "target $target does not resolve to a pane" >&2; exit 2; }
-    tmux show -pv -t "$target" @ai_agent_running >/dev/null 2>&1 \
+    tmux show -pv -t "$target_pane_id" @ai_agent_running >/dev/null 2>&1 \
       || { echo "target $target is missing @ai_agent_running; cannot use $mode watcher" >&2; exit 2; }
+    target_pane_ids+=("$target_pane_id")
   done
 fi
 
 watcher_pane_id="$(tmux display-message -p -t "$pane" '#{pane_id}' 2>/dev/null)" \
   && [[ -n "$watcher_pane_id" ]] \
   || { echo "watcher pane $pane does not resolve to a pane" >&2; exit 2; }
+pane="$watcher_pane_id"
 
 message_file="$(mktemp "${TMPDIR:-/tmp}/watch-target-wakeup.XXXXXX")"
 printf '%s' "$message" > "$message_file"
@@ -107,7 +110,7 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 runner="$script_dir/run-wakeup.sh"
 
 printf -v command '%q --mode %q' "$runner" "$mode"
-for target in "${targets[@]}"; do
+for target in "${target_pane_ids[@]}"; do
   printf -v command '%s --target %q' "$command" "$target"
 done
 printf -v command '%s --seconds %q --poll-seconds %q --buffer %q --file %q --pane %q --marker %q' \
@@ -117,11 +120,11 @@ tmux run-shell -b "$run_command"
 
 if [[ "$mode" == "ai-idle" ]]; then
   if (( verbose )); then
-    echo "Scheduled AI-idle wakeup for watcher pane $pane when any target stops running or closes: ${targets[*]}"
+    echo "Scheduled AI-idle wakeup for watcher pane $pane when any target stops running or closes: ${target_pane_ids[*]}"
   fi
 elif [[ "$mode" == "ai-running" ]]; then
   if (( verbose )); then
-    echo "Scheduled AI-running wakeup for watcher pane $pane when any target starts running, becomes pending, or closes: ${targets[*]}"
+    echo "Scheduled AI-running wakeup for watcher pane $pane when any target starts running, becomes pending, or closes: ${target_pane_ids[*]}"
   fi
 else
   if (( verbose )); then

@@ -154,7 +154,7 @@ local function extract_file_line_ref()
     search_start = me + 1
   end
 
-  if best_match then
+  if best_match and (best_distance == 0 or raw_file == "" or raw_file:match("^%d+%-?%d*$")) then
     return best_match.file, best_match.start_line, best_match.end_line, best_match.match_start, best_match.match_end
   end
 
