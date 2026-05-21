@@ -13,6 +13,19 @@ TODO:
 
 local M = {}
 
+local jump_ns = vim.api.nvim_create_namespace("term_utils_jump")
+
+local function ensure_jump_highlights()
+  vim.api.nvim_set_hl(0, "TermUtilsJumpMatch", { link = "IncSearch", default = true })
+  vim.api.nvim_set_hl(0, "TermUtilsJumpRange", { link = "Search", default = true })
+end
+
+ensure_jump_highlights()
+
+vim.api.nvim_create_autocmd("ColorScheme", {
+  callback = ensure_jump_highlights,
+})
+
 -- NOTE: Deprecated: we don't need to record where we are from.
 -- We only need to open it in the largest non-terminal window.
 -- local last_non_terminal_win = nil
@@ -124,31 +137,8 @@ local function extract_file_line_ref()
     return distance
   end
 
-  -- When <cfile> is the path, only match line numbers attached to that path.
-  if raw_file ~= "" and not raw_file:match("^%d+$") then
-    local pattern = raw_file:gsub("([^%w])", "%%%1") .. "[^%d]*(%d+)(%-?)(%d*)"
-    local search_start = 1
-    while true do
-      local ms, me, start_str, range_sep, end_str = string.find(current_line, pattern, search_start)
-      if not ms then
-        break
-      end
-
-      if update_best_match(raw_file, start_str, range_sep, end_str, ms, me) == 0 then
-        break
-      end
-
-      search_start = me + 1
-    end
-
-    if best_match then
-      return best_match.file, best_match.start_line, best_match.end_line, best_match.match_start, best_match.match_end
-    end
-    return raw_file, nil, nil, nil, nil
-  end
-
-  -- When the cursor is on the line number, <cfile> is only "123"; recover the
-  -- surrounding file:line reference from the current line.
+  -- Scan the whole line first. Depending on 'isfname' and cursor position,
+  -- <cfile> may be the path, only the line number, or the "21-88" range.
   local pattern = "([^%s`'\"%(%)%[%]{}<>]+):(%d+)(%-?)(%d*)"
   local search_start = 1
   while true do
@@ -171,10 +161,27 @@ local function extract_file_line_ref()
   return raw_file, nil, nil, nil, nil
 end
 
+local function flash_text_range(buf, line, start_col, end_col, duration_ms)
+  duration_ms = duration_ms or 900
+  ensure_jump_highlights()
+
+  local mark_id = vim.api.nvim_buf_set_extmark(buf, jump_ns, line - 1, start_col, {
+    end_col = end_col,
+    hl_group = "TermUtilsJumpMatch",
+    priority = 10000,
+  })
+
+  vim.defer_fn(function()
+    if vim.api.nvim_buf_is_valid(buf) then
+      pcall(vim.api.nvim_buf_del_extmark, buf, jump_ns, mark_id)
+    end
+  end, duration_ms)
+end
+
 -- Briefly highlight a range of lines in the current buffer
 local function flash_line_range(start_line, end_line, duration_ms)
   end_line = end_line or start_line
-  duration_ms = duration_ms or 300
+  duration_ms = duration_ms or 900
 
   local win_height = vim.api.nvim_win_get_height(0)
   local range_height = end_line - start_line + 1
@@ -198,13 +205,23 @@ local function flash_line_range(start_line, end_line, duration_ms)
     vim.fn.winrestview(view)
   end
 
-  local ns_id = vim.api.nvim_create_namespace("")
   local buf = vim.api.nvim_get_current_buf()
+  ensure_jump_highlights()
+
+  local mark_ids = {}
   for lnum = start_line, end_line do
-    vim.api.nvim_buf_add_highlight(buf, ns_id, "Search", lnum - 1, 0, -1)
+    table.insert(mark_ids, vim.api.nvim_buf_set_extmark(buf, jump_ns, lnum - 1, 0, {
+      line_hl_group = "TermUtilsJumpRange",
+      priority = 10000,
+    }))
   end
+
   vim.defer_fn(function()
-    vim.api.nvim_buf_clear_namespace(buf, ns_id, 0, -1)
+    if vim.api.nvim_buf_is_valid(buf) then
+      for _, mark_id in ipairs(mark_ids) do
+        pcall(vim.api.nvim_buf_del_extmark, buf, jump_ns, mark_id)
+      end
+    end
   end, duration_ms)
 end
 
@@ -291,12 +308,8 @@ function M.open_file_in_largest_non_terminal_win(force)
     if match_start then
       line = start_line
       -- Highlight the matched file path and line number temporarily
-      local ns_id = vim.api.nvim_create_namespace("")
       local cur_buf = vim.api.nvim_get_current_buf()
-      vim.api.nvim_buf_add_highlight(cur_buf, ns_id, "Search", vim.fn.line(".") - 1, match_start - 1, match_end)
-      vim.defer_fn(function()
-        vim.api.nvim_buf_clear_namespace(cur_buf, ns_id, 0, -1)
-      end, 500)
+      flash_text_range(cur_buf, vim.fn.line("."), match_start - 1, match_end)
     end
 
     -- 2. goto the file.
@@ -304,7 +317,7 @@ function M.open_file_in_largest_non_terminal_win(force)
     vim.cmd("edit " .. vim.fn.fnameescape(file))
     if line then
       vim.api.nvim_win_set_cursor(0, { line, 0 })
-      flash_line_range(line, end_line, 300)
+      flash_line_range(line, end_line)
     end
   else
     -- Fallback to the original 'gf' behavior if no suitable window is found
@@ -343,12 +356,8 @@ function M.open_file_with_line_in_normal()
   if match_start then
     line = start_line
     -- Briefly highlight the matched region
-    local ns_id = vim.api.nvim_create_namespace("")
     local cur_buf = vim.api.nvim_get_current_buf()
-    vim.api.nvim_buf_add_highlight(cur_buf, ns_id, "Search", vim.fn.line(".") - 1, match_start - 1, match_end)
-    vim.defer_fn(function()
-      vim.api.nvim_buf_clear_namespace(cur_buf, ns_id, 0, -1)
-    end, 500)
+    flash_text_range(cur_buf, vim.fn.line("."), match_start - 1, match_end)
   end
 
   -- Open in current window (normal gf behaviour), then jump to line
@@ -359,7 +368,7 @@ function M.open_file_with_line_in_normal()
   end
   if line then
     vim.api.nvim_win_set_cursor(0, { line, 0 })
-    flash_line_range(line, end_line, 300)
+    flash_line_range(line, end_line)
   end
 end
 

@@ -41,6 +41,9 @@ case "$button" in
   sb_pd)
     tmux run-shell -b "~/deploy/configs/tmux/script/track_ai_agent_state.sh pending '$current_pane'"
     ;;
+  sb_p70)
+    "$HOME/deploy/configs/tmux/script/pane_focus_70.sh" toggle "$current_pane"
+    ;;
   sb_more)
     set_buttons_expanded 1
     ;;

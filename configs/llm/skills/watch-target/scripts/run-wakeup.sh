@@ -4,14 +4,14 @@ set -euo pipefail
 usage() {
   cat >&2 <<'USAGE'
 Usage:
-  run-wakeup.sh --mode <timer|ai-idle|ai-running> --target <target-pane> \
+  run-wakeup.sh --mode <timer|ai-idle|ai-running> [--target <target-pane> ...] \
     --seconds <seconds> --poll-seconds <seconds> --buffer <name> \
     --file <message-file> --pane <watcher-pane> --marker <marker>
 USAGE
 }
 
 mode=""
-target=""
+targets=()
 seconds=""
 poll_seconds=""
 buffer=""
@@ -26,7 +26,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     --target)
-      target="${2:-}"
+      targets+=("${2:-}")
       shift 2
       ;;
     --seconds)
@@ -72,6 +72,9 @@ done
 [[ -n "$file" ]] || { echo "--file is required" >&2; exit 2; }
 [[ -n "$pane" ]] || { echo "--pane is required" >&2; exit 2; }
 [[ -n "$marker" ]] || { echo "--marker is required" >&2; exit 2; }
+if [[ "$mode" == "ai-idle" || "$mode" == "ai-running" ]]; then
+  ((${#targets[@]} > 0)) || { echo "--target is required in $mode mode" >&2; exit 2; }
+fi
 
 cleanup() {
   rm -f "$file"
@@ -80,6 +83,7 @@ trap 'cleanup; exit 0' TERM INT HUP
 trap cleanup EXIT
 
 target_exists() {
+  local target="$1"
   local pane_id
 
   pane_id="$(tmux display-message -p -t "$target" '#{pane_id}' 2>/dev/null)" || return 1
@@ -87,26 +91,30 @@ target_exists() {
 }
 
 wait_for_condition() {
-  local current pending
+  local current pending target
 
   case "$mode" in
     ai-idle)
       while :; do
-        target_exists || break
-        current="$(tmux show -pv -t "$target" @ai_agent_running 2>/dev/null)" \
-          || { echo "target $target is missing @ai_agent_running during ai-idle wait" >&2; exit 1; }
-        [ "$current" = "1" ] || break
+        for target in "${targets[@]}"; do
+          target_exists "$target" || return 0
+          current="$(tmux show -pv -t "$target" @ai_agent_running 2>/dev/null)" \
+            || { echo "target $target is missing @ai_agent_running during ai-idle wait" >&2; exit 1; }
+          [ "$current" = "1" ] || return 0
+        done
         sleep "$poll_seconds"
       done
       ;;
     ai-running)
       while :; do
-        target_exists || break
-        current="$(tmux show -pv -t "$target" @ai_agent_running 2>/dev/null)" \
-          || { echo "target $target is missing @ai_agent_running during ai-running wait" >&2; exit 1; }
-        pending="$(tmux show -pv -t "$target" @ai_agent_pending 2>/dev/null || true)"
-        [ "$current" = "1" ] && break
-        [ "$pending" = "1" ] && break
+        for target in "${targets[@]}"; do
+          target_exists "$target" || return 0
+          current="$(tmux show -pv -t "$target" @ai_agent_running 2>/dev/null)" \
+            || { echo "target $target is missing @ai_agent_running during ai-running wait" >&2; exit 1; }
+          pending="$(tmux show -pv -t "$target" @ai_agent_pending 2>/dev/null || true)"
+          [ "$current" = "1" ] && return 0
+          [ "$pending" = "1" ] && return 0
+        done
         sleep "$poll_seconds"
       done
       ;;

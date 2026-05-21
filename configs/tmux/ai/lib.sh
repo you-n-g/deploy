@@ -286,7 +286,7 @@ _ai_pane_rows() {
 # Output columns (SPACE-separated, ready for fzf --ansi):
 #   $1 pane_id        e.g. "%12"
 #   $2 session:index.pane  e.g. "work:3.0" (session name is ANSI-colored)
-#   $3+  ANSI label   status-symbol + window_name + unread mark + time info
+#   $3+  ANSI label   status-symbol + window_name + unread mark + time info + pane id marker
 #
 # Status symbols:
 #   ▶/▷ (cyan)   current pane (▶ = running, ▷ = idle)
@@ -295,12 +295,15 @@ _ai_pane_rows() {
 #   ○   (green)  idle, nothing new since last visit
 #
 # Example output (after ANSI codes stripped):
-#   %12 work:3.0 ▶ claude          [act 5s]
-#   %13 work:3.1 ● gemini          [act 0s]
-#   %14 learn:0.0 ◉ codex [!]      [act 1m]
+#   %12 work:3.0 ▶ claude          [act 5s]  [pane %12]
+#   %13 work:3.1 ● gemini          [act 0s]  [pane %13 marked]
+#   %14 learn:0.0 ◉ codex [!]      [act 1m]  [pane %14]
 _ai_pane_fzf_list() {
     local current_target="${1:-}"
     local now="${2:-$(date +%s)}"
+    local marked_pane_id=""
+
+    marked_pane_id="$(tmux display-message -p -t '{marked}' '#{pane_id}' 2>/dev/null || true)"
 
     _ai_fzf_reset_session_colors
 
@@ -348,8 +351,11 @@ _ai_pane_fzf_list() {
         [[ -n "$attribute" ]] && attribute_info="  ${attribute}"
         display_wname="$(_strip_ai_window_state_prefix "$wname")"
 
-        printf '%s\t%s\t%s %s %b%s\033[2m%s\033[0m  \033[2m%s%s\033[0m\n' \
-            "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$display_wname" "$attribute_info" "$time_info" "$unread_mark"
+        local pane_marker="pane ${wid}"
+        [[ -n "$marked_pane_id" && "$wid" == "$marked_pane_id" ]] && pane_marker="${pane_marker} marked"
+
+        printf '%s\t%s\t%s %s %b%s\033[2m%s\033[0m  \033[2m%s%s\033[0m  \033[2m[%s]\033[0m\n' \
+            "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$display_wname" "$attribute_info" "$time_info" "$unread_mark" "$pane_marker"
     done |
     sort -t $'\t' -k1,1 -k2,2nr |
     cut -f3-
