@@ -296,14 +296,19 @@ _ai_pane_rows() {
 #
 # Example output (after ANSI codes stripped):
 #   %12 work:3.0 ▶ claude          [act 5s]  [pane %12]
-#   %13 work:3.1 ● gemini          [act 0s]  [pane %13 marked]
+#   %13 work:3.1 ● gemini          [act 0s]  [pane %13 marked switcher]
 #   %14 learn:0.0 ◉ codex [!]      [act 1m]  [pane %14]
 _ai_pane_fzf_list() {
     local current_target="${1:-}"
     local now="${2:-$(date +%s)}"
     local marked_pane_id=""
+    local switcher_pane_id=""
 
     marked_pane_id="$(tmux display-message -p -t '{marked}' '#{pane_id}' 2>/dev/null || true)"
+    switcher_pane_id="$(tmux show-option -gqv @tma_window_switcher_pane 2>/dev/null || true)"
+    if [[ -n "$switcher_pane_id" ]]; then
+        switcher_pane_id="$(tmux display-message -p -t "$switcher_pane_id" '#{pane_id}' 2>/dev/null || true)"
+    fi
 
     _ai_fzf_reset_session_colors
 
@@ -353,6 +358,7 @@ _ai_pane_fzf_list() {
 
         local pane_marker="pane ${wid}"
         [[ -n "$marked_pane_id" && "$wid" == "$marked_pane_id" ]] && pane_marker="${pane_marker} marked"
+        [[ -n "$switcher_pane_id" && "$wid" == "$switcher_pane_id" ]] && pane_marker="${pane_marker} switcher"
 
         printf '%s\t%s\t%s %s %b%s\033[2m%s\033[0m  \033[2m%s%s\033[0m  \033[2m[%s]\033[0m\n' \
             "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$display_wname" "$attribute_info" "$time_info" "$unread_mark" "$pane_marker"

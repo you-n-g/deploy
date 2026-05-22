@@ -61,6 +61,29 @@ _get_fzf_list() {
     printf '%s\n' "$rows" | _ai_pane_fzf_list "$current_target" "$(date +%s)"
 }
 
+_switcher_header_info() {
+    local switcher pane_id pane_target
+
+    switcher="$(tmux show-option -gqv @tma_window_switcher_pane 2>/dev/null || true)"
+    if [[ -z "$switcher" ]]; then
+        printf 'none\n'
+        return
+    fi
+
+    pane_id="$(tmux display-message -p -t "$switcher" '#{pane_id}' 2>/dev/null || true)"
+    if [[ -z "$pane_id" ]]; then
+        printf 'stale %s\n' "$switcher"
+        return
+    fi
+
+    pane_target="$(tmux display-message -p -t "$pane_id" '#{session_name}:#{window_index}.#{pane_index}' 2>/dev/null || true)"
+    if [[ -n "$pane_target" ]]; then
+        printf '%s %s\n' "$pane_id" "$pane_target"
+    else
+        printf '%s\n' "$pane_id"
+    fi
+}
+
 _reset_pane_attribute() {
     local pane_id="${1:?usage: _reset_pane_attribute PANE_ID}"
 
@@ -152,6 +175,8 @@ else
     printf -v RELOAD_BIND_CMD '%q --fzf-list %q' "$SCRIPT_DIR/get_ai_pane.sh" "$SESSION"
 fi
 RESET_ATTRIBUTE_BIND="ctrl-r:execute-silent($RESET_BIND_CMD)+reload($RELOAD_BIND_CMD)+refresh-preview"
+HEADER="▶ current pane busy  ▷ current pane idle  ● busy  ◉ unread  ○ idle  |  switcher: $(_switcher_header_info)  |  Enter switch  Ctrl-R reset desc"
+printf -v HEADER_ARG '%q' "$HEADER"
 
 START_POS=$(
     printf '%s\n' "$LIST" |
@@ -178,7 +203,7 @@ if [[ -t 0 ]]; then
     SELECTED=$(fzf --ansi --reverse \
         "${START_BIND_ARGS[@]}" \
         --with-nth '2..' \
-        --header '▶ current pane busy  ▷ current pane idle  ● busy  ◉ unread  ○ idle  |  Enter switch  Ctrl-R reset desc' \
+        --header "$HEADER" \
         --bind "$RESET_ATTRIBUTE_BIND" \
         --preview 'tmux capture-pane -ept {1} | perl -0777 -pe "s/\s+\z/\n/"' \
         --preview-window "up:${_AI_FZF_PREVIEW_HEIGHT},follow" < "$LISTFILE")
@@ -192,7 +217,7 @@ else
         fzf --ansi --reverse \
             $START_BIND_CMD \
             --with-nth '2..' \
-            --header '▶ current pane busy  ▷ current pane idle  ● busy  ◉ unread  ○ idle  |  Enter switch  Ctrl-R reset desc' \
+            --header $HEADER_ARG \
             --bind '$RESET_ATTRIBUTE_BIND' \
             --preview 'tmux capture-pane -ept {1} | perl -0777 -pe \"s/\s+\z/\n/\"' \
             --preview-window 'up:${_AI_FZF_PREVIEW_HEIGHT},follow' < '$LISTFILE' > '$RESULTFILE'"

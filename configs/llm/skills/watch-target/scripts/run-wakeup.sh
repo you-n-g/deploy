@@ -18,6 +18,7 @@ buffer=""
 file=""
 pane=""
 marker=""
+sleep_pid=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -77,10 +78,20 @@ if [[ "$mode" == "ai-idle" || "$mode" == "ai-running" ]]; then
 fi
 
 cleanup() {
+  if [ -n "$sleep_pid" ]; then
+    kill "$sleep_pid" 2>/dev/null || true
+  fi
   rm -f "$file"
 }
 trap 'cleanup; exit 0' TERM INT HUP
 trap cleanup EXIT
+
+interruptible_sleep() {
+  sleep "$1" &
+  sleep_pid="$!"
+  wait "$sleep_pid"
+  sleep_pid=""
+}
 
 target_exists() {
   local target="$1"
@@ -102,7 +113,7 @@ wait_for_condition() {
             || { echo "target $target is missing @ai_agent_running during ai-idle wait" >&2; exit 1; }
           [ "$current" = "1" ] || return 0
         done
-        sleep "$poll_seconds"
+        interruptible_sleep "$poll_seconds"
       done
       ;;
     ai-running)
@@ -115,11 +126,11 @@ wait_for_condition() {
           [ "$current" = "1" ] && return 0
           [ "$pending" = "1" ] && return 0
         done
-        sleep "$poll_seconds"
+        interruptible_sleep "$poll_seconds"
       done
       ;;
     timer)
-      sleep "$seconds"
+      interruptible_sleep "$seconds"
       ;;
   esac
 }
@@ -129,13 +140,13 @@ submit_message() {
 
   tmux load-buffer -b "$buffer" "$file"
   tmux paste-buffer -b "$buffer" -t "$pane"
-  sleep 1
+  interruptible_sleep 1
   tmux send-keys -t "$pane" Enter
-  sleep 1
+  interruptible_sleep 1
   running="$(tmux show -pv -t "$pane" @ai_agent_running 2>/dev/null || true)"
   if [ "$running" = "0" ]; then
     tmux send-keys -t "$pane" Enter
-    sleep 1
+    interruptible_sleep 1
     running="$(tmux show -pv -t "$pane" @ai_agent_running 2>/dev/null || true)"
   fi
 

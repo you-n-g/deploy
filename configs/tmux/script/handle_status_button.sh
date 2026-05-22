@@ -84,7 +84,7 @@ case "$button" in
     tmux run-shell -b "~/deploy/configs/tmux/ai/switch_to_last_ai_window.sh -q"
     ;;
   sb_as)
-    tmux run-shell -b "~/deploy/configs/tmux/ai/switch_to_marked_or_switcher_pane.sh '$current_pane'"
+    tmux run-shell -b "$HOME/deploy/configs/tmux/ai/switch_to_marked_or_switcher_pane.sh '$current_pane'"
     ;;
   sb_cc)
     tmux run-shell -b "~/deploy/helper_scripts/bin/c"

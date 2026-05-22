@@ -28,6 +28,45 @@ message=""
 buffer="watch-target-wakeup"
 verbose=0
 
+cleanup_existing_wakeups() {
+  local target_pane="$1"
+  local pid cmd file
+  local -a pids=()
+  local -a files=()
+
+  while read -r pid cmd; do
+    [[ -n "$pid" ]] || continue
+    case "$cmd" in
+      bash\ */run-wakeup.sh*|*/bash\ */run-wakeup.sh*) ;;
+      *) continue ;;
+    esac
+    [[ "$cmd" =~ (^|[[:space:]])--pane[[:space:]]${target_pane}($|[[:space:]]) ]] || continue
+
+    kill -TERM "$pid" 2>/dev/null || true
+    pids+=("$pid")
+    if [[ "$cmd" =~ (^|[[:space:]])--file[[:space:]]([^[:space:]]+) ]]; then
+      files+=("${BASH_REMATCH[2]}")
+    fi
+  done < <(ps -axo pid=,command=)
+
+  ((${#pids[@]} > 0)) || return 0
+
+  sleep 0.5
+  for pid in "${pids[@]}"; do
+    if kill -0 "$pid" 2>/dev/null; then
+      kill -KILL "$pid" 2>/dev/null || true
+    fi
+  done
+
+  for file in "${files[@]}"; do
+    rm -f "$file"
+  done
+
+  if (( verbose )); then
+    echo "Stopped existing wakeup(s) for watcher pane $target_pane: ${pids[*]}"
+  fi
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --mode)
@@ -101,6 +140,8 @@ watcher_pane_id="$(tmux display-message -p -t "$pane" '#{pane_id}' 2>/dev/null)"
   || { echo "watcher pane $pane does not resolve to a pane" >&2; exit 2; }
 pane="$watcher_pane_id"
 
+cleanup_existing_wakeups "$pane"
+
 message_file="$(mktemp "${TMPDIR:-/tmp}/watch-target-wakeup.XXXXXX")"
 printf '%s' "$message" > "$message_file"
 log_file="$(dirname "$message_file")/watch-target-wakeup.log"
@@ -110,9 +151,11 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 runner="$script_dir/run-wakeup.sh"
 
 printf -v command '%q --mode %q' "$runner" "$mode"
-for target in "${target_pane_ids[@]}"; do
-  printf -v command '%s --target %q' "$command" "$target"
-done
+if ((${#target_pane_ids[@]} > 0)); then
+  for target in "${target_pane_ids[@]}"; do
+    printf -v command '%s --target %q' "$command" "$target"
+  done
+fi
 printf -v command '%s --seconds %q --poll-seconds %q --buffer %q --file %q --pane %q --marker %q' \
   "$command" "$seconds" "$poll_seconds" "$buffer" "$message_file" "$pane" "$marker"
 printf -v run_command 'nohup sh -c %q </dev/null >>%q 2>&1 &' "exec $command" "$log_file"

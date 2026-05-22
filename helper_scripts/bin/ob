@@ -32,12 +32,19 @@ dest="$vault_abs/$base"
 if [ "$src_abs" = "$dest" ]; then
     link_path="$base"
 else
-    if [ -e "$dest" ]; then
-        echo "ob: target already exists: $dest" >&2
+    if [ -L "$dest" ]; then
+        dest_target_abs="$(python3 -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).resolve(strict=False))' "$dest")"
+        if [ "$dest_target_abs" != "$src_abs" ]; then
+            ln -sfn "$src_abs" "$dest"
+        fi
+        link_path="$base"
+    elif [ -e "$dest" ]; then
+        echo "ob: target already exists and is not a symlink: $dest" >&2
         exit 1
+    else
+        ln -s "$src_abs" "$dest"
+        link_path="$base"
     fi
-    ln -s "$src_abs" "$dest"
-    link_path="$base"
 fi
 
 encoded_file="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$link_path")"
