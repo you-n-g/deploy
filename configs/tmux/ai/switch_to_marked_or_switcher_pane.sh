@@ -3,6 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TMUX_SCRIPT_DIR="$SCRIPT_DIR/../script"
 
 pane_exists() {
   tmux list-panes -a -F '#{pane_id}' | grep -Fxq "$1"
@@ -17,15 +18,14 @@ marked="$(tmux display-message -p -t '{marked}' '#{pane_id}' 2>/dev/null || true
 switcher="$(tmux show-option -gqv @tma_window_switcher_pane 2>/dev/null || true)"
 
 if [ -n "$marked" ] && [ "$marked" != "$current" ]; then
-  if [ -n "$current" ] && tmux display-message -p -t "$current" '#{pane_id}' >/dev/null 2>&1; then
-    "$SCRIPT_DIR/set_window_switcher_pane.sh" set "$current"
-  fi
   tmux switch-client -t "$marked"
+  "$TMUX_SCRIPT_DIR/refresh_terminal_title.sh" >/dev/null 2>&1 || true
   exit 0
 fi
 
 if [ -n "$switcher" ] && pane_exists "$switcher"; then
   tmux switch-client -t "$switcher"
+  "$TMUX_SCRIPT_DIR/refresh_terminal_title.sh" >/dev/null 2>&1 || true
   exit 0
 fi
 

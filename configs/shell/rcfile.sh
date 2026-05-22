@@ -326,7 +326,8 @@ function codexr() {
 }
 
 function codexrl() {
-    codexr -m gpt-5.3-codex-spark -c 'model_reasoning_effort="low"' "$@"
+    # codexr -m gpt-5.3-codex-spark -c 'model_reasoning_effort="low"' "$@"
+    codexr -c 'model_reasoning_effort="low"' "$@"
 }
 
 _codex_auto_flag() {

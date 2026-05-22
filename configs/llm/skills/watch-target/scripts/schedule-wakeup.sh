@@ -30,6 +30,7 @@ verbose=0
 
 cleanup_existing_wakeups() {
   local target_pane="$1"
+  local marker="$2"
   local pid cmd file
   local -a pids=()
   local -a files=()
@@ -41,6 +42,7 @@ cleanup_existing_wakeups() {
       *) continue ;;
     esac
     [[ "$cmd" =~ (^|[[:space:]])--pane[[:space:]]${target_pane}($|[[:space:]]) ]] || continue
+    [[ "$cmd" =~ (^|[[:space:]])--marker[[:space:]]${marker}($|[[:space:]]) ]] || continue
 
     kill -TERM "$pid" 2>/dev/null || true
     pids+=("$pid")
@@ -63,7 +65,7 @@ cleanup_existing_wakeups() {
   done
 
   if (( verbose )); then
-    echo "Stopped existing wakeup(s) for watcher pane $target_pane: ${pids[*]}"
+    echo "Stopped existing $marker wakeup(s) for watcher pane $target_pane: ${pids[*]}"
   fi
 }
 
@@ -140,13 +142,13 @@ watcher_pane_id="$(tmux display-message -p -t "$pane" '#{pane_id}' 2>/dev/null)"
   || { echo "watcher pane $pane does not resolve to a pane" >&2; exit 2; }
 pane="$watcher_pane_id"
 
-cleanup_existing_wakeups "$pane"
+marker="watch-target-wakeup-${mode}"
+cleanup_existing_wakeups "$pane" "$marker"
 
 message_file="$(mktemp "${TMPDIR:-/tmp}/watch-target-wakeup.XXXXXX")"
 printf '%s' "$message" > "$message_file"
 log_file="$(dirname "$message_file")/watch-target-wakeup.log"
 
-marker="watch-target-wakeup-${mode}"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 runner="$script_dir/run-wakeup.sh"
 

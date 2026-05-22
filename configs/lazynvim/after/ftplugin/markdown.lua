@@ -1,6 +1,7 @@
 vim.api.nvim_set_hl(0, "MarkdownExplainCodeMarker", { fg = "#61AFEF", bold = true })
 vim.api.nvim_set_hl(0, "MarkdownExplainRunMarker", { fg = "#E5C07B", bold = true })
 vim.api.nvim_set_hl(0, "MarkdownReviewBugMarker", { fg = "#FF6B6B", bold = true })
+vim.api.nvim_set_hl(0, "MarkdownSearchMarker", { fg = "#FF79C6", bold = true })
 
 local buf = vim.api.nvim_get_current_buf()
 local group = vim.api.nvim_create_augroup("markdown-explain-markers-" .. buf, { clear = true })
@@ -19,6 +20,7 @@ local function add_matches()
     vim.fn.matchadd("MarkdownExplainCodeMarker", "󰅩", 20),
     vim.fn.matchadd("MarkdownExplainRunMarker", "󰄉", 20),
     vim.fn.matchadd("MarkdownReviewBugMarker", "", 20),
+    vim.fn.matchadd("MarkdownSearchMarker", "󰍉", 20),
   }
 end
 
@@ -35,6 +37,7 @@ vim.api.nvim_create_autocmd("ColorScheme", {
     vim.api.nvim_set_hl(0, "MarkdownExplainCodeMarker", { fg = "#61AFEF", bold = true })
     vim.api.nvim_set_hl(0, "MarkdownExplainRunMarker", { fg = "#E5C07B", bold = true })
     vim.api.nvim_set_hl(0, "MarkdownReviewBugMarker", { fg = "#FF6B6B", bold = true })
+    vim.api.nvim_set_hl(0, "MarkdownSearchMarker", { fg = "#FF79C6", bold = true })
     add_matches()
   end,
 })
