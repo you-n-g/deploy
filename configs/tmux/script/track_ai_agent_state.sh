@@ -4,6 +4,7 @@ set -eu
 
 state="${1:?usage: track_ai_agent_state.sh init|running|idle|visit|unread|pending TARGET}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../ai/lib.sh"
 
 target="${2:-${TMUX_PANE:?usage: track_ai_agent_state.sh init|running|idle|visit|unread|pending TARGET}}"
 if ! pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')" || [ -z "$pane_id" ]; then
@@ -29,11 +30,19 @@ reset_ai_agent_attribute() {
   tmux set-option -pqu -t "$pane_id" @ai_agent_attribute 2>/dev/null || true
 }
 
-is_tracked_ai_pane() {
+has_ai_agent_state() {
   [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null)" ] \
     || [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_unread 2>/dev/null)" ] \
     || [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null)" ] \
     || [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_attribute 2>/dev/null)" ]
+}
+
+is_live_ai_pane() {
+  local pane_pid
+
+  pane_pid="$(tmux display-message -p -t "$pane_id" '#{pane_pid}' 2>/dev/null || true)"
+  [ -n "$pane_pid" ] || return 1
+  _has_ai_proc "$pane_pid"
 }
 
 is_window_visible() {
@@ -42,18 +51,28 @@ is_window_visible() {
 }
 
 current_user_pane() {
-  local client readonly control_mode pane
+  local client readonly control_mode pane activity best_pane best_activity
 
-  while IFS='	' read -r client readonly control_mode pane; do
+  best_pane=""
+  best_activity=-1
+
+  while IFS='	' read -r client readonly control_mode pane activity; do
     [ -n "$client" ] || continue
     if [ "$readonly" = "1" ] || [ "$control_mode" = "1" ]; then
       continue
     fi
-    if [ -n "$pane" ]; then
-      printf '%s\n' "$pane"
-      return 0
+    [ -n "$pane" ] || continue
+    case "$activity" in
+      ""|*[!0-9]*) activity=0 ;;
+    esac
+    if [ "$activity" -gt "$best_activity" ]; then
+      best_activity="$activity"
+      best_pane="$pane"
     fi
-  done < <(tmux list-clients -F '#{client_name}	#{client_readonly}	#{client_control_mode}	#{pane_id}' 2>/dev/null || true)
+  done < <(tmux list-clients -F '#{client_name}	#{client_readonly}	#{client_control_mode}	#{pane_id}	#{client_activity}' 2>/dev/null || true)
+
+  [ -n "$best_pane" ] || return 1
+  printf '%s\n' "$best_pane"
 }
 
 emit_ai_agent_event() {
@@ -134,21 +153,27 @@ case "$state" in
     ensure_ai_agent_attribute
     ;;
   visit)
-    if [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null)" ]; then
+    if is_live_ai_pane; then
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
     else
+      if has_ai_agent_state; then
+        _clear_ai_pane_state "$pane_id"
+      fi
       sync_window_name=0
     fi
     ;;
   unread)
-    if is_tracked_ai_pane; then
+    if is_live_ai_pane; then
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
     else
+      if has_ai_agent_state; then
+        _clear_ai_pane_state "$pane_id"
+      fi
       sync_window_name=0
     fi
     ;;
   pending)
-    if is_tracked_ai_pane; then
+    if is_live_ai_pane; then
       was_running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
       was_pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
       tmux set-option -pq -t "$pane_id" @ai_agent_pending 1
@@ -157,6 +182,9 @@ case "$state" in
         emit_ai_agent_event pending
       fi
     else
+      if has_ai_agent_state; then
+        _clear_ai_pane_state "$pane_id"
+      fi
       sync_window_name=0
     fi
     ;;

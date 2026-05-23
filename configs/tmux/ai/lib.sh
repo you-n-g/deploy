@@ -118,6 +118,22 @@ _strip_ai_window_state_prefix() {
     printf '%s\n' "$name"
 }
 
+_clear_ai_pane_state() {
+    local pane_id="${1:?usage: _clear_ai_pane_state PANE_ID}"
+    local window_id current_name desired_name
+
+    tmux set-option -pqu -t "$pane_id" @ai_agent_running 2>/dev/null || true
+    tmux set-option -pqu -t "$pane_id" @ai_agent_unread 2>/dev/null || true
+    tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
+    tmux set-option -pqu -t "$pane_id" @ai_agent_attribute 2>/dev/null || true
+
+    window_id="$(tmux display-message -p -t "$pane_id" '#{window_id}' 2>/dev/null || true)"
+    [[ -n "$window_id" ]] || return 0
+    current_name="$(tmux display-message -p -t "$window_id" '#W')"
+    desired_name="$(_strip_ai_window_state_prefix "$current_name")"
+    [[ "$current_name" == "$desired_name" ]] || tmux rename-window -t "$window_id" "$desired_name"
+}
+
 _ai_fzf_reset_session_colors() {
     _ai_fzf_session_color_names=()
     _ai_fzf_session_color_values=()
