@@ -55,8 +55,8 @@ compact_buttons="$(
     sb_mc 'M-c' \
     sb_ml 'M-l' \
     sb_as 'C-m' \
+    sb_a ' a ' \
     sb_cc 'C-c' \
-    sb_p70 '#{?#{==:#{@pane_focus_70},1},70*,70%}' \
     sb_more '>>>'
 )"
 expanded_buttons="$(
@@ -66,6 +66,7 @@ expanded_buttons="$(
     sb_mc 'M-c' \
     sb_ml 'M-l' \
     sb_as 'C-m' \
+    sb_a ' a ' \
     sb_cc 'C-c' \
     sb_k ' k ' \
     sb_l ' l ' \
