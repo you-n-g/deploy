@@ -44,17 +44,16 @@ is_window_visible() {
 current_user_pane() {
   local client readonly control_mode pane
 
-  while IFS='	' read -r client readonly control_mode; do
+  while IFS='	' read -r client readonly control_mode pane; do
     [ -n "$client" ] || continue
     if [ "$readonly" = "1" ] || [ "$control_mode" = "1" ]; then
       continue
     fi
-    pane="$(tmux display-message -c "$client" -p '#{pane_id}' 2>/dev/null || true)"
     if [ -n "$pane" ]; then
       printf '%s\n' "$pane"
       return 0
     fi
-  done < <(tmux list-clients -F '#{client_name}	#{client_readonly}	#{client_control_mode}' 2>/dev/null || true)
+  done < <(tmux list-clients -F '#{client_name}	#{client_readonly}	#{client_control_mode}	#{pane_id}' 2>/dev/null || true)
 }
 
 emit_ai_agent_event() {
