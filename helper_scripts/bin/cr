@@ -24,7 +24,8 @@ def _require_firecrawl_up(api_url: str) -> None:
     except OSError:
         typer.echo(
             f"error: Firecrawl is not reachable at {api_url}. "
-            "Start it via: `bash deploy_apps/firecrawl.sh`",
+            "Start it via: `bash ~/deploy/deploy_apps/firecrawl_udocker.sh start` "
+            "or `bash ~/deploy/deploy_apps/firecrawl.sh`",
             err=True,
         )
         raise typer.Exit(code=1)

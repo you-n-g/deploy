@@ -12,6 +12,11 @@ mkdir ~/apps/
 
 cd ~/apps/
 
+if ! command -v docker >/dev/null 2>&1; then
+  bash "$DIR/firecrawl_udocker.sh" start
+  exit
+fi
+
 if [ ! -e firecrawl ]; then
   git clone https://github.com/mendableai/firecrawl
 fi
