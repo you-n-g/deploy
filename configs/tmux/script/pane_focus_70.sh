@@ -16,9 +16,25 @@ show_window_option() {
   tmux show-options -wqv -t "$window_id" "$1" 2>/dev/null || true
 }
 
+focus_percent() {
+  percent="$(show_window_option @pane_focus_percent)"
+  case "$percent" in
+    70|80)
+      printf '%s\n' "$percent"
+      return
+      ;;
+  esac
+
+  if [ "$(show_window_option @pane_focus_70)" = "1" ]; then
+    printf '70\n'
+  else
+    printf '0\n'
+  fi
+}
+
 apply_focus_size() {
-  enabled="$(show_window_option @pane_focus_70)"
-  [ "$enabled" = "1" ] || exit 0
+  percent="$(focus_percent)"
+  [ "$percent" != "0" ] || exit 0
 
   pane_count="$(tmux display-message -p -t "$pane_id" '#{window_panes}')"
   [ "$pane_count" -gt 1 ] || exit 0
@@ -27,8 +43,8 @@ apply_focus_size() {
     tmux display-message -p -t "$pane_id" '#{window_width}	#{window_height}	#{pane_width}	#{pane_height}'
   )
 
-  target_width=$(((window_width * 70 + 99) / 100))
-  target_height=$(((window_height * 70 + 99) / 100))
+  target_width=$(((window_width * percent + 99) / 100))
+  target_height=$(((window_height * percent + 99) / 100))
 
   if [ "$pane_width" -lt "$target_width" ]; then
     tmux resize-pane -t "$pane_id" -x "$target_width"
@@ -40,14 +56,20 @@ apply_focus_size() {
 }
 
 enable_focus_mode() {
-  saved_layout="$(tmux display-message -p -t "$window_id" '#{window_layout}')"
-  tmux set-option -wq -t "$window_id" @pane_focus_70_saved_layout "$saved_layout"
+  percent="$1"
+  current_percent="$(focus_percent)"
+  if [ "$current_percent" = "0" ]; then
+    saved_layout="$(tmux display-message -p -t "$window_id" '#{window_layout}')"
+    tmux set-option -wq -t "$window_id" @pane_focus_70_saved_layout "$saved_layout"
+  fi
+  tmux set-option -wq -t "$window_id" @pane_focus_percent "$percent"
   tmux set-option -wq -t "$window_id" @pane_focus_70 1
-  tmux display-message "Pane 70% focus enabled for this window"
+  tmux display-message "Pane ${percent}% focus enabled for this window"
   apply_focus_size
 }
 
 disable_focus_mode() {
+  tmux set-option -wq -t "$window_id" @pane_focus_percent 0
   tmux set-option -wq -t "$window_id" @pane_focus_70 0
   saved_layout="$(show_window_option @pane_focus_70_saved_layout)"
 
@@ -69,11 +91,20 @@ case "$action" in
     apply_focus_size
     ;;
   toggle)
-    if [ "$(show_window_option @pane_focus_70)" = "1" ]; then
-      disable_focus_mode
-    else
-      enable_focus_mode
-    fi
+    case "$(focus_percent)" in
+      0)
+        enable_focus_mode 70
+        ;;
+      70)
+        enable_focus_mode 80
+        ;;
+      80)
+        disable_focus_mode
+        ;;
+      *)
+        enable_focus_mode 70
+        ;;
+    esac
     ;;
   *)
     echo "usage: pane_focus_70.sh [apply|toggle] [tmux-target]" >&2

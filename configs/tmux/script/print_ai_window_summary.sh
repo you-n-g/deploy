@@ -30,7 +30,7 @@ if [ -n "$current_target" ]; then
 fi
 
 count=0
-while IFS=$'\t' read -r _last_visit pane_target window_name pane_id _pane_pid _activity_epoch unread _running attribute; do
+while IFS=$'\t' read -r _last_visit pane_target window_name pane_id _pane_pid _activity_epoch unread running attribute; do
   [ -n "$pane_target" ] || continue
   [ "$pane_target" != "$current_target" ] || continue
 
@@ -44,11 +44,27 @@ while IFS=$'\t' read -r _last_visit pane_target window_name pane_id _pane_pid _a
   label="$(compact_ai_label "$session_name" "$window_name" "$clean_attribute")"
 
   if [ $(((count + current_is_ai) % 2)) -eq 0 ]; then
-    bg='colour24'
-    fg='colour255'
+    normal_bg='colour24'
+    running_bg='colour153'
   else
-    bg='colour52'
+    normal_bg='colour52'
+    running_bg='colour217'
+  fi
+
+  if [ "$running" = "1" ]; then
+    bg="$running_bg"
+    fg='colour235'
+  else
+    bg="$normal_bg"
     fg='colour255'
+  fi
+  pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
+  if [ "$pending" = "1" ]; then
+    if [ "$running" = "1" ]; then
+      fg='colour238'
+    else
+      fg='colour250'
+    fi
   fi
 
   printf '#[range=user|%s]#[bg=%s,fg=%s]%s%s%s#[norange default]' \

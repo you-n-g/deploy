@@ -72,7 +72,7 @@ expanded_buttons="$(
     sb_l ' l ' \
     sb_s ' S ' \
     sb_pd 'M-p' \
-    sb_p70 '#{?#{==:#{@pane_focus_70},1},70*,70%}' \
+    sb_p70 '#{?#{==:#{@pane_focus_percent},80},80*,#{?#{||:#{==:#{@pane_focus_percent},70},#{==:#{@pane_focus_70},1}},70*,70%}}' \
     sb_t ' t ' \
     sb_ct 'C-t' \
     sb_kp 'K-p' \
