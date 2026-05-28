@@ -718,3 +718,9 @@
   Output = ""
   Tag = []
   command = "tmux capture-pane -t :<winid=1> -p  | tail -30"
+
+[[Snippets]]
+  Description = "View table data in terminal; (cheatsheet: z^Y)"
+  Output = ""
+  Tag = []
+  command = "uvx --from visidata --with pyarrow --with pandas vd "

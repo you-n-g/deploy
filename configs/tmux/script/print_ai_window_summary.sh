@@ -21,7 +21,7 @@ fi
 current_target="$(tmux display-message -p '#{session_name}:#{window_index}.#{pane_index}' 2>/dev/null || true)"
 current_is_ai=0
 if [ -n "$current_target" ]; then
-  while IFS=$'\t' read -r _last_visit pane_target _window_name _pane_id _pane_pid _activity_epoch _unread _running _attribute; do
+  while IFS=$'\t' read -r _last_visit pane_target _window_name _pane_id _pane_pid _activity_epoch _unread _running _background _attribute; do
     if [ "$pane_target" = "$current_target" ]; then
       current_is_ai=1
       break
@@ -30,7 +30,7 @@ if [ -n "$current_target" ]; then
 fi
 
 count=0
-while IFS=$'\t' read -r _last_visit pane_target window_name pane_id _pane_pid _activity_epoch unread running attribute; do
+while IFS=$'\t' read -r _last_visit pane_target window_name pane_id _pane_pid _activity_epoch unread running background attribute; do
   [ -n "$pane_target" ] || continue
   [ "$pane_target" != "$current_target" ] || continue
 
@@ -51,7 +51,10 @@ while IFS=$'\t' read -r _last_visit pane_target window_name pane_id _pane_pid _a
     running_bg='colour217'
   fi
 
-  if [ "$running" = "1" ]; then
+  if [ "$background" = "1" ]; then
+    bg="$running_bg"
+    fg='colour244'
+  elif [ "$running" = "1" ]; then
     bg="$running_bg"
     fg='colour235'
   else
@@ -65,6 +68,9 @@ while IFS=$'\t' read -r _last_visit pane_target window_name pane_id _pane_pid _a
     else
       fg='colour250'
     fi
+  fi
+  if [ "$background" = "1" ]; then
+    label="◒${label}"
   fi
 
   printf '#[range=user|%s]#[bg=%s,fg=%s]%s%s%s#[norange default]' \

@@ -102,8 +102,10 @@ class ReadFile:
 
     def _inspect(self, obj, e=False, p=False):
         if p:
+            # -p: drop into IPython with `obj` available for ad-hoc inspection.
             from IPython import embed; embed(header='__import__("objexplore").explore(obj)')
         elif e:
+            # -e: open objexplore's interactive object browser.
             if isinstance(obj, defaultdict):
                 # defaultdict does not work well with objexplore
                 obj = dict(obj)
@@ -128,10 +130,24 @@ class ReadFile:
                 print(f"key={k} not found")
 
     def auto(self, path, e=False, p=False):
+        """Auto-load a data file.
+
+        Args:
+            path: File to inspect.
+            e: Open objexplore's interactive object browser.
+            p: Drop into IPython with `obj` available for ad-hoc inspection.
+        """
         obj = self._auto_load(path)
         self._inspect(obj, e, p)
 
     def pk(self, path, e=False, p=False):
+        """Load a pickle file.
+
+        Args:
+            path: Pickle file to inspect.
+            e: Open objexplore's interactive object browser.
+            p: Drop into IPython with `obj` available for ad-hoc inspection.
+        """
         obj = self._pkl(path)
         self._inspect(obj, e, p)
 

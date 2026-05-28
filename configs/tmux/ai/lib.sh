@@ -109,6 +109,8 @@ _strip_ai_window_state_prefix() {
     while :; do
         case "$name" in
             "● "*) name="${name#● }" ;;
+            "⏵ "*) name="${name#⏵ }" ;;
+            "◒ "*) name="${name#◒ }" ;;
             "◉ "*) name="${name#◉ }" ;;
             "○ "*) name="${name#○ }" ;;
             *) break ;;
@@ -123,6 +125,7 @@ _clear_ai_pane_state() {
     local window_id current_name desired_name
 
     tmux set-option -pqu -t "$pane_id" @ai_agent_running 2>/dev/null || true
+    tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
     tmux set-option -pqu -t "$pane_id" @ai_agent_unread 2>/dev/null || true
     tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
     tmux set-option -pqu -t "$pane_id" @ai_agent_attribute 2>/dev/null || true
@@ -263,12 +266,13 @@ _ai_pane_pid_set() {
 #   $6 activity_epoch  tmux window activity
 #   $7 unread_flag     1 if the agent finished while not visible
 #   $8 running_flag    1 if the agent hook says this window is running
-#   $9 attribute       short description generated once after first stop
+#   $9 background_flag 1 if Claude paused with background work still active
+#   $10 attribute      short description generated once after first stop
 _ai_pane_rows() {
     local pane_rows pane_pids ps_cache ai_pane_pids
 
     pane_rows=$(tmux list-panes "$@" \
-        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}.#{pane_index}\t#{window_name}\t#{window_id}\t#{pane_id}\t#{pane_pid}\t#{pane_active}\t#{window_activity}\t#{@ai_agent_unread}\t#{@ai_agent_running}\t#{@ai_agent_attribute}' 2>/dev/null) || return 1
+        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}.#{pane_index}\t#{window_name}\t#{window_id}\t#{pane_id}\t#{pane_pid}\t#{pane_active}\t#{window_activity}\t#{@ai_agent_unread}\t#{@ai_agent_running}\t#{@ai_agent_background}\t#{@ai_agent_attribute}' 2>/dev/null) || return 1
     pane_pids=$(printf '%s\n' "$pane_rows" | awk -F '\t' '{ print $6 }')
     ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null) || return 1
     ai_pane_pids=$(_ai_pane_pid_set "$pane_pids" "$ps_cache")
@@ -279,16 +283,16 @@ _ai_pane_rows() {
             next
         }
         has_ai_proc_by_pane[$6] {
-            attribute = $11
-            for (i = 12; i <= NF; i++) attribute = attribute " " $i
-            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, attribute
+            attribute = $12
+            for (i = 13; i <= NF; i++) attribute = attribute " " $i
+            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, attribute
         }
     ' <(printf '%s\n' "$ai_pane_pids") <(printf '%s\n' "$pane_rows") |
     sort -t $'\t' -k1,1nr -k8,8nr -k7,7nr |
     awk -F '\t' '!seen[$5]++' |
     awk -F '\t' '
     {
-        print $1+0 "\t" $2 "\t" $3 "\t" $5 "\t" $6 "\t" $8+0 "\t" $9+0 "\t" $10+0 "\t" $11
+        print $1+0 "\t" $2 "\t" $3 "\t" $5 "\t" $6 "\t" $8+0 "\t" $9+0 "\t" $10+0 "\t" $11+0 "\t" $12
     }
     '
 }
@@ -305,8 +309,9 @@ _ai_pane_rows() {
 #   $3+  ANSI label   status-symbol + window_name + unread mark + time info + pane id marker
 #
 # Status symbols:
-#   ▶/▷ (cyan)   current pane (▶ = running, ▷ = idle)
+#   ▶/➲/▷ (cyan) current pane (▶ = running, ➲ = background, ▷ = idle)
 #   ●   (yellow) running
+#   ◒   (yellow) Claude background work
 #   ◉   (yellow) unread — finished while not visible
 #   ○   (green)  idle, nothing new since last visit
 #
@@ -328,7 +333,7 @@ _ai_pane_fzf_list() {
 
     _ai_fzf_reset_session_colors
 
-    while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw unread_flag running_flag attribute; do
+    while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw unread_flag running_flag background_flag attribute; do
         local sort_key status rel_visit rel_act time_info colored_sess_win
         local display_wname
         local is_unread=0
@@ -336,14 +341,21 @@ _ai_pane_fzf_list() {
 
         local is_busy=false
         [[ "$running_flag" == "1" ]] && is_busy=true
+        local has_background=false
+        [[ "$background_flag" == "1" ]] && has_background=true
 
         if [[ "$sess_win" == "$current_target" ]]; then
             sort_key=0
-            if $is_busy; then
+            if $has_background; then
+                status=$'\033[36m➲\033[0m '
+            elif $is_busy; then
                 status=$'\033[36m▶\033[0m '
             else
                 status=$'\033[36m▷\033[0m '
             fi
+        elif $has_background; then
+            sort_key=06
+            status=$'\033[33m◒\033[0m '
         elif $is_busy; then
             sort_key=05
             status=$'\033[33m●\033[0m '

@@ -44,6 +44,7 @@ compact_ai_label() {
     return
   fi
 
+  window_name="$(_strip_ai_window_state_prefix "$window_name")"
   python3 - "$session_name" "$window_name" <<'PY'
 import sys
 

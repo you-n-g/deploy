@@ -15,8 +15,8 @@ esac
 changed=0
 ps_cache="$(ps -ax -o pid,ppid,comm 2>/dev/null || true)"
 
-while IFS='|' read -r pane_id pane_pid window_activity window_active session_attached running unread attribute; do
-  if [ -n "${running}${unread}${attribute}" ] && ! _has_ai_proc "$pane_pid" "$ps_cache"; then
+while IFS='|' read -r pane_id pane_pid window_activity window_active session_attached running background unread attribute; do
+  if [ -n "${running}${background}${unread}${attribute}" ] && ! _has_ai_proc "$pane_pid" "$ps_cache"; then
     _clear_ai_pane_state "$pane_id"
     changed=1
     continue
@@ -34,29 +34,34 @@ while IFS='|' read -r pane_id pane_pid window_activity window_active session_att
     fi
     changed=1
   fi
-done < <(tmux list-panes -a -F '#{pane_id}|#{pane_pid}|#{window_activity}|#{window_active}|#{session_attached}|#{@ai_agent_running}|#{@ai_agent_unread}|#{@ai_agent_attribute}')
+done < <(tmux list-panes -a -F '#{pane_id}|#{pane_pid}|#{window_activity}|#{window_active}|#{session_attached}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_unread}|#{@ai_agent_attribute}')
 
 if [ "$changed" = "1" ]; then
   "$SCRIPT_DIR/refresh_terminal_title.sh"
 fi
 
 running=0
+background=0
 waiting=0
-while IFS='|' read -r pane_pid pane_running pane_unread; do
+while IFS='|' read -r pane_pid pane_running pane_background pane_unread; do
   _has_ai_proc "$pane_pid" "$ps_cache" || continue
-  if [ "$pane_running" = "1" ]; then
+  if [ "$pane_background" = "1" ]; then
+    background=$((background + 1))
+  elif [ "$pane_running" = "1" ]; then
     running=$((running + 1))
   elif [ "$pane_unread" = "1" ]; then
     waiting=$((waiting + 1))
   fi
-done < <(tmux list-panes -a -F '#{pane_pid}|#{@ai_agent_running}|#{@ai_agent_unread}')
+done < <(tmux list-panes -a -F '#{pane_pid}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_unread}')
 
-if [ "$waiting" -gt 0 ] && [ "$running" -gt 0 ]; then
-  label="${running} !${waiting}"
-elif [ "$waiting" -gt 0 ]; then
-  label="!${waiting}"
+parts=()
+[ "$running" -gt 0 ] && parts+=("$running")
+[ "$background" -gt 0 ] && parts+=("~${background}")
+[ "$waiting" -gt 0 ] && parts+=("!${waiting}")
+if [ "${#parts[@]}" -eq 0 ]; then
+  label="0"
 else
-  label="$running"
+  label="${parts[*]}"
 fi
 
 printf '%s\n' "$label"

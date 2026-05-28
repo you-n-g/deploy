@@ -2,11 +2,11 @@
 
 set -eu
 
-state="${1:?usage: track_ai_agent_state.sh init|running|idle|visit|unread|pending TARGET}"
+state="${1:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending TARGET}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../ai/lib.sh"
 
-target="${2:-${TMUX_PANE:?usage: track_ai_agent_state.sh init|running|idle|visit|unread|pending TARGET}}"
+target="${2:-${TMUX_PANE:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending TARGET}}"
 if ! pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')" || [ -z "$pane_id" ]; then
   if [ "$state" = "visit" ]; then
     exit 0
@@ -32,6 +32,7 @@ reset_ai_agent_attribute() {
 
 has_ai_agent_state() {
   [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null)" ] \
+    || [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_background 2>/dev/null)" ] \
     || [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_unread 2>/dev/null)" ] \
     || [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null)" ] \
     || [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_attribute 2>/dev/null)" ]
@@ -95,13 +96,15 @@ emit_ai_agent_event() {
 }
 
 sync_ai_window_name() {
-  local current_name base_name running unread prefix desired_name
+  local current_name base_name running background unread prefix desired_name
 
   current_name="$(tmux display-message -p -t "$window_id" '#W')"
   base_name="$current_name"
   while :; do
     case "$base_name" in
       "● "*) base_name="${base_name#● }" ;;
+      "⏵ "*) base_name="${base_name#⏵ }" ;;
+      "◒ "*) base_name="${base_name#◒ }" ;;
       "◉ "*) base_name="${base_name#◉ }" ;;
       "○ "*) base_name="${base_name#○ }" ;;
       *) break ;;
@@ -109,8 +112,11 @@ sync_ai_window_name() {
   done
 
   running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
+  background="$(tmux show -pv -t "$pane_id" @ai_agent_background 2>/dev/null || true)"
   unread="$(tmux show -pv -t "$pane_id" @ai_agent_unread 2>/dev/null || true)"
-  if [ "$running" = "1" ]; then
+  if [ "$background" = "1" ]; then
+    prefix="◒"
+  elif [ "$running" = "1" ]; then
     prefix="●"
   elif [ "$unread" = "1" ]; then
     prefix="◉"
@@ -126,6 +132,7 @@ case "$state" in
   init)
     reset_ai_agent_attribute
     tmux set-option -pq -t "$pane_id" @ai_agent_running 0
+    tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
     tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
     tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
     ;;
@@ -133,6 +140,10 @@ case "$state" in
     was_running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
     was_pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
     tmux set-option -pq -t "$pane_id" @ai_agent_running 1
+    tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
+    # User preference: generate a pane attribute only once and keep it stable
+    # across later prompts. Do not reset it on UserPromptSubmit.
+    ensure_ai_agent_attribute
     if [ "$was_running" != "1" ]; then
       tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
       if [ "$was_pending" != "1" ]; then
@@ -143,8 +154,15 @@ case "$state" in
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
     fi
     ;;
+  background)
+    tmux set-option -pq -t "$pane_id" @ai_agent_running 0
+    tmux set-option -pq -t "$pane_id" @ai_agent_background 1
+    tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
+    tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
+    ;;
   idle)
     tmux set-option -pq -t "$pane_id" @ai_agent_running 0
+    tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
     if is_window_visible; then
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
     else
