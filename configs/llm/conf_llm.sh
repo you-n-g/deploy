@@ -27,7 +27,9 @@ install_external_skills() {
         (cd "$OBSIDIAN_SKILLS_DIR" && git pull --ff-only)
     fi
 
-    bash "$SCRIPT_DIR/install_rednote.sh"
+    if [ "$(uname)" = "Darwin" ]; then
+        bash "$SCRIPT_DIR/install_rednote.sh"
+    fi
     bash "$SCRIPT_DIR/install_excalidraw_diagram_skill.sh"
     # bash "$SCRIPT_DIR/install_x_research.sh"
 
@@ -76,14 +78,7 @@ merge_skills() {
     echo "Merged skills: $(ls "$MERGED_SKILLS_DIR" | wc -l) skills linked."
 }
 
-# ── Environment-based skill exclusions ───────────────────────────────────────
-
-_can_run_containers() {
-    case "$(uname)" in
-        Darwin) return 0 ;;       # macOS: assume Docker Desktop can be installed
-        *)  test -w /sys/fs/cgroup ;;
-    esac
-}
+# ── Skill exclusions ─────────────────────────────────────────────────────────
 
 disable_skill() {
     local name=$1
@@ -97,25 +92,7 @@ apply_skill_exclusions() {
     ensure_dirs
 
     if [ "$(uname)" != "Darwin" ]; then
-        echo "Not macOS, disabling Obsidian skills..."
-        for s in "$MERGED_SKILLS_DIR"/obsidian-*; do
-            [ -L "$s" ] || continue
-            case "$(basename "$s")" in
-                obsidian-markdown) continue ;;
-            esac
-            disable_skill "$(basename "$s")"
-        done
-
         disable_skill "rednote"
-
-        # disable_skill "excalidraw-diagram-skill"
-    fi
-
-    if ! _can_run_containers; then
-        echo "No container runtime, disabling container-dependent skills..."
-        disable_skill "cr"
-    else
-        disable_skill "defuddle"
     fi
 
     echo "Active skills: $(ls "$MERGED_SKILLS_DIR" | wc -l)"
@@ -222,7 +199,7 @@ Commands:
   all              Run the full setup. This is the default when no command is given.
   external-skills  Clone/update external skill repos and install skill CLIs.
   merge-skills     Link custom/external/Farside skills into merged-skills/.
-  skill-exclusions Disable skills that do not apply to this environment.
+  skill-exclusions Disable only explicitly excluded skills.
   link-skills      Link merged-skills/ into ~/.gemini, ~/.codex, and ~/.claude.
   skills           Run external-skills, merge-skills, skill-exclusions, and link-skills.
   configs          Link LLM CLI configs and install Codex/Claude hooks.

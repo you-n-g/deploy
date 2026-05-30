@@ -28,25 +28,31 @@ metadata:
 
 ## 执行步骤
 
-1. 每次唤醒都重新读取最新状态，不依赖上次结论。
-2. 用 Agent 判断状态：仍在运行就不打断；完成且 policy 允许才执行 continue/restart/follow-up；失败、资源不足、认证/额度问题、重复失败或需要人工选择时汇报原因。
-3. 如果本轮启动、重启或恢复了目标，必须先确认目标确实正常跑起来，再安排睡眠或下一次唤醒。确认方式至少包括重新 capture 元信息和最近输出；如果刚启动时容易短暂报错，就等待一个有界短窗口后复查，看到进程仍活着且没有等待输入、认证失败、配置失败、立即退出等信号，才进入监控睡眠。
-4. 对刚启动、重启、恢复，或用户提示“刚起来容易出错”的普通监控目标，下一次唤醒不要直接使用默认 `1800` 秒。先使用 warm-up cadence：`60s -> 120s -> 180s -> 240s -> 480s`；每次健康复查后进入下一个间隔，出现失败/卡住/等待输入就立即诊断处理。完成 warm-up 且目标仍健康运行后，再回到用户给定 interval；如果用户没给 interval，回到默认 `1800` 秒。用户明确指定更短间隔时，以用户指定为上限，不要把 warm-up 调长。
-5. 安排 warm-up 唤醒时，把当前阶段和下一阶段写进唤醒消息里，例如 `warm-up 2/5, next interval 120s`，这样下一次被唤醒时能延续递增节奏，而不是丢失状态后直接退回默认间隔。
-6. 只有目标未完成或后续动作未完成时，才安排下一次 one-shot 唤醒；不要写 `while true`、cron 或固定轮询守护进程。普通监控目标沿用用户给定 interval 或默认 interval，不要因为可能存在状态信号就擅自改成条件监控。
+1. 进入监控前先检查当前线程是否处于 active goal 模式；如果 `get_goal` 可用且返回 `status=active` 的 goal，不要安排 self-wakeup，也不要继续做周期性 watch。active goal 会自动续跑当前 Agent，和 timer watcher 叠加后会变成高频监督，快速消耗 token。此时只做一次必要的轻量状态读取并汇报“监控应等 goal 模式停止后再启动”；等用户停止/完成/阻塞该 goal 后，才重新进入本 skill 的周期监控流程。用户明确要求“忽略 goal 模式继续 watch”时，也必须提醒这会绕过低频间隔并显著增加 token 消耗。
+2. 每次唤醒都重新读取最新状态，不依赖上次结论。
+3. 用 Agent 判断状态：仍在运行就不打断；完成且 policy 允许才执行 continue/restart/follow-up；失败、资源不足、认证/额度问题、重复失败或需要人工选择时汇报原因。
+4. 如果本轮启动、重启或恢复了目标，必须先确认目标确实正常跑起来，再安排睡眠或下一次唤醒。确认方式至少包括重新 capture 元信息和最近输出；如果刚启动时容易短暂报错，就等待一个有界短窗口后复查，看到进程仍活着且没有等待输入、认证失败、配置失败、立即退出等信号，才进入监控睡眠。
+5. 对刚启动、重启、恢复，或用户提示“刚起来容易出错”的普通监控目标，下一次唤醒不要直接使用默认 `1800` 秒。先使用 warm-up cadence：`60s -> 120s -> 180s -> 240s -> 480s`；每次健康复查后进入下一个间隔，出现失败/卡住/等待输入就立即诊断处理。完成 warm-up 且目标仍健康运行后，再回到用户给定 interval；如果用户没给 interval，回到默认 `1800` 秒。用户明确指定更短间隔时，以用户指定为上限，不要把 warm-up 调长。
+6. 安排 warm-up 唤醒时，把当前阶段和下一阶段写进唤醒消息里，例如 `warm-up 2/5, next interval 120s`，这样下一次被唤醒时能延续递增节奏，而不是丢失状态后直接退回默认间隔。
+7. 只有目标未完成或后续动作未完成时，才安排下一次 one-shot 唤醒；不要写 `while true`、cron 或固定轮询守护进程。普通监控目标沿用用户给定 interval 或默认 interval，不要因为可能存在状态信号就擅自改成条件监控。
    如果目标是 Codex/Claude 等 AI window，且当前 `@ai_agent_running=1`，不要使用默认 `1800` 秒 timer；必须使用 AI idle 条件唤醒，一旦 `@ai_agent_running` 从 `1` 变成非 `1` 就立即唤醒 watcher。
    如果用户要等待 AI window 从 idle/等待输入状态变成 running（典型是 auto-switch 等用户提交 prompt 后继续调度），不要手写 `while` 轮询；使用 `schedule-wakeup.sh --mode ai-running`，一旦 `@ai_agent_running` 变成 `1` 就立即唤醒 watcher。
    AI 条件唤醒只监听单个目标。需要处理多个候选时，由上层 skill 在唤醒后重新扫描和排序，不要在 wakeup 里塞多目标调度逻辑。
    AI 条件唤醒的另一个终止条件是目标 pane/window 被关闭；目标消失也要唤醒 watcher，让 watcher 重新读取状态并执行后续策略。
-7. 如果本轮已经达到终止状态（例如目标 idle、要求的 review/check 已完成、且没有需要发回目标继续改的问题），直接向用户汇报并结束，不要安排 30 分钟复查。
-8. 安排唤醒后立刻验证 timer/condition watcher 确实存在；如果没有成功创建，立即报告，不要假装已经进入监控。
+8. 如果本轮已经达到终止状态（例如目标 idle、要求的 review/check 已完成、且没有需要发回目标继续改的问题），直接向用户汇报并结束，不要安排 30 分钟复查。
+9. 安排唤醒后立刻验证 timer/condition watcher 确实存在；如果没有成功创建，立即报告，不要假装已经进入监控。
 
 tmux pane 常用检查：
 
 ```bash
 tmux display-message -p -t '<target-pane>' '#S:#I.#{pane_index} cmd=#{pane_current_command} dead=#{pane_dead} active=#{pane_active} path=#{pane_current_path}'
-tmux capture-pane -t '<target-pane>' -p -S -200
+tmux capture-pane -t '<target-pane>' -p -S -200 | tail -n 80
 ```
+
+读取 tmux 输出时必须给最终输出再加一层 `tail -n <N>` 硬限制；不要只依赖
+`capture-pane -S -200` 这类参数。不同 pane 的 scrollback、wrapped line 或 TUI 内容会让
+`-S` 的实际输出远大于预期，导致监控 turn 消耗大量 token。默认只读最近 `80` 行；
+需要诊断失败时最多放宽到 `200` 行；只有用户明确要求完整历史时才读取更长输出。
 
 AI Agent tmux pane/window 额外检查：
 

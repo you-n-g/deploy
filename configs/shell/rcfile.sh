@@ -519,8 +519,7 @@ alias copier="uvx copier"
 # NOTE: ranger 直接通过 uvx 启动会有BUG(它依赖了一些非python的包？)
 # alias .r=". ranger"
 # alias ranger='if [ -n "$TMUX" ]; then prev_name=$(tmux display-message -p "#W"); tmux rename-window -t "$TMUX_PANE" ranger; command uvx --from ranger-fm ranger ; tmux rename-window -t "$TMUX_PANE" "$prev_name"; else command ranger; fi'  # if inside tmux, rename to 'ranger', run it, then restore name
-alias ranger='if [ -n "$TMUX" ]; then prev_name=$(tmux display-message -p "#W"); tmux rename-window -t "$TMUX_PANE" ranger-$(basename "$PWD"
-); command ranger ; tmux rename-window -t "$TMUX_PANE" "$prev_name"; else command ranger; fi'  # if inside tmux, rename to 'ranger', run it, then restore name
+alias ranger='if [ -n "$TMUX" ]; then prev_name=$(tmux display-message -p "#W"); tmux rename-window -t "$TMUX_PANE" " $(basename "$PWD")"; command ranger; tmux rename-window -t "$TMUX_PANE" "$prev_name"; else command ranger; fi'  # if inside tmux, rename to 'ranger', run it, then restore name
 # 其他
 # -快捷键篇
 #   - r: 可以open_with调用当前文件，1是less/pager

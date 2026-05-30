@@ -99,10 +99,12 @@ tmux send-keys -t "$TARGET" Enter
 orchestrator 通过 tmux capture 观察其它 Agent：
 
 ```bash
-tmux capture-pane -t "$TARGET" -p -S -3000
+tmux capture-pane -t "$TARGET" -p -S -3000 | tail -n 200
 tmux list-windows -t "$CURRENT_SESSION" -F '#S:#I #W active=#{window_active}'
 tmux list-panes -t "$CURRENT_SESSION" -a -F '#S:#I.#{pane_index} #{window_name} #{pane_current_path} #{pane_current_command}'
 ```
+
+读取 pane 输出时必须在 `capture-pane` 后再接一层 `tail -n <N>`。`-S -3000` 表示从 scrollback 的某个起点开始截取，不是最终输出行数上限；遇到 TUI、自动换行或长 scrollback 时，实际输出仍可能远超预期。默认状态检查用 `tail -n 80` 到 `tail -n 200`，只有明确需要完整历史时才放宽。
 
 window 名称是重要语义来源，应在报告和调度记录中保留。需要等待多个 Agent 完成时，orchestrator 可以周期性 capture 它们的输出，而不是要求它们写到同一个共享文件。
 

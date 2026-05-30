@@ -1,55 +1,55 @@
-#!/usr/bin/env -S uv run --no-project --with libtmux python
-import libtmux
+#!/usr/bin/env python3
 import subprocess
+import sys
 
-# Temporary storage for pane contents.
-rows = []
 
-# Initialize the server
-server = libtmux.Server()
+def tmux_output(*args: str) -> str:
+    return subprocess.run(
+        ["tmux", *args],
+        check=True,
+        stdout=subprocess.PIPE,
+        text=True,
+    ).stdout
 
-# Iterate over each session
-for session in server.sessions:
-    # Iterate over each window in the session
-    for window in session.windows:
-        # Iterate over each pane in the window
-        for pane in window.panes:
-            # Capture the content of the pane
-            pane_content = pane.capture_pane()
-            pane_id = f'{session.name}:{window.index}.{pane.index}'
 
-            for line in pane_content:
-                text = line.rstrip()
-                if text:
-                    rows.append((pane_id, text))
+rows: list[str] = []
+panes = tmux_output(
+    "list-panes",
+    "-a",
+    "-F",
+    "#{pane_id}\t#{session_name}:#{window_index}.#{pane_index}\t#{window_name}",
+)
 
-# Use fzf to select a line and get the corresponding pane identifier.
-fzf_input = '\n'.join(f'{pane_id}\t{text}' for pane_id, text in rows)
+for pane_row in panes.splitlines():
+    pane_id, pane_target, window_name = pane_row.split("\t", 2)
+    content = tmux_output("capture-pane", "-p", "-t", pane_id)
+    for line in content.splitlines():
+        text = line.rstrip()
+        if text:
+            rows.append(f"{pane_id}\t{pane_target}\t{window_name}\t{text}")
+
 try:
-    selected_content = subprocess.check_output(
+    selected = subprocess.run(
         [
-            'fzf',
-            '--delimiter', '\t',
-            '--with-nth', '2..',
-            '--preview', 'tmux capture-pane -ept {1} | perl -0777 -pe "s/\\s+\\z/\\n/"',
-            '--preview-window', 'right:60%,follow',
+            "fzf",
+            "--delimiter",
+            "\t",
+            "--with-nth",
+            "2..",
+            "--preview",
+            'tmux capture-pane -ept {1} | perl -0777 -pe "s/\\s+\\z/\\n/"',
+            "--preview-window",
+            "right:60%,follow",
         ],
-        input=fzf_input.encode(),
-    ).decode().rstrip()
-except subprocess.CalledProcessError:
-    exit(1)
+        input="\n".join(rows),
+        check=True,
+        stdout=subprocess.PIPE,
+        text=True,
+    ).stdout.rstrip("\n")
+except subprocess.CalledProcessError as exc:
+    sys.exit(exc.returncode)
 
-selected_pane = selected_content.split('\t', 1)[0] if selected_content else ''
-
-print(repr(selected_pane))
-
-# # Jump to the selected pane
+selected_pane = selected.split("\t", 1)[0] if selected else ""
 if selected_pane:
-    session_name, window_pane = selected_pane.split(':')
-    window_index, pane_index = map(int, window_pane.split('.'))
-    session = server.sessions.get(session_name=session_name)  # find the session
-    window = session.windows[window_index]
-    pane = window.panes[pane_index]
-    server.switch_client(session_name)  # switch to the session
-    window.select()  # select the window
-    pane.select()  # select the pane
+    subprocess.run(["tmux", "switch-client", "-t", selected_pane], check=True)
+    subprocess.run(["tmux", "select-pane", "-t", selected_pane], check=True)
