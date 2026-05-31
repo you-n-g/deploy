@@ -48,6 +48,10 @@ button_row() {
   done
 }
 
+click_only() {
+  printf '#[underscore]%s#[nounderscore]' "$1"
+}
+
 compact_buttons="$(
   button_row \
     sb_g ' g ' \
@@ -57,7 +61,8 @@ compact_buttons="$(
     sb_as 'C-m' \
     sb_a ' a ' \
     sb_cc 'C-c' \
-    sb_more '>>>'
+    sb_d "$(click_only ' D ')" \
+    sb_more "$(click_only '>>>')"
 )"
 expanded_buttons="$(
   button_row \
@@ -68,17 +73,18 @@ expanded_buttons="$(
     sb_as 'C-m' \
     sb_a ' a ' \
     sb_cc 'C-c' \
+    sb_d "$(click_only ' D ')" \
     sb_k ' k ' \
     sb_l ' l ' \
-    sb_s ' S ' \
+    sb_s "$(click_only ' S ')" \
     sb_pd 'M-p' \
-    sb_p70 '#{?#{==:#{@pane_focus_percent},80},80*,#{?#{||:#{==:#{@pane_focus_percent},70},#{==:#{@pane_focus_70},1}},70*,70%}}' \
+    sb_p70 "$(click_only '#{?#{==:#{@pane_focus_percent},80},80*,#{?#{||:#{==:#{@pane_focus_percent},70},#{==:#{@pane_focus_70},1}},70*,70%}}')" \
     sb_t ' t ' \
     sb_ct 'C-t' \
-    sb_kp 'K-p' \
-    sb_ks 'K-s' \
+    sb_kp "$(click_only 'K-p')" \
+    sb_ks "$(click_only 'K-s')" \
     sb_mf 'M-f' \
-    sb_less '<<<'
+    sb_less "$(click_only '<<<')"
 )"
 tmux set-option -g @status-buttons-compact "$compact_buttons"
 tmux set-option -g @status-buttons-full "$expanded_buttons"

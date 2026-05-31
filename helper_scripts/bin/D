@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+AI_TOOL="$(tmux show-environment -g TMUX_AI_TOOL 2>/dev/null | sed 's/^TMUX_AI_TOOL=//' || true)"
+case "$AI_TOOL" in
+    claude) TOOL_CMD="clauder" ;;
+    *)      TOOL_CMD="codexr" ;;
+esac
+
+"$HOME/deploy/configs/tmux/ai/ensure_global_ai_window.sh" \
+    --cmd "$TOOL_CMD" --window-name diary "${1:-learn}"

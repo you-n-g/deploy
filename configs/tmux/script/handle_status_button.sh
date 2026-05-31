@@ -92,6 +92,9 @@ case "$button" in
   sb_cc)
     tmux run-shell -b "~/deploy/helper_scripts/bin/c"
     ;;
+  sb_d)
+    tmux run-shell -b "~/deploy/helper_scripts/bin/D"
+    ;;
   *)
     tmux display-message "Unknown status button: ${button}"
     ;;
