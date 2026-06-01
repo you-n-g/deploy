@@ -164,12 +164,28 @@ return {
       -- },
       enable_block = true,
       default_tmux_target = function()
+        local function to_tmux_uri(target)
+          if target:match("^tmux://") then
+            return target
+          end
+
+          if target:find(":", 1, true) then
+            return "tmux://" .. target
+          end
+
+          local session, rest = target:match("^([^.]+)%.(.+)$")
+          if not session then
+            error("Expected tmux target as session:window[.pane] or session.window[.pane], got: " .. target)
+          end
+          return string.format("tmux://%s:%s", session, rest)
+        end
+
         local script = vim.fn.expand("~/deploy/configs/tmux/ai/get_ai_pane.sh")
         local target = vim.fn.system(script):gsub("%s+", "")
         if vim.v.shell_error ~= 0 or target == "" then
-          target = "{current}.gemini"
+          target = "{current}:gemini"
         end
-        return string.format("T:%s", target)
+        return to_tmux_uri(target)
       end,
     },
   },
