@@ -161,6 +161,23 @@ local function extract_file_line_ref()
   return raw_file, nil, nil, nil, nil
 end
 
+local function open_tmux_link_with_navigate_note()
+  local current_line = vim.api.nvim_get_current_line()
+  local ok_utils, nav_utils = pcall(require, "navigate-note.utils")
+  if not ok_utils or not nav_utils.is_tmux(current_line) then
+    return false
+  end
+
+  local ok_tmux, nav_tmux = pcall(require, "navigate-note.tmux")
+  if not ok_tmux then
+    vim.notify("navigate-note tmux module is not available", vim.log.levels.ERROR)
+    return true
+  end
+
+  nav_tmux.switch_to_tmux()
+  return true
+end
+
 local function flash_text_range(buf, line, start_col, end_col, duration_ms)
   duration_ms = duration_ms or 900
   ensure_jump_highlights()
@@ -295,6 +312,10 @@ vim.api.nvim_create_autocmd("TermOpen", {
 
 
 function M.open_file_in_largest_non_terminal_win(force)
+  if open_tmux_link_with_navigate_note() then
+    return
+  end
+
   local largest_win = M.get_largest_non_terminal_win()
   -- Attempt to extract a file path and line number from the surrounding text
   local line = nil
@@ -327,6 +348,10 @@ end
 
 -- Normal mode gf: open file under cursor with optional line number extraction
 function M.open_file_with_line_in_normal()
+  if open_tmux_link_with_navigate_note() then
+    return
+  end
+
   local extracted_file, start_line, end_line, match_start, match_end = extract_file_line_ref()
   local file = M.normalize_path_for_edit(extracted_file)
   if file == "" then
