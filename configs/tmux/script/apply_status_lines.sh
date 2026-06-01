@@ -62,6 +62,7 @@ compact_buttons="$(
     sb_a ' a ' \
     sb_cc 'C-c' \
     sb_d "$(click_only ' D ')" \
+    sb_n "$(click_only ' N ')" \
     sb_more "$(click_only '>>>')"
 )"
 expanded_buttons="$(
@@ -74,6 +75,7 @@ expanded_buttons="$(
     sb_a ' a ' \
     sb_cc 'C-c' \
     sb_d "$(click_only ' D ')" \
+    sb_n "$(click_only ' N ')" \
     sb_k ' k ' \
     sb_l ' l ' \
     sb_s "$(click_only ' S ')" \

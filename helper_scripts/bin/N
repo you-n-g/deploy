@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+AI_TOOL="$(tmux show-environment -g TMUX_AI_TOOL | sed 's/^TMUX_AI_TOOL=//')"
+case "$AI_TOOL" in
+    codex)  TOOL_CMD="codexr" ;;
+    claude) TOOL_CMD="clauder" ;;
+    *) echo "Unsupported TMUX_AI_TOOL: $AI_TOOL" >&2; exit 1 ;;
+esac
+
+"$HOME/deploy/configs/tmux/ai/ensure_global_ai_window.sh" \
+    --cmd "$TOOL_CMD" --window-name news "${1:-learn}"
