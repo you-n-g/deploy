@@ -95,12 +95,27 @@ case "$ai_name" in
         cmd="clauder --resume --fork-session"
         ;;
     codex)
-        # Codex session file path: .codex/sessions/YYYY/MM/DD/rollout-...-<UUID>.jsonl
-        # Use lsof (macOS) to find the open session file, then extract the UUID.
-        session_id=$(lsof -p "$ai_pid" 2>/dev/null \
-            | awk '{print $NF}' \
-            | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
-            | head -1)
+        # Codex session file path:
+        # .codex/sessions/YYYY/MM/DD/rollout-...-<UUID>.jsonl
+        # Prefer /proc on Linux. lsof can block on some processes/filesystems,
+        # so keep it as a short fallback for platforms without /proc fd links.
+        session_id=""
+        if [[ -d "/proc/$ai_pid/fd" ]]; then
+            session_id=$(find "/proc/$ai_pid/fd" -maxdepth 1 -type l -printf '%l\n' 2>/dev/null \
+                | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+                | head -1 || true)
+        fi
+        if [[ -z "$session_id" ]] && command -v lsof >/dev/null 2>&1; then
+            if command -v timeout >/dev/null 2>&1; then
+                lsof_output=$(timeout 3 lsof -p "$ai_pid" 2>/dev/null || true)
+            else
+                lsof_output=$(lsof -p "$ai_pid" 2>/dev/null || true)
+            fi
+            session_id=$(printf '%s\n' "$lsof_output" \
+                | awk '{print $NF}' \
+                | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+                | head -1 || true)
+        fi
         if [[ -n "$session_id" ]]; then
             cmd="codexr fork '$session_id'"
         else

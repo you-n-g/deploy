@@ -4,6 +4,11 @@ vim.api.nvim_set_hl(0, "MarkdownReviewBugMarker", { fg = "#FF6B6B", bold = true 
 vim.api.nvim_set_hl(0, "MarkdownSearchMarker", { fg = "#FF79C6", bold = true })
 
 local buf = vim.api.nvim_get_current_buf()
+
+if vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ":t") == "PLAN.md" then
+  vim.diagnostic.enable(false, { bufnr = buf })
+end
+
 local group = vim.api.nvim_create_augroup("markdown-explain-markers-" .. buf, { clear = true })
 
 local function add_matches()
