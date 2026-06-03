@@ -128,6 +128,45 @@ sync_ai_window_name() {
   [ "$current_name" = "$desired_name" ] || tmux rename-window -t "$window_id" "$desired_name"
 }
 
+notify_orchestrator_on_idle() {
+  local session_name pane_target source_window_name source_base_name orchestrator_window_id orchestrator_pane_id
+  local prompt_text buffer_name activity notified_activity
+
+  session_name="$(tmux display-message -p -t "$pane_id" '#{session_name}')"
+  pane_target="$(tmux display-message -p -t "$pane_id" '#{session_name}:#{window_index}.#{pane_index}')"
+  source_window_name="$(tmux display-message -p -t "$window_id" '#W')"
+  source_base_name="$(_strip_ai_window_state_prefix "$source_window_name")"
+  activity="$(tmux display-message -p -t "$pane_id" '#{window_activity}')"
+  notified_activity="$(tmux show -pv -t "$pane_id" @ai_agent_orchestrator_idle_notified_activity 2>/dev/null || true)"
+
+  [ "$source_base_name" != "orchestrator" ] || return 0
+  [ "$activity" != "$notified_activity" ] || return 0
+
+  orchestrator_window_id=""
+  while IFS='	' read -r window_row_id window_row_name; do
+    [ -n "$window_row_id" ] || continue
+    if [ "$(_strip_ai_window_state_prefix "$window_row_name")" = "orchestrator" ]; then
+      orchestrator_window_id="$window_row_id"
+      break
+    fi
+  done < <(tmux list-windows -t "$session_name" -F '#{window_id}	#{window_name}' 2>/dev/null || true)
+
+  [ -n "$orchestrator_window_id" ] || return 0
+
+  orchestrator_pane_id="$(_find_ai_pane_in_window "$orchestrator_window_id" 2>/dev/null || true)"
+  [ -n "$orchestrator_pane_id" ] || return 0
+  [ "$orchestrator_pane_id" != "$pane_id" ] || return 0
+
+  prompt_text="请关注这个 TMA：${pane_target}（${source_base_name}）已经停下来并有新的更新。请 capture 这个 pane，判断是否需要继续协调或汇总。"
+  buffer_name="tma-idle-notify-${pane_id#%}"
+  tmux set-buffer -b "$buffer_name" "$prompt_text"
+  tmux paste-buffer -b "$buffer_name" -t "$orchestrator_pane_id"
+  sleep 0.2
+  tmux send-keys -t "$orchestrator_pane_id" Enter
+  tmux delete-buffer -b "$buffer_name" 2>/dev/null || true
+  tmux set-option -pq -t "$pane_id" @ai_agent_orchestrator_idle_notified_activity "$activity"
+}
+
 case "$state" in
   init)
     reset_ai_agent_attribute
@@ -141,6 +180,7 @@ case "$state" in
     was_pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
     tmux set-option -pq -t "$pane_id" @ai_agent_running 1
     tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
+    tmux set-option -pqu -t "$pane_id" @ai_agent_orchestrator_idle_notified_activity 2>/dev/null || true
     # User preference: generate a pane attribute only once and keep it stable
     # across later prompts. Do not reset it on UserPromptSubmit.
     ensure_ai_agent_attribute
@@ -169,6 +209,7 @@ case "$state" in
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
     fi
     ensure_ai_agent_attribute
+    notify_orchestrator_on_idle
     ;;
   visit)
     if is_live_ai_pane; then
