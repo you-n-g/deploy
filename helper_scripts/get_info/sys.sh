@@ -92,7 +92,7 @@ get_port_info() {
 }
 
 
-# get_cpustat: container-aware CPU usage + capacity from cgroup v2.
+# get_container_cpu_info: container-aware CPU usage + capacity from cgroup v2.
 #
 # `nproc` / `lscpu` show the host topology, which is misleading inside a
 # cgroup-limited container — they return the bare metal count, not the slice
@@ -113,7 +113,7 @@ get_port_info() {
 #                                                  the brake (~ PSI full > 0)
 #
 # Optional arg: $1 = sample window in seconds (default 1).
-get_cpustat() {
+get_container_cpu_info() {
   local secs="${1:-1}"
   if [ ! -r /sys/fs/cgroup/cpu.max ]; then
     echo "cgroup v2 cpu.max not readable (legacy cgroup v1 or non-Linux?)" >&2
