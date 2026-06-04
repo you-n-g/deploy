@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage:
+  codex-remote [options] SSH_TARGET [SSH_LOGIN_OPTIONS...]
+
+Run Codex locally while using a Codex app-server on a remote SSH host.
+The local TUI starts with --dangerously-bypass-approvals-and-sandbox by default.
+
+Options:
+  -C, --remote-cwd DIR       cd to DIR on the remote host before starting Codex
+      --local-port PORT      local forwarded port (default: pick a free port)
+      --remote-port PORT     remote app-server port (default: 4500)
+      --codex-bin CMD        local Codex command (default: $CODEX_BIN or codex)
+      --remote-codex-bin CMD remote Codex command (default: $REMOTE_CODEX_BIN or codex)
+      --timeout SECONDS      wait for the remote app-server to become reachable (default: 20)
+  -h, --help                 show this help
+
+Examples:
+  codex-remote -C /data/repo devbox
+  codex-remote -C /data/repo user@10.0.0.8 -p 2222 -i ~/.ssh/id_ed25519
+  codex-remote --local-port 4500 --remote-port 4500 devbox -J jumpbox
+
+Notes:
+  SSH_LOGIN_OPTIONS are passed to ssh before SSH_TARGET, so options such as
+  -p, -i, -J, -F, and -o work even though they appear after SSH_TARGET here.
+EOF
+}
+
+die() {
+    echo "codex-remote: $*" >&2
+    exit 1
+}
+
+need_arg() {
+    local opt="$1"
+    local value="${2:-}"
+    [[ -n "$value" ]] || die "$opt requires an argument"
+}
+
+pick_free_port() {
+    command -v python3 >/dev/null 2>&1 || die "python3 is required to pick a free local port; pass --local-port to avoid this"
+    python3 - <<'PY'
+import socket
+
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.bind(("127.0.0.1", 0))
+    print(s.getsockname()[1])
+PY
+}
+
+shell_quote() {
+    printf "'%s'" "$(printf "%s" "$1" | sed "s/'/'\\\\''/g")"
+}
+
+remote_cwd=""
+local_port=""
+remote_port="4500"
+codex_bin="${CODEX_BIN:-codex}"
+remote_codex_bin="${REMOTE_CODEX_BIN:-codex}"
+connect_timeout="20"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -C|--remote-cwd)
+            need_arg "$1" "${2:-}"
+            remote_cwd="$2"
+            shift 2
+            ;;
+        --local-port)
+            need_arg "$1" "${2:-}"
+            local_port="$2"
+            shift 2
+            ;;
+        --remote-port)
+            need_arg "$1" "${2:-}"
+            remote_port="$2"
+            shift 2
+            ;;
+        --codex-bin)
+            need_arg "$1" "${2:-}"
+            codex_bin="$2"
+            shift 2
+            ;;
+        --remote-codex-bin)
+            need_arg "$1" "${2:-}"
+            remote_codex_bin="$2"
+            shift 2
+            ;;
+        --timeout)
+            need_arg "$1" "${2:-}"
+            connect_timeout="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -*)
+            die "unknown option before SSH_TARGET: $1"
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+[[ $# -ge 1 ]] || {
+    usage >&2
+    exit 1
+}
+
+ssh_target="$1"
+shift
+ssh_args=("$@")
+
+command -v ssh >/dev/null 2>&1 || die "ssh is not available"
+command -v "$codex_bin" >/dev/null 2>&1 || die "local Codex command not found: $codex_bin"
+
+[[ "$remote_port" =~ ^[0-9]+$ ]] || die "--remote-port must be numeric: $remote_port"
+[[ "$connect_timeout" =~ ^[0-9]+$ ]] || die "--timeout must be numeric: $connect_timeout"
+
+if [[ -z "$local_port" ]]; then
+    local_port="$(pick_free_port)"
+fi
+[[ "$local_port" =~ ^[0-9]+$ ]] || die "--local-port must be numeric: $local_port"
+
+remote_listen="ws://127.0.0.1:${remote_port}"
+remote_cmd="exec $(shell_quote "$remote_codex_bin") app-server --listen $(shell_quote "$remote_listen")"
+if [[ -n "$remote_cwd" ]]; then
+    remote_cmd="cd $(shell_quote "$remote_cwd") && $remote_cmd"
+fi
+
+log_file="$(mktemp -t codex-remote.XXXXXX.log)"
+ssh_pid=""
+
+cleanup() {
+    if [[ -n "$ssh_pid" ]] && kill -0 "$ssh_pid" 2>/dev/null; then
+        kill "$ssh_pid" 2>/dev/null || true
+        wait "$ssh_pid" 2>/dev/null || true
+    fi
+    rm -f "$log_file"
+}
+trap cleanup EXIT INT TERM
+
+ssh -L "${local_port}:127.0.0.1:${remote_port}" "${ssh_args[@]}" "$ssh_target" "$remote_cmd" >"$log_file" 2>&1 &
+ssh_pid="$!"
+
+deadline=$((SECONDS + connect_timeout))
+while ! bash -c "</dev/tcp/127.0.0.1/${local_port}" >/dev/null 2>&1; do
+    if ! kill -0 "$ssh_pid" 2>/dev/null; then
+        echo "codex-remote: ssh/app-server process exited before the port became reachable" >&2
+        cat "$log_file" >&2
+        exit 1
+    fi
+    if (( SECONDS >= deadline )); then
+        echo "codex-remote: timed out waiting for ws://127.0.0.1:${local_port}" >&2
+        cat "$log_file" >&2
+        exit 1
+    fi
+    sleep 0.2
+done
+
+echo "codex-remote: connected $ssh_target -> ws://127.0.0.1:${local_port}" >&2
+"$codex_bin" --dangerously-bypass-approvals-and-sandbox --remote "ws://127.0.0.1:${local_port}"

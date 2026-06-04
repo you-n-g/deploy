@@ -2,6 +2,7 @@
 # Shared helpers for AI window detection
 
 AI_PROC_PAT='(^|/)(claude|gemini|codex)$'
+TMUXG_SHOW_ORCHESTRATOR_OPTION="@tmuxg-show-orchestrator"
 _AI_FZF_PREVIEW_HEIGHT=85%  # fzf preview-window height for AI-window selectors
 _AI_FZF_SESSION_COLOR_CODES=(31 32 33 34 35 36 91 92 93 94 95 96)
 _ai_fzf_session_color_names=()
@@ -118,6 +119,61 @@ _strip_ai_window_state_prefix() {
     done
 
     printf '%s\n' "$name"
+}
+
+_tmuxg_show_orchestrator_enabled() {
+    local value
+
+    value="$(tmux show-options -gqv "$TMUXG_SHOW_ORCHESTRATOR_OPTION" 2>/dev/null || true)"
+    case "$value" in
+        ""|1|on|true|yes) return 0 ;;
+        0|off|false|no) return 1 ;;
+        *)
+            echo "Invalid ${TMUXG_SHOW_ORCHESTRATOR_OPTION}: ${value}" >&2
+            exit 1
+            ;;
+    esac
+}
+
+_tmuxg_orchestrator_visibility_label() {
+    if _tmuxg_show_orchestrator_enabled; then
+        printf 'show\n'
+    else
+        printf 'hide\n'
+    fi
+}
+
+_tmuxg_toggle_orchestrator_visibility() {
+    local next label script_dir session
+
+    if _tmuxg_show_orchestrator_enabled; then
+        next=0
+        label=hidden
+    else
+        next=1
+        label=shown
+    fi
+
+    tmux set-option -gq "$TMUXG_SHOW_ORCHESTRATOR_OPTION" "$next"
+    tmux display-message "tmuxg orchestrator: ${label}"
+    script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+    session="$(tmux display-message -p '#{session_name}' 2>/dev/null || true)"
+    if [[ -n "$session" ]]; then
+        "$script_dir/../script/refresh_status_lines.sh" "$session" >/dev/null 2>&1 || true
+    fi
+}
+
+_tmuxg_filter_orchestrator_rows() {
+    if _tmuxg_show_orchestrator_enabled; then
+        cat
+        return
+    fi
+
+    while IFS=$'\t' read -r last_visit sess_win wname pane_id pane_pid wact_raw unread running background attribute; do
+        [[ "$(_strip_ai_window_state_prefix "$wname")" == "orchestrator" ]] && continue
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+            "$last_visit" "$sess_win" "$wname" "$pane_id" "$pane_pid" "$wact_raw" "$unread" "$running" "$background" "$attribute"
+    done
 }
 
 _clear_ai_pane_state() {

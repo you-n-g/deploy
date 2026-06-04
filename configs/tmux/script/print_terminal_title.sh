@@ -74,6 +74,11 @@ case "$max_items" in
 esac
 
 if rows="$(_ai_pane_rows -a)" && [ -n "$rows" ]; then
+  rows="$(printf '%s\n' "$rows" | _tmuxg_filter_orchestrator_rows)"
+  [ -n "$rows" ] || rows=""
+fi
+
+if [ -n "${rows:-}" ]; then
   count=0
   title=""
   current_row=""

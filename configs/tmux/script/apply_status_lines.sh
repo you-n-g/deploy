@@ -5,6 +5,9 @@ set -eu
 tmux set-option -g @status-window-second-line-reserve auto
 tmux set-option -g @status-non-window-fixed-right-width 61
 tmux set-option -g @status-ai-window-summary-count 6
+if [ -z "$(tmux show-options -gqv @tmuxg-show-orchestrator 2>/dev/null)" ]; then
+  tmux set-option -g @tmuxg-show-orchestrator 1
+fi
 if [ -z "$(tmux show-options -gqv @status-buttons-expanded 2>/dev/null)" ]; then
   tmux set-option -g @status-buttons-expanded 0
 fi

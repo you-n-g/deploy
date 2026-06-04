@@ -43,16 +43,19 @@ fi
 running=0
 background=0
 waiting=0
-while IFS='|' read -r pane_pid pane_running pane_background pane_unread; do
-  _has_ai_proc "$pane_pid" "$ps_cache" || continue
-  if [ "$pane_background" = "1" ]; then
-    background=$((background + 1))
-  elif [ "$pane_running" = "1" ]; then
-    running=$((running + 1))
-  elif [ "$pane_unread" = "1" ]; then
-    waiting=$((waiting + 1))
-  fi
-done < <(tmux list-panes -a -F '#{pane_pid}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_unread}')
+if rows="$(_ai_pane_rows -a)" && [ -n "$rows" ]; then
+  rows="$(printf '%s\n' "$rows" | _tmuxg_filter_orchestrator_rows)"
+  while IFS=$'\t' read -r _last_visit _pane_target _window_name _pane_id _pane_pid _activity_epoch pane_unread pane_running pane_background _attribute; do
+    [ -n "$_pane_target" ] || continue
+    if [ "$pane_background" = "1" ]; then
+      background=$((background + 1))
+    elif [ "$pane_running" = "1" ]; then
+      running=$((running + 1))
+    elif [ "$pane_unread" = "1" ]; then
+      waiting=$((waiting + 1))
+    fi
+  done <<< "$rows"
+fi
 
 parts=()
 [ "$running" -gt 0 ] && parts+=("$running")

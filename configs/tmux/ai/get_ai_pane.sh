@@ -7,6 +7,7 @@
 # -i: return pane_id instead of session.window.pane
 # -a: list ALL AI panes (one per line), skip interactive selection
 # -A: scan across all tmux sessions (ignores [session_name])
+# Ctrl-O in the fzf picker toggles whether the orchestrator window is shown.
 #
 # Exit codes:
 #   0  success (pane found/selected)
@@ -44,11 +45,16 @@ _output_pane() {
 }
 
 _get_ai_pane_rows() {
+    local rows
+
     if [[ "$ALL_SESSIONS" == true ]]; then
-        _ai_pane_rows -a
+        rows="$(_ai_pane_rows -a)" || return 1
     else
-        _ai_pane_rows -s -t "$SESSION"
+        rows="$(_ai_pane_rows -s -t "$SESSION")" || return 1
     fi
+
+    [[ -n "$rows" ]] || return 0
+    printf '%s\n' "$rows" | _tmuxg_filter_orchestrator_rows
 }
 
 _get_fzf_list() {
@@ -82,6 +88,12 @@ _switcher_header_info() {
     else
         printf '%s\n' "$pane_id"
     fi
+}
+
+_fzf_header() {
+    printf '▶ current pane busy  ➲ current Claude background  ◒ Claude background  ▷ current pane idle  ● busy  ◉ unread  ○ idle  |  orchestrator: %s  |  switcher: %s  |  Enter switch  Ctrl-R reset desc  Ctrl-O toggle orchestrator\n' \
+        "$(_tmuxg_orchestrator_visibility_label)" \
+        "$(_switcher_header_info)"
 }
 
 _reset_pane_attribute() {
@@ -125,6 +137,14 @@ while [[ "$1" == -* ]]; do
             fi
             _reset_pane_attribute "$2"
             exit $?
+            ;;
+        --fzf-header)
+            _fzf_header
+            exit 0
+            ;;
+        --toggle-orchestrator-visibility)
+            _tmuxg_toggle_orchestrator_visibility
+            exit 0
             ;;
         *)  shift ;;
     esac
@@ -175,7 +195,10 @@ else
     printf -v RELOAD_BIND_CMD '%q --fzf-list %q' "$SCRIPT_DIR/get_ai_pane.sh" "$SESSION"
 fi
 RESET_ATTRIBUTE_BIND="ctrl-r:execute-silent($RESET_BIND_CMD)+reload($RELOAD_BIND_CMD)+refresh-preview"
-HEADER="▶ current pane busy  ➲ current Claude background  ◒ Claude background  ▷ current pane idle  ● busy  ◉ unread  ○ idle  |  switcher: $(_switcher_header_info)  |  Enter switch  Ctrl-R reset desc"
+printf -v TOGGLE_ORCHESTRATOR_BIND_CMD '%q --toggle-orchestrator-visibility' "$SCRIPT_DIR/get_ai_pane.sh"
+printf -v FZF_HEADER_CMD '%q --fzf-header' "$SCRIPT_DIR/get_ai_pane.sh"
+TOGGLE_ORCHESTRATOR_BIND="ctrl-o:execute-silent($TOGGLE_ORCHESTRATOR_BIND_CMD)+reload($RELOAD_BIND_CMD)+transform-header($FZF_HEADER_CMD)+refresh-preview"
+HEADER="$(_fzf_header)"
 printf -v HEADER_ARG '%q' "$HEADER"
 
 START_POS=$(
@@ -205,6 +228,7 @@ if [[ -t 0 ]]; then
         --with-nth '2..' \
         --header "$HEADER" \
         --bind "$RESET_ATTRIBUTE_BIND" \
+        --bind "$TOGGLE_ORCHESTRATOR_BIND" \
         --preview 'tmux capture-pane -ept {1} | perl -0777 -pe "s/\s+\z/\n/"' \
         --preview-window "up:${_AI_FZF_PREVIEW_HEIGHT},follow" < "$LISTFILE")
 else
@@ -219,6 +243,7 @@ else
             --with-nth '2..' \
             --header $HEADER_ARG \
             --bind '$RESET_ATTRIBUTE_BIND' \
+            --bind '$TOGGLE_ORCHESTRATOR_BIND' \
             --preview 'tmux capture-pane -ept {1} | perl -0777 -pe \"s/\s+\z/\n/\"' \
             --preview-window 'up:${_AI_FZF_PREVIEW_HEIGHT},follow' < '$LISTFILE' > '$RESULTFILE'"
 
