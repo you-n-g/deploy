@@ -91,4 +91,58 @@ get_port_info() {
   fi
 }
 
+
+# get_cpustat: container-aware CPU usage + capacity from cgroup v2.
+#
+# `nproc` / `lscpu` show the host topology, which is misleading inside a
+# cgroup-limited container — they return the bare metal count, not the slice
+# the container is actually allowed to burn. This reads /sys/fs/cgroup/cpu.max
+# (the cfs quota), samples cpu.stat over $1 seconds (default 1) for live
+# usage, and reports cpu.pressure (PSI) so you can tell whether the cgroup
+# is throttling you.
+#
+# Output one line:
+#   cpu: <used>/<quota> CPU (<pct>)  PSI some/full(10s): <s>% / <f>%  throttled: <n>
+#
+# Reading guide:
+#   - <used> close to <quota> AND PSI some > 0   → quota saturated, more
+#                                                  parallelism won't help
+#   - PSI full > 0                                → all in-cgroup tasks are
+#                                                  stalled on CPU at once
+#   - throttled climbing across calls             → cgroup actively pressing
+#                                                  the brake (~ PSI full > 0)
+#
+# Optional arg: $1 = sample window in seconds (default 1).
+get_cpustat() {
+  local secs="${1:-1}"
+  if [ ! -r /sys/fs/cgroup/cpu.max ]; then
+    echo "cgroup v2 cpu.max not readable (legacy cgroup v1 or non-Linux?)" >&2
+    return 1
+  fi
+  local q p qcpu u0 u1 cpu_eq pct s10 f10 nthr
+  read q p < /sys/fs/cgroup/cpu.max
+  if [ "$q" = max ]; then
+    qcpu="∞"
+  else
+    qcpu=$(awk -v q="$q" -v p="$p" 'BEGIN{printf "%g", q/p}')
+  fi
+  u0=$(awk '/^usage_usec/{print $2}' /sys/fs/cgroup/cpu.stat)
+  sleep "$secs"
+  u1=$(awk '/^usage_usec/{print $2}' /sys/fs/cgroup/cpu.stat)
+  cpu_eq=$(awk -v a="$u0" -v b="$u1" -v t="$secs" \
+            'BEGIN{printf "%.2f", (b-a)/1e6/t}')
+  if [ "$qcpu" = "∞" ]; then
+    pct="-"
+  else
+    pct=$(awk -v c="$cpu_eq" -v q="$qcpu" \
+            'BEGIN{printf "%.0f%%", c/q*100}')
+  fi
+  s10=$(grep ^some /sys/fs/cgroup/cpu.pressure | grep -oE 'avg10=[0-9.]+' | cut -d= -f2)
+  f10=$(grep ^full /sys/fs/cgroup/cpu.pressure | grep -oE 'avg10=[0-9.]+' | cut -d= -f2)
+  nthr=$(awk '/^nr_throttled/{print $2}' /sys/fs/cgroup/cpu.stat)
+  printf 'cpu: %s/%s CPU (%s)  PSI some/full(10s): %s%% / %s%%  throttled: %s\n' \
+    "$cpu_eq" "$qcpu" "$pct" "$s10" "$f10" "$nthr"
+}
+
+
 $1
