@@ -169,7 +169,7 @@ current_user_pane() {
 emit_ai_agent_event() {
   local event_state="$1" seq event_time client_pane
 
-  # Publish a small event record for auto-switch/scripts/wait-submit.sh.
+  # Publish a small event record for auto-switch waiters.
   # "User" here means the interactive tmux client pane that was most recently
   # active among non-readonly, non-control clients, not the Unix account name.
   # wait-submit.sh only treats the event as a submitted user action when

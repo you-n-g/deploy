@@ -12,6 +12,31 @@ case "$filter" in
     ;;
 esac
 
+mode_pid="$(tmux show-option -gqv @auto_switch_mode_pid 2>/dev/null || true)"
+mode_token="$(tmux show-option -gqv @auto_switch_mode_token 2>/dev/null || true)"
+if [ -n "$mode_pid" ] && [ -n "$mode_token" ]; then
+  if kill -0 "$mode_pid" 2>/dev/null; then
+    state="$(tmux show-option -gqv @auto_switch_state 2>/dev/null || true)"
+    if [ "$state" = "mode-switching" ]; then
+      status="active"
+      symbol="●"
+    else
+      status="armed"
+      symbol="○"
+    fi
+
+    if [ -z "$filter" ]; then
+      printf ' %s\n' "$symbol"
+    elif [ "$filter" = "$status" ]; then
+      printf ' %s\n' "$symbol"
+    fi
+    exit 0
+  fi
+
+  tmux set-option -guq @auto_switch_mode_pid 2>/dev/null || true
+  tmux set-option -guq @auto_switch_mode_token 2>/dev/null || true
+fi
+
 switcher="$(tmux show-option -gqv @tma_window_switcher_pane 2>/dev/null || true)"
 if [ -z "$switcher" ]; then
   exit 0
