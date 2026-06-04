@@ -2,6 +2,70 @@
 
 set -eu
 
+# tmux state written by this script
+#
+# Pane options:
+# - @ai_agent_running:
+#   "1" means the AI pane is currently processing a foreground turn. "0" means
+#   it has stopped. This drives the busy marker in window names/status lines and
+#   is set by the running/background/idle/init states.
+# - @ai_agent_background:
+#   "1" means Claude/Codex has paused the foreground turn but still has
+#   background work active. When set, it takes precedence over running/unread in
+#   display code. The option is unset when there is no background work.
+# - @ai_agent_unread:
+#   "1" means the AI pane stopped while it was not visible to the user. It is
+#   cleared when the user visits a live AI pane or when the pane stops while
+#   already visible.
+# - @ai_agent_pending:
+#   "1" means the pane is intentionally waiting on an external condition and
+#   should not be selected by auto-switch. It is cleared when that pane starts a
+#   new non-pending running turn.
+# - @ai_agent_attribute:
+#   A short generated description of the pane's current task. It is generated
+#   lazily once and kept stable across later prompts until init/reset clears it.
+# - @ai_agent_orchestrator_idle_notified_activity:
+#   The tmux #{window_activity} value from the last idle notification sent to
+#   the session's orchestrator window. It prevents sending the same idle update
+#   twice for the same window activity. The running state clears it so a later
+#   turn can notify again.
+#
+# Global options:
+# - @ai_agent_event_seq:
+#   Monotonic event counter incremented by emit_ai_agent_event. Watchers can use
+#   it to notice that a new running/pending event was published.
+# - @ai_agent_event_pane:
+#   Pane id, such as %12, for the most recent published AI-agent event.
+# - @ai_agent_event_state:
+#   Event state name for the most recent published event, currently running or
+#   pending.
+# - @ai_agent_event_time:
+#   Unix timestamp for the most recent published event.
+# - @ai_agent_event_client_pane:
+#   Best-effort pane id for the user's most recently active non-readonly,
+#   non-control tmux client when the event was published.
+#
+# tmux formats read by this script:
+# - #{pane_id}: stable pane id used as the canonical pane target.
+# - #{window_id}: stable window id used for renaming and visibility checks.
+# - #{session_name}: current session name, used to find a same-session
+#   orchestrator.
+# - #{window_index} / #{pane_index}: user-facing target numbers used in
+#   notification text and logs.
+# - #{window_name} / #W: current tmux window name, including any AI state prefix.
+# - #{window_activity}: tmux's last activity timestamp for the window.
+# - #{window_active}: whether the window is active in its session.
+# - #{session_attached}: whether the session has an attached client.
+# - #{pane_current_command}: command currently shown by tmux for the pane.
+# - #{pane_pid}: root process id for the pane, used to detect live AI processes.
+# - #{client_name}, #{client_readonly}, #{client_control_mode}, #{client_activity}:
+#   client metadata used to find the likely current user pane for event records.
+#
+# Environment:
+# - AI_AGENT_STATE_LOG:
+#   Optional path for debug logs. If unset, logs go to
+#   ~/.cache/tmux-ai-agent-state.log.
+
 state="${1:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending TARGET}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../ai/lib.sh"
@@ -15,6 +79,32 @@ if ! pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')" || [ -z "$pa
 fi
 window_id="$(tmux display-message -p -t "$pane_id" '#{window_id}')"
 sync_window_name=1
+
+log_ai_agent_state() {
+  local log_file log_dir ts pane_target window_name window_activity window_active
+  local running background unread pending notified_activity pane_command pane_pid
+
+  log_file="${AI_AGENT_STATE_LOG:-$HOME/.cache/tmux-ai-agent-state.log}"
+  log_dir="$(dirname "$log_file")"
+  mkdir -p "$log_dir"
+
+  ts="$(date '+%Y-%m-%dT%H:%M:%S%z')"
+  pane_target="$(tmux display-message -p -t "$pane_id" '#{session_name}:#{window_index}.#{pane_index}')"
+  window_name="$(tmux display-message -p -t "$window_id" '#W')"
+  window_activity="$(tmux display-message -p -t "$pane_id" '#{window_activity}')"
+  window_active="$(tmux display-message -p -t "$window_id" '#{window_active}')"
+  pane_command="$(tmux display-message -p -t "$pane_id" '#{pane_current_command}')"
+  pane_pid="$(tmux display-message -p -t "$pane_id" '#{pane_pid}')"
+  running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
+  background="$(tmux show -pv -t "$pane_id" @ai_agent_background 2>/dev/null || true)"
+  unread="$(tmux show -pv -t "$pane_id" @ai_agent_unread 2>/dev/null || true)"
+  pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
+  notified_activity="$(tmux show -pv -t "$pane_id" @ai_agent_orchestrator_idle_notified_activity 2>/dev/null || true)"
+
+  printf '%s state=%s pane=%s window_id=%s window_name=%q activity=%s active=%s command=%q pid=%s running=%q background=%q unread=%q pending=%q notified_activity=%q\n' \
+    "$ts" "$state" "$pane_target" "$window_id" "$window_name" "$window_activity" "$window_active" "$pane_command" "$pane_pid" \
+    "$running" "$background" "$unread" "$pending" "$notified_activity" >> "$log_file"
+}
 
 ensure_ai_agent_attribute() {
   if [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_attribute 2>/dev/null)" ]; then
@@ -79,6 +169,11 @@ current_user_pane() {
 emit_ai_agent_event() {
   local event_state="$1" seq event_time client_pane
 
+  # Publish a small event record for auto-switch/scripts/wait-submit.sh.
+  # "User" here means the interactive tmux client pane that was most recently
+  # active among non-readonly, non-control clients, not the Unix account name.
+  # wait-submit.sh only treats the event as a submitted user action when
+  # @ai_agent_event_pane matches @ai_agent_event_client_pane.
   seq="$(tmux show-option -gqv @ai_agent_event_seq 2>/dev/null || true)"
   case "$seq" in
     ""|*[!0-9]*) seq=0 ;;
@@ -157,7 +252,7 @@ notify_orchestrator_on_idle() {
   [ -n "$orchestrator_pane_id" ] || return 0
   [ "$orchestrator_pane_id" != "$pane_id" ] || return 0
 
-  prompt_text="请关注这个 TMA：${pane_target}（${source_base_name}）已经停下来并有新的更新。请 capture 这个 pane，判断是否需要继续协调或汇总。"
+  prompt_text="请关注这个 TMA：${pane_target}（${source_base_name}）已经停下来并有新的更新。根据 project-mindmap 这个skill看是否需要汇总信息。"
   buffer_name="tma-idle-notify-${pane_id#%}"
   tmux set-buffer -b "$buffer_name" "$prompt_text"
   tmux paste-buffer -b "$buffer_name" -t "$orchestrator_pane_id"
@@ -166,6 +261,8 @@ notify_orchestrator_on_idle() {
   tmux delete-buffer -b "$buffer_name" 2>/dev/null || true
   tmux set-option -pq -t "$pane_id" @ai_agent_orchestrator_idle_notified_activity "$activity"
 }
+
+log_ai_agent_state
 
 case "$state" in
   init)
