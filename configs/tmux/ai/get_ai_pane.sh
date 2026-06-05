@@ -3,7 +3,7 @@
 # If multiple AI panes exist, show fzf to pick one.
 # Works in both interactive and non-interactive (run-shell) contexts.
 #
-# Usage: ./get_ai_pane.sh [-i] [-a] [-A] [session_name]
+# Usage: ./get_ai_pane.sh [-i] [-a] [-A] [--auto-switch-list] [session_name]
 # -i: return pane_id instead of session.window.pane
 # -a: list ALL AI panes (one per line), skip interactive selection
 # -A: scan across all tmux sessions (ignores [session_name])
@@ -47,7 +47,9 @@ _output_pane() {
 _get_ai_pane_rows() {
     local rows
 
-    if [[ "$ALL_SESSIONS" == true ]]; then
+    if [[ "$AUTO_SWITCH_LIST" == true ]]; then
+        rows="$(_get_auto_switch_pane_rows)" || return 1
+    elif [[ "$ALL_SESSIONS" == true ]]; then
         rows="$(_ai_pane_rows -a)" || return 1
     else
         rows="$(_ai_pane_rows -s -t "$SESSION")" || return 1
@@ -57,6 +59,33 @@ _get_ai_pane_rows() {
     printf '%s\n' "$rows" | _tmuxg_filter_orchestrator_rows
 }
 
+_get_auto_switch_pane_rows() {
+    local ranked rows candidate resolved seen="" out="" row pane_id
+
+    ranked="$(tmux show-option -gqv @auto_switch_ranked_panes 2>/dev/null || true)"
+    [[ -n "$ranked" ]] || return 1
+    rows="$(_ai_pane_rows -a)" || return 1
+
+    for candidate in $ranked; do
+        resolved="$(tmux display-message -p -t "$candidate" '#{pane_id}' 2>/dev/null || true)"
+        [[ -n "$resolved" ]] || continue
+        case " $seen " in
+            *" $resolved "*) continue ;;
+        esac
+        seen="$seen $resolved"
+        while IFS= read -r row; do
+            IFS=$'\t' read -r _last_visit _sess_win _wname pane_id _rest <<< "$row"
+            if [[ "$pane_id" == "$resolved" ]]; then
+                out="${out:+$out$'\n'}$row"
+                break
+            fi
+        done <<< "$rows"
+    done
+
+    [[ -n "$out" ]] || return 1
+    printf '%s\n' "$out"
+}
+
 _get_fzf_list() {
     local current_target rows
 
@@ -64,7 +93,11 @@ _get_fzf_list() {
     rows=$(_get_ai_pane_rows)
     [[ -n "$rows" ]] || return 1
 
-    printf '%s\n' "$rows" | _ai_pane_fzf_list "$current_target" "$(date +%s)"
+    if [[ "$AUTO_SWITCH_LIST" == true ]]; then
+        printf '%s\n' "$rows" | AI_PANE_FZF_PRESERVE_ORDER=1 _ai_pane_fzf_list "$current_target" "$(date +%s)"
+    else
+        printf '%s\n' "$rows" | _ai_pane_fzf_list "$current_target" "$(date +%s)"
+    fi
 }
 
 _switcher_header_info() {
@@ -113,17 +146,22 @@ _reset_pane_attribute() {
 RETURN_ID=false
 LIST_ALL=false
 ALL_SESSIONS=false
+AUTO_SWITCH_LIST=false
 while [[ "$1" == -* ]]; do
     case "$1" in
         -i) RETURN_ID=true; shift ;;
         -a) LIST_ALL=true; shift ;;
         -A) ALL_SESSIONS=true; shift ;;
+        --auto-switch-list) AUTO_SWITCH_LIST=true; ALL_SESSIONS=true; shift ;;
         --fzf-list)
             shift
-            if [[ "${1:-}" == "-A" ]]; then
-                ALL_SESSIONS=true
-                shift
-            fi
+            while [[ "${1:-}" == -* ]]; do
+                case "$1" in
+                    -A) ALL_SESSIONS=true; shift ;;
+                    --auto-switch-list) AUTO_SWITCH_LIST=true; ALL_SESSIONS=true; shift ;;
+                    *) break ;;
+                esac
+            done
 
             SESSION=${1:-$(tmux display-message -p '#S' 2>/dev/null)}
             [[ "$ALL_SESSIONS" == true || -n "$SESSION" ]] || exit 1
@@ -182,14 +220,20 @@ if [[ "$COUNT" -eq 1 ]]; then
     exit 0
 fi
 
-LIST=$(echo "$ROWS" | _ai_pane_fzf_list "$(_current_target)")
+if [[ "$AUTO_SWITCH_LIST" == true ]]; then
+    LIST=$(echo "$ROWS" | AI_PANE_FZF_PRESERVE_ORDER=1 _ai_pane_fzf_list "$(_current_target)")
+else
+    LIST=$(echo "$ROWS" | _ai_pane_fzf_list "$(_current_target)")
+fi
 
 LISTFILE=$(mktemp)
 trap "rm -f '$LISTFILE'" EXIT
 printf '%s\n' "$LIST" > "$LISTFILE"
 
 printf -v RESET_BIND_CMD '%q --reset-pane-attribute {1}' "$SCRIPT_DIR/get_ai_pane.sh"
-if [[ "$ALL_SESSIONS" == true ]]; then
+if [[ "$AUTO_SWITCH_LIST" == true ]]; then
+    printf -v RELOAD_BIND_CMD '%q --fzf-list --auto-switch-list' "$SCRIPT_DIR/get_ai_pane.sh"
+elif [[ "$ALL_SESSIONS" == true ]]; then
     printf -v RELOAD_BIND_CMD '%q --fzf-list -A' "$SCRIPT_DIR/get_ai_pane.sh"
 else
     printf -v RELOAD_BIND_CMD '%q --fzf-list %q' "$SCRIPT_DIR/get_ai_pane.sh" "$SESSION"

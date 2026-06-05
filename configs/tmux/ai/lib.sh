@@ -380,6 +380,7 @@ _ai_pane_fzf_list() {
     local now="${2:-$(date +%s)}"
     local marked_pane_id=""
     local switcher_pane_id=""
+    local input_index=0
 
     marked_pane_id="$(tmux display-message -p -t '{marked}' '#{pane_id}' 2>/dev/null || true)"
     switcher_pane_id="$(tmux show-option -gqv @tma_window_switcher_pane 2>/dev/null || true)"
@@ -392,6 +393,7 @@ _ai_pane_fzf_list() {
     while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw unread_flag running_flag background_flag attribute; do
         local sort_key status rel_visit rel_act time_info colored_sess_win
         local display_wname
+        input_index=$((input_index + 1))
         local is_unread=0
         [[ "$unread_flag" == "1" ]] && is_unread=1
 
@@ -443,6 +445,9 @@ _ai_pane_fzf_list() {
         local pane_marker="pane ${wid}"
         [[ -n "$marked_pane_id" && "$wid" == "$marked_pane_id" ]] && pane_marker="${pane_marker} marked"
         [[ -n "$switcher_pane_id" && "$wid" == "$switcher_pane_id" ]] && pane_marker="${pane_marker} switcher"
+        if [[ "${AI_PANE_FZF_PRESERVE_ORDER:-}" == "1" ]]; then
+            printf -v sort_key '%08d' "$input_index"
+        fi
 
         printf '%s\t%s\t%s %s %b%s\033[2m%s\033[0m  \033[2m%s%s\033[0m  \033[2m[%s]\033[0m\n' \
             "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$display_wname" "$attribute_info" "$time_info" "$unread_mark" "$pane_marker"

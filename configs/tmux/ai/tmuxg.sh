@@ -1,12 +1,13 @@
 #!/bin/bash
 # Select and switch to a tmux pane running an AI agent.
-# Usage: tmuxg [-q] [-A] [--create-if-missing] [--force-new] [--window-name NAME]
+# Usage: tmuxg [-q] [-A] [--auto-switch-list] [--create-if-missing] [--force-new] [--window-name NAME]
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source "$SCRIPT_DIR/lib.sh"
 
 QUIET=false
 ALL_SESSIONS=false
+AUTO_SWITCH_LIST=false
 CREATE_IF_MISSING=false
 FORCE_NEW=false
 WINDOW_NAME=""
@@ -14,6 +15,7 @@ while [[ "$1" == -* ]]; do
     case "$1" in
         -q) QUIET=true; shift ;;
         -A) ALL_SESSIONS=true; shift ;;
+        --auto-switch-list) AUTO_SWITCH_LIST=true; ALL_SESSIONS=true; shift ;;
         --create-if-missing) CREATE_IF_MISSING=true; shift ;;
         --force-new) FORCE_NEW=true; shift ;;
         --window-name)
@@ -90,7 +92,9 @@ if [[ -n "$WINDOW_NAME" ]]; then
 fi
 
 GET_AI_PANE_ARGS=(-i)
-if [[ "$ALL_SESSIONS" == true ]]; then
+if [[ "$AUTO_SWITCH_LIST" == true ]]; then
+    GET_AI_PANE_ARGS+=(--auto-switch-list)
+elif [[ "$ALL_SESSIONS" == true ]]; then
     GET_AI_PANE_ARGS+=(-A)
 fi
 
