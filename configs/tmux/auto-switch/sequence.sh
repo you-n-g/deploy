@@ -119,15 +119,52 @@ pane_label() {
   printf '%s%s' "$(status_prefix "$unread" "$running" "$background" "$pending")" "$label"
 }
 
+state_label() {
+  local unread="$1" running="$2" background="$3" pending="$4"
+
+  if [[ "$background" == "1" ]]; then
+    printf 'background'
+  elif [[ "$pending" == "1" ]]; then
+    printf 'pending'
+  elif [[ "$running" == "1" ]]; then
+    printf 'running'
+  elif [[ "$unread" == "1" ]]; then
+    printf 'unread'
+  else
+    printf 'idle'
+  fi
+}
+
+pane_edit_comment() {
+  local pane="$1"
+  local session_name window_name pane_index unread running background pending attribute clean_attribute path state
+
+  session_name="$(tmux display-message -p -t "$pane" '#{session_name}' 2>/dev/null || true)"
+  window_name="$(tmux display-message -p -t "$pane" '#{window_name}' 2>/dev/null || true)"
+  pane_index="$(tmux display-message -p -t "$pane" '#{pane_index}' 2>/dev/null || true)"
+  unread="$(tmux show -pv -t "$pane" @ai_agent_unread 2>/dev/null || true)"
+  running="$(tmux show -pv -t "$pane" @ai_agent_running 2>/dev/null || true)"
+  background="$(tmux show -pv -t "$pane" @ai_agent_background 2>/dev/null || true)"
+  pending="$(tmux show -pv -t "$pane" @ai_agent_pending 2>/dev/null || true)"
+  attribute="$(tmux show -pv -t "$pane" @ai_agent_attribute 2>/dev/null || true)"
+  clean_attribute="$(printf '%s' "$attribute" | strip_tmux_format)"
+  path="$(tmux display-message -p -t "$pane" '#{pane_current_path}' 2>/dev/null || true)"
+  state="$(state_label "$unread" "$running" "$background" "$pending")"
+  window_name="$(_strip_ai_window_state_prefix "$window_name")"
+
+  printf '%s:%s.%s | %s | %s | %s' \
+    "$session_name" "$window_name" "$pane_index" "$state" "${clean_attribute:-no attribute}" "$path"
+}
+
 write_edit_file() {
   local file="$1" ranked="$2" pane
 
   {
     printf '# Edit auto-switch order. Keep one pane id before "#"; text after "#" is ignored.\n'
     printf '# Reorder lines to change priority. Delete a line to remove that pane from the sequence.\n'
-    printf '# Comments reuse the same labels as sequence.sh show.\n\n'
+    printf '# Comments include full AI attribute; long lines intentionally do not wrap in vim.\n\n'
     for pane in $ranked; do
-      printf '%s # %s\n' "$pane" "$(pane_label "$pane")"
+      printf '%s # %s\n' "$pane" "$(pane_edit_comment "$pane")"
     done
   } > "$file"
 }
@@ -180,7 +217,7 @@ wait_after_error() {
 }
 
 edit_sequence() {
-  local tmp editor
+  local tmp editor editor_name
   local -a editor_argv
 
   tmp="$(mktemp "${TMPDIR:-/tmp}/auto-switch-sequence.XXXXXX")"
@@ -192,6 +229,10 @@ edit_sequence() {
 
   editor="${VISUAL:-${EDITOR:-vim}}"
   read -r -a editor_argv <<< "$editor"
+  editor_name="$(basename -- "${editor_argv[0]}")"
+  if [[ "$editor_name" == "vim" || "$editor_name" == "nvim" ]]; then
+    editor_argv+=(-c 'setlocal nowrap')
+  fi
   if ! "${editor_argv[@]}" "$tmp"; then
     echo "editor failed: $editor" >&2
     wait_after_error

@@ -166,6 +166,14 @@ current_user_pane() {
   printf '%s\n' "$best_pane"
 }
 
+is_fake_idle() {
+  local recent
+
+  recent="$(tmux capture-pane -p -t "$pane_id" -S -20 2>/dev/null | sed '/^[[:space:]]*$/d' | tail -n 4 || true)"
+  printf '%s\n' "$recent" | tr '[:upper:]' '[:lower:]' | grep -Eq \
+    'working|esc[[:space:]]+to[[:space:]]+(interrupt|interupt)|press[[:space:]]+esc'
+}
+
 emit_ai_agent_event() {
   local event_state="$1" seq event_time client_pane
 
@@ -298,15 +306,17 @@ case "$state" in
     tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
     ;;
   idle)
-    tmux set-option -pq -t "$pane_id" @ai_agent_running 0
-    tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
-    if is_window_visible; then
-      tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
-    else
-      tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
+    if ! is_fake_idle; then
+      tmux set-option -pq -t "$pane_id" @ai_agent_running 0
+      tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
+      if is_window_visible; then
+        tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
+      else
+        tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
+      fi
+      ensure_ai_agent_attribute
+      notify_orchestrator_on_idle
     fi
-    ensure_ai_agent_attribute
-    notify_orchestrator_on_idle
     ;;
   visit)
     if is_live_ai_pane; then
