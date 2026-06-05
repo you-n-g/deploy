@@ -4,36 +4,29 @@ set -euo pipefail
 usage() {
   cat >&2 <<'USAGE'
 Usage:
-  wait-until-submitted.sh [--controller <pane>] [--token-option <tmux-option>] [--token <value>]
+  wait-until-submitted.sh <mode-token>
 
 Wait for the tmux AI state event stream. When an AI pane changes from
 non-running/non-pending to running or pending while it is the user's current
 pane, print that pane id and exit.
 
-If --controller is provided, that pane is ignored.
-If --token-option and --token are provided, exit quietly when the token no
-longer matches the tmux option.
+Exit quietly when <mode-token> no longer matches @auto_switch_mode_token.
 USAGE
 }
 
-controller=""
-token_option=""
-token=""
+case "${1:-}" in
+  -h|--help)
+    usage
+    exit 0
+    ;;
+esac
+
+token="${1:-}"
+[[ -n "$token" ]] || { usage; exit 2; }
+shift
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --controller)
-      controller="${2:-}"
-      shift 2
-      ;;
-    --token-option)
-      token_option="${2:-}"
-      shift 2
-      ;;
-    --token)
-      token="${2:-}"
-      shift 2
-      ;;
     -h|--help)
       usage
       exit 0
@@ -46,26 +39,16 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -n "$controller" ]]; then
-  controller="$(tmux display-message -p -t "$controller" '#{pane_id}' 2>/dev/null)" \
-    && [[ -n "$controller" ]] \
-    || { echo "controller pane does not resolve" >&2; exit 2; }
-fi
-
-if [[ -n "$token_option" || -n "$token" ]]; then
-  [[ -n "$token_option" && -n "$token" ]] || { echo "--token-option and --token must be used together" >&2; exit 2; }
-fi
-
 is_current_token() {
-  [[ -z "$token_option" ]] || [[ "$(tmux show-option -gqv "$token_option" 2>/dev/null || true)" == "$token" ]]
+  [[ "$(tmux show-option -gqv @auto_switch_mode_token 2>/dev/null || true)" == "$token" ]]
 }
 
 current_user_pane() {
-  local client pane readonly control_mode activity best_pane="" best_activity=-1
+  local client pane client_readonly control_mode activity best_pane="" best_activity=-1
 
-  while IFS=$'\t' read -r client readonly control_mode pane activity; do
+  while IFS=$'\t' read -r client client_readonly control_mode pane activity; do
     [[ -n "$client" ]] || continue
-    [[ "$readonly" == "1" || "$control_mode" == "1" ]] && continue
+    [[ "$client_readonly" == "1" || "$control_mode" == "1" ]] && continue
     [[ -n "$pane" ]] || continue
     [[ "$activity" =~ ^[0-9]+$ ]] || activity=0
     if (( activity > best_activity )); then
@@ -101,7 +84,6 @@ while :; do
     event_client_pane="$(current_user_pane 2>/dev/null || true)"
   fi
   [[ -n "$event_pane" ]] || continue
-  [[ -z "$controller" || "$event_pane" != "$controller" ]] || continue
   [[ "$event_pane" == "$event_client_pane" ]] || continue
 
   printf '%s\n' "$event_pane"

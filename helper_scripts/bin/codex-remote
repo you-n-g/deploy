@@ -12,7 +12,8 @@ The local TUI starts with --dangerously-bypass-approvals-and-sandbox by default.
 Options:
   -C, --remote-cwd DIR       cd to DIR on the remote host before starting Codex
       --local-port PORT      local forwarded port (default: pick a free port)
-      --remote-port PORT     remote app-server port (default: 4500)
+      --remote-port PORT     remote app-server port (default: same as the picked local port)
+      --no-ai-status-bridge  do not bridge remote Codex hooks back to local tmux
       --codex-bin CMD        local Codex command (default: $CODEX_BIN or codex)
       --remote-codex-bin CMD remote Codex command (default: $REMOTE_CODEX_BIN or codex)
       --timeout SECONDS      wait for the remote app-server to become reachable (default: 20)
@@ -57,10 +58,11 @@ shell_quote() {
 
 remote_cwd=""
 local_port=""
-remote_port="4500"
+remote_port=""
 codex_bin="${CODEX_BIN:-codex}"
 remote_codex_bin="${REMOTE_CODEX_BIN:-codex}"
 connect_timeout="20"
+ai_status_bridge=1
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -78,6 +80,10 @@ while [[ $# -gt 0 ]]; do
             need_arg "$1" "${2:-}"
             remote_port="$2"
             shift 2
+            ;;
+        --no-ai-status-bridge)
+            ai_status_bridge=0
+            shift
             ;;
         --codex-bin)
             need_arg "$1" "${2:-}"
@@ -123,7 +129,9 @@ ssh_args=("$@")
 command -v ssh >/dev/null 2>&1 || die "ssh is not available"
 command -v "$codex_bin" >/dev/null 2>&1 || die "local Codex command not found: $codex_bin"
 
-[[ "$remote_port" =~ ^[0-9]+$ ]] || die "--remote-port must be numeric: $remote_port"
+if [[ -n "$remote_port" ]]; then
+    [[ "$remote_port" =~ ^[0-9]+$ ]] || die "--remote-port must be numeric: $remote_port"
+fi
 [[ "$connect_timeout" =~ ^[0-9]+$ ]] || die "--timeout must be numeric: $connect_timeout"
 
 if [[ -z "$local_port" ]]; then
@@ -131,25 +139,245 @@ if [[ -z "$local_port" ]]; then
 fi
 [[ "$local_port" =~ ^[0-9]+$ ]] || die "--local-port must be numeric: $local_port"
 
-remote_listen="ws://127.0.0.1:${remote_port}"
-remote_cmd="exec $(shell_quote "$remote_codex_bin") app-server --listen $(shell_quote "$remote_listen")"
-if [[ -n "$remote_cwd" ]]; then
-    remote_cmd="cd $(shell_quote "$remote_cwd") && $remote_cmd"
+if [[ -z "$remote_port" ]]; then
+    remote_port="$local_port"
 fi
 
+remote_listen="ws://127.0.0.1:${remote_port}"
+
 log_file="$(mktemp -t codex-remote.XXXXXX.log)"
+remote_script="$(mktemp -t codex-remote.XXXXXX.remote.sh)"
+status_log_file=""
 ssh_pid=""
+status_bridge_pid=""
+status_bridge_enabled=0
+local_status_port=""
+remote_status_port=""
 
 cleanup() {
     if [[ -n "$ssh_pid" ]] && kill -0 "$ssh_pid" 2>/dev/null; then
         kill "$ssh_pid" 2>/dev/null || true
         wait "$ssh_pid" 2>/dev/null || true
     fi
+    if [[ -n "$status_bridge_pid" ]] && kill -0 "$status_bridge_pid" 2>/dev/null; then
+        kill "$status_bridge_pid" 2>/dev/null || true
+        wait "$status_bridge_pid" 2>/dev/null || true
+    fi
     rm -f "$log_file"
+    rm -f "$remote_script"
+    if [[ -n "$status_log_file" ]]; then
+        rm -f "$status_log_file"
+    fi
 }
 trap cleanup EXIT INT TERM
 
-ssh -L "${local_port}:127.0.0.1:${remote_port}" "${ssh_args[@]}" "$ssh_target" "$remote_cmd" >"$log_file" 2>&1 &
+start_status_bridge() {
+    [[ "$ai_status_bridge" = "1" ]] || return 0
+    [[ -n "${TMUX:-}" && -n "${TMUX_PANE:-}" ]] || return 0
+
+    command -v tmux >/dev/null 2>&1 || die "tmux is required for the AI status bridge"
+
+    local_status_port="$(pick_free_port)"
+    remote_status_port="$local_status_port"
+    status_log_file="$(mktemp -t codex-remote-status.XXXXXX.log)"
+
+    CODEX_REMOTE_STATUS_PANE="$TMUX_PANE" \
+    CODEX_REMOTE_STATUS_PORT="$local_status_port" \
+    python3 - <<'PY' >"$status_log_file" 2>&1 &
+import http.server
+import os
+import subprocess
+import sys
+
+pane = os.environ["CODEX_REMOTE_STATUS_PANE"]
+port = int(os.environ["CODEX_REMOTE_STATUS_PORT"])
+track_script = os.path.expanduser("~/deploy/configs/tmux/script/track_ai_agent_state.sh")
+allowed_states = {"init", "running", "idle", "background", "pending"}
+
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        state = self.path.split("?", 1)[0].strip("/")
+        if state not in allowed_states:
+            self.send_response(404)
+            self.end_headers()
+            return
+
+        try:
+            subprocess.run(
+                [track_script, state, pane],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=sys.stderr,
+            )
+        except subprocess.CalledProcessError:
+            self.send_response(500)
+            self.end_headers()
+            return
+
+        self.send_response(204)
+        self.end_headers()
+
+    def log_message(self, _format, *_args):
+        return
+
+
+server = http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler)
+try:
+    server.serve_forever()
+except KeyboardInterrupt:
+    sys.exit(0)
+PY
+    status_bridge_pid="$!"
+
+    local deadline=$((SECONDS + connect_timeout))
+    while ! bash -c "</dev/tcp/127.0.0.1/${local_status_port}" >/dev/null 2>&1; do
+        if ! kill -0 "$status_bridge_pid" 2>/dev/null; then
+            echo "codex-remote: AI status bridge exited before it became reachable" >&2
+            cat "$status_log_file" >&2
+            exit 1
+        fi
+        if (( SECONDS >= deadline )); then
+            echo "codex-remote: timed out waiting for local AI status bridge on 127.0.0.1:${local_status_port}" >&2
+            cat "$status_log_file" >&2
+            exit 1
+        fi
+        sleep 0.2
+    done
+
+    "$HOME/deploy/configs/tmux/script/track_ai_agent_state.sh" init "$TMUX_PANE"
+    status_bridge_enabled=1
+}
+
+write_remote_script() {
+    cat >"$remote_script" <<'REMOTE_SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+
+remote_cwd="${1:-}"
+remote_codex_bin="${2:?missing remote codex binary}"
+remote_listen="${3:?missing remote listen url}"
+status_port="${4:-}"
+remote_codex_home=""
+app_server_pid=""
+app_server_port="${remote_listen##*:}"
+
+cleanup() {
+    if [[ -n "$app_server_pid" ]] && kill -0 "$app_server_pid" 2>/dev/null; then
+        kill "$app_server_pid" 2>/dev/null || true
+        wait "$app_server_pid" 2>/dev/null || true
+    fi
+    if [[ -n "$remote_codex_home" ]]; then
+        rm -rf "$remote_codex_home"
+    fi
+}
+trap cleanup EXIT INT TERM HUP
+
+if [[ -n "$status_port" ]]; then
+    remote_codex_home="$(mktemp -d /tmp/codex-remote-home.XXXXXX)"
+    if [[ -d "$HOME/.codex" ]]; then
+        find "$HOME/.codex" -mindepth 1 -maxdepth 1 ! -name hooks.json -exec ln -s {} "$remote_codex_home"/ \;
+    fi
+
+    cat >"$remote_codex_home/codex-remote-status-hook.sh" <<'HOOK_SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+
+state="${1:?usage: codex-remote-status-hook.sh init|running|idle|background|pending}"
+case "$state" in
+    init|running|idle|background|pending) ;;
+    *) echo "invalid remote Codex status state: $state" >&2; exit 2 ;;
+esac
+
+port="${CODEX_REMOTE_STATUS_PORT:?CODEX_REMOTE_STATUS_PORT is not set}"
+exec 3<>"/dev/tcp/127.0.0.1/${port}"
+printf 'GET /%s HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n' "$state" >&3
+while IFS= read -r _line <&3; do
+    :
+done || true
+HOOK_SCRIPT
+    chmod +x "$remote_codex_home/codex-remote-status-hook.sh"
+
+    cat >"$remote_codex_home/hooks.json" <<'HOOKS_JSON'
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "env -u BASH_ENV bash --noprofile --norc -c 'exec \"$CODEX_HOME/codex-remote-status-hook.sh\" init' >/dev/null",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "env -u BASH_ENV bash --noprofile --norc -c 'exec \"$CODEX_HOME/codex-remote-status-hook.sh\" running' >/dev/null",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "env -u BASH_ENV bash --noprofile --norc -c 'exec \"$CODEX_HOME/codex-remote-status-hook.sh\" idle' >/dev/null",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
+HOOKS_JSON
+
+    export CODEX_HOME="$remote_codex_home"
+    export CODEX_REMOTE_STATUS_PORT="$status_port"
+fi
+
+if [[ -n "$remote_cwd" ]]; then
+    cd "$remote_cwd"
+fi
+
+case "$app_server_port" in
+    ""|*[!0-9]*) echo "invalid remote app-server listen URL: $remote_listen" >&2; exit 2 ;;
+esac
+
+if (exec 9<>"/dev/tcp/127.0.0.1/${app_server_port}") 2>/dev/null; then
+    echo "remote app-server port already in use: 127.0.0.1:${app_server_port}" >&2
+    echo "pass --remote-port with a free port, or stop the existing remote app-server first" >&2
+    exit 1
+fi
+
+"$remote_codex_bin" app-server --listen "$remote_listen" &
+app_server_pid="$!"
+wait "$app_server_pid"
+REMOTE_SCRIPT
+    chmod +x "$remote_script"
+}
+
+start_status_bridge
+write_remote_script
+
+ssh_cmd=(ssh -o ExitOnForwardFailure=yes -L "${local_port}:127.0.0.1:${remote_port}")
+if [[ "$status_bridge_enabled" = "1" ]]; then
+    ssh_cmd+=(-R "127.0.0.1:${remote_status_port}:127.0.0.1:${local_status_port}")
+fi
+ssh_cmd+=("${ssh_args[@]}" "$ssh_target" bash -s -- "$remote_cwd" "$remote_codex_bin" "$remote_listen")
+if [[ "$status_bridge_enabled" = "1" ]]; then
+    ssh_cmd+=("$remote_status_port")
+else
+    ssh_cmd+=("")
+fi
+
+"${ssh_cmd[@]}" <"$remote_script" >"$log_file" 2>&1 &
 ssh_pid="$!"
 
 deadline=$((SECONDS + connect_timeout))
@@ -168,4 +396,7 @@ while ! bash -c "</dev/tcp/127.0.0.1/${local_port}" >/dev/null 2>&1; do
 done
 
 echo "codex-remote: connected $ssh_target -> ws://127.0.0.1:${local_port}" >&2
+if [[ "$status_bridge_enabled" = "1" ]]; then
+    echo "codex-remote: AI status bridge enabled for ${TMUX_PANE}" >&2
+fi
 "$codex_bin" --dangerously-bypass-approvals-and-sandbox --remote "ws://127.0.0.1:${local_port}"

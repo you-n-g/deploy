@@ -86,9 +86,6 @@ case "$button" in
   sb_as)
     tmux run-shell -b "$HOME/deploy/configs/tmux/ai/switch_to_marked_or_switcher_pane.sh '$current_pane'"
     ;;
-  sb_a)
-    tmux run-shell -b "$HOME/deploy/configs/tmux/auto-switch/switch-next.sh"
-    ;;
   sb_cc)
     tmux run-shell -b "~/deploy/helper_scripts/bin/c"
     ;;
