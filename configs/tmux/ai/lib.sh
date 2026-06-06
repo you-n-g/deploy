@@ -169,10 +169,10 @@ _tmuxg_filter_orchestrator_rows() {
         return
     fi
 
-    while IFS=$'\t' read -r last_visit sess_win wname pane_id pane_pid wact_raw unread running background attribute; do
+    while IFS=$'\t' read -r last_visit sess_win wname pane_id pane_pid wact_raw unread running background pending attribute; do
         [[ "$(_strip_ai_window_state_prefix "$wname")" == "orchestrator" ]] && continue
-        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-            "$last_visit" "$sess_win" "$wname" "$pane_id" "$pane_pid" "$wact_raw" "$unread" "$running" "$background" "$attribute"
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+            "$last_visit" "$sess_win" "$wname" "$pane_id" "$pane_pid" "$wact_raw" "$unread" "$running" "$background" "$pending" "$attribute"
     done
 }
 
@@ -323,12 +323,13 @@ _ai_pane_pid_set() {
 #   $7 unread_flag     1 if the agent finished while not visible
 #   $8 running_flag    1 if the agent hook says this window is running
 #   $9 background_flag 1 if Claude paused with background work still active
-#   $10 attribute      short description generated once after first stop
+#   $10 pending_flag   1 if the pane is intentionally waiting on something
+#   $11 attribute      short description generated once after first stop
 _ai_pane_rows() {
     local pane_rows pane_pids ps_cache ai_pane_pids
 
     pane_rows=$(tmux list-panes "$@" \
-        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}.#{pane_index}\t#{window_name}\t#{window_id}\t#{pane_id}\t#{pane_pid}\t#{pane_active}\t#{window_activity}\t#{@ai_agent_unread}\t#{@ai_agent_running}\t#{@ai_agent_background}\t#{@ai_agent_attribute}' 2>/dev/null) || return 1
+        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}.#{pane_index}\t#{window_name}\t#{window_id}\t#{pane_id}\t#{pane_pid}\t#{pane_active}\t#{window_activity}\t#{@ai_agent_unread}\t#{@ai_agent_running}\t#{@ai_agent_background}\t#{@ai_agent_pending}\t#{@ai_agent_attribute}' 2>/dev/null) || return 1
     pane_pids=$(printf '%s\n' "$pane_rows" | awk -F '\t' '{ print $6 }')
     ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null) || return 1
     ai_pane_pids=$(_ai_pane_pid_set "$pane_pids" "$ps_cache")
@@ -339,16 +340,16 @@ _ai_pane_rows() {
             next
         }
         has_ai_proc_by_pane[$6] {
-            attribute = $12
-            for (i = 13; i <= NF; i++) attribute = attribute " " $i
-            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, attribute
+            attribute = $13
+            for (i = 14; i <= NF; i++) attribute = attribute " " $i
+            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, attribute
         }
     ' <(printf '%s\n' "$ai_pane_pids") <(printf '%s\n' "$pane_rows") |
     sort -t $'\t' -k1,1nr -k8,8nr -k7,7nr |
     awk -F '\t' '!seen[$5]++' |
     awk -F '\t' '
     {
-        print $1+0 "\t" $2 "\t" $3 "\t" $5 "\t" $6 "\t" $8+0 "\t" $9+0 "\t" $10+0 "\t" $11+0 "\t" $12
+        print $1+0 "\t" $2 "\t" $3 "\t" $5 "\t" $6 "\t" $8+0 "\t" $9+0 "\t" $10+0 "\t" $11+0 "\t" $12+0 "\t" $13
     }
     '
 }
@@ -368,6 +369,7 @@ _ai_pane_rows() {
 #   ▶/➲/▷ (cyan) current pane (▶ = running, ➲ = background, ▷ = idle)
 #   ●   (yellow) running
 #   ◒   (yellow) Claude background work
+#      (magenta) pending — intentionally waiting on something
 #   ◉   (yellow) unread — finished while not visible
 #   ○   (green)  idle, nothing new since last visit
 #
@@ -390,7 +392,7 @@ _ai_pane_fzf_list() {
 
     _ai_fzf_reset_session_colors
 
-    while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw unread_flag running_flag background_flag attribute; do
+    while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw unread_flag running_flag background_flag pending_flag attribute; do
         local sort_key status rel_visit rel_act time_info colored_sess_win
         local display_wname
         input_index=$((input_index + 1))
@@ -401,6 +403,8 @@ _ai_pane_fzf_list() {
         [[ "$running_flag" == "1" ]] && is_busy=true
         local has_background=false
         [[ "$background_flag" == "1" ]] && has_background=true
+        local is_pending=false
+        [[ "$pending_flag" == "1" ]] && is_pending=true
 
         if [[ "$sess_win" == "$current_target" ]]; then
             sort_key=0
@@ -408,6 +412,8 @@ _ai_pane_fzf_list() {
                 status=$'\033[36m➲\033[0m '
             elif $is_busy; then
                 status=$'\033[36m▶\033[0m '
+            elif $is_pending; then
+                status=$'\033[35m\033[0m '
             else
                 status=$'\033[36m▷\033[0m '
             fi
@@ -417,6 +423,9 @@ _ai_pane_fzf_list() {
         elif $is_busy; then
             sort_key=05
             status=$'\033[33m●\033[0m '
+        elif $is_pending; then
+            sort_key=07
+            status=$'\033[35m\033[0m '
         elif (( is_unread )); then
             sort_key=08
             status=$'\033[33m◉\033[0m '
@@ -437,6 +446,8 @@ _ai_pane_fzf_list() {
 
         local unread_mark=""
         (( is_unread )) && unread_mark=$' \033[33m[!]\033[0m'
+        local pending_mark=""
+        $is_pending && pending_mark=$' \033[35m[pending]\033[0m'
 
         local attribute_info=""
         [[ -n "$attribute" ]] && attribute_info="  ${attribute}"
@@ -450,7 +461,7 @@ _ai_pane_fzf_list() {
         fi
 
         printf '%s\t%s\t%s %s %b%s\033[2m%s\033[0m  \033[2m%s%s\033[0m  \033[2m[%s]\033[0m\n' \
-            "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$display_wname" "$attribute_info" "$time_info" "$unread_mark" "$pane_marker"
+            "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$display_wname" "$attribute_info" "$time_info" "${unread_mark}${pending_mark}" "$pane_marker"
     done |
     sort -t $'\t' -k1,1 -k2,2nr |
     cut -f3-

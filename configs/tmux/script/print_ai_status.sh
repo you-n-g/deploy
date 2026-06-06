@@ -15,8 +15,8 @@ esac
 changed=0
 ps_cache="$(ps -ax -o pid,ppid,comm 2>/dev/null || true)"
 
-while IFS='|' read -r pane_id pane_pid window_activity window_active session_attached running background unread attribute; do
-  if [ -n "${running}${background}${unread}${attribute}" ] && ! _has_ai_proc "$pane_pid" "$ps_cache"; then
+while IFS='|' read -r pane_id pane_pid window_activity window_active session_attached running background unread pending attribute; do
+  if [ -n "${running}${background}${unread}${pending}${attribute}" ] && ! _has_ai_proc "$pane_pid" "$ps_cache"; then
     _clear_ai_pane_state "$pane_id"
     changed=1
     continue
@@ -34,7 +34,7 @@ while IFS='|' read -r pane_id pane_pid window_activity window_active session_att
     fi
     changed=1
   fi
-done < <(tmux list-panes -a -F '#{pane_id}|#{pane_pid}|#{window_activity}|#{window_active}|#{session_attached}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_unread}|#{@ai_agent_attribute}')
+done < <(tmux list-panes -a -F '#{pane_id}|#{pane_pid}|#{window_activity}|#{window_active}|#{session_attached}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_unread}|#{@ai_agent_pending}|#{@ai_agent_attribute}')
 
 if [ "$changed" = "1" ]; then
   "$SCRIPT_DIR/refresh_terminal_title.sh"
@@ -45,7 +45,7 @@ background=0
 waiting=0
 if rows="$(_ai_pane_rows -a)" && [ -n "$rows" ]; then
   rows="$(printf '%s\n' "$rows" | _tmuxg_filter_orchestrator_rows)"
-  while IFS=$'\t' read -r _last_visit _pane_target _window_name _pane_id _pane_pid _activity_epoch pane_unread pane_running pane_background _attribute; do
+  while IFS=$'\t' read -r _last_visit _pane_target _window_name _pane_id _pane_pid _activity_epoch pane_unread pane_running pane_background _pane_pending _attribute; do
     [ -n "$_pane_target" ] || continue
     if [ "$pane_background" = "1" ]; then
       background=$((background + 1))

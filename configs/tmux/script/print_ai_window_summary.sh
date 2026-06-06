@@ -23,7 +23,7 @@ rows="$(printf '%s\n' "$rows" | _tmuxg_filter_orchestrator_rows)"
 current_target="$(tmux display-message -p '#{session_name}:#{window_index}.#{pane_index}' 2>/dev/null || true)"
 current_is_ai=0
 if [ -n "$current_target" ]; then
-  while IFS=$'\t' read -r _last_visit pane_target _window_name _pane_id _pane_pid _activity_epoch _unread _running _background _attribute; do
+  while IFS=$'\t' read -r _last_visit pane_target _window_name _pane_id _pane_pid _activity_epoch _unread _running _background _pending _attribute; do
     if [ "$pane_target" = "$current_target" ]; then
       current_is_ai=1
       break
@@ -32,7 +32,7 @@ if [ -n "$current_target" ]; then
 fi
 
 count=0
-while IFS=$'\t' read -r _last_visit pane_target window_name pane_id _pane_pid _activity_epoch unread running background attribute; do
+while IFS=$'\t' read -r _last_visit pane_target window_name pane_id _pane_pid _activity_epoch unread running background pending attribute; do
   [ -n "$pane_target" ] || continue
   [ "$pane_target" != "$current_target" ] || continue
 
@@ -63,7 +63,6 @@ while IFS=$'\t' read -r _last_visit pane_target window_name pane_id _pane_pid _a
     bg="$normal_bg"
     fg='colour255'
   fi
-  pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
   if [ "$pending" = "1" ]; then
     if [ "$running" = "1" ]; then
       fg='colour238'

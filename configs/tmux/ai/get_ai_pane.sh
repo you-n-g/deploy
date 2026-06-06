@@ -124,7 +124,7 @@ _switcher_header_info() {
 }
 
 _fzf_header() {
-    printf '▶ current pane busy  ➲ current Claude background  ◒ Claude background  ▷ current pane idle  ● busy  ◉ unread  ○ idle  |  orchestrator: %s  |  switcher: %s  |  Enter switch  Ctrl-R reset desc  Ctrl-O toggle orchestrator\n' \
+    printf '▶ current pane busy  ➲ current Claude background  ◒ Claude background   pending  ▷ current pane idle  ● busy  ◉ unread  ○ idle  |  orchestrator: %s  |  switcher: %s  |  Enter switch  Ctrl-R reset desc  Ctrl-O toggle orchestrator\n' \
         "$(_tmuxg_orchestrator_visibility_label)" \
         "$(_switcher_header_info)"
 }
@@ -197,7 +197,7 @@ ROWS=$(_get_ai_pane_rows)
 [[ -n "$ROWS" ]] || exit 1
 
 if [[ "$LIST_ALL" == true ]]; then
-    while IFS=$'\t' read -r _last_visit _sess_win wname pane_id _pane_pid _wact_raw _unread _running _background _attribute; do
+    while IFS=$'\t' read -r _last_visit _sess_win wname pane_id _pane_pid _wact_raw _unread _running _background _pending _attribute; do
         if [[ "$RETURN_ID" == true ]]; then
             printf '%s\n' "$pane_id"
         else
@@ -215,7 +215,7 @@ fi
 COUNT=$(echo "$ROWS" | wc -l | tr -d ' ')
 
 if [[ "$COUNT" -eq 1 ]]; then
-    IFS=$'\t' read -r _last_visit _sess_win _wname pane_id _pane_pid _wact_raw _unread _running _background _attribute <<< "$ROWS"
+    IFS=$'\t' read -r _last_visit _sess_win _wname pane_id _pane_pid _wact_raw _unread _running _background _pending _attribute <<< "$ROWS"
     _output_pane "$pane_id"
     exit 0
 fi

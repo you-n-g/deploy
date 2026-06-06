@@ -7,7 +7,7 @@ Usage:
   codex-remote [options] SSH_TARGET [SSH_LOGIN_OPTIONS...]
 
 Run Codex locally while using a Codex app-server on a remote SSH host.
-The local TUI starts with --dangerously-bypass-approvals-and-sandbox by default.
+The local TUI starts with approval, sandbox, and hook-trust bypasses by default.
 
 Options:
   -C, --remote-cwd DIR       cd to DIR on the remote host before starting Codex
@@ -399,4 +399,7 @@ echo "codex-remote: connected $ssh_target -> ws://127.0.0.1:${local_port}" >&2
 if [[ "$status_bridge_enabled" = "1" ]]; then
     echo "codex-remote: AI status bridge enabled for ${TMUX_PANE}" >&2
 fi
-"$codex_bin" --dangerously-bypass-approvals-and-sandbox --remote "ws://127.0.0.1:${local_port}"
+"$codex_bin" \
+    --dangerously-bypass-approvals-and-sandbox \
+    --dangerously-bypass-hook-trust \
+    --remote "ws://127.0.0.1:${local_port}"
