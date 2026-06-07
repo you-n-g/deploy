@@ -229,7 +229,7 @@ edit_sequence() {
 
   editor="${VISUAL:-${EDITOR:-vim}}"
   read -r -a editor_argv <<< "$editor"
-  editor_name="$(basename -- "${editor_argv[0]}")"
+  editor_name="${editor_argv[0]##*/}"
   if [[ "$editor_name" == "vim" || "$editor_name" == "nvim" ]]; then
     editor_argv+=(-c 'setlocal nowrap')
   fi

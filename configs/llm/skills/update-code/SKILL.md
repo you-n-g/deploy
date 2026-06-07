@@ -27,7 +27,7 @@ metadata:
    OLD_HEAD="$(git rev-parse HEAD)"
    OLD_UPSTREAM="$(git rev-parse --verify @{u} 2>/dev/null || true)"
    if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
-     STASH_NAME="update-code before pull $(date -Is)"
+     STASH_NAME="update-code before pull $(date '+%Y-%m-%dT%H:%M:%S%z')"
      git stash push -u -m "$STASH_NAME"
    fi
    git pull

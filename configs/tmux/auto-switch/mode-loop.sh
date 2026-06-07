@@ -70,7 +70,7 @@ done
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 wait_script="$script_dir/wait-until-submitted.sh"
 switch_script="$script_dir/switch-next.sh"
-token="mode:$$:$(date +%s%N)"
+token="mode:$$:$(date +%s)"
 
 existing_pid="$(tmux show-option -gqv @auto_switch_mode_pid 2>/dev/null || true)"
 existing_token="$(tmux show-option -gqv @auto_switch_mode_token 2>/dev/null || true)"

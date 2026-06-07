@@ -36,6 +36,19 @@ fn - 2 [
     * : open -a "iTerm"            # 否则启动/切到 iTerm2
 ]
 
+# 定义小键盘 6 (0x58) 的行为（Codex）
+0x58 [
+    "Codex" : skhd -k "cmd - h"
+    * : open -a "Codex"
+]
+
+# 定义 fn + 主键盘 6 的行为（Codex）
+fn - 6 [
+    "Codex" : skhd -k "cmd - h"
+    * : open -a "Codex"
+]
+
+
 # 小键盘 0 (0x52) / . (0x41)
 # NOTE: skhd 只能“触发动作/发送具体按键”，做不到把一个键改成“纯修饰键(按住=Fn+Cmd)”。
 # 如果你是想按一下小键盘 0 来发送某个具体组合键，把下面这一行里的 <key> 换成你要的按键即可。

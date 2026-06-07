@@ -464,14 +464,6 @@ alias l='ls -CF'
 
 # # Outlines: envs
 
-export GOROOT="$HOME/apps/go/"
-export PATH="$GOROOT/bin/:$PATH"
-
-# config for go,  vim-go依赖这一步
-export GOPATH="$HOME/gopath/"
-export PATH="$GOPATH/bin/:$PATH"
-
-
 # If the / is full, some command like pip install may fail. So we change the tmpdir to home directly
 export TMPDIR=~/tmp/
 
