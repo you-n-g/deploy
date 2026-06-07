@@ -92,7 +92,7 @@ status_prefix() {
   if [[ "$background" == "1" ]]; then
     printf '◒ '
   elif [[ "$pending" == "1" ]]; then
-    printf ' '
+    printf '⏸ '
   elif [[ "$running" == "1" ]]; then
     printf '● '
   elif [[ "$unread" == "1" ]]; then

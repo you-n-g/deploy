@@ -25,5 +25,5 @@ if [ -n "$hint" ]; then
 fi
 
 if [ "$pending" = "1" ]; then
-  printf '#[fg=colour201,bold] #[nobold,fg=colour203]'
+  printf '#[fg=colour201,bold] ⏸#[nobold,fg=colour203]'
 fi

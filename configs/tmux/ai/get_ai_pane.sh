@@ -124,7 +124,7 @@ _switcher_header_info() {
 }
 
 _fzf_header() {
-    printf '▶ current pane busy  ➲ current Claude background  ◒ Claude background   pending  ▷ current pane idle  ● busy  ◉ unread  ○ idle  |  orchestrator: %s  |  switcher: %s  |  Enter switch  Ctrl-R reset desc  Ctrl-O toggle orchestrator\n' \
+    printf '▶ current pane busy  ➲ current Claude background  ◒ Claude background  ⏸ pending  ▷ current pane idle  ● busy  ◉ unread  ○ idle  |  orchestrator: %s  |  switcher: %s  |  Enter switch  Ctrl-R reset desc  Ctrl-O toggle orchestrator\n' \
         "$(_tmuxg_orchestrator_visibility_label)" \
         "$(_switcher_header_info)"
 }

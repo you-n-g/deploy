@@ -369,7 +369,7 @@ _ai_pane_rows() {
 #   ▶/➲/▷ (cyan) current pane (▶ = running, ➲ = background, ▷ = idle)
 #   ●   (yellow) running
 #   ◒   (yellow) Claude background work
-#      (magenta) pending — intentionally waiting on something
+#   ⏸   (magenta) pending — intentionally waiting on something
 #   ◉   (yellow) unread — finished while not visible
 #   ○   (green)  idle, nothing new since last visit
 #
@@ -413,7 +413,7 @@ _ai_pane_fzf_list() {
             elif $is_busy; then
                 status=$'\033[36m▶\033[0m '
             elif $is_pending; then
-                status=$'\033[35m\033[0m '
+                status=$'\033[35m⏸\033[0m '
             else
                 status=$'\033[36m▷\033[0m '
             fi
@@ -425,7 +425,7 @@ _ai_pane_fzf_list() {
             status=$'\033[33m●\033[0m '
         elif $is_pending; then
             sort_key=07
-            status=$'\033[35m\033[0m '
+            status=$'\033[35m⏸\033[0m '
         elif (( is_unread )); then
             sort_key=08
             status=$'\033[33m◉\033[0m '

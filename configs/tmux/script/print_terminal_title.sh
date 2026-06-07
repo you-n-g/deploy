@@ -19,7 +19,7 @@ ai_title_status_prefix() {
     elif [ "$running" = "1" ]; then
       printf '▶ '
     elif [ "$pending" = "1" ]; then
-      printf ' '
+      printf '⏸ '
     else
       printf '▷ '
     fi
@@ -31,7 +31,7 @@ ai_title_status_prefix() {
   elif [ "$running" = "1" ]; then
     printf '● '
   elif [ "$pending" = "1" ]; then
-    printf ' '
+    printf '⏸ '
   elif [ "$unread" = "1" ]; then
     printf '◉ '
   else
