@@ -307,10 +307,18 @@ function geminir() {
 
 # codex with rename
 function codexr() {
+    if [[ "$(uname)" == "Linux" ]]; then
+        codexs8121 "$@"
+        return
+    fi
+
     local provider
     provider=$(_codex_default_provider)
 
     case "$provider" in
+        lb8121)
+            codexs8121 "$@"
+            ;;
         openai)
             # only default openai provider needs login
             _codex_run_login codex "$@"
@@ -339,14 +347,14 @@ _codex_auto_flag() {
 }
 
 _codex_default_provider() {
-    local config_path="${CODEX_HOME:-$HOME/.codex}/config.toml"
-    local provider
+    local provider="${CODEXR_PROVIDER:-}"
 
-    if [[ -f "$config_path" ]]; then
-        provider=$(sed -nE 's/^[[:space:]]*model_provider[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' "$config_path" | head -n 1)
+    if [[ -n "$provider" ]]; then
+        echo "$provider"
+        return
     fi
 
-    echo "${provider:-openai}"
+    echo "lb8121"
 }
 
 _codex_env() {
@@ -382,6 +390,26 @@ function codexa() {
 
 function codexyz() {
     _codex_run_api codex-xyz -c 'model_provider="xyz"' "$@"
+}
+
+function codexs8121() {
+    local api_key="${LB_API_KEY:-}"
+    if [[ -z "$api_key" ]]; then
+        api_key="$(get-cred codex-hc-fte gpt-4.1.gpg)" || return
+    fi
+    if [[ -z "$api_key" ]]; then
+        echo "codexs8121: empty LB_API_KEY from get-cred codex-hc-fte gpt-4.1.gpg" >&2
+        return 1
+    fi
+
+    LB_API_KEY="$api_key" \
+        _codex_run_api codex-share-8121 \
+            -c 'model_provider="lb8121"' \
+            -c 'model_providers.lb8121.name="codex-backend-8121"' \
+            -c 'model_providers.lb8121.base_url="http://hc.zhilicon.com:8121/backend-api/codex"' \
+            -c 'model_providers.lb8121.wire_api="responses"' \
+            -c 'model_providers.lb8121.env_key="LB_API_KEY"' \
+            "$@"
 }
 
 function c() {

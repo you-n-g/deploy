@@ -56,6 +56,17 @@ shell_quote() {
     printf "'%s'" "$(printf "%s" "$1" | sed "s/'/'\\\\''/g")"
 }
 
+probe_app_server_ws() (
+    local port="$1"
+    local response
+    local ws_key="AAAAAAAAAAAAAAAAAAAAAA=="
+
+    { exec 3<>"/dev/tcp/127.0.0.1/${port}"; } 2>/dev/null || return 1
+    printf 'GET / HTTP/1.1\r\nHost: 127.0.0.1:%s\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: %s\r\nSec-WebSocket-Version: 13\r\n\r\n' "$port" "$ws_key" >&3 || return 1
+    IFS= read -r -t 2 response <&3 || return 1
+    [[ "$response" == HTTP/*" 101 "* ]]
+)
+
 remote_cwd=""
 local_port=""
 remote_port=""
@@ -153,8 +164,37 @@ status_bridge_pid=""
 status_bridge_enabled=0
 local_status_port=""
 remote_status_port=""
+remote_app_server_pid=""
+remote_app_server_ready=0
+remote_cleanup_done=0
+
+read_remote_app_server_state() {
+    remote_app_server_pid="$(awk -F= '/^CODEX_REMOTE_APP_SERVER_PID=/ {print $2; exit}' "$log_file" 2>/dev/null || true)"
+    if grep -q '^CODEX_REMOTE_APP_SERVER_READY=1$' "$log_file" 2>/dev/null; then
+        remote_app_server_ready=1
+    fi
+}
+
+cleanup_remote_app_server() {
+    read_remote_app_server_state
+    [[ -n "$remote_app_server_pid" ]] || return 0
+    [[ "$remote_cleanup_done" = "0" ]] || return 0
+    remote_cleanup_done=1
+
+    local cleanup_script
+    cleanup_script="
+pid=$(shell_quote "$remote_app_server_pid")
+listen=$(shell_quote "$remote_listen")
+if [[ -r \"/proc/\$pid/cmdline\" ]] && tr '\0' ' ' <\"/proc/\$pid/cmdline\" | grep -F -- \"app-server --listen \$listen\" >/dev/null; then
+    kill \"\$pid\" 2>/dev/null || true
+fi
+"
+    # shellcheck disable=SC2029 # cleanup_script is intentionally built locally, then quoted for the remote shell.
+    ssh "${ssh_args[@]}" "$ssh_target" "bash -lc $(shell_quote "$cleanup_script")" >/dev/null 2>&1 || true
+}
 
 cleanup() {
+    cleanup_remote_app_server
     if [[ -n "$ssh_pid" ]] && kill -0 "$ssh_pid" 2>/dev/null; then
         kill "$ssh_pid" 2>/dev/null || true
         wait "$ssh_pid" 2>/dev/null || true
@@ -257,10 +297,22 @@ set -euo pipefail
 remote_cwd="${1:-}"
 remote_codex_bin="${2:?missing remote codex binary}"
 remote_listen="${3:?missing remote listen url}"
-status_port="${4:-}"
+connect_timeout="${4:-20}"
+status_port="${5:-}"
 remote_codex_home=""
 app_server_pid=""
 app_server_port="${remote_listen##*:}"
+app_server_cmd=()
+
+probe_readyz() (
+    local port="$1"
+    local response
+
+    { exec 3<>"/dev/tcp/127.0.0.1/${port}"; } 2>/dev/null || return 1
+    printf 'GET /readyz HTTP/1.0\r\nHost: 127.0.0.1:%s\r\n\r\n' "$port" >&3 || return 1
+    IFS= read -r -t 2 response <&3 || return 1
+    [[ "$response" == HTTP/*" 200 "* ]]
+)
 
 cleanup() {
     if [[ -n "$app_server_pid" ]] && kill -0 "$app_server_pid" 2>/dev/null; then
@@ -356,8 +408,29 @@ if (exec 9<>"/dev/tcp/127.0.0.1/${app_server_port}") 2>/dev/null; then
     exit 1
 fi
 
-"$remote_codex_bin" app-server --listen "$remote_listen" &
+app_server_cmd=("$remote_codex_bin")
+if [[ -n "$status_port" ]]; then
+    app_server_cmd+=(--dangerously-bypass-hook-trust)
+fi
+app_server_cmd+=(app-server --listen "$remote_listen")
+
+"${app_server_cmd[@]}" &
 app_server_pid="$!"
+echo "CODEX_REMOTE_APP_SERVER_PID=$app_server_pid"
+
+deadline=$((SECONDS + connect_timeout))
+while ! probe_readyz "$app_server_port"; do
+    if ! kill -0 "$app_server_pid" 2>/dev/null; then
+        wait "$app_server_pid"
+        exit $?
+    fi
+    if (( SECONDS >= deadline )); then
+        echo "timed out waiting for remote app-server readyz: http://127.0.0.1:${app_server_port}/readyz" >&2
+        exit 1
+    fi
+    sleep 0.2
+done
+echo "CODEX_REMOTE_APP_SERVER_READY=1"
 wait "$app_server_pid"
 REMOTE_SCRIPT
     chmod +x "$remote_script"
@@ -370,36 +443,53 @@ ssh_cmd=(ssh -o ExitOnForwardFailure=yes -L "${local_port}:127.0.0.1:${remote_po
 if [[ "$status_bridge_enabled" = "1" ]]; then
     ssh_cmd+=(-R "127.0.0.1:${remote_status_port}:127.0.0.1:${local_status_port}")
 fi
-ssh_cmd+=("${ssh_args[@]}" "$ssh_target" bash -s -- "$remote_cwd" "$remote_codex_bin" "$remote_listen")
+ssh_cmd+=("${ssh_args[@]}" "$ssh_target" bash -s -- "$remote_cwd" "$remote_codex_bin" "$remote_listen" "$connect_timeout")
 if [[ "$status_bridge_enabled" = "1" ]]; then
     ssh_cmd+=("$remote_status_port")
-else
-    ssh_cmd+=("")
 fi
 
 "${ssh_cmd[@]}" <"$remote_script" >"$log_file" 2>&1 &
 ssh_pid="$!"
 
 deadline=$((SECONDS + connect_timeout))
-while ! bash -c "</dev/tcp/127.0.0.1/${local_port}" >/dev/null 2>&1; do
+while true; do
+    read_remote_app_server_state
+    if [[ "$remote_app_server_ready" = "1" ]] && probe_app_server_ws "$local_port"; then
+        break
+    fi
     if ! kill -0 "$ssh_pid" 2>/dev/null; then
-        echo "codex-remote: ssh/app-server process exited before the port became reachable" >&2
+        echo "codex-remote: ssh/app-server process exited before the remote app-server became ready" >&2
         cat "$log_file" >&2
         exit 1
     fi
     if (( SECONDS >= deadline )); then
-        echo "codex-remote: timed out waiting for ws://127.0.0.1:${local_port}" >&2
+        echo "codex-remote: timed out waiting for remote app-server WebSocket readiness" >&2
+        echo "codex-remote: local endpoint ws://127.0.0.1:${local_port} -> ${ssh_target} ${remote_listen}" >&2
         cat "$log_file" >&2
         exit 1
     fi
     sleep 0.2
 done
 
-echo "codex-remote: connected $ssh_target -> ws://127.0.0.1:${local_port}" >&2
+echo "codex-remote: remote app-server ready $ssh_target ${remote_listen} -> ws://127.0.0.1:${local_port}" >&2
 if [[ "$status_bridge_enabled" = "1" ]]; then
     echo "codex-remote: AI status bridge enabled for ${TMUX_PANE}" >&2
 fi
+set +e
 "$codex_bin" \
     --dangerously-bypass-approvals-and-sandbox \
     --dangerously-bypass-hook-trust \
     --remote "ws://127.0.0.1:${local_port}"
+codex_status=$?
+set -e
+
+if [[ "$codex_status" -ne 0 ]]; then
+    echo "codex-remote: local Codex exited with status ${codex_status} while connecting to ws://127.0.0.1:${local_port}" >&2
+    echo "codex-remote: SSH forwarding and remote WebSocket readiness had already succeeded; retrying may fix a startup race" >&2
+    echo "codex-remote: persistent failures usually indicate a Codex version/protocol mismatch or a remote app-server crash" >&2
+    if [[ -s "$log_file" ]]; then
+        echo "codex-remote: remote app-server log follows:" >&2
+        cat "$log_file" >&2
+    fi
+    exit "$codex_status"
+fi

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to get Azure credentials from GPG encrypted files
-# Usage: get-cred [key|base|model|xyz_base|xyz_key|feishu_hook_id|feishu_secret|feishu_app_id|feishu_app_secret|feishu_chat_id] [filename.gpg]
+# Usage: get-cred [key|base|model|xyz_base|xyz_key|feishu_hook_id|feishu_secret|feishu_app_id|feishu_app_secret|feishu_chat_id|codex-hc-fte] [filename.gpg]
 # Default: get-cred key gpt.gpg
 
 TYPE="${1:-key}"
@@ -63,8 +63,11 @@ case "$TYPE" in
     feishu_chat_id)
         LINE=14
         ;;
+    codex-hc-fte)
+        LINE=15
+        ;;
     *)
-        echo "Usage: $0 [base|model|key|xyz_base|xyz_key|feishu_hook_id|feishu_secret|feishu_app_id|feishu_app_secret|feishu_chat_id] [filename.gpg]" >&2
+        echo "Usage: $0 [base|model|key|xyz_base|xyz_key|feishu_hook_id|feishu_secret|feishu_app_id|feishu_app_secret|feishu_chat_id|codex-hc-fte] [filename.gpg]" >&2
         exit 1
         ;;
 esac

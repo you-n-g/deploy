@@ -9,6 +9,10 @@ current_pane="${4:-}"
 last_session="${5:-}"
 refresh_all_sessions=0
 
+auto_switch_next() {
+  tmux run-shell -b "$HOME/deploy/configs/tmux/auto-switch/switch-next.sh"
+}
+
 clear_buttons_expanded_overrides() {
   tmux list-sessions -F '#S' 2>/dev/null | while IFS= read -r session_name; do
     tmux set-option -qu -t "${session_name}:" @status-buttons-expanded 2>/dev/null || true
@@ -39,7 +43,7 @@ case "$button" in
     tmux choose-window -Z
     ;;
   sb_pd)
-    tmux run-shell -b "~/deploy/configs/tmux/script/track_ai_agent_state.sh pending '$current_pane'"
+    tmux run-shell -b "$HOME/deploy/configs/tmux/script/track_ai_agent_state.sh pending '$current_pane'"
     ;;
   sb_p70)
     "$HOME/deploy/configs/tmux/script/pane_focus_70.sh" toggle "$current_pane"
@@ -51,22 +55,22 @@ case "$button" in
     set_buttons_expanded 0
     ;;
   sb_g)
-    tmux run-shell -b "cd '$path' && ~/deploy/configs/tmux/ai/tmuxg.sh --create-if-missing -q"
+    tmux run-shell -b "cd '$path' && $HOME/deploy/configs/tmux/ai/tmuxg.sh --create-if-missing -q"
     ;;
   sb_mc)
-    tmux run-shell -b "~/deploy/configs/tmux/ai/tmuxg.sh --force-new -q"
+    tmux run-shell -b "$HOME/deploy/configs/tmux/ai/tmuxg.sh --force-new -q"
     ;;
   sb_cg)
-    tmux run-shell -b "~/deploy/configs/tmux/ai/tmuxg.sh -A -q"
+    tmux run-shell -b "$HOME/deploy/configs/tmux/ai/tmuxg.sh -A -q"
     ;;
   sb_t)
-    tmux run-shell -b "~/deploy/configs/tmux/ai/send_current_target_to_ai.sh -q"
+    tmux run-shell -b "$HOME/deploy/configs/tmux/ai/send_current_target_to_ai.sh -q"
     ;;
   sb_ct)
-    tmux run-shell -b "~/deploy/configs/tmux/ai/send_current_target_to_ai.sh -A -q"
+    tmux run-shell -b "$HOME/deploy/configs/tmux/ai/send_current_target_to_ai.sh -A -q"
     ;;
   sb_mf)
-    tmux run-shell -b "~/deploy/configs/tmux/ai/fork_ai_session.sh -q"
+    tmux run-shell -b "$HOME/deploy/configs/tmux/ai/fork_ai_session.sh -q"
     ;;
   sb_kp)
     if [ -z "$current_pane" ]; then
@@ -81,19 +85,25 @@ case "$button" in
     refresh_all_sessions=1
     ;;
   sb_ml)
-    tmux run-shell -b "~/deploy/configs/tmux/ai/switch_to_last_ai_window.sh -q"
+    tmux run-shell -b "$HOME/deploy/configs/tmux/ai/switch_to_last_ai_window.sh -q"
     ;;
   sb_as)
     tmux run-shell -b "$HOME/deploy/configs/tmux/ai/switch_to_marked_or_switcher_pane.sh '$current_pane'"
     ;;
+  sb_a|sb_auto_switch_next)
+    auto_switch_next
+    ;;
+  right)
+    auto_switch_next
+    ;;
   sb_cc)
-    tmux run-shell -b "~/deploy/helper_scripts/bin/c"
+    tmux run-shell -b "$HOME/deploy/helper_scripts/bin/c"
     ;;
   sb_d)
-    tmux run-shell -b "~/deploy/helper_scripts/bin/D"
+    tmux run-shell -b "$HOME/deploy/helper_scripts/bin/D"
     ;;
   sb_n)
-    tmux run-shell -b "~/deploy/helper_scripts/bin/N"
+    tmux run-shell -b "$HOME/deploy/helper_scripts/bin/N"
     ;;
   *)
     tmux display-message "Unknown status button: ${button}"
