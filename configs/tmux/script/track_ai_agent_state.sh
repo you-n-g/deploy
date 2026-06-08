@@ -19,8 +19,9 @@ set -eu
 #   already visible.
 # - @ai_agent_pending:
 #   "1" means the pane is intentionally waiting on an external condition and
-#   should not be selected by auto-switch. It is cleared when that pane starts a
-#   new non-pending running turn.
+#   should not be selected by auto-switch. It is cleared when that pane starts
+#   or resumes a non-pending running turn, and that transition publishes a
+#   running event for auto-switch waiters.
 # - @ai_agent_attribute:
 #   A short generated description of the pane's current task. It is generated
 #   lazily once and kept stable across later prompts until init/reset clears it.
@@ -142,14 +143,14 @@ is_window_visible() {
 }
 
 current_user_pane() {
-  local client readonly control_mode pane activity best_pane best_activity
+  local client client_readonly control_mode pane activity best_pane best_activity
 
   best_pane=""
   best_activity=-1
 
-  while IFS='	' read -r client readonly control_mode pane activity; do
+  while IFS='	' read -r client client_readonly control_mode pane activity; do
     [ -n "$client" ] || continue
-    if [ "$readonly" = "1" ] || [ "$control_mode" = "1" ]; then
+    if [ "$client_readonly" = "1" ] || [ "$control_mode" = "1" ]; then
       continue
     fi
     [ -n "$pane" ] || continue
@@ -289,11 +290,9 @@ case "$state" in
     # User preference: generate a pane attribute only once and keep it stable
     # across later prompts. Do not reset it on UserPromptSubmit.
     ensure_ai_agent_attribute
-    if [ "$was_running" != "1" ]; then
+    if [ "$was_running" != "1" ] || [ "$was_pending" = "1" ]; then
       tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
-      if [ "$was_pending" != "1" ]; then
-        emit_ai_agent_event running
-      fi
+      emit_ai_agent_event running
     fi
     if is_window_visible; then
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 0

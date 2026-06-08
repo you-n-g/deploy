@@ -15,6 +15,14 @@ esac
 changed=0
 ps_cache="$(ps -ax -o pid,ppid,comm 2>/dev/null || true)"
 
+is_active_ai_tui() {
+  local pane="$1" recent
+
+  recent="$(tmux capture-pane -p -t "$pane" -S -30 2>/dev/null | sed '/^[[:space:]]*$/d' | tail -n 8 || true)"
+  printf '%s\n' "$recent" | tr '[:upper:]' '[:lower:]' | grep -Eq \
+    'baking|working|esc[[:space:]]+to[[:space:]]+(interrupt|interupt)|press[[:space:]]+esc'
+}
+
 while IFS='|' read -r pane_id pane_pid window_activity window_active session_attached running background unread pending attribute; do
   if [ -n "${running}${background}${unread}${pending}${attribute}" ] && ! _has_ai_proc "$pane_pid" "$ps_cache"; then
     _clear_ai_pane_state "$pane_id"
@@ -26,6 +34,9 @@ while IFS='|' read -r pane_id pane_pid window_activity window_active session_att
   [ "$window_activity" -gt 0 ] || continue
 
   if [ $((now - window_activity)) -ge "$stale_seconds" ]; then
+    if is_active_ai_tui "$pane_id"; then
+      continue
+    fi
     tmux set-option -pq -t "$pane_id" @ai_agent_running 0
     if [ "$window_active" = "1" ] && [ "$session_attached" != "0" ]; then
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
