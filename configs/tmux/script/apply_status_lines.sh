@@ -58,6 +58,7 @@ click_only() {
 compact_buttons="$(
   button_row \
     sb_g ' g ' \
+    sb_G ' G ' \
     sb_cg 'C-g' \
     sb_mc 'M-c' \
     sb_ml 'M-l' \
@@ -71,6 +72,7 @@ compact_buttons="$(
 expanded_buttons="$(
   button_row \
     sb_g ' g ' \
+    sb_G ' G ' \
     sb_cg 'C-g' \
     sb_mc 'M-c' \
     sb_ml 'M-l' \

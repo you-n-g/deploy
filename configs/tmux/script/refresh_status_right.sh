@@ -51,6 +51,9 @@ esac
 status_right="${status_right}#[fg=green]#(\$TMUX_PLUGIN_MANAGER_PATH/tmux-mem-cpu-load/tmux-mem-cpu-load --colors --powerline-right -g 0 -t 1 --interval 2)#[default]"
 status_right="${status_right} #[fg=yellow]#(df -h ${mount_path} 2>/dev/null | awk 'NR==2 {print \"${display_path} \" \$5 \" \" \$4}')#[default]"
 status_right="${status_right} #[fg=cyan]🤖 #(${SCRIPT_DIR}/print_ai_status.sh)#[default]"
+# Keep the current-window hint, waiting bell, and mode symbol in one clickable
+# range. Desktop tmux clients report this as sb_a/right; mobile clients may not
+# report status ranges at all, so debug MouseDown1Status before changing this.
 status_right="${status_right} #[range=user|sb_a]#[fg=colour203]#(${SCRIPT_DIR}/print_current_window_hint.sh)#[fg=colour201]#(${SCRIPT_DIR}/../auto-switch/print-waiting-hint.sh)#[fg=green]#{@auto_switch_status_symbol} #[norange default]"
 
 tmux set-option -g status-right "$status_right"

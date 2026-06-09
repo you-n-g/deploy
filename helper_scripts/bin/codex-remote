@@ -163,6 +163,7 @@ remote_script="$(mktemp -t codex-remote.XXXXXX.remote.sh)"
 status_log_file=""
 ssh_pid=""
 status_bridge_pid=""
+status_monitor_pid=""
 status_bridge_enabled=0
 local_status_port=""
 remote_status_port=""
@@ -204,6 +205,10 @@ cleanup() {
     if [[ -n "$status_bridge_pid" ]] && kill -0 "$status_bridge_pid" 2>/dev/null; then
         kill "$status_bridge_pid" 2>/dev/null || true
         wait "$status_bridge_pid" 2>/dev/null || true
+    fi
+    if [[ -n "$status_monitor_pid" ]] && kill -0 "$status_monitor_pid" 2>/dev/null; then
+        kill "$status_monitor_pid" 2>/dev/null || true
+        wait "$status_monitor_pid" 2>/dev/null || true
     fi
     rm -f "$log_file"
     rm -f "$remote_script"
@@ -289,6 +294,16 @@ PY
 
     "$HOME/deploy/configs/tmux/script/track_ai_agent_state.sh" init "$TMUX_PANE"
     status_bridge_enabled=1
+}
+
+start_tui_state_monitor() {
+    [[ "$status_bridge_enabled" = "1" ]] || return 0
+
+    local tracker_script="$HOME/deploy/configs/tmux/state-tracker/tui-output.sh"
+    [[ -x "$tracker_script" ]] || die "tmux state tracker is not executable: $tracker_script"
+
+    "$tracker_script" "$TMUX_PANE" >>"$status_log_file" 2>&1 &
+    status_monitor_pid="$!"
 }
 
 write_remote_script() {
@@ -446,6 +461,7 @@ REMOTE_SCRIPT
 }
 
 start_status_bridge
+start_tui_state_monitor
 write_remote_script
 
 ssh_cmd=(ssh -o ExitOnForwardFailure=yes -L "${local_port}:127.0.0.1:${remote_port}")
