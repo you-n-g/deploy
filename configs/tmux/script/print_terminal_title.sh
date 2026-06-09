@@ -14,24 +14,24 @@ ai_title_status_prefix() {
   local pending="$5"
 
   if [ "$is_current" = "1" ]; then
-    if [ "$background" = "1" ]; then
+    if [ "$pending" = "1" ]; then
+      printf '⏸ '
+    elif [ "$background" = "1" ]; then
       printf '➲ '
     elif [ "$running" = "1" ]; then
       printf '▶ '
-    elif [ "$pending" = "1" ]; then
-      printf '⏸ '
     else
       printf '▷ '
     fi
     return
   fi
 
-  if [ "$background" = "1" ]; then
+  if [ "$pending" = "1" ]; then
+    printf '⏸ '
+  elif [ "$background" = "1" ]; then
     printf '◒ '
   elif [ "$running" = "1" ]; then
     printf '● '
-  elif [ "$pending" = "1" ]; then
-    printf '⏸ '
   elif [ "$unread" = "1" ]; then
     printf '◉ '
   else

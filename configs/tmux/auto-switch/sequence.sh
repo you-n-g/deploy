@@ -9,7 +9,7 @@ usage() {
 Usage:
   sequence.sh reset-current <pane>
   sequence.sh append-current <pane>
-  sequence.sh edit
+  sequence.sh edit [focus-pane]
   sequence.sh show
 
 Manage the auto-switch pane sequence stored in @auto_switch_ranked_panes.
@@ -22,8 +22,10 @@ shift
 
 ranked_option="@auto_switch_ranked_panes"
 target_pane=""
+edit_focus_target=""
 message=""
 declare -A edit_session_by_pane=()
+declare -A edit_window_id_by_pane=()
 declare -A edit_window_by_pane=()
 declare -A edit_index_by_pane=()
 declare -A edit_path_by_pane=()
@@ -32,13 +34,20 @@ declare -A edit_running_by_pane=()
 declare -A edit_background_by_pane=()
 declare -A edit_pending_by_pane=()
 declare -A edit_attribute_by_pane=()
+edit_target_width=0
+edit_state_width=0
+edit_attribute_width=0
 case "$command_name" in
   reset-current|append-current)
     target_pane="${1:-}"
     [[ -n "$target_pane" ]] || { echo "$command_name requires a pane target" >&2; exit 2; }
     shift
     ;;
-  edit|show)
+  edit)
+    edit_focus_target="${1:-}"
+    [[ -z "$edit_focus_target" ]] || shift
+    ;;
+  show)
     ;;
   -h|--help)
     usage
@@ -84,10 +93,10 @@ editable_sequence() {
 
 status_prefix() {
   local unread="$1" running="$2" background="$3" pending="$4"
-  if [[ "$background" == "1" ]]; then
-    printf '◒ '
-  elif [[ "$pending" == "1" ]]; then
+  if [[ "$pending" == "1" ]]; then
     printf '⏸ '
+  elif [[ "$background" == "1" ]]; then
+    printf '◒ '
   elif [[ "$running" == "1" ]]; then
     printf '● '
   elif [[ "$unread" == "1" ]]; then
@@ -117,10 +126,10 @@ pane_label() {
 state_label() {
   local unread="$1" running="$2" background="$3" pending="$4"
 
-  if [[ "$background" == "1" ]]; then
-    printf 'background'
-  elif [[ "$pending" == "1" ]]; then
+  if [[ "$pending" == "1" ]]; then
     printf 'pending'
+  elif [[ "$background" == "1" ]]; then
+    printf 'background'
   elif [[ "$running" == "1" ]]; then
     printf 'running'
   elif [[ "$unread" == "1" ]]; then
@@ -131,11 +140,14 @@ state_label() {
 }
 
 load_edit_pane_cache() {
-  local pane session_name window_name pane_index path unread running background pending attribute
+  local pane window_id session_name window_name pane_index path unread running background pending attribute
+  local field_sep
 
-  while IFS=$'\t' read -r pane session_name window_name pane_index path unread running background pending attribute; do
+  field_sep=$'\037'
+  while IFS="$field_sep" read -r pane window_id session_name window_name pane_index path unread running background pending attribute; do
     [[ -n "$pane" ]] || continue
     edit_session_by_pane["$pane"]="$session_name"
+    edit_window_id_by_pane["$pane"]="$window_id"
     edit_window_by_pane["$pane"]="$window_name"
     edit_index_by_pane["$pane"]="$pane_index"
     edit_path_by_pane["$pane"]="$path"
@@ -145,12 +157,42 @@ load_edit_pane_cache() {
     edit_pending_by_pane["$pane"]="$pending"
     edit_attribute_by_pane["$pane"]="$attribute"
   done < <(tmux list-panes -a \
-    -F $'#{pane_id}\t#{session_name}\t#{window_name}\t#{pane_index}\t#{pane_current_path}\t#{@ai_agent_unread}\t#{@ai_agent_running}\t#{@ai_agent_background}\t#{@ai_agent_pending}\t#{@ai_agent_attribute}')
+    -F $'#{pane_id}\037#{window_id}\037#{session_name}\037#{window_name}\037#{pane_index}\037#{pane_current_path}\037#{@ai_agent_unread}\037#{@ai_agent_running}\037#{@ai_agent_background}\037#{@ai_agent_pending}\037#{@ai_agent_attribute}')
+}
+
+edit_focus_line() {
+  local ranked="$1" focus_target="$2" focus_pane focus_window pane line=5
+
+  [[ -n "$focus_target" ]] || { printf '6\n'; return 0; }
+  focus_pane="$(resolve_pane "$focus_target" || true)"
+  [[ -n "$focus_pane" ]] || { printf '6\n'; return 0; }
+
+  for pane in $ranked; do
+    line=$((line + 1))
+    if [[ "$pane" == "$focus_pane" ]]; then
+      printf '%s\n' "$line"
+      return 0
+    fi
+  done
+
+  focus_window="$(tmux display-message -p -t "$focus_pane" '#{window_id}' 2>/dev/null || true)"
+  [[ -n "$focus_window" ]] || { printf '6\n'; return 0; }
+
+  line=5
+  for pane in $ranked; do
+    line=$((line + 1))
+    if [[ "${edit_window_id_by_pane[$pane]-}" == "$focus_window" ]]; then
+      printf '%s\n' "$line"
+      return 0
+    fi
+  done
+
+  printf '6\n'
 }
 
 pane_edit_comment() {
   local pane="$1"
-  local session_name window_name pane_index unread running background pending attribute clean_attribute path state
+  local session_name window_name pane_index unread running background pending attribute clean_attribute path state target_label
 
   [[ -n "${edit_session_by_pane[$pane]+set}" ]] || { echo "pane missing from edit cache: $pane" >&2; return 1; }
   session_name="${edit_session_by_pane[$pane]}"
@@ -165,15 +207,51 @@ pane_edit_comment() {
   clean_attribute="$(printf '%s' "$attribute" | strip_tmux_format)"
   state="$(state_label "$unread" "$running" "$background" "$pending")"
   window_name="$(_strip_ai_window_state_prefix "$window_name")"
+  target_label="${session_name}:${window_name}.${pane_index}"
 
-  printf '%s:%s.%s | %s | %s | %s' \
-    "$session_name" "$window_name" "$pane_index" "$state" "${clean_attribute:-no attribute}" "$path"
+  printf '%-*s | %-*s | %-*s | %s' \
+    "$edit_target_width" "$target_label" \
+    "$edit_state_width" "$state" \
+    "$edit_attribute_width" "${clean_attribute:-no attribute}" \
+    "$path"
+}
+
+prepare_edit_column_widths() {
+  local ranked="$1" pane session_name window_name pane_index unread running background pending attribute
+  local clean_attribute path state target_label
+
+  edit_target_width=0
+  edit_state_width=0
+  edit_attribute_width=0
+
+  for pane in $ranked; do
+    [[ -n "${edit_session_by_pane[$pane]+set}" ]] || continue
+    session_name="${edit_session_by_pane[$pane]}"
+    window_name="$(_strip_ai_window_state_prefix "${edit_window_by_pane[$pane]}")"
+    pane_index="${edit_index_by_pane[$pane]}"
+    unread="${edit_unread_by_pane[$pane]}"
+    running="${edit_running_by_pane[$pane]}"
+    background="${edit_background_by_pane[$pane]}"
+    pending="${edit_pending_by_pane[$pane]}"
+    attribute="${edit_attribute_by_pane[$pane]}"
+    clean_attribute="$(printf '%s' "$attribute" | strip_tmux_format)"
+    clean_attribute="${clean_attribute:-no attribute}"
+    state="$(state_label "$unread" "$running" "$background" "$pending")"
+    target_label="${session_name}:${window_name}.${pane_index}"
+    path="${edit_path_by_pane[$pane]}"
+
+    [ "${#target_label}" -le "$edit_target_width" ] || edit_target_width="${#target_label}"
+    [ "${#state}" -le "$edit_state_width" ] || edit_state_width="${#state}"
+    [ "${#clean_attribute}" -le "$edit_attribute_width" ] || edit_attribute_width="${#clean_attribute}"
+    [ -n "$path" ] || true
+  done
 }
 
 write_edit_file() {
   local file="$1" ranked="$2" pane comment
 
   load_edit_pane_cache
+  prepare_edit_column_widths "$ranked"
 
   {
     printf '# Edit auto-switch order. Keep one pane id before "#"; text after "#" is ignored.\n'
@@ -229,7 +307,7 @@ wait_after_error() {
 }
 
 edit_sequence() {
-  local tmp editor editor_name
+  local tmp editor editor_name focus_line
   local -a editor_argv
 
   tmp="$(mktemp "${TMPDIR:-/tmp}/auto-switch-sequence.XXXXXX")"
@@ -238,13 +316,23 @@ edit_sequence() {
   ranked="$(editable_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
   [[ -n "$ranked" ]] || { echo "no live AI panes to edit" >&2; wait_after_error; return 1; }
   write_edit_file "$tmp" "$ranked"
+  focus_line="$(edit_focus_line "$ranked" "$edit_focus_target")"
 
   editor="${VISUAL:-${EDITOR:-vim}}"
   read -r -a editor_argv <<< "$editor"
   editor_name="${editor_argv[0]##*/}"
   if [[ "$editor_name" == "vim" || "$editor_name" == "nvim" ]]; then
     editor_argv=("${editor_argv[0]}" -u NONE -U NONE -N -i NONE "${editor_argv[@]:1}")
-    editor_argv+=(-c 'setlocal nowrap' -c 'nnoremap <buffer> q :wq<CR>')
+    if [[ -n "$focus_line" ]]; then
+      editor_argv+=(-c "call cursor(${focus_line}, 1)")
+    fi
+    editor_argv+=(
+      -c 'syntax enable'
+      -c 'setlocal filetype=conf nowrap'
+      -c 'syntax match AutoSwitchSeparator /|/ containedin=ALL'
+      -c 'highlight AutoSwitchSeparator ctermfg=45 cterm=bold guifg=#00d7ff gui=bold'
+      -c 'nnoremap <buffer> q :wq<CR>'
+    )
   fi
   if ! "${editor_argv[@]}" "$tmp"; then
     echo "editor failed: $editor" >&2
@@ -298,13 +386,16 @@ case "$command_name" in
     ;;
   edit)
     edit_sequence
-    message="auto-switch sequence updated: $(sequence_count "$ranked") panes"
     ;;
   show)
     ranked="$(normalize_existing_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
     tmux set-option -gq "$ranked_option" "$ranked"
     ;;
 esac
+
+if [[ "$command_name" == "edit" ]]; then
+  exit 0
+fi
 
 if [[ -z "$message" ]]; then
   message="auto-switch sequence: $(format_sequence "$ranked")"

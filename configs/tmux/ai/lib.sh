@@ -112,6 +112,7 @@ _strip_ai_window_state_prefix() {
             "● "*) name="${name#● }" ;;
             "⏵ "*) name="${name#⏵ }" ;;
             "◒ "*) name="${name#◒ }" ;;
+            "⏸ "*) name="${name#⏸ }" ;;
             "◉ "*) name="${name#◉ }" ;;
             "○ "*) name="${name#○ }" ;;
             *) break ;;
@@ -408,24 +409,24 @@ _ai_pane_fzf_list() {
 
         if [[ "$sess_win" == "$current_target" ]]; then
             sort_key=0
-            if $has_background; then
+            if $is_pending; then
+                status=$'\033[35m⏸\033[0m '
+            elif $has_background; then
                 status=$'\033[36m➲\033[0m '
             elif $is_busy; then
                 status=$'\033[36m▶\033[0m '
-            elif $is_pending; then
-                status=$'\033[35m⏸\033[0m '
             else
                 status=$'\033[36m▷\033[0m '
             fi
+        elif $is_pending; then
+            sort_key=07
+            status=$'\033[35m⏸\033[0m '
         elif $has_background; then
             sort_key=06
             status=$'\033[33m◒\033[0m '
         elif $is_busy; then
             sort_key=05
             status=$'\033[33m●\033[0m '
-        elif $is_pending; then
-            sort_key=07
-            status=$'\033[35m⏸\033[0m '
         elif (( is_unread )); then
             sort_key=08
             status=$'\033[33m◉\033[0m '

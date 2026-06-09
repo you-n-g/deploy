@@ -38,19 +38,28 @@ if ai_pane="$(_find_ai_pane_in_window "$current_window" 2>/dev/null)" && [ -n "$
 fi
 pending="$(tmux show -pv -t "$current_pane" @ai_agent_pending 2>/dev/null || true)"
 
-if [ -n "$hint" ]; then
-  clean_hint="$(printf '%s' "$hint" | strip_tmux_format)"
+clean_hint="$(printf '%s' "$hint" | strip_tmux_format)"
+if [ -n "$clean_hint" ] || [ -n "$rank_label" ]; then
+  if [ "$in_auto_switch" = "1" ]; then
+    printf '#[fg=colour124,bold]'
+  fi
   if [ -n "$clean_hint" ]; then
     if [ "$in_auto_switch" = "1" ]; then
-      printf '#[fg=colour124,bold,underscore]'
+      printf '#[underscore]'
     fi
     ai_display_prefix "$clean_hint" 10
-    if [ -n "$rank_label" ]; then
-      printf ' %s' "$rank_label"
-    fi
+  fi
+  if [ -n "$rank_label" ]; then
     if [ "$in_auto_switch" = "1" ]; then
-      printf '#[nobold,nounderscore,fg=colour203]'
+      printf '#[nounderscore]'
     fi
+    if [ -n "$clean_hint" ]; then
+      printf ' '
+    fi
+    printf '%s' "$rank_label"
+  fi
+  if [ "$in_auto_switch" = "1" ]; then
+    printf '#[nobold,nounderscore,fg=colour203]'
   fi
 fi
 

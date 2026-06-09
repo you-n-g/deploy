@@ -200,7 +200,7 @@ emit_ai_agent_event() {
 }
 
 sync_ai_window_name() {
-  local current_name base_name running background unread prefix desired_name
+  local current_name base_name running background unread pending prefix desired_name
 
   current_name="$(tmux display-message -p -t "$window_id" '#W')"
   base_name="$current_name"
@@ -209,6 +209,7 @@ sync_ai_window_name() {
       "● "*) base_name="${base_name#● }" ;;
       "⏵ "*) base_name="${base_name#⏵ }" ;;
       "◒ "*) base_name="${base_name#◒ }" ;;
+      "⏸ "*) base_name="${base_name#⏸ }" ;;
       "◉ "*) base_name="${base_name#◉ }" ;;
       "○ "*) base_name="${base_name#○ }" ;;
       *) break ;;
@@ -218,7 +219,10 @@ sync_ai_window_name() {
   running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
   background="$(tmux show -pv -t "$pane_id" @ai_agent_background 2>/dev/null || true)"
   unread="$(tmux show -pv -t "$pane_id" @ai_agent_unread 2>/dev/null || true)"
-  if [ "$background" = "1" ]; then
+  pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
+  if [ "$pending" = "1" ]; then
+    prefix="⏸"
+  elif [ "$background" = "1" ]; then
     prefix="◒"
   elif [ "$running" = "1" ]; then
     prefix="●"
@@ -341,6 +345,8 @@ case "$state" in
     if is_live_ai_pane; then
       was_running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
       was_pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
+      tmux set-option -pq -t "$pane_id" @ai_agent_running 0
+      tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
       tmux set-option -pq -t "$pane_id" @ai_agent_pending 1
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
       if [ "$was_running" != "1" ] && [ "$was_pending" != "1" ]; then

@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 TRACK_SCRIPT="$SCRIPT_DIR/../script/track_ai_agent_state.sh"
 
 pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')"
+running_armed=1
 
 capture_recent_output() {
   local recent
@@ -49,11 +50,21 @@ ensure_state() {
   esac
 }
 
+startup_state="$(detect_tui_state "$(capture_recent_output)")"
+if [[ "$startup_state" == "running" ]]; then
+  running_armed=0
+fi
+
 while tmux display-message -p -t "$pane_id" '#{pane_id}' >/dev/null 2>&1; do
   recent="$(capture_recent_output)"
   desired_state="$(detect_tui_state "$recent")"
   if [[ -n "$desired_state" ]]; then
-    ensure_state "$desired_state"
+    if [[ "$desired_state" == "idle" ]]; then
+      running_armed=1
+      ensure_state "$desired_state"
+    elif [[ "$running_armed" == "1" ]]; then
+      ensure_state "$desired_state"
+    fi
   fi
   sleep "${TMUX_AI_STATE_TRACKER_INTERVAL:-1}"
 done

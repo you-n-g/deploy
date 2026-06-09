@@ -70,7 +70,9 @@ while IFS=$'\t' read -r _last_visit pane_target window_name pane_id _pane_pid _a
       fg='colour250'
     fi
   fi
-  if [ "$background" = "1" ]; then
+  if [ "$pending" = "1" ]; then
+    label="⏸${label}"
+  elif [ "$background" = "1" ]; then
     label="◒${label}"
   fi
 
