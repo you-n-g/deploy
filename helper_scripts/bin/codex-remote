@@ -27,6 +27,8 @@ Examples:
 Notes:
   SSH_LOGIN_OPTIONS are passed to ssh before SSH_TARGET, so options such as
   -p, -i, -J, -F, and -o work even though they appear after SSH_TARGET here.
+  Remote status hooks use $HOME/.codex-remote-status so Codex hook trust can
+  persist across runs while the forwarded port is still picked automatically.
 EOF
 }
 
@@ -319,17 +321,24 @@ cleanup() {
         kill "$app_server_pid" 2>/dev/null || true
         wait "$app_server_pid" 2>/dev/null || true
     fi
-    if [[ -n "$remote_codex_home" ]]; then
-        rm -rf "$remote_codex_home"
-    fi
 }
 trap cleanup EXIT INT TERM HUP
 
-if [[ -n "$status_port" ]]; then
-    remote_codex_home="$(mktemp -d /tmp/codex-remote-home.XXXXXX)"
+prepare_remote_codex_home() {
+    remote_codex_home="$HOME/.codex-remote-status"
+    mkdir -p "$remote_codex_home"
+
     if [[ -d "$HOME/.codex" ]]; then
-        find "$HOME/.codex" -mindepth 1 -maxdepth 1 ! -name hooks.json -exec ln -s {} "$remote_codex_home"/ \;
+        while IFS= read -r codex_item; do
+            name="${codex_item##*/}"
+            [[ "$name" == "hooks.json" ]] && continue
+            ln -sfnT "$codex_item" "$remote_codex_home/$name"
+        done < <(find "$HOME/.codex" -mindepth 1 -maxdepth 1)
     fi
+}
+
+if [[ -n "$status_port" ]]; then
+    prepare_remote_codex_home
 
     cat >"$remote_codex_home/codex-remote-status-hook.sh" <<'HOOK_SCRIPT'
 #!/usr/bin/env bash
