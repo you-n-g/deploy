@@ -90,7 +90,7 @@ if [ -n "${rows:-}" ]; then
   current_row=""
 
   if [ -n "$current_target" ]; then
-    while IFS=$'\t' read -r _last_visit pane_target window_name pane_id _pane_pid _activity_epoch unread running background pending attribute; do
+    while IFS=$'\t' read -r _last_visit pane_target window_name pane_id _pane_pid _activity_epoch unread running background pending _pane_path attribute; do
       if [ "$pane_target" = "$current_target" ]; then
         current_row="$(printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$pane_target" "$pane_id" "$window_name" "$unread" "$running" "$background" "$pending" "$attribute")"
         break
@@ -104,7 +104,7 @@ if [ -n "${rows:-}" ]; then
     count=$((count + 1))
   fi
 
-  while IFS=$'\t' read -r _last_visit pane_target window_name pane_id _pane_pid _activity_epoch unread running background pending attribute; do
+  while IFS=$'\t' read -r _last_visit pane_target window_name pane_id _pane_pid _activity_epoch unread running background pending _pane_path attribute; do
     [ -n "$pane_target" ] || continue
     [ "$pane_target" != "$current_target" ] || continue
 

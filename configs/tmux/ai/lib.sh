@@ -170,10 +170,10 @@ _tmuxg_filter_orchestrator_rows() {
         return
     fi
 
-    while IFS=$'\t' read -r last_visit sess_win wname pane_id pane_pid wact_raw unread running background pending attribute; do
+    while IFS=$'\t' read -r last_visit sess_win wname pane_id pane_pid wact_raw unread running background pending pane_path attribute; do
         [[ "$(_strip_ai_window_state_prefix "$wname")" == "orchestrator" ]] && continue
-        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-            "$last_visit" "$sess_win" "$wname" "$pane_id" "$pane_pid" "$wact_raw" "$unread" "$running" "$background" "$pending" "$attribute"
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+            "$last_visit" "$sess_win" "$wname" "$pane_id" "$pane_pid" "$wact_raw" "$unread" "$running" "$background" "$pending" "$pane_path" "$attribute"
     done
 }
 
@@ -274,6 +274,22 @@ _ai_fzf_colored_session_target() {
     printf -v "$out_var" '\033[%sm%s\033[0m:%s' "$session_color" "$session_name" "$window_index"
 }
 
+_ai_ranked_pane_id_set() {
+    local ranked candidate resolved seen=""
+
+    ranked="$(tmux show-option -gqv @auto_switch_ranked_panes 2>/dev/null || true)"
+    for candidate in $ranked; do
+        resolved="$(tmux display-message -p -t "$candidate" '#{pane_id}' 2>/dev/null || true)"
+        [[ -n "$resolved" ]] || continue
+        case " $seen " in
+            *" $resolved "*) continue ;;
+        esac
+        seen="${seen:+$seen }$resolved"
+    done
+
+    printf ' %s ' "$seen"
+}
+
 _ai_pane_pid_set() {
     local pane_pids="$1"
     local ps_data="$2"
@@ -325,12 +341,13 @@ _ai_pane_pid_set() {
 #   $8 running_flag    1 if the agent hook says this window is running
 #   $9 background_flag 1 if Claude paused with background work still active
 #   $10 pending_flag   1 if the pane is intentionally waiting on something
-#   $11 attribute      short description generated once after first stop
+#   $11 pane_current_path
+#   $12 attribute      short description generated once after first stop
 _ai_pane_rows() {
     local pane_rows pane_pids ps_cache ai_pane_pids
 
     pane_rows=$(tmux list-panes "$@" \
-        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}.#{pane_index}\t#{window_name}\t#{window_id}\t#{pane_id}\t#{pane_pid}\t#{pane_active}\t#{window_activity}\t#{@ai_agent_unread}\t#{@ai_agent_running}\t#{@ai_agent_background}\t#{@ai_agent_pending}\t#{@ai_agent_attribute}' 2>/dev/null) || return 1
+        -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}.#{pane_index}\t#{window_name}\t#{window_id}\t#{pane_id}\t#{pane_pid}\t#{pane_active}\t#{window_activity}\t#{@ai_agent_unread}\t#{@ai_agent_running}\t#{@ai_agent_background}\t#{@ai_agent_pending}\t#{pane_current_path}\t#{@ai_agent_attribute}' 2>/dev/null) || return 1
     pane_pids=$(printf '%s\n' "$pane_rows" | awk -F '\t' '{ print $6 }')
     ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null) || return 1
     ai_pane_pids=$(_ai_pane_pid_set "$pane_pids" "$ps_cache")
@@ -341,16 +358,16 @@ _ai_pane_rows() {
             next
         }
         has_ai_proc_by_pane[$6] {
-            attribute = $13
-            for (i = 14; i <= NF; i++) attribute = attribute " " $i
-            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, attribute
+            attribute = $14
+            for (i = 15; i <= NF; i++) attribute = attribute " " $i
+            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, attribute
         }
     ' <(printf '%s\n' "$ai_pane_pids") <(printf '%s\n' "$pane_rows") |
     sort -t $'\t' -k1,1nr -k8,8nr -k7,7nr |
     awk -F '\t' '!seen[$5]++' |
     awk -F '\t' '
     {
-        print $1+0 "\t" $2 "\t" $3 "\t" $5 "\t" $6 "\t" $8+0 "\t" $9+0 "\t" $10+0 "\t" $11+0 "\t" $12+0 "\t" $13
+        print $1+0 "\t" $2 "\t" $3 "\t" $5 "\t" $6 "\t" $8+0 "\t" $9+0 "\t" $10+0 "\t" $11+0 "\t" $12+0 "\t" $13 "\t" $14
     }
     '
 }
@@ -384,18 +401,20 @@ _ai_pane_fzf_list() {
     local marked_pane_id=""
     local switcher_pane_id=""
     local input_index=0
+    local ranked_pane_ids=""
 
     marked_pane_id="$(tmux display-message -p -t '{marked}' '#{pane_id}' 2>/dev/null || true)"
     switcher_pane_id="$(tmux show-option -gqv @tma_window_switcher_pane 2>/dev/null || true)"
     if [[ -n "$switcher_pane_id" ]]; then
         switcher_pane_id="$(tmux display-message -p -t "$switcher_pane_id" '#{pane_id}' 2>/dev/null || true)"
     fi
+    ranked_pane_ids="$(_ai_ranked_pane_id_set)"
 
     _ai_fzf_reset_session_colors
 
-    while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw unread_flag running_flag background_flag pending_flag attribute; do
+    while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw unread_flag running_flag background_flag pending_flag pane_path attribute; do
         local sort_key status rel_visit rel_act time_info colored_sess_win
-        local display_wname
+        local display_wname path_info
         input_index=$((input_index + 1))
         local is_unread=0
         [[ "$unread_flag" == "1" ]] && is_unread=1
@@ -449,10 +468,19 @@ _ai_pane_fzf_list() {
         (( is_unread )) && unread_mark=$' \033[33m[!]\033[0m'
         local pending_mark=""
         $is_pending && pending_mark=$' \033[35m[pending]\033[0m'
+        local is_ranked=false
+        case "$ranked_pane_ids" in
+            *" $wid "*) is_ranked=true ;;
+        esac
 
         local attribute_info=""
         [[ -n "$attribute" ]] && attribute_info="  ${attribute}"
         display_wname="$(_strip_ai_window_state_prefix "$wname")"
+        if $is_ranked; then
+            display_wname=$'\033[1;91m'"${display_wname}"$'\033[0m'
+        fi
+        path_info=""
+        [[ -n "$pane_path" ]] && path_info="  ${pane_path}"
 
         local pane_marker="pane ${wid}"
         [[ -n "$marked_pane_id" && "$wid" == "$marked_pane_id" ]] && pane_marker="${pane_marker} marked"
@@ -461,8 +489,8 @@ _ai_pane_fzf_list() {
             printf -v sort_key '%08d' "$input_index"
         fi
 
-        printf '%s\t%s\t%s %s %b%s\033[2m%s\033[0m  \033[2m%s%s\033[0m  \033[2m[%s]\033[0m\n' \
-            "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$display_wname" "$attribute_info" "$time_info" "${unread_mark}${pending_mark}" "$pane_marker"
+        printf '%s\t%s\t%s %s %b%s\033[2m%s\033[0m  \033[2m%s%s\033[0m  \033[2m[%s]\033[0m\033[2m%s\033[0m\n' \
+            "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$display_wname" "$attribute_info" "$time_info" "${unread_mark}${pending_mark}" "$pane_marker" "$path_info"
     done |
     sort -t $'\t' -k1,1 -k2,2nr |
     cut -f3-

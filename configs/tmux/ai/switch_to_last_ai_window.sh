@@ -27,5 +27,5 @@ if [[ -z "$row" ]]; then
     exit 1
 fi
 
-IFS=$'\t' read -r _last_visit pane_target _wname _pane_id _pane_pid _wact_raw _unread _running _background _pending _attribute <<< "$row"
+IFS=$'\t' read -r _last_visit pane_target _wname _pane_id _pane_pid _wact_raw _unread _running _background _pending _pane_path _attribute <<< "$row"
 tmux switch-client -t "$pane_target"

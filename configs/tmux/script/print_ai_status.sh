@@ -56,7 +56,7 @@ background=0
 waiting=0
 if rows="$(_ai_pane_rows -a)" && [ -n "$rows" ]; then
   rows="$(printf '%s\n' "$rows" | _tmuxg_filter_orchestrator_rows)"
-  while IFS=$'\t' read -r _last_visit _pane_target _window_name _pane_id _pane_pid _activity_epoch pane_unread pane_running pane_background _pane_pending _attribute; do
+  while IFS=$'\t' read -r _last_visit _pane_target _window_name _pane_id _pane_pid _activity_epoch pane_unread pane_running pane_background _pane_pending _pane_path _attribute; do
     [ -n "$_pane_target" ] || continue
     if [ "$pane_background" = "1" ]; then
       background=$((background + 1))
