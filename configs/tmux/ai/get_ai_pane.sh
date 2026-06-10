@@ -100,6 +100,22 @@ _get_fzf_list() {
     fi
 }
 
+_fzf_start_pos() {
+    local list="$1"
+
+    printf '%s\n' "$list" |
+        perl -pe 's/\e\[[0-9;]*m//g' |
+        awk '
+            /\[!\]/ && unread == 0 { unread = NR }
+            $3 == "○" && ready == 0 { ready = NR }
+            END {
+                if (unread > 0) print unread
+                else if (ready > 0) print ready
+                else print 1
+            }
+        '
+}
+
 _switcher_header_info() {
     local switcher pane_id pane_target
 
@@ -246,17 +262,7 @@ HEADER="$(_fzf_header)"
 printf -v HEADER_ARG '%q' "$HEADER"
 
 START_POS=$(
-    printf '%s\n' "$LIST" |
-        perl -pe 's/\e\[[0-9;]*m//g' |
-        awk '
-            /\[!\]/ && unread == 0 { unread = NR }
-            $3 == "○" && ready == 0 { ready = NR }
-            END {
-                if (unread > 0) print unread
-                else if (ready > 0) print ready
-                else print 1
-            }
-        '
+    _fzf_start_pos "$LIST"
 )
 
 START_BIND_ARGS=()
