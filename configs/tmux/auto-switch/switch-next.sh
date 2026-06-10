@@ -7,7 +7,7 @@ source "$HOME/deploy/configs/tmux/ai/lib.sh"
 usage() {
   cat >&2 <<'USAGE'
 Usage:
-  switch-next.sh
+  switch-next.sh [--skip-pane TARGET]
 
 Read a ranked pane list from a tmux global option, switch the user's tmux
 client(s) to the first currently usable AI pane.
@@ -18,9 +18,14 @@ USAGE
 }
 
 ranked_option="@auto_switch_ranked_panes"
+skip_pane_target=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --skip-pane)
+      skip_pane_target="${2:?--skip-pane requires a tmux pane target}"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -56,10 +61,17 @@ is_usable_pane() {
   [[ "$running" != "1" && "$background" != "1" && "$pending" != "1" ]]
 }
 
+skip_pane_id=""
+if [[ -n "$skip_pane_target" ]]; then
+  skip_pane_id="$(tmux display-message -p -t "$skip_pane_target" '#{pane_id}' 2>/dev/null)" \
+    || { echo "auto-switch: failed to resolve skip pane $skip_pane_target" >&2; exit 1; }
+fi
+
 target=""
 for candidate in $ranked; do
   resolved="$(tmux display-message -p -t "$candidate" '#{pane_id}' 2>/dev/null || true)"
   [[ -n "$resolved" ]] || continue
+  [[ -n "$skip_pane_id" && "$resolved" == "$skip_pane_id" ]] && continue
   if is_usable_pane "$resolved"; then
     target="$resolved"
     break

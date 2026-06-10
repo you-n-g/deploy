@@ -19,7 +19,8 @@ _find_ai_pid() {
     echo "$ps_data" | awk -v root="$1" -v pat="$AI_PROC_PAT" '
         { children[$2] = children[$2] " " $1; name[$1] = $3 }
         END {
-            n = split(children[root], q, " ")
+            q[1] = root
+            n = 1
             while (n > 0) {
                 new_n = 0
                 for (i = 1; i <= n; i++) {

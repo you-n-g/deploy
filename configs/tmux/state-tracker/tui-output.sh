@@ -4,6 +4,7 @@ set -euo pipefail
 target="${1:?usage: tui-output.sh TARGET}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 TRACK_SCRIPT="$SCRIPT_DIR/../script/track_ai_agent_state.sh"
+source "$SCRIPT_DIR/../ai/lib.sh"
 
 pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')"
 lock_dir="${TMUX_AI_STATE_TRACKER_LOCK_DIR:-/tmp}"
@@ -59,12 +60,20 @@ ensure_state() {
   esac
 }
 
+pane_has_ai_proc() {
+  local pane_pid
+
+  pane_pid="$(tmux display-message -p -t "$pane_id" '#{pane_pid}' 2>/dev/null || true)"
+  [[ -n "$pane_pid" ]] || return 1
+  _has_ai_proc "$pane_pid"
+}
+
 startup_state="$(detect_tui_state "$(capture_recent_output)")"
 if [[ "$startup_state" == "running" ]]; then
   running_armed=0
 fi
 
-while tmux display-message -p -t "$pane_id" '#{pane_id}' >/dev/null 2>&1; do
+while tmux display-message -p -t "$pane_id" '#{pane_id}' >/dev/null 2>&1 && pane_has_ai_proc; do
   recent="$(capture_recent_output)"
   desired_state="$(detect_tui_state "$recent")"
   if [[ -n "$desired_state" ]]; then

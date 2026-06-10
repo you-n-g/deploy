@@ -300,6 +300,21 @@ function _with_tmux_rename() {
     fi
 }
 
+function _start_codex_tui_output_tracker() {
+    local tracker cmd log
+
+    if [ -z "$TMUX" ] || [ -z "$TMUX_PANE" ]; then
+        return
+    fi
+
+    tracker="$HOME/deploy/configs/tmux/state-tracker/tui-output.sh"
+    log="$HOME/.cache/tmux-ai-tui-trackers.log"
+    [ -x "$tracker" ] || return
+
+    printf -v cmd '%q %q >>%q 2>&1' "$tracker" "$TMUX_PANE" "$log"
+    tmux run-shell -b "$cmd"
+}
+
 # gemini with rename
 function geminir() {
     _with_tmux_rename gemini "$MYPROXY_GEMINI" gemini "$@"
@@ -377,6 +392,7 @@ _codex_run_login() {
     auto_flag=($(_codex_auto_flag))  # 例如返回 "--sandbox danger-full-access --ask-for-approval on-request"
 
     # 展开数组，用 "${auto_flag[@]}"，这样每个 flag 都是独立参数
+    _start_codex_tui_output_tracker
     _with_tmux_rename "$title" "$MYPROXY_CODEX" codex "${auto_flag[@]}" "$@"
 }
 
@@ -385,6 +401,7 @@ _codex_run_api() {
     shift
     local auto_flag
     auto_flag=($(_codex_auto_flag))
+    _start_codex_tui_output_tracker
     _codex_env _with_tmux_rename "$title" "$MYPROXY_CODEX" codex "${auto_flag[@]}" "$@"
 }
 

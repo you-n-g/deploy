@@ -10,7 +10,12 @@ last_session="${5:-}"
 refresh_all_sessions=0
 
 auto_switch_next() {
-  tmux run-shell -b "$HOME/deploy/configs/tmux/auto-switch/switch-next.sh"
+  if [ -z "$current_pane" ]; then
+    tmux display-message "No current pane for auto-switch"
+    exit 1
+  fi
+
+  tmux run-shell -b "$HOME/deploy/configs/tmux/auto-switch/switch-next.sh --skip-pane '$current_pane'"
 }
 
 clear_buttons_expanded_overrides() {
@@ -73,7 +78,7 @@ case "$button" in
     tmux run-shell -b "$HOME/deploy/configs/tmux/ai/send_current_target_to_ai.sh -A -q"
     ;;
   sb_mf)
-    tmux run-shell -b "$HOME/deploy/configs/tmux/ai/fork_ai_session.sh -q"
+    tmux run-shell -b "$HOME/deploy/configs/tmux/ai/fork_ai_session.sh -q --target '$current_pane'"
     ;;
   sb_kp)
     if [ -z "$current_pane" ]; then
