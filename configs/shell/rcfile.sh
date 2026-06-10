@@ -358,6 +358,11 @@ _codex_default_provider() {
 }
 
 _codex_env() {
+    local sqlite_home="${CODEX_SQLITE_HOME:-/dev/shm/xiaoyang-codex-sqlite}"
+    mkdir -p "$sqlite_home" || return
+
+    RUST_LOG="${RUST_LOG:-warn}" \
+    CODEX_SQLITE_HOME="$sqlite_home" \
     NODE_TLS_REJECT_UNAUTHORIZED=0 \
     AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) \
     XYZ_API_KEY=$(get-cred xyz_key gpt.gpg) \

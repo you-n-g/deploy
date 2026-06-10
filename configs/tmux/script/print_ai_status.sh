@@ -20,7 +20,7 @@ is_active_ai_tui() {
 
   recent="$(tmux capture-pane -p -t "$pane" -S -30 2>/dev/null | sed '/^[[:space:]]*$/d' | tail -n 8 || true)"
   printf '%s\n' "$recent" | tr '[:upper:]' '[:lower:]' | grep -Eq \
-    'baking|working|esc[[:space:]]+to[[:space:]]+(interrupt|interupt)|press[[:space:]]+esc'
+    'esc[[:space:]]+to[[:space:]]+(interrupt|interupt)|press[[:space:]]+esc|(^|[[:space:]])(working|baking)[[:space:]]*\('
 }
 
 while IFS='|' read -r pane_id pane_pid window_activity window_active session_attached running background unread pending attribute; do

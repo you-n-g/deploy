@@ -6,6 +6,14 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 TRACK_SCRIPT="$SCRIPT_DIR/../script/track_ai_agent_state.sh"
 
 pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')"
+lock_dir="${TMUX_AI_STATE_TRACKER_LOCK_DIR:-/tmp}"
+lock_file="$lock_dir/tmux-ai-state-tracker.${pane_id#%}.lock"
+exec 9>"$lock_file"
+if ! flock -n 9; then
+  printf 'tui-output.sh: tracker already running for %s\n' "$pane_id" >&2
+  exit 0
+fi
+
 running_armed=1
 
 capture_recent_output() {
@@ -19,12 +27,13 @@ detect_tui_state() {
   local recent="$1"
 
   if printf '%s\n' "$recent" | grep -Eiq \
-    'pursuing goal|working|esc[[:space:]]+to[[:space:]]+(interrupt|interupt)|press[[:space:]]+esc'; then
+    'esc[[:space:]]+to[[:space:]]+(interrupt|interupt)|press[[:space:]]+esc|(^|[[:space:]])(working|baking)[[:space:]]*\('; then
     printf 'running\n'
     return
   fi
 
-  if printf '%s\n' "$recent" | grep -Eiq 'goal[[:space:]]+(blocked|complete|completed|paused)'; then
+  if printf '%s\n' "$recent" | grep -Eiq \
+    'goal[[:space:]]+(blocked|complete|completed|paused)|conversation interrupted|tell the model what to do differently'; then
     printf 'idle\n'
   fi
 }

@@ -40,5 +40,6 @@ Common states:
 
 ## Existing Trackers
 
-- `tui-output.sh`: captures recent TUI output and maps visible text such as
-  `Pursuing goal`, `Working`, and `Goal blocked` to tmux AI state.
+- `tui-output.sh`: captures recent TUI output and maps explicit foreground
+  activity such as `Working (... esc to interrupt)` and stopped markers such as
+  `Goal blocked` or `Conversation interrupted` to tmux AI state.

@@ -172,7 +172,7 @@ is_fake_idle() {
 
   recent="$(tmux capture-pane -p -t "$pane_id" -S -20 2>/dev/null | sed '/^[[:space:]]*$/d' | tail -n 4 || true)"
   printf '%s\n' "$recent" | tr '[:upper:]' '[:lower:]' | grep -Eq \
-    'working|esc[[:space:]]+to[[:space:]]+(interrupt|interupt)|press[[:space:]]+esc'
+    'esc[[:space:]]+to[[:space:]]+(interrupt|interupt)|press[[:space:]]+esc|(^|[[:space:]])(working|baking)[[:space:]]*\('
 }
 
 emit_ai_agent_event() {
