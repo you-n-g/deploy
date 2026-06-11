@@ -144,5 +144,43 @@ get_container_cpu_info() {
     "$cpu_eq" "$qcpu" "$pct" "$s10" "$f10" "$nthr"
 }
 
+usage() {
+  cat >&2 <<'EOF'
+Usage:
+  sys.sh <function> [args...]
 
-$1
+Functions:
+  get_hw_info
+  get_glibc_info
+  get_performance_info
+  get_dir_performance_info [target_dir] [bs] [size] [jobs] [iodepth]
+  get_port_info
+  get_container_cpu_info [sample_seconds]
+
+Remote examples:
+  curl -fsSL https://raw.githubusercontent.com/you-n-g/deploy/master/helper_scripts/get_info/sys.sh | bash -s -- get_container_cpu_info
+  curl -fsSL https://raw.githubusercontent.com/you-n-g/deploy/master/helper_scripts/get_info/sys.sh | bash -s -- get_container_cpu_info 2
+EOF
+}
+
+main() {
+  cmd="${1:-}"
+  [ -n "$cmd" ] || { usage; exit 2; }
+  shift
+
+  case "$cmd" in
+    get_hw_info|get_glibc_info|get_performance_info|get_dir_performance_info|get_port_info|get_container_cpu_info)
+      "$cmd" "$@"
+      ;;
+    -h|--help|help)
+      usage
+      ;;
+    *)
+      echo "Unknown function: $cmd" >&2
+      usage
+      exit 2
+      ;;
+  esac
+}
+
+main "$@"
