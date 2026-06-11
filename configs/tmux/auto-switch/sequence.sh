@@ -257,6 +257,7 @@ write_edit_file() {
     printf '# Edit auto-switch order. Keep one pane id before "#"; text after "#" is ignored.\n'
     printf '# Reorder lines to change priority. Delete a line to remove that pane from the sequence.\n'
     printf '# Vim shortcut: normal-mode q saves and exits.\n'
+    printf '# Vim shortcut: normal-mode Enter saves, exits, and switches to the pane on the current line.\n'
     printf '# Comments include full AI attribute; long lines intentionally do not wrap in vim.\n\n'
     for pane in $ranked; do
       comment="$(pane_edit_comment "$pane")"
@@ -301,22 +302,59 @@ parse_edit_file() {
   printf '%s\n' "$out"
 }
 
+switch_to_pane() {
+  local pane="${1:?usage: switch_to_pane PANE}"
+  local session window_id pane_id
+
+  pane_id="$(tmux display-message -p -t "$pane" '#{pane_id}' 2>/dev/null)" || { echo "pane does not resolve: $pane" >&2; return 1; }
+  session="$(tmux display-message -p -t "$pane_id" '#{session_name}')" || return 1
+  window_id="$(tmux display-message -p -t "$pane_id" '#{window_id}')" || return 1
+
+  tmux switch-client -t "$session:"
+  tmux select-window -t "$window_id"
+  tmux select-pane -t "$pane_id"
+}
+
 wait_after_error() {
   printf '\nPress Enter to close...'
   read -r _ || true
 }
 
 edit_sequence() {
-  local tmp editor editor_name focus_line
+  local tmp selected_file vim_script vim_selected_file vim_script_file editor editor_name focus_line selected_pane resolved_selected_pane
   local -a editor_argv
 
   tmp="$(mktemp "${TMPDIR:-/tmp}/auto-switch-sequence.XXXXXX")"
-  trap 'rm -f "$tmp"' RETURN
+  selected_file="$(mktemp "${TMPDIR:-/tmp}/auto-switch-selected.XXXXXX")"
+  vim_script="$(mktemp "${TMPDIR:-/tmp}/auto-switch-edit.XXXXXX.vim")"
+  trap 'rm -f "$tmp" "$selected_file" "$vim_script"' RETURN
 
   ranked="$(editable_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
   [[ -n "$ranked" ]] || { echo "no live AI panes to edit" >&2; wait_after_error; return 1; }
   write_edit_file "$tmp" "$ranked"
   focus_line="$(edit_focus_line "$ranked" "$edit_focus_target")"
+  vim_selected_file="${selected_file//\'/''}"
+  cat > "$vim_script" <<VIM
+setlocal filetype=conf nowrap
+syntax match AutoSwitchSeparator /|/ containedin=ALL
+highlight AutoSwitchSeparator ctermfg=45 cterm=bold guifg=#00d7ff gui=bold
+nnoremap <buffer> q :wq<CR>
+let g:auto_switch_selected_pane_file = '$vim_selected_file'
+function! AutoSwitchSaveSelectPane() abort
+  let l:pane = matchstr(getline('.'), '^\\s*\\zs%[0-9]\\+\\ze\\>')
+  if empty(l:pane)
+    echohl ErrorMsg
+    echo 'No pane id on current line'
+    echohl None
+    return
+  endif
+  call writefile([l:pane], g:auto_switch_selected_pane_file)
+  write
+  quit
+endfunction
+nnoremap <buffer> <CR> :call AutoSwitchSaveSelectPane()<CR>
+VIM
+  vim_script_file="${vim_script//\'/''}"
 
   editor="${VISUAL:-${EDITOR:-vim}}"
   read -r -a editor_argv <<< "$editor"
@@ -328,10 +366,7 @@ edit_sequence() {
     fi
     editor_argv+=(
       -c 'syntax enable'
-      -c 'setlocal filetype=conf nowrap'
-      -c 'syntax match AutoSwitchSeparator /|/ containedin=ALL'
-      -c 'highlight AutoSwitchSeparator ctermfg=45 cterm=bold guifg=#00d7ff gui=bold'
-      -c 'nnoremap <buffer> q :wq<CR>'
+      -c "execute 'source' fnameescape('$vim_script_file')"
     )
   fi
   if ! "${editor_argv[@]}" "$tmp"; then
@@ -346,6 +381,17 @@ edit_sequence() {
   fi
 
   tmux set-option -gq "$ranked_option" "$ranked"
+
+  selected_pane="$(cat "$selected_file" 2>/dev/null || true)"
+  if [[ -n "$selected_pane" ]]; then
+    resolved_selected_pane="$(resolve_pane "$selected_pane" || true)"
+    [[ -n "$resolved_selected_pane" ]] || { echo "selected pane does not resolve: $selected_pane" >&2; wait_after_error; return 1; }
+    case " $ranked " in
+      *" $resolved_selected_pane "*) ;;
+      *) echo "selected pane is not in edited sequence: $resolved_selected_pane" >&2; wait_after_error; return 1 ;;
+    esac
+    switch_to_pane "$resolved_selected_pane"
+  fi
 }
 
 format_sequence() {

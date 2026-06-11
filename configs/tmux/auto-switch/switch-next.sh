@@ -73,7 +73,7 @@ done
 
 if [[ -z "$target" ]]; then
   tmux display-message "auto-switch: no usable AI pane in ranked list"
-  exit 1
+  exit 0
 fi
 
 while IFS=$'\t' read -r client readonly control_mode; do

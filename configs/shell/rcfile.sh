@@ -373,15 +373,26 @@ _codex_default_provider() {
 }
 
 _codex_env() {
-    local sqlite_home="${CODEX_SQLITE_HOME:-/dev/shm/xiaoyang-codex-sqlite}"
-    mkdir -p "$sqlite_home" || return
+    local -a env_args
 
-    RUST_LOG="${RUST_LOG:-warn}" \
-    CODEX_SQLITE_HOME="$sqlite_home" \
-    NODE_TLS_REJECT_UNAUTHORIZED=0 \
-    AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg) \
-    XYZ_API_KEY=$(get-cred xyz_key gpt.gpg) \
-    "$@"
+    env_args=(
+        NODE_TLS_REJECT_UNAUTHORIZED=0
+        "AZURE_OPENAI_API_KEY=$(get-cred key gpt.gpg)"
+        "XYZ_API_KEY=$(get-cred xyz_key gpt.gpg)"
+    )
+
+    if [[ "$(uname)" == "Linux" ]]; then
+        local sqlite_home="${CODEX_SQLITE_HOME:-/dev/shm/xiaoyang-codex-sqlite}"
+        mkdir -p "$sqlite_home" || return
+        env_args=(
+            "RUST_LOG=${RUST_LOG:-warn}"
+            "CODEX_SQLITE_HOME=$sqlite_home"
+            "${env_args[@]}"
+        )
+        env "${env_args[@]}" "$@"
+    else
+        env -u CODEX_SQLITE_HOME -u CODEX_LITE_HOME -u RUST_LOG "${env_args[@]}" "$@"
+    fi
 }
 
 _codex_run_login() {
