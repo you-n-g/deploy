@@ -175,6 +175,16 @@ is_fake_idle() {
     'esc[[:space:]]+to[[:space:]]+(interrupt|interupt)|press[[:space:]]+esc|(^|[[:space:]])(working|baking)[[:space:]]*\('
 }
 
+is_fake_idle_after_grace() {
+  if ! is_fake_idle; then
+    return 1
+  fi
+
+  # Stop hooks can arrive before the TUI has repainted away "Working".
+  sleep 0.5
+  is_fake_idle
+}
+
 emit_ai_agent_event() {
   local event_state="$1" seq event_time client_pane
 
@@ -309,7 +319,7 @@ case "$state" in
     tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
     ;;
   idle)
-    if ! is_fake_idle; then
+    if ! is_fake_idle_after_grace; then
       tmux set-option -pq -t "$pane_id" @ai_agent_running 0
       tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
       if is_window_visible; then

@@ -34,7 +34,7 @@ detect_tui_state() {
   fi
 
   if printf '%s\n' "$recent" | grep -Eiq \
-    'goal[[:space:]]+(blocked|complete|completed|paused)|conversation interrupted|tell the model what to do differently'; then
+    'goal[[:space:]]+(achieved|blocked|complete|completed|paused)|conversation interrupted|tell the model what to do differently'; then
     printf 'idle\n'
   fi
 }

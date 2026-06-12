@@ -160,34 +160,47 @@ load_edit_pane_cache() {
     -F $'#{pane_id}\037#{window_id}\037#{session_name}\037#{window_name}\037#{pane_index}\037#{pane_current_path}\037#{@ai_agent_unread}\037#{@ai_agent_running}\037#{@ai_agent_background}\037#{@ai_agent_pending}\037#{@ai_agent_attribute}')
 }
 
-edit_focus_line() {
-  local ranked="$1" focus_target="$2" focus_pane focus_window pane line=5
+pane_line_in_edit_file() {
+  local file="$1" pane="$2"
 
-  [[ -n "$focus_target" ]] || { printf '6\n'; return 0; }
-  focus_pane="$(resolve_pane "$focus_target" || true)"
-  [[ -n "$focus_pane" ]] || { printf '6\n'; return 0; }
+  awk -v pane="$pane" '$1 == pane { print NR; exit }' "$file"
+}
+
+first_edit_pane_line() {
+  local file="$1" ranked="$2" pane line
 
   for pane in $ranked; do
-    line=$((line + 1))
-    if [[ "$pane" == "$focus_pane" ]]; then
+    line="$(pane_line_in_edit_file "$file" "$pane")"
+    if [[ -n "$line" ]]; then
       printf '%s\n' "$line"
       return 0
     fi
   done
+
+  printf '1\n'
+}
+
+edit_focus_line() {
+  local file="$1" ranked="$2" focus_target="$3" focus_pane focus_window pane line
+
+  [[ -n "$focus_target" ]] || { first_edit_pane_line "$file" "$ranked"; return 0; }
+  focus_pane="$(resolve_pane "$focus_target" || true)"
+  [[ -n "$focus_pane" ]] || { first_edit_pane_line "$file" "$ranked"; return 0; }
+
+  line="$(pane_line_in_edit_file "$file" "$focus_pane")"
+  [[ -z "$line" ]] || { printf '%s\n' "$line"; return 0; }
 
   focus_window="$(tmux display-message -p -t "$focus_pane" '#{window_id}' 2>/dev/null || true)"
-  [[ -n "$focus_window" ]] || { printf '6\n'; return 0; }
+  [[ -n "$focus_window" ]] || { first_edit_pane_line "$file" "$ranked"; return 0; }
 
-  line=5
   for pane in $ranked; do
-    line=$((line + 1))
     if [[ "${edit_window_id_by_pane[$pane]-}" == "$focus_window" ]]; then
-      printf '%s\n' "$line"
-      return 0
+      line="$(pane_line_in_edit_file "$file" "$pane")"
+      [[ -z "$line" ]] || { printf '%s\n' "$line"; return 0; }
     fi
   done
 
-  printf '6\n'
+  first_edit_pane_line "$file" "$ranked"
 }
 
 pane_edit_comment() {
@@ -332,12 +345,22 @@ edit_sequence() {
   ranked="$(editable_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
   [[ -n "$ranked" ]] || { echo "no live AI panes to edit" >&2; wait_after_error; return 1; }
   write_edit_file "$tmp" "$ranked"
-  focus_line="$(edit_focus_line "$ranked" "$edit_focus_target")"
+  focus_line="$(edit_focus_line "$tmp" "$ranked" "$edit_focus_target")"
   vim_selected_file="${selected_file//\'/''}"
   cat > "$vim_script" <<VIM
 setlocal filetype=conf nowrap
 syntax match AutoSwitchSeparator /|/ containedin=ALL
 highlight AutoSwitchSeparator ctermfg=45 cterm=bold guifg=#00d7ff gui=bold
+highlight AutoSwitchStateRunning ctermfg=110 cterm=NONE guifg=#87afd7 gui=NONE
+highlight AutoSwitchStateBackground ctermfg=109 cterm=NONE guifg=#87afaf gui=NONE
+highlight AutoSwitchStatePending ctermfg=139 cterm=NONE guifg=#af87af gui=NONE
+highlight AutoSwitchStateUnread ctermfg=143 cterm=NONE guifg=#afaf5f gui=NONE
+highlight AutoSwitchStateIdle ctermfg=245 cterm=NONE guifg=#8a8a8a gui=NONE
+call matchadd('AutoSwitchStateRunning', '|\\s*\\zsrunning\\ze\\s*|', 40)
+call matchadd('AutoSwitchStateBackground', '|\\s*\\zsbackground\\ze\\s*|', 40)
+call matchadd('AutoSwitchStatePending', '|\\s*\\zspending\\ze\\s*|', 40)
+call matchadd('AutoSwitchStateUnread', '|\\s*\\zsunread\\ze\\s*|', 40)
+call matchadd('AutoSwitchStateIdle', '|\\s*\\zsidle\\ze\\s*|', 40)
 nnoremap <buffer> q :wq<CR>
 let g:auto_switch_selected_pane_file = '$vim_selected_file'
 function! AutoSwitchSaveSelectPane() abort

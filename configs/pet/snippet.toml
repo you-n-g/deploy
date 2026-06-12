@@ -724,3 +724,9 @@
   Output = ""
   Tag = []
   command = "uvx --from visidata --with pyarrow --with pandas vd "
+
+[[Snippets]]
+  Description = "get the usage of a container"
+  Output = ""
+  Tag = []
+  command = "curl -fsSL https://raw.githubusercontent.com/you-n-g/deploy/master/helper_scripts/get_info/sys.sh | bash -s -- get_container_cpu_info"
