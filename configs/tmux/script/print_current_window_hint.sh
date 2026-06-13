@@ -17,26 +17,41 @@ in_auto_switch=0
 rank_label=""
 
 ranked="$(tmux show-options -gqv @auto_switch_ranked_panes 2>/dev/null || true)"
-declare -A pane_exists pane_rank
 total=0
-while IFS=$'\037' read -r pane; do
-  [ -n "$pane" ] || continue
-  pane_exists["$pane"]=1
-done < <(tmux list-panes -a -F '#{pane_id}' 2>/dev/null)
+ranked_panes=""
+ranked_ranks=""
 for candidate in $ranked; do
-  [ -n "${pane_exists[$candidate]:-}" ] || continue
+  tmux display-message -p -t "$candidate" '#{pane_id}' >/dev/null 2>&1 || continue
   total=$((total + 1))
-  if [ -z "${pane_rank[$candidate]:-}" ]; then
-    pane_rank["$candidate"]="$total"
-  fi
+  case " $ranked_panes " in
+    *" $candidate "*) ;;
+    *)
+      ranked_panes="${ranked_panes:+$ranked_panes }$candidate"
+      ranked_ranks="${ranked_ranks:+$ranked_ranks }$total"
+      ;;
+  esac
 done
+
+pane_rank() {
+  local wanted="$1" pane rank
+  set -- $ranked_panes
+  for rank in $ranked_ranks; do
+    pane="${1:-}"
+    shift || true
+    [ "$pane" = "$wanted" ] || continue
+    printf '%s\n' "$rank"
+    return 0
+  done
+  return 1
+}
 
 ai_pane=""
 fallback_pane=""
 while IFS=$'\037' read -r pane active attribute running background unread pending; do
   [ -n "$pane" ] || continue
+  current_rank="$(pane_rank "$pane" 2>/dev/null || true)"
   has_ai_signal=0
-  if [ -n "$attribute$running$background$unread$pending${pane_rank[$pane]:-}" ]; then
+  if [ -n "$attribute$running$background$unread$pending$current_rank" ]; then
     has_ai_signal=1
   fi
   if [ "$active" = "1" ] && [ "$has_ai_signal" = "1" ]; then
@@ -54,9 +69,10 @@ if [ -z "$ai_pane" ] && [ -n "$fallback_pane" ]; then
   hint="${fallback_hint:-}"
 fi
 
-if [ -n "$ai_pane" ] && [ -n "${pane_rank[$ai_pane]:-}" ]; then
+ai_pane_rank="$(pane_rank "$ai_pane" 2>/dev/null || true)"
+if [ -n "$ai_pane" ] && [ -n "$ai_pane_rank" ]; then
   in_auto_switch=1
-  rank_label="${pane_rank[$ai_pane]}/${total}"
+  rank_label="${ai_pane_rank}/${total}"
 fi
 pending="$(tmux show -pv -t "$current_pane" @ai_agent_pending 2>/dev/null || true)"
 

@@ -24,21 +24,56 @@ ranked_option="@auto_switch_ranked_panes"
 target_pane=""
 edit_focus_target=""
 message=""
-declare -A edit_session_by_pane=()
-declare -A edit_window_id_by_pane=()
-declare -A edit_window_by_pane=()
-declare -A edit_index_by_pane=()
-declare -A edit_path_by_pane=()
-declare -A edit_unread_by_pane=()
-declare -A edit_running_by_pane=()
-declare -A edit_background_by_pane=()
-declare -A edit_pending_by_pane=()
-declare -A edit_attribute_by_pane=()
-declare -A parsed_attribute_by_pane=()
+edit_cached_panes=""
+parsed_attribute_panes=""
 edit_target_width=0
 edit_state_width=0
 edit_attribute_width=0
 parsed_ranked=""
+
+map_key_for_pane() {
+  local pane="$1"
+  pane="${pane//[^[:alnum:]_]/_}"
+  printf '%s\n' "$pane"
+}
+
+map_set() {
+  local prefix="$1" pane="$2" value="$3" key var quoted
+  key="$(map_key_for_pane "$pane")"
+  var="${prefix}_${key}"
+  printf -v quoted '%q' "$value"
+  eval "$var=$quoted"
+}
+
+map_get() {
+  local prefix="$1" pane="$2" key var
+  key="$(map_key_for_pane "$pane")"
+  var="${prefix}_${key}"
+  printf '%s' "${!var-}"
+}
+
+map_has() {
+  local prefix="$1" pane="$2" key var
+  key="$(map_key_for_pane "$pane")"
+  var="${prefix}_${key}"
+  eval "[[ \${$var+x} ]]"
+}
+
+remember_pane() {
+  local pane="$1"
+  case " $edit_cached_panes " in
+    *" $pane "*) ;;
+    *) edit_cached_panes="${edit_cached_panes:+$edit_cached_panes }$pane" ;;
+  esac
+}
+
+remember_parsed_attribute_pane() {
+  local pane="$1"
+  case " $parsed_attribute_panes " in
+    *" $pane "*) ;;
+    *) parsed_attribute_panes="${parsed_attribute_panes:+$parsed_attribute_panes }$pane" ;;
+  esac
+}
 case "$command_name" in
   reset-current|append-current)
     target_pane="${1:-}"
@@ -148,16 +183,17 @@ load_edit_pane_cache() {
   field_sep=$'\037'
   while IFS="$field_sep" read -r pane window_id session_name window_name pane_index path unread running background pending attribute; do
     [[ -n "$pane" ]] || continue
-    edit_session_by_pane["$pane"]="$session_name"
-    edit_window_id_by_pane["$pane"]="$window_id"
-    edit_window_by_pane["$pane"]="$window_name"
-    edit_index_by_pane["$pane"]="$pane_index"
-    edit_path_by_pane["$pane"]="$path"
-    edit_unread_by_pane["$pane"]="$unread"
-    edit_running_by_pane["$pane"]="$running"
-    edit_background_by_pane["$pane"]="$background"
-    edit_pending_by_pane["$pane"]="$pending"
-    edit_attribute_by_pane["$pane"]="$attribute"
+    remember_pane "$pane"
+    map_set edit_session "$pane" "$session_name"
+    map_set edit_window_id "$pane" "$window_id"
+    map_set edit_window "$pane" "$window_name"
+    map_set edit_index "$pane" "$pane_index"
+    map_set edit_path "$pane" "$path"
+    map_set edit_unread "$pane" "$unread"
+    map_set edit_running "$pane" "$running"
+    map_set edit_background "$pane" "$background"
+    map_set edit_pending "$pane" "$pending"
+    map_set edit_attribute "$pane" "$attribute"
   done < <(tmux list-panes -a \
     -F $'#{pane_id}\037#{window_id}\037#{session_name}\037#{window_name}\037#{pane_index}\037#{pane_current_path}\037#{@ai_agent_unread}\037#{@ai_agent_running}\037#{@ai_agent_background}\037#{@ai_agent_pending}\037#{@ai_agent_attribute}')
 }
@@ -196,7 +232,7 @@ edit_focus_line() {
   [[ -n "$focus_window" ]] || { first_edit_pane_line "$file" "$ranked"; return 0; }
 
   for pane in $ranked; do
-    if [[ "${edit_window_id_by_pane[$pane]-}" == "$focus_window" ]]; then
+    if [[ "$(map_get edit_window_id "$pane")" == "$focus_window" ]]; then
       line="$(pane_line_in_edit_file "$file" "$pane")"
       [[ -z "$line" ]] || { printf '%s\n' "$line"; return 0; }
     fi
@@ -209,15 +245,15 @@ pane_edit_comment() {
   local pane="$1"
   local session_name window_name pane_index unread running background pending path state target_label
 
-  [[ -n "${edit_session_by_pane[$pane]+set}" ]] || { echo "pane missing from edit cache: $pane" >&2; return 1; }
-  session_name="${edit_session_by_pane[$pane]}"
-  window_name="${edit_window_by_pane[$pane]}"
-  pane_index="${edit_index_by_pane[$pane]}"
-  unread="${edit_unread_by_pane[$pane]}"
-  running="${edit_running_by_pane[$pane]}"
-  background="${edit_background_by_pane[$pane]}"
-  pending="${edit_pending_by_pane[$pane]}"
-  path="${edit_path_by_pane[$pane]}"
+  map_has edit_session "$pane" || { echo "pane missing from edit cache: $pane" >&2; return 1; }
+  session_name="$(map_get edit_session "$pane")"
+  window_name="$(map_get edit_window "$pane")"
+  pane_index="$(map_get edit_index "$pane")"
+  unread="$(map_get edit_unread "$pane")"
+  running="$(map_get edit_running "$pane")"
+  background="$(map_get edit_background "$pane")"
+  pending="$(map_get edit_pending "$pane")"
+  path="$(map_get edit_path "$pane")"
   state="$(state_label "$unread" "$running" "$background" "$pending")"
   window_name="$(_strip_ai_window_state_prefix "$window_name")"
   target_label="${session_name}:${window_name}.${pane_index}"
@@ -231,7 +267,7 @@ pane_edit_comment() {
 pane_edit_attribute() {
   local pane="$1" attribute
 
-  attribute="${edit_attribute_by_pane[$pane]-}"
+  attribute="$(map_get edit_attribute "$pane")"
   printf '%s' "$attribute" | strip_tmux_format
 }
 
@@ -244,20 +280,20 @@ prepare_edit_column_widths() {
   edit_attribute_width=0
 
   for pane in $ranked; do
-    [[ -n "${edit_session_by_pane[$pane]+set}" ]] || continue
-    session_name="${edit_session_by_pane[$pane]}"
-    window_name="$(_strip_ai_window_state_prefix "${edit_window_by_pane[$pane]}")"
-    pane_index="${edit_index_by_pane[$pane]}"
-    unread="${edit_unread_by_pane[$pane]}"
-    running="${edit_running_by_pane[$pane]}"
-    background="${edit_background_by_pane[$pane]}"
-    pending="${edit_pending_by_pane[$pane]}"
-    attribute="${edit_attribute_by_pane[$pane]}"
+    map_has edit_session "$pane" || continue
+    session_name="$(map_get edit_session "$pane")"
+    window_name="$(_strip_ai_window_state_prefix "$(map_get edit_window "$pane")")"
+    pane_index="$(map_get edit_index "$pane")"
+    unread="$(map_get edit_unread "$pane")"
+    running="$(map_get edit_running "$pane")"
+    background="$(map_get edit_background "$pane")"
+    pending="$(map_get edit_pending "$pane")"
+    attribute="$(map_get edit_attribute "$pane")"
     clean_attribute="$(printf '%s' "$attribute" | strip_tmux_format)"
     clean_attribute="${clean_attribute:-no attribute}"
     state="$(state_label "$unread" "$running" "$background" "$pending")"
     target_label="${session_name}:${window_name}.${pane_index}"
-    path="${edit_path_by_pane[$pane]}"
+    path="$(map_get edit_path "$pane")"
 
     [ "${#target_label}" -le "$edit_target_width" ] || edit_target_width="${#target_label}"
     [ "${#state}" -le "$edit_state_width" ] || edit_state_width="${#state}"
@@ -303,7 +339,7 @@ parse_edit_file() {
   local attribute
 
   parsed_ranked=""
-  parsed_attribute_by_pane=()
+  parsed_attribute_panes=""
   while IFS= read -r line || [[ -n "$line" ]]; do
     line_no=$((line_no + 1))
     before_hash="${line%%#*}"
@@ -322,7 +358,8 @@ parse_edit_file() {
     esac
     seen="$seen $resolved"
     out="${out:+$out }$resolved"
-    parsed_attribute_by_pane["$resolved"]="$attribute"
+    remember_parsed_attribute_pane "$resolved"
+    map_set parsed_attribute "$resolved" "$attribute"
   done < "$file"
 
   [[ -n "$out" ]] || { echo "edited sequence is empty" >&2; return 1; }
@@ -333,12 +370,12 @@ apply_edit_attributes() {
   local ranked="$1" pane attribute old_attribute new_attribute
 
   for pane in $ranked; do
-    attribute="${parsed_attribute_by_pane[$pane]-}"
+    attribute="$(map_get parsed_attribute "$pane")"
     if [[ "$attribute" == "no attribute" ]]; then
       attribute=""
     fi
 
-    old_attribute="${edit_attribute_by_pane[$pane]-}"
+    old_attribute="$(map_get edit_attribute "$pane")"
     [[ "$old_attribute" == "$attribute" ]] && continue
     old_attribute="$(printf '%s' "$old_attribute" | strip_tmux_format)"
     new_attribute="$(printf '%s' "$attribute" | strip_tmux_format)"

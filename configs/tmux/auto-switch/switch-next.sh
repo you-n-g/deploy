@@ -44,29 +44,34 @@ if [[ -n "$skip_pane_target" ]]; then
     || { echo "auto-switch: failed to resolve skip pane $skip_pane_target" >&2; exit 1; }
 fi
 
-declare -A pane_exists pane_running pane_background pane_pending pane_session pane_window
-while IFS=$'\037' read -r pane running background pending session window_id; do
-  [[ -n "$pane" ]] || continue
-  pane_exists["$pane"]=1
-  pane_running["$pane"]="$running"
-  pane_background["$pane"]="$background"
-  pane_pending["$pane"]="$pending"
-  pane_session["$pane"]="$session"
-  pane_window["$pane"]="$window_id"
-done < <(tmux list-panes -a -F $'#{pane_id}\037#{@ai_agent_running}\037#{@ai_agent_background}\037#{@ai_agent_pending}\037#{session_name}\037#{window_id}' 2>/dev/null)
+pane_rows="$(tmux list-panes -a -F $'#{pane_id}\037#{@ai_agent_running}\037#{@ai_agent_background}\037#{@ai_agent_pending}\037#{session_name}\037#{window_id}' 2>/dev/null || true)"
+
+lookup_pane_row() {
+  local wanted="$1" pane running background pending session window_id
+
+  while IFS=$'\037' read -r pane running background pending session window_id; do
+    [[ "$pane" == "$wanted" ]] || continue
+    printf '%s\037%s\037%s\037%s\037%s\n' "$running" "$background" "$pending" "$session" "$window_id"
+    return 0
+  done <<< "$pane_rows"
+
+  return 1
+}
 
 target=""
 target_session=""
 target_window_id=""
 for candidate in $ranked; do
-  [[ -n "${pane_exists[$candidate]:-}" ]] || continue
   [[ -n "$skip_pane_id" && "$candidate" == "$skip_pane_id" ]] && continue
-  if [[ "${pane_running[$candidate]}" != "1" \
-    && "${pane_background[$candidate]}" != "1" \
-    && "${pane_pending[$candidate]}" != "1" ]]; then
+  row="$(lookup_pane_row "$candidate" || true)"
+  [[ -n "$row" ]] || continue
+  IFS=$'\037' read -r running background pending session window_id <<< "$row"
+  if [[ "$running" != "1" \
+    && "$background" != "1" \
+    && "$pending" != "1" ]]; then
     target="$candidate"
-    target_session="${pane_session[$candidate]}"
-    target_window_id="${pane_window[$candidate]}"
+    target_session="$session"
+    target_window_id="$window_id"
     break
   fi
 done
