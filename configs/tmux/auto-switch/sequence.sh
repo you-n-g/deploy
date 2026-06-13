@@ -34,9 +34,11 @@ declare -A edit_running_by_pane=()
 declare -A edit_background_by_pane=()
 declare -A edit_pending_by_pane=()
 declare -A edit_attribute_by_pane=()
+declare -A parsed_attribute_by_pane=()
 edit_target_width=0
 edit_state_width=0
 edit_attribute_width=0
+parsed_ranked=""
 case "$command_name" in
   reset-current|append-current)
     target_pane="${1:-}"
@@ -205,7 +207,7 @@ edit_focus_line() {
 
 pane_edit_comment() {
   local pane="$1"
-  local session_name window_name pane_index unread running background pending attribute clean_attribute path state target_label
+  local session_name window_name pane_index unread running background pending path state target_label
 
   [[ -n "${edit_session_by_pane[$pane]+set}" ]] || { echo "pane missing from edit cache: $pane" >&2; return 1; }
   session_name="${edit_session_by_pane[$pane]}"
@@ -215,18 +217,22 @@ pane_edit_comment() {
   running="${edit_running_by_pane[$pane]}"
   background="${edit_background_by_pane[$pane]}"
   pending="${edit_pending_by_pane[$pane]}"
-  attribute="${edit_attribute_by_pane[$pane]}"
   path="${edit_path_by_pane[$pane]}"
-  clean_attribute="$(printf '%s' "$attribute" | strip_tmux_format)"
   state="$(state_label "$unread" "$running" "$background" "$pending")"
   window_name="$(_strip_ai_window_state_prefix "$window_name")"
   target_label="${session_name}:${window_name}.${pane_index}"
 
-  printf '%-*s | %-*s | %-*s | %s' \
+  printf '%-*s | %-*s | %s' \
     "$edit_target_width" "$target_label" \
     "$edit_state_width" "$state" \
-    "$edit_attribute_width" "${clean_attribute:-no attribute}" \
     "$path"
+}
+
+pane_edit_attribute() {
+  local pane="$1" attribute
+
+  attribute="${edit_attribute_by_pane[$pane]-}"
+  printf '%s' "$attribute" | strip_tmux_format
 }
 
 prepare_edit_column_widths() {
@@ -261,20 +267,26 @@ prepare_edit_column_widths() {
 }
 
 write_edit_file() {
-  local file="$1" ranked="$2" pane comment
+  local file="$1" ranked="$2" pane comment attribute
 
   load_edit_pane_cache
   prepare_edit_column_widths "$ranked"
 
   {
-    printf '# Edit auto-switch order. Keep one pane id before "#"; text after "#" is ignored.\n'
+    printf '# Edit auto-switch order. Keep one pane id before "#"; edit text between pane id and "#".\n'
     printf '# Reorder lines to change priority. Delete a line to remove that pane from the sequence.\n'
     printf '# Vim shortcut: normal-mode q saves and exits.\n'
     printf '# Vim shortcut: normal-mode Enter saves, exits, and switches to the pane on the current line.\n'
-    printf '# Comments include full AI attribute; long lines intentionally do not wrap in vim.\n\n'
+    printf '# Text between pane id and "#" updates @ai_agent_attribute; leave it empty or write "no attribute" to clear.\n'
+    printf '# Text after "#" is informational only. Long lines intentionally do not wrap in vim.\n\n'
     for pane in $ranked; do
       comment="$(pane_edit_comment "$pane")"
-      printf '%s # %s\n' "$pane" "$comment"
+      attribute="$(pane_edit_attribute "$pane")"
+      if [[ -n "$attribute" ]]; then
+        printf '%s %-*s # %s\n' "$pane" "$edit_attribute_width" "$attribute" "$comment"
+      else
+        printf '%s # %s\n' "$pane" "$comment"
+      fi
     done
   } > "$file"
 }
@@ -287,19 +299,20 @@ trim_ascii() {
 }
 
 parse_edit_file() {
-  local file="$1" line line_no=0 before_hash pane resolved seen="" out="" token_count
+  local file="$1" line line_no=0 before_hash pane resolved seen="" out=""
+  local attribute
 
+  parsed_ranked=""
+  parsed_attribute_by_pane=()
   while IFS= read -r line || [[ -n "$line" ]]; do
     line_no=$((line_no + 1))
     before_hash="${line%%#*}"
     before_hash="$(trim_ascii "$before_hash")"
     [[ -n "$before_hash" ]] || continue
 
-    # The editable contract is one pane id per line before the comment marker.
-    read -r pane extra <<< "$before_hash"
-    token_count=1
-    [[ -z "${extra:-}" ]] || token_count=2
-    [[ "$token_count" == "1" ]] || { echo "line $line_no has extra text before #: $line" >&2; return 1; }
+    pane="${before_hash%%[[:space:]]*}"
+    attribute="${before_hash#"$pane"}"
+    attribute="$(trim_ascii "$attribute")"
 
     resolved="$(resolve_pane "$pane" || true)"
     [[ -n "$resolved" ]] || { echo "line $line_no pane does not resolve: $pane" >&2; return 1; }
@@ -309,10 +322,35 @@ parse_edit_file() {
     esac
     seen="$seen $resolved"
     out="${out:+$out }$resolved"
+    parsed_attribute_by_pane["$resolved"]="$attribute"
   done < "$file"
 
   [[ -n "$out" ]] || { echo "edited sequence is empty" >&2; return 1; }
-  printf '%s\n' "$out"
+  parsed_ranked="$out"
+}
+
+apply_edit_attributes() {
+  local ranked="$1" pane attribute old_attribute new_attribute
+
+  for pane in $ranked; do
+    attribute="${parsed_attribute_by_pane[$pane]-}"
+    if [[ "$attribute" == "no attribute" ]]; then
+      attribute=""
+    fi
+
+    old_attribute="${edit_attribute_by_pane[$pane]-}"
+    [[ "$old_attribute" == "$attribute" ]] && continue
+    old_attribute="$(printf '%s' "$old_attribute" | strip_tmux_format)"
+    new_attribute="$(printf '%s' "$attribute" | strip_tmux_format)"
+    [[ "$old_attribute" == "$new_attribute" ]] || {
+      if [[ -n "$new_attribute" ]]; then
+        tmux set-option -pq -t "$pane" @ai_agent_attribute "$new_attribute"
+      else
+        tmux set-option -pqu -t "$pane" @ai_agent_attribute 2>/dev/null || true
+      fi
+      "$HOME/deploy/configs/tmux/script/refresh_status_lines.sh" "$pane"
+    }
+  done
 }
 
 switch_to_pane() {
@@ -398,11 +436,13 @@ VIM
     return 1
   fi
 
-  if ! ranked="$(parse_edit_file "$tmp")"; then
+  if ! parse_edit_file "$tmp"; then
     wait_after_error
     return 1
   fi
 
+  ranked="$parsed_ranked"
+  apply_edit_attributes "$ranked"
   tmux set-option -gq "$ranked_option" "$ranked"
 
   selected_pane="$(cat "$selected_file" 2>/dev/null || true)"
