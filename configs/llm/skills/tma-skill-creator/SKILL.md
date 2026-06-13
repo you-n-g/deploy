@@ -5,7 +5,7 @@ description: >
   systems. Use when the user wants to turn a tmux multi-agent workflow into a
   reusable skill, or update an existing TMA skill based on what happened during
   one of its invocations. Shared TMA creation/communication conventions live in
-  $HOME/deploy/configs/llm/CLAUDE.md.
+  $HOME/farside/AGENTS.md.
 metadata:
   short-description: 创建/改进TMA技能
 ---
@@ -21,7 +21,7 @@ metadata:
 
 通用 TMA 机制不要重复写进新 skill。TMA Agent 的定义、`orchestrator TMA Agent`、交互式 `codexr` / `clauder`、tmux window/pane 创建和通信，都引用：
 
-`$HOME/deploy/configs/llm/CLAUDE.md`
+`$HOME/farside/AGENTS.md`
 
 create 模式默认安装到 `$HOME/deploy/configs/llm/skills/<skill-name>`；如果用户提到 farside、聊天/个人知识库相关流程，或明确要求放进 farside，则安装到 `$HOME/farside/llm/skills/<skill-name>`。
 
@@ -72,7 +72,7 @@ refine 模式优先编辑已有 skill 本体：`~/deploy/configs/llm/skills/<tar
 ---
 name: <skill-name>
 description: >
-  <这个 TMA skill 做什么；说明它使用 CLAUDE.md 中的共享 TMA 机制>
+  <这个 TMA skill 做什么；说明它使用 AGENTS.md 中的共享 TMA 机制>
 metadata:
   short-description: <简短中文名>
 ---
@@ -84,7 +84,7 @@ metadata:
 
 ## 前提
 TMA Agent 的定义、创建与通信使用：
-`$HOME/deploy/configs/llm/CLAUDE.md`
+`$HOME/farside/AGENTS.md`
 
 ## 编排
 <orchestrator 识别什么、创建哪些 Agent、如何汇总>

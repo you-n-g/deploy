@@ -7,6 +7,9 @@ CUSTOM_SKILLS_DIR="$SCRIPT_DIR/skills"
 EXTERNAL_REPOS_DIR="$SCRIPT_DIR/external"
 MERGED_SKILLS_DIR="$SCRIPT_DIR/merged-skills"
 OBSIDIAN_SKILLS_DIR="$EXTERNAL_REPOS_DIR/obsidian-skills"
+FARSIDE_DIR="$HOME/farside"
+GLOBAL_CLAUDE_MD="$FARSIDE_DIR/CLAUDE.md"
+GLOBAL_AGENTS_MD="$FARSIDE_DIR/AGENTS.md"
 
 ensure_dirs() {
     mkdir -p "$CUSTOM_SKILLS_DIR"
@@ -140,17 +143,19 @@ deploy_sgpt_prompt() {
 
 # ── Deploy global CLAUDE.md to ~/.claude/CLAUDE.md ───────────────────────────
 deploy_claude() {
+    [ -f "$GLOBAL_CLAUDE_MD" ] || { echo "Missing global CLAUDE.md: $GLOBAL_CLAUDE_MD" >&2; exit 1; }
     mkdir -p "$HOME/.claude"
-    ln -snf "$SCRIPT_DIR/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
-    echo "Linked: ~/.claude/CLAUDE.md -> $SCRIPT_DIR/CLAUDE.md"
+    ln -snf "$GLOBAL_CLAUDE_MD" "$HOME/.claude/CLAUDE.md"
+    echo "Linked: ~/.claude/CLAUDE.md -> $GLOBAL_CLAUDE_MD"
     "$SCRIPT_DIR/config_claude.py"
 }
 
 # ── Deploy global AGENTS.md to ~/.codex/AGENTS.md ───────────────────────────
 deploy_codex() {
+    [ -f "$GLOBAL_AGENTS_MD" ] || { echo "Missing global AGENTS.md: $GLOBAL_AGENTS_MD" >&2; exit 1; }
     mkdir -p "$HOME/.codex"
-    ln -snf "$SCRIPT_DIR/CLAUDE.md" "$HOME/.codex/AGENTS.md"
-    echo "Linked: ~/.codex/AGENTS.md -> $SCRIPT_DIR/CLAUDE.md"
+    ln -snf "$GLOBAL_AGENTS_MD" "$HOME/.codex/AGENTS.md"
+    echo "Linked: ~/.codex/AGENTS.md -> $GLOBAL_AGENTS_MD"
     ln -snf "$SCRIPT_DIR/codex/hooks.json" "$HOME/.codex/hooks.json"
     echo "Linked: ~/.codex/hooks.json -> $SCRIPT_DIR/codex/hooks.json"
     "$SCRIPT_DIR/config_codex.py" defaults

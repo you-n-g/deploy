@@ -117,6 +117,9 @@ while [[ $# -gt 0 ]]; do
             usage
             exit 0
             ;;
+        -c)
+            die "unknown option before SSH_TARGET: -c; use -C/--remote-cwd for the remote working directory"
+            ;;
         --)
             shift
             break
@@ -170,6 +173,65 @@ remote_status_port=""
 remote_app_server_pid=""
 remote_app_server_ready=0
 remote_cleanup_done=0
+local_codex_config_args=()
+
+load_remote_codex_config_overrides() {
+    local output
+
+    if ! output="$(ssh "${ssh_args[@]}" "$ssh_target" 'python3 - <<'"'"'PY'"'"'
+import json
+import re
+import sys
+import tomllib
+from pathlib import Path
+
+config_path = Path.home() / ".codex" / "config.toml"
+if not config_path.exists():
+    raise SystemExit(f"remote Codex config not found: {config_path}")
+
+config = tomllib.loads(config_path.read_text())
+provider = config.get("model_provider")
+if not provider:
+    raise SystemExit(0)
+if not isinstance(provider, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", provider):
+    raise SystemExit(f"unsupported remote model_provider key: {provider!r}")
+
+def emit(key, value):
+    if value is None:
+        return
+    if isinstance(value, (str, int, float, bool)):
+        print(f"{key}={json.dumps(value)}")
+
+for key in (
+    "model",
+    "model_provider",
+    "model_reasoning_effort",
+    "model_reasoning_summary",
+):
+    emit(key, config.get(key))
+
+providers = config.get("model_providers") or {}
+provider_config = providers.get(provider) or {}
+if not isinstance(provider_config, dict):
+    raise SystemExit(f"remote model provider is not a table: {provider!r}")
+
+emit(f"model_providers.{provider}.name", provider_config.get("name") or provider)
+for key in (
+    "base_url",
+    "wire_api",
+    "requires_openai_auth",
+):
+    emit(f"model_providers.{provider}.{key}", provider_config.get(key))
+PY
+')"; then
+        die "failed to read remote Codex model provider from $ssh_target"
+    fi
+
+    while IFS= read -r override; do
+        [[ -n "$override" ]] || continue
+        local_codex_config_args+=(-c "$override")
+    done <<<"$output"
+}
 
 read_remote_app_server_state() {
     remote_app_server_pid="$(awk -F= '/^CODEX_REMOTE_APP_SERVER_PID=/ {print $2; exit}' "$log_file" 2>/dev/null || true)"
@@ -346,8 +408,10 @@ prepare_remote_codex_home() {
     if [[ -d "$HOME/.codex" ]]; then
         while IFS= read -r codex_item; do
             name="${codex_item##*/}"
+            dest="$remote_codex_home/$name"
             [[ "$name" == "hooks.json" ]] && continue
-            ln -sfnT "$codex_item" "$remote_codex_home/$name"
+            [[ "$name" == "plugins" && ( -e "$dest" || -L "$dest" ) ]] && continue
+            ln -sfnT "$codex_item" "$dest"
         done < <(find "$HOME/.codex" -mindepth 1 -maxdepth 1)
     fi
 }
@@ -462,6 +526,7 @@ REMOTE_SCRIPT
 
 start_status_bridge
 start_tui_state_monitor
+load_remote_codex_config_overrides
 write_remote_script
 
 ssh_cmd=(ssh -o ExitOnForwardFailure=yes -L "${local_port}:127.0.0.1:${remote_port}")
@@ -502,6 +567,7 @@ if [[ "$status_bridge_enabled" = "1" ]]; then
 fi
 set +e
 "$codex_bin" \
+    "${local_codex_config_args[@]}" \
     --dangerously-bypass-approvals-and-sandbox \
     --dangerously-bypass-hook-trust \
     --remote "ws://127.0.0.1:${local_port}"
