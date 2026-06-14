@@ -11,6 +11,9 @@ The local TUI starts with approval, sandbox, and hook-trust bypasses by default.
 
 Options:
   -C, --remote-cwd DIR       cd to DIR on the remote host before starting Codex
+      --profile PROFILE      use remote Codex profile ~/.codex/PROFILE.config.toml
+      --remote-profile PROFILE
+                             alias for --profile
       --local-port PORT      local forwarded port (default: pick a free port)
       --remote-port PORT     remote app-server port (default: same as the picked local port)
       --no-ai-status-bridge  do not bridge remote Codex hooks back to local tmux
@@ -21,6 +24,7 @@ Options:
 
 Examples:
   codex-remote -C /data/repo devbox
+  codex-remote -C /data/repo --profile lb devbox
   codex-remote -C /data/repo user@10.0.0.8 -p 2222 -i ~/.ssh/id_ed25519
   codex-remote --local-port 4500 --remote-port 4500 devbox -J jumpbox
 
@@ -70,6 +74,7 @@ probe_app_server_ws() (
 )
 
 remote_cwd=""
+remote_profile="${CODEX_REMOTE_PROFILE:-}"
 local_port=""
 remote_port=""
 codex_bin="${CODEX_BIN:-codex}"
@@ -82,6 +87,11 @@ while [[ $# -gt 0 ]]; do
         -C|--remote-cwd)
             need_arg "$1" "${2:-}"
             remote_cwd="$2"
+            shift 2
+            ;;
+        --profile|--remote-profile)
+            need_arg "$1" "${2:-}"
+            remote_profile="$2"
             shift 2
             ;;
         --local-port)
@@ -149,6 +159,9 @@ if [[ -n "$remote_port" ]]; then
     [[ "$remote_port" =~ ^[0-9]+$ ]] || die "--remote-port must be numeric: $remote_port"
 fi
 [[ "$connect_timeout" =~ ^[0-9]+$ ]] || die "--timeout must be numeric: $connect_timeout"
+if [[ -n "$remote_profile" ]]; then
+    [[ "$remote_profile" =~ ^[A-Za-z0-9_.-]+$ ]] || die "--profile must be a simple profile name, not a path: $remote_profile"
+fi
 
 if [[ -z "$local_port" ]]; then
     local_port="$(pick_free_port)"
@@ -178,18 +191,38 @@ local_codex_config_args=()
 load_remote_codex_config_overrides() {
     local output
 
-    if ! output="$(ssh "${ssh_args[@]}" "$ssh_target" 'python3 - <<'"'"'PY'"'"'
+    if ! output="$(ssh "${ssh_args[@]}" "$ssh_target" 'python3 - '"$(shell_quote "$remote_profile")"' <<'"'"'PY'"'"'
 import json
 import re
 import sys
 import tomllib
 from pathlib import Path
 
+profile = sys.argv[1]
 config_path = Path.home() / ".codex" / "config.toml"
 if not config_path.exists():
     raise SystemExit(f"remote Codex config not found: {config_path}")
 
 config = tomllib.loads(config_path.read_text())
+if profile:
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+", profile):
+        raise SystemExit(f"unsupported remote Codex profile name: {profile!r}")
+    profile_path = Path.home() / ".codex" / f"{profile}.config.toml"
+    if not profile_path.exists():
+        raise SystemExit(f"remote Codex profile config not found: {profile_path}")
+    profile_config = tomllib.loads(profile_path.read_text())
+
+    def merge(base, overlay):
+        merged = dict(base)
+        for key, value in overlay.items():
+            if isinstance(value, dict) and isinstance(merged.get(key), dict):
+                merged[key] = merge(merged[key], value)
+            else:
+                merged[key] = value
+        return merged
+
+    config = merge(config, profile_config)
+
 provider = config.get("model_provider")
 if not provider:
     raise SystemExit(0)
@@ -377,7 +410,8 @@ remote_cwd="${1:-}"
 remote_codex_bin="${2:?missing remote codex binary}"
 remote_listen="${3:?missing remote listen url}"
 connect_timeout="${4:-20}"
-status_port="${5:-}"
+remote_profile="${5:-}"
+status_port="${6:-}"
 remote_codex_home=""
 app_server_pid=""
 app_server_port="${remote_listen##*:}"
@@ -500,6 +534,9 @@ app_server_cmd=("$remote_codex_bin")
 if [[ -n "$status_port" ]]; then
     app_server_cmd+=(--dangerously-bypass-hook-trust)
 fi
+if [[ -n "$remote_profile" ]]; then
+    app_server_cmd+=(--profile "$remote_profile")
+fi
 app_server_cmd+=(app-server --listen "$remote_listen")
 
 "${app_server_cmd[@]}" &
@@ -533,7 +570,7 @@ ssh_cmd=(ssh -o ExitOnForwardFailure=yes -L "${local_port}:127.0.0.1:${remote_po
 if [[ "$status_bridge_enabled" = "1" ]]; then
     ssh_cmd+=(-R "127.0.0.1:${remote_status_port}:127.0.0.1:${local_status_port}")
 fi
-ssh_cmd+=("${ssh_args[@]}" "$ssh_target" bash -s -- "$remote_cwd" "$remote_codex_bin" "$remote_listen" "$connect_timeout")
+ssh_cmd+=("${ssh_args[@]}" "$ssh_target" bash -s -- "$remote_cwd" "$remote_codex_bin" "$remote_listen" "$connect_timeout" "$remote_profile")
 if [[ "$status_bridge_enabled" = "1" ]]; then
     ssh_cmd+=("$remote_status_port")
 fi
