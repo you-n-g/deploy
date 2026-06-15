@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -lc 'exec \"$HOME/deploy/configs/tmux/script/track_ai_agent_state.sh\" init'",
+            "command": "bash -lc 'AI_AGENT_STATE_SOURCE=codex-hook:session-start exec \"$HOME/deploy/configs/tmux/script/track_ai_agent_state.sh\" init'",
             "timeout": 5
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -lc 'exec \"$HOME/deploy/configs/tmux/script/track_ai_agent_state.sh\" running'",
+            "command": "bash -lc 'AI_AGENT_STATE_SOURCE=codex-hook:user-prompt-submit exec \"$HOME/deploy/configs/tmux/script/track_ai_agent_state.sh\" running'",
             "timeout": 5
           }
         ]
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -lc 'exec \"$HOME/deploy/configs/tmux/script/track_ai_agent_state.sh\" idle'",
+            "command": "bash -lc 'AI_AGENT_STATE_SOURCE=codex-hook:stop exec \"$HOME/deploy/configs/tmux/script/track_ai_agent_state.sh\" idle'",
             "timeout": 5
           }
         ]

@@ -31,16 +31,16 @@ has_background_work() {
 
 case "$event" in
   init)
-    exec "$TRACK_STATE" init "$target"
+    AI_AGENT_STATE_SOURCE="claude-hook:init" exec "$TRACK_STATE" init "$target"
     ;;
   running)
-    exec "$TRACK_STATE" running "$target"
+    AI_AGENT_STATE_SOURCE="claude-hook:running" exec "$TRACK_STATE" running "$target"
     ;;
   stop)
     if has_background_work; then
-      exec "$TRACK_STATE" background "$target"
+      AI_AGENT_STATE_SOURCE="claude-hook:stop-background" exec "$TRACK_STATE" background "$target"
     fi
-    exec "$TRACK_STATE" idle "$target"
+    AI_AGENT_STATE_SOURCE="claude-hook:stop-idle" exec "$TRACK_STATE" idle "$target"
     ;;
   *)
     echo "unknown Claude agent state hook event: $event" >&2

@@ -15,27 +15,25 @@ if ! flock -n 9; then
   exit 0
 fi
 
-running_armed=1
-
 capture_recent_output() {
   local recent
 
-  recent="$(tmux capture-pane -p -t "$pane_id" -S -30 | sed '/^[[:space:]]*$/d' | tail -n 8)"
+  recent="$(tmux capture-pane -p -t "$pane_id" -S -80 | sed '/^[[:space:]]*$/d' | tail -n 20)"
   printf '%s\n' "$recent"
 }
 
 detect_tui_state() {
   local recent="$1"
 
+  # This tracker is only a supplement for transitions normal hooks cannot see.
+  # Regular Codex/Claude running and idle state should come from their hooks.
+  # Goal-mode continuations can repaint "Working" from TUI output without a
+  # corresponding hook event, so only that narrow case is repaired here.
   if printf '%s\n' "$recent" | grep -Eiq \
-    'esc[[:space:]]+to[[:space:]]+(interrupt|interupt)|press[[:space:]]+esc|(^|[[:space:]])(working|baking)[[:space:]]*\('; then
+    'pursuing[[:space:]]+goal|<goal_context>|active[[:space:]]+thread[[:space:]]+goal|tasks[[:space:]]+[0-9]+/[0-9]+' \
+    && printf '%s\n' "$recent" | grep -Eiq \
+      'esc[[:space:]]+to[[:space:]]+(interrupt|interupt)|press[[:space:]]+esc|(^|[[:space:]])(working|baking)[[:space:]]*\('; then
     printf 'running\n'
-    return
-  fi
-
-  if printf '%s\n' "$recent" | grep -Eiq \
-    'goal[[:space:]]+(achieved|blocked|complete|completed|paused)|conversation interrupted|tell the model what to do differently'; then
-    printf 'idle\n'
   fi
 }
 
@@ -47,13 +45,7 @@ ensure_state() {
     running)
       running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
       if [[ "$running" != "1" ]]; then
-        "$TRACK_SCRIPT" running "$pane_id"
-      fi
-      ;;
-    idle)
-      running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
-      if [[ "$running" != "0" ]]; then
-        "$TRACK_SCRIPT" idle "$pane_id"
+        AI_AGENT_STATE_SOURCE="tui-output:goal-running" "$TRACK_SCRIPT" running "$pane_id"
       fi
       ;;
     *) ;;
@@ -87,21 +79,11 @@ wait_for_ai_proc() {
 
 wait_for_ai_proc || exit 0
 
-startup_state="$(detect_tui_state "$(capture_recent_output)")"
-if [[ "$startup_state" == "running" ]]; then
-  running_armed=0
-fi
-
 while tmux display-message -p -t "$pane_id" '#{pane_id}' >/dev/null 2>&1 && pane_has_ai_proc; do
   recent="$(capture_recent_output)"
   desired_state="$(detect_tui_state "$recent")"
   if [[ -n "$desired_state" ]]; then
-    if [[ "$desired_state" == "idle" ]]; then
-      running_armed=1
-      ensure_state "$desired_state"
-    elif [[ "$running_armed" == "1" ]]; then
-      ensure_state "$desired_state"
-    fi
+    ensure_state "$desired_state"
   fi
   sleep "${TMUX_AI_STATE_TRACKER_INTERVAL:-1}"
 done

@@ -327,9 +327,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
 
         try:
+            env = os.environ.copy()
+            env["AI_AGENT_STATE_SOURCE"] = "codex-remote-status-bridge"
             subprocess.run(
                 [track_script, state, pane],
                 check=True,
+                env=env,
                 stdout=subprocess.DEVNULL,
                 stderr=sys.stderr,
             )
@@ -368,7 +371,7 @@ PY
         sleep 0.2
     done
 
-    "$HOME/deploy/configs/tmux/script/track_ai_agent_state.sh" init "$TMUX_PANE"
+    AI_AGENT_STATE_SOURCE="codex-remote-status-bridge:init" "$HOME/deploy/configs/tmux/script/track_ai_agent_state.sh" init "$TMUX_PANE"
     status_bridge_enabled=1
 }
 

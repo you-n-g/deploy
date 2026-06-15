@@ -80,10 +80,12 @@ if ! pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')" || [ -z "$pa
 fi
 window_id="$(tmux display-message -p -t "$pane_id" '#{window_id}')"
 sync_window_name=1
+state_source="${AI_AGENT_STATE_SOURCE:-}"
 
 log_ai_agent_state() {
   local log_file log_dir ts pane_target window_name window_activity window_active
   local running background unread pending notified_activity pane_command pane_pid
+  local source_part
 
   log_file="${AI_AGENT_STATE_LOG:-$HOME/.cache/tmux-ai-agent-state.log}"
   log_dir="$(dirname "$log_file")"
@@ -102,8 +104,12 @@ log_ai_agent_state() {
   pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
   notified_activity="$(tmux show -pv -t "$pane_id" @ai_agent_orchestrator_idle_notified_activity 2>/dev/null || true)"
 
-  printf '%s state=%s pane=%s window_id=%s window_name=%q activity=%s active=%s command=%q pid=%s running=%q background=%q unread=%q pending=%q notified_activity=%q\n' \
-    "$ts" "$state" "$pane_target" "$window_id" "$window_name" "$window_activity" "$window_active" "$pane_command" "$pane_pid" \
+  source_part=""
+  if [ -n "$state_source" ]; then
+    printf -v source_part ' source=%q' "$state_source"
+  fi
+  printf '%s%s state=%s pane=%s window_id=%s window_name=%q activity=%s active=%s command=%q pid=%s running=%q background=%q unread=%q pending=%q notified_activity=%q\n' \
+    "$ts" "$source_part" "$state" "$pane_target" "$window_id" "$window_name" "$window_activity" "$window_active" "$pane_command" "$pane_pid" \
     "$running" "$background" "$unread" "$pending" "$notified_activity" >> "$log_file"
 }
 
@@ -165,24 +171,6 @@ current_user_pane() {
 
   [ -n "$best_pane" ] || return 1
   printf '%s\n' "$best_pane"
-}
-
-is_fake_idle() {
-  local recent
-
-  recent="$(tmux capture-pane -p -t "$pane_id" -S -20 2>/dev/null | sed '/^[[:space:]]*$/d' | tail -n 4 || true)"
-  printf '%s\n' "$recent" | tr '[:upper:]' '[:lower:]' | grep -Eq \
-    'esc[[:space:]]+to[[:space:]]+(interrupt|interupt)|press[[:space:]]+esc|(^|[[:space:]])(working|baking)[[:space:]]*\('
-}
-
-is_fake_idle_after_grace() {
-  if ! is_fake_idle; then
-    return 1
-  fi
-
-  # Stop hooks can arrive before the TUI has repainted away "Working".
-  sleep 0.5
-  is_fake_idle
 }
 
 emit_ai_agent_event() {
@@ -319,17 +307,15 @@ case "$state" in
     tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
     ;;
   idle)
-    if ! is_fake_idle_after_grace; then
-      tmux set-option -pq -t "$pane_id" @ai_agent_running 0
-      tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
-      if is_window_visible; then
-        tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
-      else
-        tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
-      fi
-      ensure_ai_agent_attribute
-      notify_orchestrator_on_idle
+    tmux set-option -pq -t "$pane_id" @ai_agent_running 0
+    tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
+    if is_window_visible; then
+      tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
+    else
+      tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
     fi
+    ensure_ai_agent_attribute
+    notify_orchestrator_on_idle
     ;;
   visit)
     if is_live_ai_pane; then

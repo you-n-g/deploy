@@ -48,7 +48,7 @@ case "$button" in
     tmux choose-window -Z
     ;;
   sb_pd)
-    tmux run-shell -b "$HOME/deploy/configs/tmux/script/track_ai_agent_state.sh pending '$current_pane'"
+    tmux run-shell -b "AI_AGENT_STATE_SOURCE=tmux-status-button:pending $HOME/deploy/configs/tmux/script/track_ai_agent_state.sh pending '$current_pane'"
     ;;
   sb_p70)
     "$HOME/deploy/configs/tmux/script/pane_focus_70.sh" toggle "$current_pane"

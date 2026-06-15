@@ -12,4 +12,4 @@ if [ -z "$pane_id" ]; then
 fi
 
 tmux set -p -t "$pane_id" @last_visit "$NOW" 2>/dev/null || true
-"$SCRIPT_DIR/track_ai_agent_state.sh" visit "$pane_id"
+AI_AGENT_STATE_SOURCE="tmux-visit-hook" "$SCRIPT_DIR/track_ai_agent_state.sh" visit "$pane_id"
