@@ -68,6 +68,25 @@ pane_has_ai_proc() {
   _has_ai_proc "$pane_pid"
 }
 
+wait_for_ai_proc() {
+  local timeout="${TMUX_AI_STATE_TRACKER_STARTUP_WAIT:-10}"
+  local deadline=$((SECONDS + timeout))
+
+  while tmux display-message -p -t "$pane_id" '#{pane_id}' >/dev/null 2>&1; do
+    if pane_has_ai_proc; then
+      return 0
+    fi
+    if (( SECONDS >= deadline )); then
+      return 1
+    fi
+    sleep 0.1
+  done
+
+  return 1
+}
+
+wait_for_ai_proc || exit 0
+
 startup_state="$(detect_tui_state "$(capture_recent_output)")"
 if [[ "$startup_state" == "running" ]]; then
   running_armed=0
