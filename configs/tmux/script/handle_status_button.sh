@@ -65,6 +65,9 @@ case "$button" in
   sb_G)
     tmux run-shell -b "$HOME/deploy/configs/tmux/ai/tmuxg.sh --auto-switch-list -q"
     ;;
+  sb_mA)
+    tmux display-popup -E -w 100% -h 100% "$HOME/deploy/configs/tmux/auto-switch/sequence.sh select-saved"
+    ;;
   sb_mc)
     tmux run-shell -b "$HOME/deploy/configs/tmux/ai/tmuxg.sh --force-new -q"
     ;;

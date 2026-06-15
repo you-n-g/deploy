@@ -13,9 +13,14 @@ Usage:
   sequence.sh reset-current <pane>
   sequence.sh append-current <pane>
   sequence.sh edit [focus-pane]
+  sequence.sh new-ranked-panes
+  sequence.sh select-saved
+  sequence.sh list-saved
   sequence.sh show
 
 Manage the auto-switch pane sequence stored in @auto_switch_ranked_panes.
+Saved ranked pane sequences are stored as newline-separated snapshots in
+@auto_switch_saved_ranked_panes.
 USAGE
 }
 
@@ -24,8 +29,10 @@ command_name="${1:-}"
 shift
 
 ranked_option="@auto_switch_ranked_panes"
+saved_option="@auto_switch_saved_ranked_panes"
 target_pane=""
 edit_focus_target=""
+saved_index=""
 message=""
 
 case "$command_name" in
@@ -38,7 +45,12 @@ case "$command_name" in
     edit_focus_target="${1:-}"
     [[ -z "$edit_focus_target" ]] || shift
     ;;
-  show)
+  preview-saved)
+    saved_index="${1:-}"
+    [[ -n "$saved_index" ]] || { echo "$command_name requires an index" >&2; exit 2; }
+    shift
+    ;;
+  new-ranked-panes|select-saved|list-saved|show)
     ;;
   -h|--help)
     usage
@@ -128,6 +140,119 @@ state_label() {
   else
     printf 'idle'
   fi
+}
+
+saved_ranked_panes() {
+  tmux show-option -gqv "$saved_option" 2>/dev/null || true
+}
+
+saved_sequence_from_row() {
+  local row="$1" id name panes
+
+  if [[ "$row" == *$'\t'* ]]; then
+    IFS=$'\t' read -r id name panes <<< "$row"
+    printf '%s\n' "$panes"
+  else
+    printf '%s\n' "$row"
+  fi
+}
+
+saved_sequences() {
+  local row sequence
+
+  while IFS= read -r row; do
+    [[ -n "$row" ]] || continue
+    sequence="$(saved_sequence_from_row "$row")"
+    [[ -n "$sequence" ]] || continue
+    printf '%s\n' "$sequence"
+  done <<< "$(saved_ranked_panes)"
+}
+
+current_ranked_sequence() {
+  normalize_existing_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)"
+}
+
+set_saved_sequences() {
+  local rows="$1"
+
+  if [[ -n "$rows" ]]; then
+    tmux set-option -gq "$saved_option" "$rows"
+  else
+    tmux set-option -guq "$saved_option" 2>/dev/null || true
+  fi
+}
+
+append_saved_sequence() {
+  local new_sequence="$1" rows="" sequence
+
+  [[ -n "$new_sequence" ]] || return 0
+  while IFS= read -r sequence; do
+    [[ -n "$sequence" ]] || continue
+    [[ "$sequence" == "$new_sequence" ]] && continue
+    rows="${rows:+$rows$'\n'}$sequence"
+  done <<< "$(saved_sequences)"
+  rows="${rows:+$rows$'\n'}$new_sequence"
+  set_saved_sequences "$rows"
+}
+
+new_ranked_panes() {
+  local ranked saved_text=""
+
+  ranked="$(current_ranked_sequence)"
+  if [[ -n "$ranked" ]]; then
+    append_saved_sequence "$ranked"
+    saved_text="; saved previous list"
+  fi
+
+  tmux set-option -gq "$ranked_option" ""
+  message="started new empty auto-switch ranked panes${saved_text}"
+}
+
+saved_sequence_by_index() {
+  local wanted="$1" index=0 sequence
+
+  case "$wanted" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
+  while IFS= read -r sequence; do
+    [[ -n "$sequence" ]] || continue
+    index=$((index + 1))
+    if [[ "$index" == "$wanted" ]]; then
+      printf '%s\n' "$sequence"
+      return 0
+    fi
+  done <<< "$(saved_sequences)"
+  return 1
+}
+
+load_saved_sequence() {
+  local wanted="$1" index=0 sequence selected="" selected_normalized current_normalized rows=""
+
+  case "$wanted" in
+    ''|*[!0-9]*) echo "saved ranked panes does not exist: $wanted" >&2; exit 1 ;;
+  esac
+
+  current_normalized="$(current_ranked_sequence)"
+  while IFS= read -r sequence; do
+    [[ -n "$sequence" ]] || continue
+    index=$((index + 1))
+    if [[ "$index" == "$wanted" ]]; then
+      selected="$sequence"
+      continue
+    fi
+    [[ -n "$current_normalized" && "$(normalize_existing_sequence "$sequence")" == "$current_normalized" ]] && continue
+    rows="${rows:+$rows$'\n'}$sequence"
+  done <<< "$(saved_sequences)"
+
+  [[ -n "$selected" ]] || { echo "saved ranked panes does not exist: $wanted" >&2; exit 1; }
+  selected_normalized="$(normalize_existing_sequence "$selected")"
+  if [[ -n "$current_normalized" && "$current_normalized" != "$selected_normalized" ]]; then
+    rows="${rows:+$rows$'\n'}$current_normalized"
+  fi
+
+  set_saved_sequences "$rows"
+  tmux set-option -gq "$ranked_option" "$selected_normalized"
+  message="loaded saved ranked panes #$wanted: $(format_sequence "$selected_normalized")"
 }
 
 pane_line_in_edit_file() {
@@ -305,6 +430,96 @@ sequence_count() {
   printf '%s\n' "$count"
 }
 
+saved_live_sequence() {
+  local index="$1" ranked
+
+  if [[ "$index" == "__new__" ]]; then
+    normalize_existing_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)"
+    return 0
+  fi
+
+  ranked="$(saved_sequence_by_index "$index")" || return 1
+  normalize_existing_sequence "$ranked"
+}
+
+saved_list_rows() {
+  local index=0 ranked live total live_total summary
+
+  while IFS= read -r ranked; do
+    [[ -n "$ranked" ]] || continue
+    index=$((index + 1))
+    live="$(normalize_existing_sequence "$ranked")"
+    total="$(sequence_count "$ranked")"
+    live_total="$(sequence_count "$live")"
+    summary="$(format_sequence "$live")"
+    printf '%s\t%s\t%s/%s live\t%s\n' "$index" "saved ranked panes #$index" "$live_total" "$total" "$summary"
+  done <<< "$(saved_sequences)"
+}
+
+saved_picker_rows() {
+  local ranked live_count total_count
+
+  ranked="$(normalize_existing_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
+  live_count="$(sequence_count "$ranked")"
+  total_count="$(sequence_count "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
+  printf '%s\t%s\t%s/%s current\t%s\n' "__new__" "+ new ranked panes" "$live_count" "$total_count" "save current list, then start an empty active list"
+  saved_list_rows
+}
+
+preview_saved() {
+  local index="$1" live tmp
+
+  if [[ "$index" == "__new__" ]]; then
+    live="$(saved_live_sequence "$index")"
+    printf 'saved sequence: new ranked panes\n'
+    printf 'action: save current active list into @auto_switch_saved_ranked_panes, then clear @auto_switch_ranked_panes\n\n'
+    if [[ -z "$live" ]]; then
+      echo "current active list is already empty"
+      return 0
+    fi
+    tmp="$(mktemp "${TMPDIR:-/tmp}/auto-switch-saved-preview.XXXXXX")"
+    trap 'rm -f "$tmp"' RETURN
+    write_edit_file "$tmp" "$live"
+    cat "$tmp"
+    return 0
+  fi
+
+  live="$(saved_live_sequence "$index" || true)"
+  [[ -n "$live" ]] || { echo "saved ranked panes does not exist or has no live panes: $index"; return 0; }
+
+  printf 'saved sequence: #%s\n\n' "$index"
+
+  tmp="$(mktemp "${TMPDIR:-/tmp}/auto-switch-saved-preview.XXXXXX")"
+  trap 'rm -f "$tmp"' RETURN
+  write_edit_file "$tmp" "$live"
+  cat "$tmp"
+}
+
+select_saved() {
+  local rows selected index preview_cmd
+
+  rows="$(saved_picker_rows)"
+
+  printf -v preview_cmd '%q preview-saved {1}' "$script_dir/sequence.sh"
+  selected="$(
+    printf '%s\n' "$rows" |
+      fzf --ansi --reverse \
+        --delimiter=$'\t' \
+        --with-nth='2..' \
+        --header='Enter load saved ranked panes  |  first row starts a new empty active list' \
+        --preview "$preview_cmd" \
+        --preview-window 'right:70%,wrap'
+  )" || return 2
+
+  [[ -n "$selected" ]] || return 2
+  index="${selected%%$'\t'*}"
+  if [[ "$index" == "__new__" ]]; then
+    new_ranked_panes
+    return 0
+  fi
+  load_saved_sequence "$index"
+}
+
 case "$command_name" in
   reset-current)
     target_pane="$(resolve_pane "$target_pane")" || { echo "pane does not resolve: $target_pane" >&2; exit 1; }
@@ -324,6 +539,20 @@ case "$command_name" in
     ;;
   edit)
     edit_sequence
+    ;;
+  new-ranked-panes)
+    new_ranked_panes
+    ;;
+  select-saved)
+    select_saved
+    ;;
+  list-saved)
+    saved_list_rows
+    exit 0
+    ;;
+  preview-saved)
+    preview_saved "$saved_index"
+    exit 0
     ;;
   show)
     ranked="$(normalize_existing_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"

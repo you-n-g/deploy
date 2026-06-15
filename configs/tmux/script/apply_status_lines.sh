@@ -58,12 +58,13 @@ click_only() {
 compact_buttons="$(
   button_row \
     sb_g ' g ' \
-    sb_G ' G ' \
     sb_cg 'C-g' \
+    sb_G ' G ' \
+    sb_a ' a ' \
+    sb_mA 'M-A' \
+    sb_as 'C-m' \
     sb_mc 'M-c' \
     sb_ml 'M-l' \
-    sb_as 'C-m' \
-    sb_a ' a ' \
     sb_cc 'C-c' \
     sb_d "$(click_only ' D ')" \
     sb_n "$(click_only ' N ')" \
@@ -72,12 +73,13 @@ compact_buttons="$(
 expanded_buttons="$(
   button_row \
     sb_g ' g ' \
-    sb_G ' G ' \
     sb_cg 'C-g' \
+    sb_G ' G ' \
+    sb_a ' a ' \
+    sb_mA 'M-A' \
+    sb_as 'C-m' \
     sb_mc 'M-c' \
     sb_ml 'M-l' \
-    sb_as 'C-m' \
-    sb_a ' a ' \
     sb_cc 'C-c' \
     sb_d "$(click_only ' D ')" \
     sb_n "$(click_only ' N ')" \
