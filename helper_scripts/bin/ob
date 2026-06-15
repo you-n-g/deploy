@@ -5,18 +5,12 @@ VAULT_NAME="markdown"
 VAULT_DIR="$HOME/Downloads/markdown"
 
 usage() {
-    echo "Usage: ob <file>" >&2
+    echo "Usage: ob <file> [file ...]" >&2
     exit 2
 }
 
-if [ "$#" -ne 1 ]; then
+if [ "$#" -lt 1 ]; then
     usage
-fi
-
-src="$1"
-if [ ! -f "$src" ]; then
-    echo "ob: file not found: $src" >&2
-    exit 1
 fi
 
 if [ ! -d "$VAULT_DIR/.obsidian" ]; then
@@ -24,28 +18,63 @@ if [ ! -d "$VAULT_DIR/.obsidian" ]; then
     exit 1
 fi
 
-src_abs="$(python3 -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).resolve())' "$src")"
-vault_abs="$(python3 -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).resolve())' "$VAULT_DIR")"
-base="$(basename "$src_abs")"
-dest="$vault_abs/$base"
+abs_path() {
+    python3 -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).resolve())' "$1"
+}
 
-if [ "$src_abs" = "$dest" ]; then
-    link_path="$base"
-else
-    if [ -L "$dest" ]; then
-        dest_target_abs="$(python3 -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).resolve(strict=False))' "$dest")"
-        if [ "$dest_target_abs" != "$src_abs" ]; then
-            ln -sfn "$src_abs" "$dest"
-        fi
-        link_path="$base"
-    elif [ -e "$dest" ]; then
+encode_uri_component() {
+    python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$1"
+}
+
+check_linkable() {
+    local src="$1" src_abs base dest
+
+    if [ ! -f "$src" ]; then
+        echo "ob: file not found: $src" >&2
+        exit 1
+    fi
+
+    src_abs="$(abs_path "$src")"
+    base="$(basename "$src_abs")"
+    dest="$vault_abs/$base"
+
+    if [ "$src_abs" != "$dest" ] && [ -e "$dest" ] && [ ! -L "$dest" ]; then
         echo "ob: target already exists and is not a symlink: $dest" >&2
         exit 1
-    else
-        ln -s "$src_abs" "$dest"
-        link_path="$base"
     fi
-fi
+}
 
-encoded_file="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$link_path")"
-open "obsidian://open?vault=$VAULT_NAME&file=$encoded_file"
+link_into_vault() {
+    local src="$1" src_abs base dest dest_target_abs
+
+    src_abs="$(abs_path "$src")"
+    base="$(basename "$src_abs")"
+    dest="$vault_abs/$base"
+
+    if [ "$src_abs" != "$dest" ]; then
+        if [ -L "$dest" ]; then
+            dest_target_abs="$(python3 -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).resolve(strict=False))' "$dest")"
+            if [ "$dest_target_abs" != "$src_abs" ]; then
+                ln -sfn "$src_abs" "$dest"
+            fi
+        elif [ -e "$dest" ]; then
+            echo "ob: target already exists and is not a symlink: $dest" >&2
+            exit 1
+        else
+            ln -s "$src_abs" "$dest"
+        fi
+    fi
+
+    printf '%s\n' "$base"
+}
+
+vault_abs="$(abs_path "$VAULT_DIR")"
+for src in "$@"; do
+    check_linkable "$src"
+done
+
+for src in "$@"; do
+    link_path="$(link_into_vault "$src")"
+    encoded_file="$(encode_uri_component "$link_path")"
+    open "obsidian://open?vault=$VAULT_NAME&file=$encoded_file"
+done
