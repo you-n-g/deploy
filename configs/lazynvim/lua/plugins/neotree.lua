@@ -27,6 +27,36 @@ local function is_pdf(path)
   return type(path) == "string" and path:lower():match("%.pdf$") ~= nil
 end
 
+-- Some project worktrees contain generated sandboxes or FUSE-backed directories
+-- that are correctly ignored by Git, but still very expensive to enumerate.
+-- Neo-tree normally asks `git status --ignored=traditional` so it can decorate
+-- ignored paths. In those repos, that command may still walk into ignored trees
+-- and freeze the file explorer.
+--
+-- A repo can opt into the safer behavior by creating this marker file:
+--   .neotree-no-ignored-status
+--
+-- When the marker exists, only Neo-tree's git-status command is changed from
+-- `--ignored=traditional` to `--ignored=no`. Git ignore rules still apply; this
+-- just stops Neo-tree from asking Git to list ignored paths for UI decoration.
+local function repo_has_marker(root, marker)
+  local uv = vim.uv or vim.loop
+  return uv.fs_stat(root .. "/" .. marker) ~= nil
+end
+
+local function disable_ignored_status_for_marked_repos(args)
+  if not repo_has_marker(args.git_root, ".neotree-no-ignored-status") then
+    return
+  end
+
+  for i, arg in ipairs(args.status_args) do
+    if arg:match("^%-%-ignored=") then
+      args.status_args[i] = "--ignored=no"
+      return
+    end
+  end
+end
+
 return {
   {
     "nvim-neo-tree/neo-tree.nvim",
@@ -47,6 +77,13 @@ return {
       opts.window.mappings["YP"] = copy_path("P")
       opts.window.mappings["Yp"] = copy_path("p")
       opts.window.mappings["Yn"] = copy_path("n")
+
+      opts.event_handlers = opts.event_handlers or {}
+      table.insert(opts.event_handlers, {
+        event = "before_git_status",
+        id = "disable_ignored_status_for_marked_repos",
+        handler = disable_ignored_status_for_marked_repos,
+      })
 
       opts.commands = vim.tbl_extend("force", opts.commands or {}, {
         open_smart = function(state)
