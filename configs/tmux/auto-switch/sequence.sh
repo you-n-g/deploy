@@ -15,6 +15,8 @@ Usage:
   sequence.sh edit [focus-pane]
   sequence.sh new-ranked-panes
   sequence.sh select-saved
+  sequence.sh delete-saved <index>
+  sequence.sh list-picker-rows
   sequence.sh list-saved
   sequence.sh show
 
@@ -34,6 +36,7 @@ target_pane=""
 edit_focus_target=""
 saved_index=""
 message=""
+selection_cancelled=0
 
 case "$command_name" in
   reset-current|append-current)
@@ -45,12 +48,12 @@ case "$command_name" in
     edit_focus_target="${1:-}"
     [[ -z "$edit_focus_target" ]] || shift
     ;;
-  preview-saved)
+  delete-saved|preview-saved)
     saved_index="${1:-}"
     [[ -n "$saved_index" ]] || { echo "$command_name requires an index" >&2; exit 2; }
     shift
     ;;
-  new-ranked-panes|select-saved|list-saved|show)
+  new-ranked-panes|select-saved|list-picker-rows|list-saved|show)
     ;;
   -h|--help)
     usage
@@ -223,6 +226,28 @@ saved_sequence_by_index() {
     fi
   done <<< "$(saved_sequences)"
   return 1
+}
+
+delete_saved_sequence() {
+  local wanted="$1" index=0 sequence rows="" deleted=0
+
+  [[ "$wanted" != "__new__" ]] || return 0
+  case "$wanted" in
+    ''|*[!0-9]*) echo "saved ranked panes does not exist: $wanted" >&2; exit 1 ;;
+  esac
+
+  while IFS= read -r sequence; do
+    [[ -n "$sequence" ]] || continue
+    index=$((index + 1))
+    if [[ "$index" == "$wanted" ]]; then
+      deleted=1
+      continue
+    fi
+    rows="${rows:+$rows$'\n'}$sequence"
+  done <<< "$(saved_sequences)"
+
+  [[ "$deleted" == "1" ]] || { echo "saved ranked panes does not exist: $wanted" >&2; exit 1; }
+  set_saved_sequences "$rows"
 }
 
 load_saved_sequence() {
@@ -430,6 +455,13 @@ sequence_count() {
   printf '%s\n' "$count"
 }
 
+line_count_label() {
+  local total="$1" live="$2" unit="lines"
+
+  [[ "$total" == "1" ]] && unit="line"
+  printf '%s %s (%s live)\n' "$total" "$unit" "$live"
+}
+
 saved_live_sequence() {
   local index="$1" ranked
 
@@ -457,13 +489,21 @@ saved_list_rows() {
 }
 
 saved_picker_rows() {
-  local ranked live_count total_count
+  local index=0 ranked live live_count total_count
 
   ranked="$(normalize_existing_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
   live_count="$(sequence_count "$ranked")"
   total_count="$(sequence_count "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
-  printf '%s\t%s\t%s/%s current\t%s\n' "__new__" "+ new ranked panes" "$live_count" "$total_count" "save current list, then start an empty active list"
-  saved_list_rows
+  printf '%s\t%s %s\t%s\n' "__new__" "new" "$(line_count_label "$total_count" "$live_count")" "+ new ranked panes"
+
+  while IFS= read -r ranked; do
+    [[ -n "$ranked" ]] || continue
+    index=$((index + 1))
+    live="$(normalize_existing_sequence "$ranked")"
+    total_count="$(sequence_count "$ranked")"
+    live_count="$(sequence_count "$live")"
+    printf '%s\t#%s %s\t%s\n' "$index" "$index" "$(line_count_label "$total_count" "$live_count")" "saved ranked panes #$index"
+  done <<< "$(saved_sequences)"
 }
 
 preview_saved() {
@@ -496,22 +536,40 @@ preview_saved() {
 }
 
 select_saved() {
-  local rows selected index preview_cmd
+  local rows selected index preview_cmd reload_cmd delete_cmd fzf_status
 
   rows="$(saved_picker_rows)"
 
   printf -v preview_cmd '%q preview-saved {1}' "$script_dir/sequence.sh"
+  printf -v reload_cmd '%q list-picker-rows' "$script_dir/sequence.sh"
+  printf -v delete_cmd '%q delete-saved {1}' "$script_dir/sequence.sh"
+  set +e
   selected="$(
     printf '%s\n' "$rows" |
       fzf --ansi --reverse \
         --delimiter=$'\t' \
         --with-nth='2..' \
-        --header='Enter load saved ranked panes  |  first row starts a new empty active list' \
+        --header='Enter load saved ranked panes  |  Ctrl-D delete saved row  |  first row starts a new empty active list' \
+        --bind "ctrl-d:execute-silent($delete_cmd)+reload($reload_cmd)+refresh-preview" \
         --preview "$preview_cmd" \
         --preview-window 'right:70%,wrap'
-  )" || return 2
+  )"
+  fzf_status=$?
+  set -e
 
-  [[ -n "$selected" ]] || return 2
+  case "$fzf_status" in
+    0) ;;
+    1|130)
+      selection_cancelled=1
+      return 0
+      ;;
+    *) return "$fzf_status" ;;
+  esac
+
+  if [[ -z "$selected" ]]; then
+    selection_cancelled=1
+    return 0
+  fi
   index="${selected%%$'\t'*}"
   if [[ "$index" == "__new__" ]]; then
     new_ranked_panes
@@ -543,8 +601,16 @@ case "$command_name" in
   new-ranked-panes)
     new_ranked_panes
     ;;
+  delete-saved)
+    delete_saved_sequence "$saved_index"
+    exit 0
+    ;;
   select-saved)
     select_saved
+    ;;
+  list-picker-rows)
+    saved_picker_rows
+    exit 0
     ;;
   list-saved)
     saved_list_rows
@@ -561,6 +627,10 @@ case "$command_name" in
 esac
 
 if [[ "$command_name" == "edit" ]]; then
+  exit 0
+fi
+
+if [[ "$selection_cancelled" == "1" ]]; then
   exit 0
 fi
 
