@@ -27,8 +27,14 @@ detect_tui_state() {
 
   # This tracker is only a supplement for transitions normal hooks cannot see.
   # Regular Codex/Claude running and idle state should come from their hooks.
-  # Goal-mode continuations can repaint "Working" from TUI output without a
-  # corresponding hook event, so only that narrow case is repaired here.
+  # Do not use this script as a generic screen-state fallback. If a normal
+  # hook such as Stop is missing or broken, fix that hook instead of inferring
+  # idle from TUI text here.
+  #
+  # The narrow gap this script covers is goal-mode automatic continuation:
+  # Codex can repaint "Working" without a fresh UserPromptSubmit hook event.
+  # In that case, goal text plus foreground-working text is enough to repair
+  # the running marker.
   if printf '%s\n' "$recent" | grep -Eiq \
     'pursuing[[:space:]]+goal|<goal_context>|active[[:space:]]+thread[[:space:]]+goal|tasks[[:space:]]+[0-9]+/[0-9]+' \
     && printf '%s\n' "$recent" | grep -Eiq \
