@@ -7,7 +7,12 @@ return {
     dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
     ---@module 'render-markdown'
     ---@type render.md.UserConfig
-    opts = {},
+    init = function()
+      require("helpers.render_markdown_mode").setup()
+    end,
+    opts = function()
+      return require("helpers.render_markdown_mode").opts(true)
+    end,
   },
   {
     'cameron-wags/rainbow_csv.nvim',

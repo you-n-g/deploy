@@ -32,7 +32,10 @@ local enabled = false
 local function is_supported_buf(bufnr)
   -- We want to support all kinds of buffers. So we don't check buftype.
   local bt = vim.bo[bufnr].buftype
-  if vim.b.single_line_wrap_support then
+  if vim.b[bufnr].single_line_wrap_enabled == false then
+    return false
+  end
+  if vim.b[bufnr].single_line_wrap_support then
     return true
   end
   if bt == "terminal" or bt == "nofile" or bt == "prompt" or bt == "help" or bt == "quickfix" then
@@ -296,6 +299,20 @@ local function refresh_current_line()
       show_virtual_line(bufnr, lnum)
     end)
   end)
+end
+
+function M.enable_buffer(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  vim.b[bufnr].single_line_wrap_enabled = true
+  if enabled then
+    refresh_current_line()
+  end
+end
+
+function M.disable_buffer(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  vim.b[bufnr].single_line_wrap_enabled = false
+  clear_buf(bufnr)
 end
 
 function M.enable()
