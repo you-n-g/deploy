@@ -58,6 +58,35 @@ ensure_state() {
   esac
 }
 
+current_ai_state() {
+  local running background pending
+
+  pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
+  if [[ "$pending" == "1" ]]; then
+    printf 'pending\n'
+    return
+  fi
+
+  running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
+  background="$(tmux show -pv -t "$pane_id" @ai_agent_background 2>/dev/null || true)"
+  if [[ "$running" == "1" || "$background" == "1" ]]; then
+    printf 'busy\n'
+    return
+  fi
+
+  printf 'idle\n'
+}
+
+maybe_emit_tui_idle() {
+  local current_state
+
+  current_state="$(current_ai_state)"
+  if [[ "$last_ai_state" == "busy" && "$current_state" == "idle" ]]; then
+    AI_AGENT_STATE_SOURCE="tui-output:busy-to-idle" "$TRACK_SCRIPT" idle "$pane_id"
+  fi
+  last_ai_state="$current_state"
+}
+
 pane_has_ai_proc() {
   local pane_pid
 
@@ -84,6 +113,7 @@ wait_for_ai_proc() {
 }
 
 wait_for_ai_proc || exit 0
+last_ai_state="$(current_ai_state)"
 
 while tmux display-message -p -t "$pane_id" '#{pane_id}' >/dev/null 2>&1 && pane_has_ai_proc; do
   recent="$(capture_recent_output)"
@@ -91,5 +121,6 @@ while tmux display-message -p -t "$pane_id" '#{pane_id}' >/dev/null 2>&1 && pane
   if [[ -n "$desired_state" ]]; then
     ensure_state "$desired_state"
   fi
+  maybe_emit_tui_idle
   sleep "${TMUX_AI_STATE_TRACKER_INTERVAL:-1}"
 done
