@@ -29,3 +29,5 @@ fzm = "!git ls-files -m --exclude-standard | fzf --print0 -m | xargs -0 -t -r gi
 	directory = *
 [credential "https://git.overleaf.com"]
 	provider = generic
+[credential "https://codeup.aliyun.com"]
+	provider = generic

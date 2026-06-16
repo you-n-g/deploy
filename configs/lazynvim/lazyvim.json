@@ -1,6 +1,5 @@
 {
   "extras": [
-    "lazyvim.plugins.extras.ai.codeium",
     "lazyvim.plugins.extras.lang.python",
     "lazyvim.plugins.extras.ui.treesitter-context"
   ],

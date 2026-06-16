@@ -36,14 +36,18 @@ function M.apply_window_options(read_mode, win)
     if M.wrap_by_win[win] == nil then
       M.wrap_by_win[win] = vim.wo[win].wrap
     end
-    vim.wo[win].wrap = false
+    if vim.wo[win].wrap ~= false then
+      vim.wo[win].wrap = false
+    end
     return
   end
 
   if M.wrap_by_win[win] ~= nil then
-    vim.wo[win].wrap = M.wrap_by_win[win]
+    if vim.wo[win].wrap ~= M.wrap_by_win[win] then
+      vim.wo[win].wrap = M.wrap_by_win[win]
+    end
     M.wrap_by_win[win] = nil
-  else
+  elseif vim.wo[win].wrap ~= true then
     vim.wo[win].wrap = true
   end
 end
@@ -112,15 +116,6 @@ function M.configure_markdown_buffer(buf)
   })
 end
 
-function M.enforce_current_markdown_buffer()
-  local bufnr = vim.api.nvim_get_current_buf()
-  if vim.bo[bufnr].filetype ~= "markdown" then
-    return
-  end
-  M.apply_line_wrap_mode(M.read_mode, bufnr)
-  M.apply_window_options(M.read_mode)
-end
-
 function M.setup()
   if M.did_setup then
     return
@@ -169,33 +164,12 @@ function M.setup()
     end,
   })
 
-  vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI", "WinScrolled" }, {
-    group = group,
-    callback = function()
-      if M.read_mode then
-        M.enforce_current_markdown_buffer()
-      end
-    end,
-  })
-
   vim.api.nvim_create_autocmd("VimEnter", {
     group = group,
     callback = function()
       if vim.bo.filetype == "markdown" then
         M.configure_markdown_buffer(vim.api.nvim_get_current_buf())
       end
-    end,
-  })
-
-  vim.api.nvim_create_autocmd("OptionSet", {
-    group = group,
-    pattern = "wrap",
-    callback = function()
-      vim.schedule(function()
-        if M.read_mode and vim.bo.filetype == "markdown" then
-          M.apply_window_options(true)
-        end
-      end)
     end,
   })
 
