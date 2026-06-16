@@ -295,6 +295,14 @@ local function refresh_current_line()
   end
   M._refresh_timer = vim.fn.timer_start(100, function()
     vim.schedule(function()
+      if not enabled or not vim.api.nvim_buf_is_valid(bufnr) or vim.api.nvim_win_get_buf(win) ~= bufnr then
+        clear_buf(bufnr)
+        return
+      end
+      if not is_supported_buf(bufnr) or vim.wo[win].wrap then
+        clear_buf(bufnr)
+        return
+      end
       clear_buf(bufnr)
       show_virtual_line(bufnr, lnum)
     end)

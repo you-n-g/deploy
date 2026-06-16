@@ -48,6 +48,13 @@ function M.apply_window_options(read_mode, win)
   end
 end
 
+function M.apply_buffer_window_options(read_mode, bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
+    M.apply_window_options(read_mode, win)
+  end
+end
+
 function M.apply_line_wrap_mode(read_mode, bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   if vim.bo[bufnr].filetype ~= "markdown" then
@@ -75,9 +82,9 @@ function M.set(read_mode)
     local bufnr = vim.api.nvim_get_current_buf()
     if read_mode then
       M.apply_line_wrap_mode(read_mode, bufnr)
-      M.apply_window_options(read_mode)
+      M.apply_buffer_window_options(read_mode, bufnr)
     else
-      M.apply_window_options(read_mode)
+      M.apply_buffer_window_options(read_mode, bufnr)
       M.apply_line_wrap_mode(read_mode, bufnr)
     end
     render.render({
@@ -94,12 +101,24 @@ function M.toggle()
 end
 
 function M.configure_markdown_buffer(buf)
+  if vim.bo[buf].filetype ~= "markdown" then
+    return
+  end
   M.apply_line_wrap_mode(M.read_mode, buf)
-  M.apply_window_options(M.read_mode)
+  M.apply_buffer_window_options(M.read_mode, buf)
   vim.keymap.set("n", "<leader>um", "<cmd>RenderMarkdownReadModeToggle<cr>", {
     buffer = buf,
     desc = "Toggle Markdown read mode",
   })
+end
+
+function M.enforce_current_markdown_buffer()
+  local bufnr = vim.api.nvim_get_current_buf()
+  if vim.bo[bufnr].filetype ~= "markdown" then
+    return
+  end
+  M.apply_line_wrap_mode(M.read_mode, bufnr)
+  M.apply_window_options(M.read_mode)
 end
 
 function M.setup()
@@ -133,18 +152,50 @@ function M.setup()
     desc = "Toggle render-markdown read-priority mode",
   })
 
+  local group = vim.api.nvim_create_augroup("RenderMarkdownReadMode", { clear = true })
+
   vim.api.nvim_create_autocmd("FileType", {
+    group = group,
     pattern = "markdown",
     callback = function(args)
       M.configure_markdown_buffer(args.buf)
     end,
   })
 
+  vim.api.nvim_create_autocmd({ "BufWinEnter", "WinEnter" }, {
+    group = group,
+    callback = function(args)
+      M.configure_markdown_buffer(args.buf)
+    end,
+  })
+
+  vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI", "WinScrolled" }, {
+    group = group,
+    callback = function()
+      if M.read_mode then
+        M.enforce_current_markdown_buffer()
+      end
+    end,
+  })
+
   vim.api.nvim_create_autocmd("VimEnter", {
+    group = group,
     callback = function()
       if vim.bo.filetype == "markdown" then
         M.configure_markdown_buffer(vim.api.nvim_get_current_buf())
       end
+    end,
+  })
+
+  vim.api.nvim_create_autocmd("OptionSet", {
+    group = group,
+    pattern = "wrap",
+    callback = function()
+      vim.schedule(function()
+        if M.read_mode and vim.bo.filetype == "markdown" then
+          M.apply_window_options(true)
+        end
+      end)
     end,
   })
 
