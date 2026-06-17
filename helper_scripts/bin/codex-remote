@@ -31,6 +31,8 @@ Notes:
   -p, -i, -J, -F, and -o work even though they appear after SSH_TARGET here.
   -c/--config overrides are passed to both the remote app-server and the local
   TUI, after the local TUI mirrors the remote host's default Codex provider.
+  The remote app-server starts through an interactive bash so exported values
+  from $HOME/.bashrc are available, including provider keys such as LB_API_KEY.
   Remote status hooks use $HOME/.codex-remote-status so Codex hook trust can
   persist across runs while the forwarded port is still picked automatically.
 EOF
@@ -531,7 +533,10 @@ for config_override in "${remote_config_overrides[@]}"; do
 done
 app_server_cmd+=(--listen "$remote_listen")
 
-"${app_server_cmd[@]}" &
+# Run only the app-server through interactive bash so .bashrc entries after the
+# common non-interactive guard still apply. The startup job-control warnings go
+# to /dev/null; app-server stderr is restored before exec.
+env -u BASH_ENV bash -ic 'exec 2>&3; exec "$@"' bash "${app_server_cmd[@]}" 3>&2 2>/dev/null &
 app_server_pid="$!"
 echo "CODEX_REMOTE_APP_SERVER_PID=$app_server_pid"
 

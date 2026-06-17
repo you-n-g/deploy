@@ -27,9 +27,9 @@ detect_tui_state() {
 
   # This tracker is only a supplement for transitions normal hooks cannot see.
   # Regular Codex/Claude running and idle state should come from their hooks.
-  # Do not use this script as a generic screen-state fallback. If a normal
-  # hook such as Stop is missing or broken, fix that hook instead of inferring
-  # idle from TUI text here.
+  # Do not use this script as a generic screen-state fallback. In particular,
+  # do not infer generic idle from arbitrary TUI text; the only idle repair here
+  # is the stale-running timeout below for known interrupt paths.
   #
   # The narrow gap this script covers is goal-mode automatic continuation:
   # Codex can repaint "Working" without a fresh UserPromptSubmit hook event.
@@ -77,14 +77,36 @@ current_ai_state() {
   printf 'idle\n'
 }
 
-maybe_emit_tui_idle() {
-  local current_state
+emit_busy_to_idle() {
+  local previous_state="$1"
+  local current_state="$2"
 
-  current_state="$(current_ai_state)"
-  if [[ "$last_ai_state" == "busy" && "$current_state" == "idle" ]]; then
+  if [[ "$previous_state" == "busy" && "$current_state" == "idle" ]]; then
+    # this signal is designed to be emitted to orchestrator.
     AI_AGENT_STATE_SOURCE="tui-output:busy-to-idle" "$TRACK_SCRIPT" idle "$pane_id"
   fi
-  last_ai_state="$current_state"
+}
+
+# Side-effect detector: mark a stale running pane idle when the timeout matches.
+# It always returns 0 so the main loop can run other independent detectors.
+maybe_mark_stale_running_idle() {
+  local running window_activity now idle_after
+
+  running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
+  [[ "$running" == "1" ]] || return 0
+
+  window_activity="$(tmux display-message -p -t "$pane_id" '#{window_activity}')"
+  now="$(date +%s)"
+  idle_after="${TMUX_AI_STATE_TRACKER_RUNNING_IDLE_AFTER:-10}"
+
+  if (( now - window_activity < idle_after )); then
+    return 0
+  fi
+
+  # This covers Codex interrupt paths such as ESC, where the foreground turn is
+  # cancelled in the TUI but the normal Stop hook does not fire.
+  AI_AGENT_STATE_SOURCE="tui-output:stale-running-idle" "$TRACK_SCRIPT" idle "$pane_id"
+  # Leave loop state untouched; the main loop recomputes it after detectors run.
 }
 
 pane_has_ai_proc() {
@@ -121,6 +143,9 @@ while tmux display-message -p -t "$pane_id" '#{pane_id}' >/dev/null 2>&1 && pane
   if [[ -n "$desired_state" ]]; then
     ensure_state "$desired_state"
   fi
-  maybe_emit_tui_idle
+  maybe_mark_stale_running_idle
+  ai_state="$(current_ai_state)"
+  emit_busy_to_idle "$last_ai_state" "$ai_state"
+  last_ai_state="$ai_state"
   sleep "${TMUX_AI_STATE_TRACKER_INTERVAL:-1}"
 done

@@ -41,10 +41,12 @@ Common states:
 ## Existing Trackers
 
 - `tui-output.sh`: captures recent TUI output only to supplement transitions
-  normal Codex/Claude hooks cannot see. It only repairs goal-mode `running`
-  state when goal text and foreground-working text appear together. Idle state
-  remains owned by the normal Stop hooks. When the tracker observes tmux AI
-  state transition from busy to idle, it emits one ordinary `idle` event with
-  `AI_AGENT_STATE_SOURCE=tui-output:busy-to-idle`; orchestrator notification
-  code uses that source to distinguish this TUI-observed idle edge from normal
-  Stop-hook idle.
+  normal Codex/Claude hooks cannot see. It repairs goal-mode `running` state
+  when goal text and foreground-working text appear together. It also marks a
+  stuck foreground `running` pane idle after 10 seconds without tmux window
+  activity, which covers interrupt paths such as ESC where the Stop hook does
+  not fire. It never converts `background` to `idle`. TUI-observed idle edges
+  use `AI_AGENT_STATE_SOURCE=tui-output:busy-to-idle` or
+  `AI_AGENT_STATE_SOURCE=tui-output:stale-running-idle`; orchestrator
+  notification code uses those sources to distinguish TUI-observed idle from
+  normal Stop-hook idle.

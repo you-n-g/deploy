@@ -201,8 +201,11 @@ emit_ai_agent_event() {
   tmux wait-for -S ai-agent-state 2>/dev/null || true
 }
 
-is_tui_busy_to_idle_source() {
-  [ "$state_source" = "tui-output:busy-to-idle" ]
+is_tui_idle_notify_source() {
+  case "$state_source" in
+    tui-output:busy-to-idle|tui-output:stale-running-idle) return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
 sync_ai_window_name() {
@@ -246,10 +249,10 @@ notify_orchestrator_on_idle() {
   local session_name pane_target source_window_name source_base_name orchestrator_window_id orchestrator_pane_id
   local prompt_text buffer_name activity notified_activity
 
-  # Only the supplemental TUI tracker's busy-to-idle edge should ask the
-  # orchestrator to summarize an idle pane. Normal Stop hooks still own state
-  # updates; this only captures the one TUI-observed transition we need.
-  is_tui_busy_to_idle_source || return 0
+  # Only supplemental TUI-observed idle edges should ask the orchestrator to
+  # summarize an idle pane. Normal Stop hooks still own state updates; the TUI
+  # path only covers transitions those hooks cannot see.
+  is_tui_idle_notify_source || return 0
 
   session_name="$(tmux display-message -p -t "$pane_id" '#{session_name}')"
   pane_target="$(tmux display-message -p -t "$pane_id" '#{session_name}:#{window_index}.#{pane_index}')"
