@@ -44,6 +44,12 @@ local function is_supported_buf(bufnr)
   return true
 end
 
+local function is_markdown_normal_mode(bufnr)
+  -- render-markdown owns Markdown's normal-mode preview. Keep this virtual
+  -- unwrap helper out of normal mode so it only assists Markdown editing.
+  return vim.bo[bufnr].filetype == "markdown" and vim.api.nvim_get_mode().mode == "n"
+end
+
 local function clear_buf(bufnr)
   if vim.api.nvim_buf_is_valid(bufnr) then
     pcall(vim.api.nvim_buf_clear_namespace, bufnr, ns_id, 0, -1)
@@ -275,6 +281,11 @@ local function refresh_current_line()
   local win = vim.api.nvim_get_current_win()
   local bufnr = vim.api.nvim_win_get_buf(win)
 
+  if is_markdown_normal_mode(bufnr) then
+    clear_buf(bufnr)
+    return
+  end
+
   if not is_supported_buf(bufnr) then
     clear_buf(bufnr)
     return
@@ -296,6 +307,10 @@ local function refresh_current_line()
   M._refresh_timer = vim.fn.timer_start(100, function()
     vim.schedule(function()
       if not enabled or not vim.api.nvim_buf_is_valid(bufnr) or vim.api.nvim_win_get_buf(win) ~= bufnr then
+        clear_buf(bufnr)
+        return
+      end
+      if is_markdown_normal_mode(bufnr) then
         clear_buf(bufnr)
         return
       end
@@ -333,6 +348,16 @@ function M.enable()
   vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
     group = group,
     callback = refresh_current_line,
+  })
+
+  vim.api.nvim_create_autocmd({ "InsertEnter", "InsertLeave" }, {
+    group = group,
+    callback = function()
+      -- Mode is not always settled during InsertEnter/InsertLeave callbacks.
+      -- Defer one scheduler tick so Markdown insert mode can show virtual
+      -- unwrap lines, while Markdown normal mode clears them again.
+      vim.schedule(refresh_current_line)
+    end,
   })
 
   vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
@@ -394,6 +419,19 @@ function M.toggle()
     M.enable()
   end
 end
+
+function M.is_enabled()
+  return enabled
+end
+
+function M.toggle_virtual_lines()
+  M.toggle()
+  vim.notify("Virtual line unwrap: " .. (enabled and "on" or "off"), vim.log.levels.INFO)
+end
+
+vim.keymap.set("n", "<leader>uW", M.toggle_virtual_lines, {
+  desc = "Toggle virtual line unwrap",
+})
 
 -- Enable by default unless explicitly disabled
 if vim.g.single_line_wrap_auto_enable ~= false then
