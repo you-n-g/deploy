@@ -101,6 +101,6 @@ if [ -n "$clean_hint" ] || [ -n "$rank_label" ]; then
   fi
 fi
 
-if [ "$pending" = "1" ]; then
+if [ -n "$pending" ]; then
   printf '#[fg=colour201,bold] ⏸#[nobold,fg=colour203]'
 fi

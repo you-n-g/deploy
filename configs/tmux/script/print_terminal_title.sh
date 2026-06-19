@@ -14,7 +14,7 @@ ai_title_status_prefix() {
   local pending="$5"
 
   if [ "$is_current" = "1" ]; then
-    if [ "$pending" = "1" ]; then
+    if [ -n "$pending" ] && [ "$pending" != "0" ]; then
       printf '⏸ '
     elif [ "$background" = "1" ]; then
       printf '➲ '
@@ -26,7 +26,7 @@ ai_title_status_prefix() {
     return
   fi
 
-  if [ "$pending" = "1" ]; then
+  if [ -n "$pending" ] && [ "$pending" != "0" ]; then
     printf '⏸ '
   elif [ "$background" = "1" ]; then
     printf '◒ '

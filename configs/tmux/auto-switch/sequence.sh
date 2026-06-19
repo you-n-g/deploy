@@ -99,7 +99,7 @@ editable_sequence() {
 
 status_prefix() {
   local unread="$1" running="$2" background="$3" pending="$4"
-  if [[ "$pending" == "1" ]]; then
+  if [[ -n "$pending" ]]; then
     printf '⏸ '
   elif [[ "$background" == "1" ]]; then
     printf '◒ '
@@ -132,7 +132,7 @@ pane_label() {
 state_label() {
   local unread="$1" running="$2" background="$3" pending="$4"
 
-  if [[ "$pending" == "1" ]]; then
+  if [[ -n "$pending" ]]; then
     printf 'pending'
   elif [[ "$background" == "1" ]]; then
     printf 'background'
@@ -377,7 +377,7 @@ highlight AutoSwitchStateUnread ctermfg=143 cterm=NONE guifg=#afaf5f gui=NONE
 highlight AutoSwitchStateIdle ctermfg=245 cterm=NONE guifg=#8a8a8a gui=NONE
 call matchadd('AutoSwitchStateRunning', '|\\s*\\zsrunning\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateBackground', '|\\s*\\zsbackground\\ze\\s*|', 40)
-call matchadd('AutoSwitchStatePending', '|\\s*\\zspending\\ze\\s*|', 40)
+call matchadd('AutoSwitchStatePending', '|\\s*\\zspending[^|]*\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateUnread', '|\\s*\\zsunread\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateIdle', '|\\s*\\zsidle\\ze\\s*|', 40)
 nnoremap <buffer> q :wq<CR>

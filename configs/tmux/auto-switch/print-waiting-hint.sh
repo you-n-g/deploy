@@ -31,7 +31,7 @@ for candidate in $ranked; do
   IFS=$'\037' read -r running background pending <<< "$row"
   if [ "$running" != "1" ] \
     && [ "$background" != "1" ] \
-    && [ "$pending" != "1" ]; then
+    && [ -z "$pending" ]; then
     best_pane="$candidate"
     break
   fi

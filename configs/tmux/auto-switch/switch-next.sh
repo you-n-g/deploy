@@ -68,7 +68,7 @@ for candidate in $ranked; do
   IFS=$'\037' read -r running background pending session window_id <<< "$row"
   if [[ "$running" != "1" \
     && "$background" != "1" \
-    && "$pending" != "1" ]]; then
+    && -z "$pending" ]]; then
     target="$candidate"
     target_session="$session"
     target_window_id="$window_id"

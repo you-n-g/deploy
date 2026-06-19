@@ -18,10 +18,11 @@ set -eu
 #   cleared when the user visits a live AI pane or when the pane stops while
 #   already visible.
 # - @ai_agent_pending:
-#   "1" means the pane is intentionally waiting on an external condition and
-#   should not be selected by auto-switch. It is cleared when that pane starts
-#   or resumes a non-pending running turn, and that transition publishes a
-#   running event for auto-switch waiters.
+#   Non-empty means the pane is intentionally waiting on an external condition
+#   and should not be selected by auto-switch. The value is the pending reason;
+#   "/" is the default user-triggered pending marker when no reason was given.
+#   It is cleared when that pane starts or resumes a non-pending running turn,
+#   and that transition publishes a running event for auto-switch waiters.
 # - @ai_agent_attribute:
 #   A short generated description of the pane's current task. It is generated
 #   lazily once and kept stable across later prompts until init/reset clears it.
@@ -70,11 +71,11 @@ set -eu
 #   Optional path for debug logs. If unset, logs go to
 #   ~/.cache/tmux-ai-agent-state.log.
 
-state="${1:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending TARGET}"
+state="${1:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending TARGET [PENDING_REASON]}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../ai/lib.sh"
 
-target="${2:-${TMUX_PANE:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending TARGET}}"
+target="${2:-${TMUX_PANE:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending TARGET [PENDING_REASON]}}"
 if ! pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')" || [ -z "$pane_id" ]; then
   if [ "$state" = "visit" ]; then
     exit 0
@@ -84,6 +85,17 @@ fi
 window_id="$(tmux display-message -p -t "$pane_id" '#{window_id}')"
 sync_window_name=1
 state_source="${AI_AGENT_STATE_SOURCE:-}"
+pending_reason="${AI_AGENT_PENDING_REASON:-}"
+if [ "$state" = "pending" ]; then
+  if [ -z "$pending_reason" ]; then
+    if [ "$#" -ge 3 ]; then
+      pending_reason="${*:3}"
+    else
+      pending_reason="/"
+    fi
+  fi
+  [ -n "$pending_reason" ] || pending_reason="/"
+fi
 
 log_ai_agent_state() {
   local log_file log_dir ts pane_target window_name window_activity window_active
@@ -229,7 +241,7 @@ sync_ai_window_name() {
   background="$(tmux show -pv -t "$pane_id" @ai_agent_background 2>/dev/null || true)"
   unread="$(tmux show -pv -t "$pane_id" @ai_agent_unread 2>/dev/null || true)"
   pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
-  if [ "$pending" = "1" ]; then
+  if [ -n "$pending" ]; then
     prefix="⏸"
   elif [ "$background" = "1" ]; then
     prefix="◒"
@@ -308,7 +320,7 @@ case "$state" in
     # User preference: generate a pane attribute only once and keep it stable
     # across later prompts. Do not reset it on UserPromptSubmit.
     ensure_ai_agent_attribute
-    if [ "$was_running" != "1" ] || [ "$was_pending" = "1" ]; then
+    if [ "$was_running" != "1" ] || [ -n "$was_pending" ]; then
       tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
       emit_ai_agent_event running
     fi
@@ -359,9 +371,9 @@ case "$state" in
       was_pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
       tmux set-option -pq -t "$pane_id" @ai_agent_running 0
       tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
-      tmux set-option -pq -t "$pane_id" @ai_agent_pending 1
+      tmux set-option -pq -t "$pane_id" @ai_agent_pending "$pending_reason"
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
-      if [ "$was_running" != "1" ] && [ "$was_pending" != "1" ]; then
+      if [ "$was_running" != "1" ] && [ -z "$was_pending" ]; then
         emit_ai_agent_event pending
       fi
     else

@@ -123,6 +123,16 @@ _strip_ai_window_state_prefix() {
     printf '%s\n' "$name"
 }
 
+_ai_pending_reason_label() {
+    local pending="$1"
+
+    if [[ "$pending" == "1" ]]; then
+        printf '/\n'
+    else
+        printf '%s\n' "$pending"
+    fi
+}
+
 _tmuxg_show_orchestrator_enabled() {
     local value
 
@@ -341,7 +351,7 @@ _ai_pane_pid_set() {
 #   $7 unread_flag     1 if the agent finished while not visible
 #   $8 running_flag    1 if the agent hook says this window is running
 #   $9 background_flag 1 if Claude paused with background work still active
-#   $10 pending_flag   1 if the pane is intentionally waiting on something
+#   $10 pending_reason 0 if not pending; otherwise the pending reason
 #   $11 pane_current_path
 #   $12 attribute      short description generated once after first stop
 _ai_pane_rows() {
@@ -368,7 +378,9 @@ _ai_pane_rows() {
     awk -F '\t' '!seen[$5]++' |
     awk -F '\t' '
     {
-        print $1+0 "\t" $2 "\t" $3 "\t" $5 "\t" $6 "\t" $8+0 "\t" $9+0 "\t" $10+0 "\t" $11+0 "\t" $12+0 "\t" $13 "\t" $14
+        pending = $12
+        if (pending == "") pending = "0"
+        print $1+0 "\t" $2 "\t" $3 "\t" $5 "\t" $6 "\t" $8+0 "\t" $9+0 "\t" $10+0 "\t" $11+0 "\t" pending "\t" $13 "\t" $14
     }
     '
 }
@@ -425,7 +437,7 @@ _ai_pane_fzf_list() {
         local has_background=false
         [[ "$background_flag" == "1" ]] && has_background=true
         local is_pending=false
-        [[ "$pending_flag" == "1" ]] && is_pending=true
+        [[ -n "$pending_flag" && "$pending_flag" != "0" ]] && is_pending=true
 
         if [[ "$sess_win" == "$current_target" ]]; then
             sort_key=0
@@ -468,7 +480,9 @@ _ai_pane_fzf_list() {
         local unread_mark=""
         (( is_unread )) && unread_mark=$' \033[33m[!]\033[0m'
         local pending_mark=""
-        $is_pending && pending_mark=$' \033[35m[pending]\033[0m'
+        if $is_pending; then
+            pending_mark=$' \033[35m[pending:'"$(_ai_pending_reason_label "$pending_flag")"$']\033[0m'
+        fi
         local is_ranked=false
         case "$ranked_pane_ids" in
             *" $wid "*) is_ranked=true ;;

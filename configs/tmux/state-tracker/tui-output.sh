@@ -62,7 +62,7 @@ current_ai_state() {
   local running background pending
 
   pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
-  if [[ "$pending" == "1" ]]; then
+  if [[ -n "$pending" ]]; then
     printf 'pending\n'
     return
   fi
