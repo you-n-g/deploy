@@ -6,8 +6,8 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 target="${1:?usage: generate_ai_window_attribute.sh TARGET}"
 pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')"
 window_id="$(tmux display-message -p -t "$pane_id" '#{window_id}')"
-ai_attribute_reasoning_effort="${AI_ATTRIBUTE_REASONING_EFFORT:-low}"
-ai_attribute_verbosity="${AI_ATTRIBUTE_VERBOSITY:-low}"
+ai_attribute_reasoning_effort="${AI_ATTRIBUTE_REASONING_EFFORT:-}"
+ai_attribute_verbosity="${AI_ATTRIBUTE_VERBOSITY:-}"
 
 if [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_attribute 2>/dev/null)" ]; then
   exit 0
@@ -21,6 +21,23 @@ cleanup() {
   rm -f "$prompt_file" "$output_file" "$error_file"
 }
 trap cleanup EXIT
+
+failure_message() {
+  local message
+
+  message="$(grep -E '(^|[[:space:]])ERROR:' "$error_file" | tail -n 1 || true)"
+  if [ -z "$message" ]; then
+    message="$(grep -Ev '^[[:space:]]*(WARN|WARNING)([[:space:]:]|$)' "$error_file" | sed '/^[[:space:]]*$/d' | tail -n 1 || true)"
+  fi
+  if [ -z "$message" ]; then
+    message="$(sed '/^[[:space:]]*$/d' "$error_file" | tail -n 1 || true)"
+  fi
+  if [ -z "$message" ]; then
+    message="codexr exec returned non-zero without stderr"
+  fi
+
+  printf '%s\n' "$message"
+}
 
 session_id="$(tmux display-message -p -t "$window_id" '#{session_id}')"
 tmux_socket="$(tmux display-message -p '#{socket_path}')"
@@ -44,11 +61,13 @@ Pane ID: ${pane_id}
 tmux -S '${tmux_socket}' capture-pane -ept '${pane_id}'
 EOF
 
+# Run through interactive zsh so rcfile's codexr wrapper owns provider/profile selection.
+# AI_ATTRIBUTE_* are opt-in overrides; unset means use the same defaults as interactive codexr.
 # shellcheck disable=SC2016
 if ! env -u TMUX -u TMUX_PANE zsh -ic \
-  'codexr --disable hooks exec --skip-git-repo-check --sandbox danger-full-access -C "$2" -o "$1" -c "model_reasoning_effort=\"$3\"" -c "model_verbosity=\"$4\"" -' \
+  'args=(--disable hooks exec --skip-git-repo-check --sandbox danger-full-access -C "$2" -o "$1"); if [[ -n "$3" ]]; then args+=(-c "model_reasoning_effort=\"$3\""); fi; if [[ -n "$4" ]]; then args+=(-c "model_verbosity=\"$4\""); fi; args+=(-); codexr "${args[@]}"' \
   -- "$output_file" "$agent_cwd" "$ai_attribute_reasoning_effort" "$ai_attribute_verbosity" < "$prompt_file" >/dev/null 2>"$error_file"; then
-  tmux display-message "AI attribute failed: $(tail -n 1 "$error_file")"
+  tmux display-message "AI attribute failed: $(failure_message)"
   exit 1
 fi
 
