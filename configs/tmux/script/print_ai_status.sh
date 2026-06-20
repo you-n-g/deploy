@@ -8,12 +8,20 @@ source "$SCRIPT_DIR/../ai/lib.sh"
 running=0
 background=0
 waiting=0
-while IFS=$'\037' read -r pane_id window_name pane_unread pane_running pane_background _pane_pending _attribute; do
+blacklist_regexes="$(_tmuxg_session_blacklist_regexes)"
+show_orchestrator=0
+if _tmuxg_show_orchestrator_enabled; then
+  show_orchestrator=1
+fi
+while IFS=$'\037' read -r session_name pane_id window_name pane_unread pane_running pane_background _pane_pending _attribute; do
+  [ -n "$session_name" ] || continue
+  _tmuxg_session_is_blacklisted "$session_name" "$blacklist_regexes" && continue
   [ -n "$pane_id" ] || continue
   [ -n "${pane_unread}${pane_running}${pane_background}${_pane_pending}${_attribute}" ] || continue
-  if ! _tmuxg_show_orchestrator_enabled \
-    && [ "$(_strip_ai_window_state_prefix "$window_name")" = "orchestrator" ]; then
-    continue
+  if [ "$show_orchestrator" = "0" ]; then
+    display_window_name="$window_name"
+    _strip_ai_window_state_prefix "$window_name" display_window_name
+    [ "$display_window_name" = "orchestrator" ] && continue
   fi
   if [ "$pane_background" = "1" ]; then
     background=$((background + 1))
@@ -22,7 +30,7 @@ while IFS=$'\037' read -r pane_id window_name pane_unread pane_running pane_back
   elif [ "$pane_unread" = "1" ]; then
     waiting=$((waiting + 1))
   fi
-done < <(tmux list-panes -a -F $'#{pane_id}\037#{window_name}\037#{@ai_agent_unread}\037#{@ai_agent_running}\037#{@ai_agent_background}\037#{@ai_agent_pending}\037#{@ai_agent_attribute}' 2>/dev/null)
+done < <(tmux list-panes -a -F $'#{session_name}\037#{pane_id}\037#{window_name}\037#{@ai_agent_unread}\037#{@ai_agent_running}\037#{@ai_agent_background}\037#{@ai_agent_pending}\037#{@ai_agent_attribute}' 2>/dev/null)
 
 parts=()
 [ "$running" -gt 0 ] && parts+=("$running")

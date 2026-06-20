@@ -206,10 +206,35 @@ _tmuxg_filter_orchestrator_rows() {
     done
 }
 
+_tmuxg_session_blacklist_regexes() {
+    tmux show-options -gqv "$TMUXG_SESSION_BLACKLIST_REGEX_OPTION" 2>/dev/null || true
+}
+
+_tmuxg_session_is_blacklisted() {
+    local session_name="$1"
+    local blacklist_regexes="$2"
+    local blacklist_regex match_status
+
+    for blacklist_regex in $blacklist_regexes; do
+        [[ -n "$blacklist_regex" ]] || continue
+        if [[ "$session_name" =~ $blacklist_regex ]]; then
+            return 0
+        else
+            match_status=$?
+            if (( match_status == 2 )); then
+                echo "Invalid ${TMUXG_SESSION_BLACKLIST_REGEX_OPTION}: ${blacklist_regex}" >&2
+                exit 1
+            fi
+        fi
+    done
+
+    return 1
+}
+
 _tmuxg_filter_blacklisted_session_rows() {
     local blacklist_regexes
 
-    blacklist_regexes="$(tmux show-options -gqv "$TMUXG_SESSION_BLACKLIST_REGEX_OPTION" 2>/dev/null || true)"
+    blacklist_regexes="$(_tmuxg_session_blacklist_regexes)"
     if [[ -z "$blacklist_regexes" ]]; then
         cat
         return

@@ -17,7 +17,9 @@ if ! rows="$(_ai_pane_rows -a)"; then
   exit 0
 fi
 [ -n "$rows" ] || exit 0
-rows="$(printf '%s\n' "$rows" | _tmuxg_filter_orchestrator_rows)"
+rows="$(printf '%s\n' "$rows" |
+  _tmuxg_filter_orchestrator_rows |
+  _tmuxg_filter_blacklisted_session_rows)"
 [ -n "$rows" ] || exit 0
 
 current_target="$(tmux display-message -p '#{session_name}:#{window_index}.#{pane_index}' 2>/dev/null || true)"
