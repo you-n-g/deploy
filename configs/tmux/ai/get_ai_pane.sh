@@ -56,7 +56,9 @@ _get_ai_pane_rows() {
     fi
 
     [[ -n "$rows" ]] || return 0
-    printf '%s\n' "$rows" | _tmuxg_filter_orchestrator_rows
+    printf '%s\n' "$rows" |
+        _tmuxg_filter_orchestrator_rows |
+        _tmuxg_filter_blacklisted_session_rows
 }
 
 _get_auto_switch_pane_rows() {

@@ -3,6 +3,7 @@
 
 AI_PROC_PAT='(^|/)(claude|gemini|codex)$'
 TMUXG_SHOW_ORCHESTRATOR_OPTION="@tmuxg-show-orchestrator"
+TMUXG_SESSION_BLACKLIST_REGEX_OPTION="@tmuxg-session-blacklist-regex"
 _AI_FZF_PREVIEW_HEIGHT=85%  # fzf preview-window height for AI-window selectors
 _AI_FZF_SESSION_COLOR_CODES=(31 32 33 34 35 36 91 92 93 94 95 96)
 _ai_fzf_session_color_names=()
@@ -183,6 +184,45 @@ _tmuxg_filter_orchestrator_rows() {
 
     while IFS=$'\t' read -r last_visit sess_win wname pane_id pane_pid wact_raw unread running background pending pane_path attribute; do
         [[ "$(_strip_ai_window_state_prefix "$wname")" == "orchestrator" ]] && continue
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+            "$last_visit" "$sess_win" "$wname" "$pane_id" "$pane_pid" "$wact_raw" "$unread" "$running" "$background" "$pending" "$pane_path" "$attribute"
+    done
+}
+
+_tmuxg_session_is_blacklisted() {
+    local session_name="$1"
+    local blacklist_regexes="$2"
+    local blacklist_regex match_status
+
+    for blacklist_regex in $blacklist_regexes; do
+        [[ -n "$blacklist_regex" ]] || continue
+        if [[ "$session_name" =~ $blacklist_regex ]]; then
+            return 0
+        else
+            match_status=$?
+            if (( match_status == 2 )); then
+                echo "Invalid ${TMUXG_SESSION_BLACKLIST_REGEX_OPTION}: ${blacklist_regex}" >&2
+                exit 1
+            fi
+        fi
+    done
+
+    return 1
+}
+
+_tmuxg_filter_blacklisted_session_rows() {
+    local last_visit sess_win wname pane_id pane_pid wact_raw unread running background pending pane_path attribute
+    local blacklist_regexes session_name
+
+    blacklist_regexes="$(tmux show-options -gqv "$TMUXG_SESSION_BLACKLIST_REGEX_OPTION" 2>/dev/null || true)"
+    if [[ -z "$blacklist_regexes" ]]; then
+        cat
+        return
+    fi
+
+    while IFS=$'\t' read -r last_visit sess_win wname pane_id pane_pid wact_raw unread running background pending pane_path attribute; do
+        session_name="${sess_win%%:*}"
+        _tmuxg_session_is_blacklisted "$session_name" "$blacklist_regexes" && continue
         printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
             "$last_visit" "$sess_win" "$wname" "$pane_id" "$pane_pid" "$wact_raw" "$unread" "$running" "$background" "$pending" "$pane_path" "$attribute"
     done
