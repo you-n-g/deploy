@@ -95,16 +95,21 @@ _tmux_current_target() {
 
 _format_relative_age() {
     local diff="$1"
+    local out_var="$2"
+    local formatted
 
-    if   (( diff < 60 ));    then printf '%ss' "$diff"
-    elif (( diff < 3600 ));  then printf '%sm' "$((diff / 60))"
-    elif (( diff < 86400 )); then printf '%sh' "$((diff / 3600))"
-    else                          printf '%sd' "$((diff / 86400))"
+    if   (( diff < 60 ));    then formatted="${diff}s"
+    elif (( diff < 3600 ));  then formatted="$((diff / 60))m"
+    elif (( diff < 86400 )); then formatted="$((diff / 3600))h"
+    else                          formatted="$((diff / 86400))d"
     fi
+
+    printf -v "$out_var" '%s' "$formatted"
 }
 
 _strip_ai_window_state_prefix() {
     local name="$1"
+    local out_var="${2:-}"
 
     # Coupled with configs/tmux/script/track_ai_agent_state.sh, which prefixes
     # AI window names with these state markers. The fzf list renders status in
@@ -121,17 +126,25 @@ _strip_ai_window_state_prefix() {
         esac
     done
 
-    printf '%s\n' "$name"
+    if [[ -n "$out_var" ]]; then
+        printf -v "$out_var" '%s' "$name"
+    else
+        printf '%s\n' "$name"
+    fi
 }
 
 _ai_pending_reason_label() {
     local pending="$1"
+    local out_var="$2"
+    local label
 
     if [[ "$pending" == "1" ]]; then
-        printf '/\n'
+        label="/"
     else
-        printf '%s\n' "$pending"
+        label="$pending"
     fi
+
+    printf -v "$out_var" '%s' "$label"
 }
 
 _tmuxg_show_orchestrator_enabled() {
@@ -177,42 +190,24 @@ _tmuxg_toggle_orchestrator_visibility() {
 }
 
 _tmuxg_filter_orchestrator_rows() {
+    local last_visit sess_win wname pane_id pane_pid wact_raw unread running background pending pane_path attribute
+    local display_wname
+
     if _tmuxg_show_orchestrator_enabled; then
         cat
         return
     fi
 
     while IFS=$'\t' read -r last_visit sess_win wname pane_id pane_pid wact_raw unread running background pending pane_path attribute; do
-        [[ "$(_strip_ai_window_state_prefix "$wname")" == "orchestrator" ]] && continue
+        _strip_ai_window_state_prefix "$wname" display_wname
+        [[ "$display_wname" == "orchestrator" ]] && continue
         printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
             "$last_visit" "$sess_win" "$wname" "$pane_id" "$pane_pid" "$wact_raw" "$unread" "$running" "$background" "$pending" "$pane_path" "$attribute"
     done
 }
 
-_tmuxg_session_is_blacklisted() {
-    local session_name="$1"
-    local blacklist_regexes="$2"
-    local blacklist_regex match_status
-
-    for blacklist_regex in $blacklist_regexes; do
-        [[ -n "$blacklist_regex" ]] || continue
-        if [[ "$session_name" =~ $blacklist_regex ]]; then
-            return 0
-        else
-            match_status=$?
-            if (( match_status == 2 )); then
-                echo "Invalid ${TMUXG_SESSION_BLACKLIST_REGEX_OPTION}: ${blacklist_regex}" >&2
-                exit 1
-            fi
-        fi
-    done
-
-    return 1
-}
-
 _tmuxg_filter_blacklisted_session_rows() {
-    local last_visit sess_win wname pane_id pane_pid wact_raw unread running background pending pane_path attribute
-    local blacklist_regexes session_name
+    local blacklist_regexes
 
     blacklist_regexes="$(tmux show-options -gqv "$TMUXG_SESSION_BLACKLIST_REGEX_OPTION" 2>/dev/null || true)"
     if [[ -z "$blacklist_regexes" ]]; then
@@ -220,12 +215,22 @@ _tmuxg_filter_blacklisted_session_rows() {
         return
     fi
 
-    while IFS=$'\t' read -r last_visit sess_win wname pane_id pane_pid wact_raw unread running background pending pane_path attribute; do
-        session_name="${sess_win%%:*}"
-        _tmuxg_session_is_blacklisted "$session_name" "$blacklist_regexes" && continue
-        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-            "$last_visit" "$sess_win" "$wname" "$pane_id" "$pane_pid" "$wact_raw" "$unread" "$running" "$background" "$pending" "$pane_path" "$attribute"
-    done
+    awk -F '\t' -v regexes="$blacklist_regexes" '
+        BEGIN {
+            OFS = FS
+            regex_count = split(regexes, blacklist_regexes, /[[:space:]]+/)
+        }
+        {
+            session_name = $2
+            sub(/:.*/, "", session_name)
+            for (i = 1; i <= regex_count; i++) {
+                if (blacklist_regexes[i] != "" && session_name ~ blacklist_regexes[i]) {
+                    next
+                }
+            }
+            print
+        }
+    '
 }
 
 _clear_ai_pane_state() {
@@ -291,15 +296,13 @@ _ai_fzf_session_color_code() {
     local session_name="$1"
     local out_var="$2"
     local color
-    local checksum start offset candidate color_count
+    local start offset candidate color_count
 
     _ai_fzf_get_session_color "$session_name" color
     [[ -n "$color" ]] && { printf -v "$out_var" '%s' "$color"; return; }
 
     color_count="${#_AI_FZF_SESSION_COLOR_CODES[@]}"
-    checksum=$(printf '%s' "$session_name" | cksum)
-    checksum="${checksum%% *}"
-    start=$((checksum % color_count))
+    start=$((${#_ai_fzf_session_color_names[@]} % color_count))
 
     for ((offset = 0; offset < color_count; offset++)); do
         candidate="${_AI_FZF_SESSION_COLOR_CODES[$(((start + offset) % color_count))]}"
@@ -330,8 +333,8 @@ _ai_ranked_pane_id_set() {
 
     ranked="$(tmux show-option -gqv @auto_switch_ranked_panes 2>/dev/null || true)"
     for candidate in $ranked; do
-        resolved="$(tmux display-message -p -t "$candidate" '#{pane_id}' 2>/dev/null || true)"
-        [[ -n "$resolved" ]] || continue
+        [[ "$candidate" == %* ]] || continue
+        resolved="$candidate"
         case " $seen " in
             *" $resolved "*) continue ;;
         esac
@@ -507,8 +510,8 @@ _ai_pane_fzf_list() {
             status=$'\033[32m○\033[0m '
         fi
 
-        rel_visit=$(_format_relative_age $((now - wvisit)))
-        rel_act=$(_format_relative_age $((now - wact_raw)))
+        _format_relative_age "$((now - wvisit))" rel_visit
+        _format_relative_age "$((now - wact_raw))" rel_act
         _ai_fzf_colored_session_target "$sess_win" colored_sess_win
 
         if (( wvisit == wact_raw )); then
@@ -521,7 +524,9 @@ _ai_pane_fzf_list() {
         (( is_unread )) && unread_mark=$' \033[33m[!]\033[0m'
         local pending_mark=""
         if $is_pending; then
-            pending_mark=$' \033[35m[pending:'"$(_ai_pending_reason_label "$pending_flag")"$']\033[0m'
+            local pending_label
+            _ai_pending_reason_label "$pending_flag" pending_label
+            pending_mark=$' \033[35m[pending:'"${pending_label}"$']\033[0m'
         fi
         local is_ranked=false
         case "$ranked_pane_ids" in
@@ -530,7 +535,7 @@ _ai_pane_fzf_list() {
 
         local attribute_info=""
         [[ -n "$attribute" ]] && attribute_info="  ${attribute}"
-        display_wname="$(_strip_ai_window_state_prefix "$wname")"
+        _strip_ai_window_state_prefix "$wname" display_wname
         if $is_ranked; then
             display_wname=$'\033[1;91m'"${display_wname}"$'\033[0m'
         fi
