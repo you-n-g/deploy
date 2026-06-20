@@ -378,6 +378,22 @@ _ai_pane_pid_set() {
     ' <(printf '%s\n' "$pane_pids") <(printf '%s\n' "$ps_data")
 }
 
+_ai_process_snapshot() {
+    if [[ -r /proc/1/stat ]]; then
+        perl -e '
+            for my $stat_file (glob "/proc/[0-9]*/stat") {
+                open my $fh, "<", $stat_file or next;
+                my $line = <$fh>;
+                next unless defined $line;
+                next unless $line =~ /^(\d+) \((.*)\) \S+ (\d+) /;
+                print "$1 $3 $2\n";
+            }
+        '
+    else
+        ps -ax -o pid,ppid,comm 2>/dev/null
+    fi
+}
+
 # Print unique AI panes as tab-separated rows, sorted by last_visit desc.
 #
 # Usage: _ai_pane_rows [-a] [-s -t SESSION] [tmux list-panes options]
@@ -403,7 +419,7 @@ _ai_pane_rows() {
     pane_rows=$(tmux list-panes "$@" \
         -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}.#{pane_index}\t#{window_name}\t#{window_id}\t#{pane_id}\t#{pane_pid}\t#{pane_active}\t#{window_activity}\t#{@ai_agent_unread}\t#{@ai_agent_running}\t#{@ai_agent_background}\t#{@ai_agent_pending}\t#{pane_current_path}\t#{@ai_agent_attribute}' 2>/dev/null) || return 1
     pane_pids=$(printf '%s\n' "$pane_rows" | awk -F '\t' '{ print $6 }')
-    ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null) || return 1
+    ps_cache="$(_ai_process_snapshot)" || return 1
     ai_pane_pids=$(_ai_pane_pid_set "$pane_pids" "$ps_cache")
 
     awk -F '\t' '
