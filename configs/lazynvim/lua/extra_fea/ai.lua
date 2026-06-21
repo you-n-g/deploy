@@ -69,7 +69,7 @@ end
 local function get_ai_pane(session, callback)
   if not session then return callback(nil) end
   local script = vim.fn.expand("~/deploy/configs/tmux/ai/get_ai_pane.sh")
-  local output = vim.fn.system(vim.fn.shellescape(script) .. " -a " .. vim.fn.shellescape(session))
+  local output = vim.fn.system(vim.fn.shellescape(script) .. " --include-orchestrator -a " .. vim.fn.shellescape(session))
   if vim.v.shell_error ~= 0 then return callback(nil) end
 
   local attrs = get_ai_pane_attributes(session)

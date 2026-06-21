@@ -3,11 +3,13 @@
 # If multiple AI panes exist, show fzf to pick one.
 # Works in both interactive and non-interactive (run-shell) contexts.
 #
-# Usage: ./get_ai_pane.sh [-i] [-a] [-A] [--auto-switch-list] [session_name]
+# Usage: ./get_ai_pane.sh [-i] [-a] [-A] [--include-orchestrator] [--auto-switch-list] [session_name]
 # -i: return pane_id instead of session.window.pane
 # -a: list ALL AI panes (one per line), skip interactive selection
 # -A: scan across all tmux sessions (ignores [session_name])
-# Ctrl-O in the fzf picker toggles whether the orchestrator window is shown.
+# --include-orchestrator: include the orchestrator window even when tmuxg hides it.
+# Ctrl-O in the fzf picker toggles whether the orchestrator window is shown
+# when --include-orchestrator is not set.
 #
 # Exit codes:
 #   0  success (pane found/selected)
@@ -56,9 +58,14 @@ _get_ai_pane_rows() {
     fi
 
     [[ -n "$rows" ]] || return 0
-    printf '%s\n' "$rows" |
-        _tmuxg_filter_orchestrator_rows |
-        _tmuxg_filter_blacklisted_session_rows
+    if [[ "$INCLUDE_ORCHESTRATOR" == true ]]; then
+        printf '%s\n' "$rows" |
+            _tmuxg_filter_blacklisted_session_rows
+    else
+        printf '%s\n' "$rows" |
+            _tmuxg_filter_orchestrator_rows |
+            _tmuxg_filter_blacklisted_session_rows
+    fi
 }
 
 _get_auto_switch_pane_rows() {
@@ -142,9 +149,20 @@ _switcher_header_info() {
 }
 
 _fzf_header() {
-    printf '▶ current pane busy  ➲ current Claude background  ◒ Claude background  ⏸ pending  ▷ current pane idle  ● busy  ◉ unread  ○ idle  |  orchestrator: %s  |  switcher: %s  |  Enter switch  Ctrl-R reset desc  Ctrl-O toggle orchestrator\n' \
-        "$(_tmuxg_orchestrator_visibility_label)" \
-        "$(_switcher_header_info)"
+    local orchestrator_label orchestrator_help
+
+    if [[ "$INCLUDE_ORCHESTRATOR" == true ]]; then
+        orchestrator_label="show"
+        orchestrator_help=""
+    else
+        orchestrator_label="$(_tmuxg_orchestrator_visibility_label)"
+        orchestrator_help="  Ctrl-O toggle orchestrator"
+    fi
+
+    printf '▶ current pane busy  ➲ current Claude background  ◒ Claude background  ⏸ pending  ▷ current pane idle  ● busy  ◉ unread  ○ idle  |  orchestrator: %s  |  switcher: %s  |  Enter switch  Ctrl-R reset desc%s\n' \
+        "$orchestrator_label" \
+        "$(_switcher_header_info)" \
+        "$orchestrator_help"
 }
 
 _reset_pane_attribute() {
@@ -161,21 +179,37 @@ _reset_pane_attribute() {
     fi
 }
 
+_get_ai_pane_cmd() {
+    local out_var="${1:?usage: _get_ai_pane_cmd OUT_VAR [ARGS...]}"
+    shift
+    local args cmd
+
+    args=("$SCRIPT_DIR/get_ai_pane.sh")
+    [[ "$INCLUDE_ORCHESTRATOR" == true ]] && args+=(--include-orchestrator)
+    args+=("$@")
+
+    printf -v cmd '%q ' "${args[@]}"
+    printf -v "$out_var" '%s' "${cmd% }"
+}
+
 RETURN_ID=false
 LIST_ALL=false
 ALL_SESSIONS=false
 AUTO_SWITCH_LIST=false
+INCLUDE_ORCHESTRATOR=false
 while [[ "$1" == -* ]]; do
     case "$1" in
         -i) RETURN_ID=true; shift ;;
         -a) LIST_ALL=true; shift ;;
         -A) ALL_SESSIONS=true; shift ;;
+        --include-orchestrator) INCLUDE_ORCHESTRATOR=true; shift ;;
         --auto-switch-list) AUTO_SWITCH_LIST=true; ALL_SESSIONS=true; shift ;;
         --fzf-list)
             shift
             while [[ "${1:-}" == -* ]]; do
                 case "$1" in
                     -A) ALL_SESSIONS=true; shift ;;
+                    --include-orchestrator) INCLUDE_ORCHESTRATOR=true; shift ;;
                     --auto-switch-list) AUTO_SWITCH_LIST=true; ALL_SESSIONS=true; shift ;;
                     *) break ;;
                 esac
@@ -250,15 +284,15 @@ printf '%s\n' "$LIST" > "$LISTFILE"
 
 printf -v RESET_BIND_CMD '%q --reset-pane-attribute {1}' "$SCRIPT_DIR/get_ai_pane.sh"
 if [[ "$AUTO_SWITCH_LIST" == true ]]; then
-    printf -v RELOAD_BIND_CMD '%q --fzf-list --auto-switch-list' "$SCRIPT_DIR/get_ai_pane.sh"
+    _get_ai_pane_cmd RELOAD_BIND_CMD --fzf-list --auto-switch-list
 elif [[ "$ALL_SESSIONS" == true ]]; then
-    printf -v RELOAD_BIND_CMD '%q --fzf-list -A' "$SCRIPT_DIR/get_ai_pane.sh"
+    _get_ai_pane_cmd RELOAD_BIND_CMD --fzf-list -A
 else
-    printf -v RELOAD_BIND_CMD '%q --fzf-list %q' "$SCRIPT_DIR/get_ai_pane.sh" "$SESSION"
+    _get_ai_pane_cmd RELOAD_BIND_CMD --fzf-list "$SESSION"
 fi
 RESET_ATTRIBUTE_BIND="ctrl-r:execute-silent($RESET_BIND_CMD)+reload($RELOAD_BIND_CMD)+refresh-preview"
 printf -v TOGGLE_ORCHESTRATOR_BIND_CMD '%q --toggle-orchestrator-visibility' "$SCRIPT_DIR/get_ai_pane.sh"
-printf -v FZF_HEADER_CMD '%q --fzf-header' "$SCRIPT_DIR/get_ai_pane.sh"
+_get_ai_pane_cmd FZF_HEADER_CMD --fzf-header
 TOGGLE_ORCHESTRATOR_BIND="ctrl-o:execute-silent($TOGGLE_ORCHESTRATOR_BIND_CMD)+reload($RELOAD_BIND_CMD)+transform-header($FZF_HEADER_CMD)+refresh-preview"
 HEADER="$(_fzf_header)"
 printf -v HEADER_ARG '%q' "$HEADER"

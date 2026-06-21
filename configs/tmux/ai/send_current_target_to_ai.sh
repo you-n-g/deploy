@@ -28,9 +28,9 @@ if [[ -z "$CURRENT_SESSION" || -z "$CURRENT_TARGET" ]]; then
 fi
 
 if [[ "$ALL_SESSIONS" == true ]]; then
-    AI_PANE_ID=$("$SCRIPT_DIR/get_ai_pane.sh" -i -A)
+    AI_PANE_ID=$("$SCRIPT_DIR/get_ai_pane.sh" --include-orchestrator -i -A)
 else
-    AI_PANE_ID=$("$SCRIPT_DIR/get_ai_pane.sh" -i "$CURRENT_SESSION")
+    AI_PANE_ID=$("$SCRIPT_DIR/get_ai_pane.sh" --include-orchestrator -i "$CURRENT_SESSION")
 fi
 [[ -z "$AI_PANE_ID" ]] && exit 0
 
