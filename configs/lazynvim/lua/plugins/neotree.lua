@@ -27,34 +27,66 @@ local function is_pdf(path)
   return type(path) == "string" and path:lower():match("%.pdf$") ~= nil
 end
 
--- Some project worktrees contain generated sandboxes or FUSE-backed directories
--- that are correctly ignored by Git, but still very expensive to enumerate.
--- Neo-tree normally asks `git status --ignored=traditional` so it can decorate
--- ignored paths. In those repos, that command may still walk into ignored trees
--- and freeze the file explorer.
---
--- A repo can opt into the safer behavior by creating this marker file:
---   .neotree-no-ignored-status
---
--- When the marker exists, only Neo-tree's git-status command is changed from
--- `--ignored=traditional` to `--ignored=no`. Git ignore rules still apply; this
--- just stops Neo-tree from asking Git to list ignored paths for UI decoration.
-local function repo_has_marker(root, marker)
-  local uv = vim.uv or vim.loop
-  return uv.fs_stat(root .. "/" .. marker) ~= nil
-end
+local no_ignored_git_status = {
+  enabled = true,
+  marker = ".neotree-no-ignored-status",
+}
 
-local function disable_ignored_status_for_marked_repos(args)
-  if not repo_has_marker(args.git_root, ".neotree-no-ignored-status") then
+local function setup_no_ignored_git_status(opts)
+  -- Some project worktrees contain generated sandboxes or FUSE-backed
+  -- directories that are correctly ignored by Git, but still very expensive to
+  -- enumerate. A repo can opt into skipping ignored-path decoration by creating
+  -- the marker file above.
+  if not no_ignored_git_status.enabled then
     return
   end
 
-  for i, arg in ipairs(args.status_args) do
-    if arg:match("^%-%-ignored=") then
-      args.status_args[i] = "--ignored=no"
+  local function repo_has_marker(root)
+    local uv = vim.uv or vim.loop
+    return uv.fs_stat(root .. "/" .. no_ignored_git_status.marker) ~= nil
+  end
+
+  opts.event_handlers = opts.event_handlers or {}
+  table.insert(opts.event_handlers, {
+    event = "before_git_status",
+    id = "no_ignored_git_status_marker",
+    handler = function(args)
+      if not repo_has_marker(args.git_root) then
+        return
+      end
+
+      for i, arg in ipairs(args.status_args) do
+        if arg:match("^%-%-ignored=") then
+          args.status_args[i] = "--ignored=no"
+          return
+        end
+      end
+    end,
+  })
+
+  local ok, ls_files = pcall(require, "neo-tree.git.ls-files")
+  if not ok or ls_files._no_ignored_git_status_marker_patch then
+    return
+  end
+
+  local original_ignored = ls_files.ignored
+  ls_files.ignored = function(worktree_root)
+    if repo_has_marker(worktree_root) then
+      return {}
+    end
+    return original_ignored(worktree_root)
+  end
+
+  local original_ignored_job = ls_files.ignored_job
+  ls_files.ignored_job = function(context, on_parsed)
+    if repo_has_marker(context.worktree_root) then
+      on_parsed({})
       return
     end
+    return original_ignored_job(context, on_parsed)
   end
+
+  ls_files._no_ignored_git_status_marker_patch = true
 end
 
 return {
@@ -78,12 +110,7 @@ return {
       opts.window.mappings["Yp"] = copy_path("p")
       opts.window.mappings["Yn"] = copy_path("n")
 
-      opts.event_handlers = opts.event_handlers or {}
-      table.insert(opts.event_handlers, {
-        event = "before_git_status",
-        id = "disable_ignored_status_for_marked_repos",
-        handler = disable_ignored_status_for_marked_repos,
-      })
+      setup_no_ignored_git_status(opts)
 
       opts.commands = vim.tbl_extend("force", opts.commands or {}, {
         open_smart = function(state)

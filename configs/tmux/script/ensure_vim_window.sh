@@ -2,7 +2,16 @@
 set -euo pipefail
 
 WINDOW_NAME="vim"
-SESSION="${1:?usage: ensure_vim_window.sh SESSION [WORKDIR]}"
+PRINT_PANE=false
+
+while [[ "${1:-}" == -* ]]; do
+  case "$1" in
+    --print-pane) PRINT_PANE=true; shift ;;
+    *) echo "ensure_vim_window.sh: unknown option $1" >&2; exit 2 ;;
+  esac
+done
+
+SESSION="${1:?usage: ensure_vim_window.sh [--print-pane] SESSION [WORKDIR]}"
 WORKDIR="${2:-}"
 
 if [[ -z "$WORKDIR" && -n "${TMUX_PANE:-}" ]]; then
@@ -15,14 +24,15 @@ tmux has-session -t "$SESSION" 2>/dev/null
 find_vim_window() {
   local pane_rows ps_rows
 
-  pane_rows="$(tmux list-panes -s -t "$SESSION" -F $'#{window_id}\t#{pane_pid}' 2>/dev/null)"
+  pane_rows="$(tmux list-panes -s -t "$SESSION" -F $'#{window_id}\t#{pane_id}\t#{pane_pid}' 2>/dev/null)"
   ps_rows="$(ps -ax -o pid=,ppid=,comm= 2>/dev/null)"
 
   awk -F '\t' '
     FNR == NR {
-      if ($2 ~ /^[0-9]+$/) {
-        root_window[$2] = $1
-        root_pid[$2] = 1
+      if ($3 ~ /^[0-9]+$/) {
+        root_window[$3] = $1
+        root_pane[$3] = $2
+        root_pid[$3] = 1
       }
       next
     }
@@ -43,7 +53,7 @@ find_vim_window() {
         current = pid
         while (current in parent) {
           if (current in root_pid) {
-            print root_window[current]
+            print root_window[current] "\t" root_pane[current]
             exit 0
           }
           current = parent[current]
@@ -54,10 +64,18 @@ find_vim_window() {
 }
 
 window_id=""
-window_id="$(find_vim_window)"
+pane_id=""
+IFS=$'\t' read -r window_id pane_id < <(find_vim_window) || true
 
 if [[ -z "$window_id" ]]; then
-  window_id="$(tmux new-window -d -P -F '#{window_id}' -t "$SESSION:" -n "$WINDOW_NAME" -c "$WORKDIR" "zsh -ic vim")"
+  IFS=$'\t' read -r window_id pane_id < <(
+    tmux new-window -d -P -F $'#{window_id}\t#{pane_id}' -t "$SESSION:" -n "$WINDOW_NAME" -c "$WORKDIR" "zsh -ic vim"
+  )
+fi
+
+if [[ "$PRINT_PANE" == true ]]; then
+  printf '%s\n' "$pane_id"
+  exit 0
 fi
 
 if [[ -n "${TMUX:-}" ]]; then
