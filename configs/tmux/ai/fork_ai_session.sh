@@ -2,22 +2,26 @@
 # Fork an AI session into a new tmux window and switch to it.
 # Supports Claude Code (clauder) and Codex (codexr).
 #
-# Usage: fork_ai_session.sh [-q] [--target PANE] [--suffix SUFFIX] [window_name]
+# Usage: fork_ai_session.sh [-q] [--target PANE] [--suffix SUFFIX] [--disable-tmux-rename] [window_name]
 #   window_name  — name of a window in the CURRENT session whose AI pane to
 #                  fork. When omitted, fork the AI in the current pane.
 #   --target     — tmux pane target that defines "current" for this fork.
 #   --suffix     — suffix appended to the target window name for the new
 #                  forked window (default: -fork).
+#   --disable-tmux-rename
+#                — set TMUX_AI_DISABLE_RENAME=1 for the forked TUI wrapper.
 #   -q           — quiet mode (always exit 0, suppress status-bar flash).
 
 QUIET=false
 SOURCE_TARGET=""
 SUFFIX="-fork"
+DISABLE_TMUX_RENAME=false
 while [[ "$1" == -* ]]; do
     case "$1" in
         -q) QUIET=true; shift ;;
         --target) SOURCE_TARGET="$2"; shift 2 ;;
         --suffix) SUFFIX="$2"; shift 2 ;;
+        --disable-tmux-rename) DISABLE_TMUX_RENAME=true; shift ;;
         *)  shift ;;
     esac
 done
@@ -166,9 +170,13 @@ case "$ai_name" in
         ;;
 esac
 
-printf -v launch_cmd 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$fork_name" "$cmd"
+if [[ "$DISABLE_TMUX_RENAME" == true ]]; then
+    printf -v launch_cmd 'TMUX_AI_DISABLE_RENAME=1 zsh -ic %q' "$cmd"
+else
+    printf -v launch_cmd 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$fork_name" "$cmd"
+fi
 win_id=$(tmux new-window -d -P -F '#{window_id}' -n "$fork_name" -c "$workdir" "$launch_cmd")
-# Block TUI escape-sequence renames; _with_tmux_rename receives the target name
-# through TMUX_AI_WINDOW_NAME.
+# Block TUI escape-sequence renames. Wrapper-driven renames are controlled by
+# TMUX_AI_WINDOW_NAME or disabled with TMUX_AI_DISABLE_RENAME.
 tmux set-window-option -t "$win_id" allow-rename off
 tmux select-window -t "$win_id"

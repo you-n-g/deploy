@@ -289,7 +289,7 @@ function _with_tmux_rename() {
     local title="${TMUX_AI_WINDOW_NAME:-$1}"
     local proxy_mode="$2"
     shift 2
-    if [ -n "$TMUX" ]; then
+    if [ -n "$TMUX" ] && [ -z "${TMUX_AI_DISABLE_RENAME:-}" ]; then
         local prev_name
         prev_name=$(tmux display-message -p "#W")
         tmux rename-window -t "$TMUX_PANE" "$title"
