@@ -250,20 +250,37 @@ get_container_tmux_status() {
   fi
   mem_current=$(cat /sys/fs/cgroup/memory.current)
   mem_max=$(cat /sys/fs/cgroup/memory.max)
+  mem_stat=$(awk '
+    /^active_file /{active_file=$2}
+    /^inactive_file /{inactive_file=$2}
+    END {
+      if (active_file == "" || inactive_file == "") {
+        exit 1
+      }
+      printf "%s %s", active_file, inactive_file
+    }
+  ' /sys/fs/cgroup/memory.stat) || {
+    echo "cgroup v2 memory.stat missing active_file/inactive_file" >&2
+    return 1
+  }
+  set -- $mem_stat
+  mem_active_file="$1"
+  mem_inactive_file="$2"
+  mem_disk_cache=$(awk -v active="$mem_active_file" -v inactive="$mem_inactive_file" \
+                   'BEGIN{printf "%.0f", active+inactive}')
+  mem_status_used=$(awk -v used="$mem_current" -v cache="$mem_disk_cache" \
+                    'BEGIN{v=used-cache; if (v < 0) v=0; printf "%.0f", v}')
   if [ "$mem_max" = max ]; then
     mem_limit="∞"
     mem_pct="-"
-    mem_avail=$(awk '/^MemAvailable:/{print $2 * 1024}' /proc/meminfo)
   else
     mem_limit=$(format_bytes "$mem_max")
-    mem_pct=$(awk -v used="$mem_current" -v max="$mem_max" \
+    mem_pct=$(awk -v used="$mem_status_used" -v max="$mem_max" \
               'BEGIN{printf "%.0f%%", used/max*100}')
-    mem_avail=$(awk -v used="$mem_current" -v max="$mem_max" \
-                'BEGIN{avail=max-used; if (avail < 0) avail=0; printf "%.0f", avail}')
   fi
 
   printf '%s/%s %s  %s/%s %s\n' \
-    "$(format_bytes "$mem_current")" "$mem_limit" "$mem_pct" \
+    "$(format_bytes "$mem_status_used")" "$mem_limit" "$mem_pct" \
     "$cpu_eq" "$qcpu" "$cpu_pct"
 }
 

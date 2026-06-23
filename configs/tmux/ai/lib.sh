@@ -10,13 +10,59 @@ _ai_fzf_session_color_names=()
 _ai_fzf_session_color_values=()
 _ai_fzf_used_session_color_codes=()
 
+_ai_proc_name_matches() {
+    case "$1" in
+        claude|gemini|codex|*/claude|*/gemini|*/codex) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+_find_ai_pid_procfs() {
+    local root="$1"
+    local queue=("$root")
+    local seen=" "
+    local pid comm children child
+
+    while ((${#queue[@]} > 0)); do
+        pid="${queue[0]}"
+        queue=("${queue[@]:1}")
+
+        [[ "$seen" == *" $pid "* ]] && continue
+        seen+="$pid "
+
+        if [[ -r "/proc/$pid/comm" ]]; then
+            comm=""
+            IFS= read -r comm <"/proc/$pid/comm" || true
+            if _ai_proc_name_matches "$comm"; then
+                printf '%s %s\n' "$pid" "$comm"
+                return 0
+            fi
+        fi
+
+        if [[ -r "/proc/$pid/task/$pid/children" ]]; then
+            children=""
+            IFS= read -r children <"/proc/$pid/task/$pid/children" || true
+            for child in $children; do
+                queue+=("$child")
+            done
+        fi
+    done
+
+    return 1
+}
+
 # Find the first AI process in the subtree rooted at a pane PID.
 # Prints "PID COMM" (e.g. "12345 claude") and returns 0, or returns 1 if none.
-# For loops, pass one ps snapshot to avoid repeated ps calls:
-#   ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null)
+# For loops, pass one process snapshot to avoid repeated process-table scans:
+#   ps_cache=$(_ai_process_snapshot)
 #   _has_ai_proc "$pane_pid" "$ps_cache"
 _find_ai_pid() {
-    local ps_data="${2:-$(ps -ax -o pid,ppid,comm 2>/dev/null)}"
+    if [[ $# -lt 2 && -r "/proc/$1/task/$1/children" ]]; then
+        _find_ai_pid_procfs "$1"
+        return
+    fi
+
+    local ps_data="${2:-$(_ai_process_snapshot)}"
     echo "$ps_data" | awk -v root="$1" -v pat="$AI_PROC_PAT" '
         { children[$2] = children[$2] " " $1; name[$1] = $3 }
         END {
@@ -38,7 +84,11 @@ _find_ai_pid() {
 
 # Check if a pane has an AI process (boolean wrapper around _find_ai_pid).
 _has_ai_proc() {
-    _find_ai_pid "$1" "${2:-}" > /dev/null
+    if [[ $# -ge 2 ]]; then
+        _find_ai_pid "$1" "$2" > /dev/null
+    else
+        _find_ai_pid "$1" > /dev/null
+    fi
 }
 
 _find_ai_pane_in_window() {

@@ -634,6 +634,10 @@ if [[ "$selection_cancelled" == "1" ]]; then
   exit 0
 fi
 
+if [[ "$command_name" == "append-current" ]]; then
+  exit 0
+fi
+
 if [[ -z "$message" ]]; then
   message="auto-switch sequence: $(format_sequence "$ranked")"
 fi
