@@ -112,7 +112,7 @@ format_bytes() {
 }
 
 
-# get_container_cpu_info: container-aware CPU/memory usage + capacity from cgroup v2.
+# get_container_cpu_info: container-aware memory/CPU usage + capacity from cgroup v2.
 #
 # `nproc` / `lscpu` show the host topology, which is misleading inside a
 # cgroup-limited container — they return the bare metal count, not the slice
@@ -123,9 +123,9 @@ format_bytes() {
 # reflects the cgroup limit instead of the host total shown by free(1).
 #
 # Output:
-#   cpu: <used>/<quota> CPU (<pct>)  PSI some/full(10s): <s>% / <f>%  throttled: <n>
 #   mem: <used>/<limit> (<pct>)  available: <available>
 #        no-disk-cache: <used-active_file-inactive_file>/<limit> (<pct>)  disk-cache: <active_file+inactive_file>  inactive-file: <inactive_file>
+#   cpu: <used>/<quota> CPU (<pct>)  PSI some/full(10s): <s>% / <f>%  throttled: <n>
 #
 # Reading guide:
 #   - <used> close to <quota> AND PSI some > 0   → quota saturated, more
@@ -170,8 +170,6 @@ get_container_cpu_info() {
   s10=$(grep ^some /sys/fs/cgroup/cpu.pressure | grep -oE 'avg10=[0-9.]+' | cut -d= -f2)
   f10=$(grep ^full /sys/fs/cgroup/cpu.pressure | grep -oE 'avg10=[0-9.]+' | cut -d= -f2)
   nthr=$(awk '/^nr_throttled/{print $2}' /sys/fs/cgroup/cpu.stat)
-  printf 'cpu: %s/%s CPU (%s)  PSI some/full(10s): %s%% / %s%%  throttled: %s\n' \
-    "$cpu_eq" "$qcpu" "$pct" "$s10" "$f10" "$nthr"
 
   mem_current=$(cat /sys/fs/cgroup/memory.current)
   mem_max=$(cat /sys/fs/cgroup/memory.max)
@@ -217,6 +215,8 @@ get_container_cpu_info() {
   printf '     no-disk-cache: %s/%s (%s)  available(no-disk-cache): %s  disk-cache: %s  inactive-file: %s\n' \
     "$(format_bytes "$mem_no_disk_cache")" "$mem_limit" "$mem_no_disk_cache_pct" "$(format_bytes "$mem_no_disk_cache_avail")" \
     "$(format_bytes "$mem_disk_cache")" "$(format_bytes "$mem_inactive_file")"
+  printf 'cpu: %s/%s CPU (%s)  PSI some/full(10s): %s%% / %s%%  throttled: %s\n' \
+    "$cpu_eq" "$qcpu" "$pct" "$s10" "$f10" "$nthr"
 }
 
 get_container_tmux_status() {
@@ -248,9 +248,6 @@ get_container_tmux_status() {
     cpu_pct=$(awk -v c="$cpu_eq" -v q="$qcpu" \
               'BEGIN{printf "%.0f%%", c/q*100}')
   fi
-  s10=$(grep ^some /sys/fs/cgroup/cpu.pressure | grep -oE 'avg10=[0-9.]+' | cut -d= -f2)
-  f10=$(grep ^full /sys/fs/cgroup/cpu.pressure | grep -oE 'avg10=[0-9.]+' | cut -d= -f2)
-
   mem_current=$(cat /sys/fs/cgroup/memory.current)
   mem_max=$(cat /sys/fs/cgroup/memory.max)
   if [ "$mem_max" = max ]; then
@@ -265,9 +262,9 @@ get_container_tmux_status() {
                 'BEGIN{avail=max-used; if (avail < 0) avail=0; printf "%.0f", avail}')
   fi
 
-  printf 'C %s/%s %s P%s/%s M %s/%s %s A %s\n' \
-    "$cpu_eq" "$qcpu" "$cpu_pct" "$s10" "$f10" \
-    "$(format_bytes "$mem_current")" "$mem_limit" "$mem_pct" "$(format_bytes "$mem_avail")"
+  printf '%s/%s %s  %s/%s %s\n' \
+    "$(format_bytes "$mem_current")" "$mem_limit" "$mem_pct" \
+    "$cpu_eq" "$qcpu" "$cpu_pct"
 }
 
 usage() {

@@ -44,15 +44,13 @@ print_container_status() {
   status="$(sh "${SYS_SH}" get_container_tmux_status 1)"
   set -- ${status}
 
-  cpu_label="$1"
-  cpu_used="$2"
-  cpu_pct="$3"
-  mem_label="$5"
-  mem_used="$6"
-  mem_pct="$7"
+  mem_used="$1"
+  mem_pct="$2"
+  cpu_used="$3"
+  cpu_pct="$4"
 
-  printf '#[bg=colour28,fg=colour231,bold] %s %s ' "${cpu_used}" "${cpu_pct}"
   printf '#[bg=colour130,fg=colour231,bold] %s %s ' "${mem_used}" "${mem_pct}"
+  printf '#[bg=colour28,fg=colour231,bold] %s %s ' "${cpu_used}" "${cpu_pct}"
 }
 
 if is_container_or_limited_cgroup; then
