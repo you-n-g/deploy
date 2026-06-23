@@ -92,17 +92,40 @@ get_port_info() {
 }
 
 
-# get_container_cpu_info: container-aware CPU usage + capacity from cgroup v2.
+format_bytes() {
+  awk -v bytes="$1" '
+    BEGIN {
+      split("B KiB MiB GiB TiB PiB", units, " ")
+      value = bytes + 0
+      unit = 1
+      while (value >= 1024 && unit < 6) {
+        value = value / 1024
+        unit++
+      }
+      if (unit == 1) {
+        printf "%.0f%s", value, units[unit]
+      } else {
+        printf "%.1f%s", value, units[unit]
+      }
+    }
+  '
+}
+
+
+# get_container_cpu_info: container-aware CPU/memory usage + capacity from cgroup v2.
 #
 # `nproc` / `lscpu` show the host topology, which is misleading inside a
 # cgroup-limited container — they return the bare metal count, not the slice
 # the container is actually allowed to burn. This reads /sys/fs/cgroup/cpu.max
 # (the cfs quota), samples cpu.stat over $1 seconds (default 1) for live
 # usage, and reports cpu.pressure (PSI) so you can tell whether the cgroup
-# is throttling you.
+# is throttling you. It also reads memory.current/memory.max so container memory
+# reflects the cgroup limit instead of the host total shown by free(1).
 #
-# Output one line:
+# Output:
 #   cpu: <used>/<quota> CPU (<pct>)  PSI some/full(10s): <s>% / <f>%  throttled: <n>
+#   mem: <used>/<limit> (<pct>)  available: <available>
+#        no-disk-cache: <used-active_file-inactive_file>/<limit> (<pct>)  disk-cache: <active_file+inactive_file>  inactive-file: <inactive_file>
 #
 # Reading guide:
 #   - <used> close to <quota> AND PSI some > 0   → quota saturated, more
@@ -119,7 +142,14 @@ get_container_cpu_info() {
     echo "cgroup v2 cpu.max not readable (legacy cgroup v1 or non-Linux?)" >&2
     return 1
   fi
+  if [ ! -r /sys/fs/cgroup/memory.current ] || [ ! -r /sys/fs/cgroup/memory.max ]; then
+    echo "cgroup v2 memory.current/memory.max not readable" >&2
+    return 1
+  fi
   local q p qcpu u0 u1 cpu_eq pct s10 f10 nthr
+  local mem_current mem_max mem_limit mem_avail mem_pct
+  local mem_stat mem_active_file mem_inactive_file mem_disk_cache
+  local mem_no_disk_cache mem_no_disk_cache_pct mem_no_disk_cache_avail
   read q p < /sys/fs/cgroup/cpu.max
   if [ "$q" = max ]; then
     qcpu="∞"
@@ -142,6 +172,51 @@ get_container_cpu_info() {
   nthr=$(awk '/^nr_throttled/{print $2}' /sys/fs/cgroup/cpu.stat)
   printf 'cpu: %s/%s CPU (%s)  PSI some/full(10s): %s%% / %s%%  throttled: %s\n' \
     "$cpu_eq" "$qcpu" "$pct" "$s10" "$f10" "$nthr"
+
+  mem_current=$(cat /sys/fs/cgroup/memory.current)
+  mem_max=$(cat /sys/fs/cgroup/memory.max)
+  mem_stat=$(awk '
+    /^active_file /{active_file=$2}
+    /^inactive_file /{inactive_file=$2}
+    END {
+      if (active_file == "" || inactive_file == "") {
+        exit 1
+      }
+      printf "%s %s", active_file, inactive_file
+    }
+  ' /sys/fs/cgroup/memory.stat) || {
+    echo "cgroup v2 memory.stat missing active_file/inactive_file" >&2
+    return 1
+  }
+  set -- $mem_stat
+  mem_active_file="$1"
+  mem_inactive_file="$2"
+  mem_disk_cache=$(awk -v active="$mem_active_file" -v inactive="$mem_inactive_file" \
+                   'BEGIN{printf "%.0f", active+inactive}')
+  mem_no_disk_cache=$(awk -v used="$mem_current" -v cache="$mem_disk_cache" \
+                 'BEGIN{v=used-cache; if (v < 0) v=0; printf "%.0f", v}')
+  if [ "$mem_max" = max ]; then
+    mem_limit="∞"
+    mem_pct="-"
+    mem_no_disk_cache_pct="-"
+    mem_avail=$(awk '/^MemAvailable:/{print $2 * 1024}' /proc/meminfo)
+    mem_no_disk_cache_avail="$mem_avail"
+  else
+    mem_limit=$(format_bytes "$mem_max")
+    mem_pct=$(awk -v used="$mem_current" -v max="$mem_max" \
+              'BEGIN{printf "%.0f%%", used/max*100}')
+    mem_no_disk_cache_pct=$(awk -v used="$mem_no_disk_cache" -v max="$mem_max" \
+                       'BEGIN{printf "%.0f%%", used/max*100}')
+    mem_avail=$(awk -v used="$mem_current" -v max="$mem_max" \
+                'BEGIN{avail=max-used; if (avail < 0) avail=0; printf "%.0f", avail}')
+    mem_no_disk_cache_avail=$(awk -v used="$mem_no_disk_cache" -v max="$mem_max" \
+                         'BEGIN{avail=max-used; if (avail < 0) avail=0; printf "%.0f", avail}')
+  fi
+  printf 'mem: %s/%s (%s)  available: %s\n' \
+    "$(format_bytes "$mem_current")" "$mem_limit" "$mem_pct" "$(format_bytes "$mem_avail")"
+  printf '     no-disk-cache: %s/%s (%s)  available(no-disk-cache): %s  disk-cache: %s  inactive-file: %s\n' \
+    "$(format_bytes "$mem_no_disk_cache")" "$mem_limit" "$mem_no_disk_cache_pct" "$(format_bytes "$mem_no_disk_cache_avail")" \
+    "$(format_bytes "$mem_disk_cache")" "$(format_bytes "$mem_inactive_file")"
 }
 
 usage() {
