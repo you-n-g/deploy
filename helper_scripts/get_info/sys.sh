@@ -219,6 +219,57 @@ get_container_cpu_info() {
     "$(format_bytes "$mem_disk_cache")" "$(format_bytes "$mem_inactive_file")"
 }
 
+get_container_tmux_status() {
+  secs="${1:-1}"
+  if [ ! -r /sys/fs/cgroup/cpu.max ]; then
+    echo "cgroup v2 cpu.max not readable (legacy cgroup v1 or non-Linux?)" >&2
+    return 1
+  fi
+  if [ ! -r /sys/fs/cgroup/memory.current ] || [ ! -r /sys/fs/cgroup/memory.max ]; then
+    echo "cgroup v2 memory.current/memory.max not readable" >&2
+    return 1
+  fi
+
+  read q p < /sys/fs/cgroup/cpu.max
+  if [ "$q" = max ]; then
+    qcpu="∞"
+  else
+    qcpu=$(awk -v q="$q" -v p="$p" 'BEGIN{printf "%g", q/p}')
+  fi
+
+  u0=$(awk '/^usage_usec/{print $2}' /sys/fs/cgroup/cpu.stat)
+  sleep "$secs"
+  u1=$(awk '/^usage_usec/{print $2}' /sys/fs/cgroup/cpu.stat)
+  cpu_eq=$(awk -v a="$u0" -v b="$u1" -v t="$secs" \
+            'BEGIN{printf "%.1f", (b-a)/1e6/t}')
+  if [ "$qcpu" = "∞" ]; then
+    cpu_pct="-"
+  else
+    cpu_pct=$(awk -v c="$cpu_eq" -v q="$qcpu" \
+              'BEGIN{printf "%.0f%%", c/q*100}')
+  fi
+  s10=$(grep ^some /sys/fs/cgroup/cpu.pressure | grep -oE 'avg10=[0-9.]+' | cut -d= -f2)
+  f10=$(grep ^full /sys/fs/cgroup/cpu.pressure | grep -oE 'avg10=[0-9.]+' | cut -d= -f2)
+
+  mem_current=$(cat /sys/fs/cgroup/memory.current)
+  mem_max=$(cat /sys/fs/cgroup/memory.max)
+  if [ "$mem_max" = max ]; then
+    mem_limit="∞"
+    mem_pct="-"
+    mem_avail=$(awk '/^MemAvailable:/{print $2 * 1024}' /proc/meminfo)
+  else
+    mem_limit=$(format_bytes "$mem_max")
+    mem_pct=$(awk -v used="$mem_current" -v max="$mem_max" \
+              'BEGIN{printf "%.0f%%", used/max*100}')
+    mem_avail=$(awk -v used="$mem_current" -v max="$mem_max" \
+                'BEGIN{avail=max-used; if (avail < 0) avail=0; printf "%.0f", avail}')
+  fi
+
+  printf 'C %s/%s %s P%s/%s M %s/%s %s A %s\n' \
+    "$cpu_eq" "$qcpu" "$cpu_pct" "$s10" "$f10" \
+    "$(format_bytes "$mem_current")" "$mem_limit" "$mem_pct" "$(format_bytes "$mem_avail")"
+}
+
 usage() {
   cat >&2 <<'EOF'
 Usage:
@@ -231,6 +282,7 @@ Functions:
   get_dir_performance_info [target_dir] [bs] [size] [jobs] [iodepth]
   get_port_info
   get_container_cpu_info [sample_seconds]
+  get_container_tmux_status [sample_seconds]
 
 Remote examples:
   curl -fsSL https://raw.githubusercontent.com/you-n-g/deploy/master/helper_scripts/get_info/sys.sh | bash -s -- get_container_cpu_info
@@ -244,7 +296,7 @@ main() {
   shift
 
   case "$cmd" in
-    get_hw_info|get_glibc_info|get_performance_info|get_dir_performance_info|get_port_info|get_container_cpu_info)
+    get_hw_info|get_glibc_info|get_performance_info|get_dir_performance_info|get_port_info|get_container_cpu_info|get_container_tmux_status)
       "$cmd" "$@"
       ;;
     -h|--help|help)
