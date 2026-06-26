@@ -3,13 +3,14 @@
 # If multiple AI panes exist, show fzf to pick one.
 # Works in both interactive and non-interactive (run-shell) contexts.
 #
-# Usage: ./get_ai_pane.sh [-i] [-a] [-A] [--include-orchestrator] [--auto-switch-list] [session_name]
+# Usage: ./get_ai_pane.sh [-i] [-a] [-A] [--include-orchestrator] [--orchestrator-visibility-option OPTION] [--auto-switch-list] [session_name]
 # -i: return pane_id instead of session.window.pane
 # -a: list ALL AI panes (one per line), skip interactive selection
 # -A: scan across all tmux sessions (ignores [session_name])
 # --include-orchestrator: include the orchestrator window even when tmuxg hides it.
 # Ctrl-O in the fzf picker toggles whether the orchestrator window is shown
-# when --include-orchestrator is not set.
+# when --include-orchestrator is not set. Use --orchestrator-visibility-option
+# to keep a picker-specific toggle independent from the default tmuxg toggle.
 #
 # Exit codes:
 #   0  success (pane found/selected)
@@ -186,6 +187,7 @@ _get_ai_pane_cmd() {
 
     args=("$SCRIPT_DIR/get_ai_pane.sh")
     [[ "$INCLUDE_ORCHESTRATOR" == true ]] && args+=(--include-orchestrator)
+    [[ -n "$ORCHESTRATOR_VISIBILITY_OPTION" ]] && args+=(--orchestrator-visibility-option "$ORCHESTRATOR_VISIBILITY_OPTION")
     args+=("$@")
 
     printf -v cmd '%q ' "${args[@]}"
@@ -197,12 +199,22 @@ LIST_ALL=false
 ALL_SESSIONS=false
 AUTO_SWITCH_LIST=false
 INCLUDE_ORCHESTRATOR=false
+ORCHESTRATOR_VISIBILITY_OPTION=""
 while [[ "$1" == -* ]]; do
     case "$1" in
         -i) RETURN_ID=true; shift ;;
         -a) LIST_ALL=true; shift ;;
         -A) ALL_SESSIONS=true; shift ;;
         --include-orchestrator) INCLUDE_ORCHESTRATOR=true; shift ;;
+        --orchestrator-visibility-option)
+            if [[ -z "$2" ]]; then
+                echo "--orchestrator-visibility-option requires an option name" >&2
+                exit 2
+            fi
+            ORCHESTRATOR_VISIBILITY_OPTION="$2"
+            TMUXG_SHOW_ORCHESTRATOR_OPTION="$2"
+            shift 2
+            ;;
         --auto-switch-list) AUTO_SWITCH_LIST=true; ALL_SESSIONS=true; shift ;;
         --fzf-list)
             shift
@@ -210,6 +222,15 @@ while [[ "$1" == -* ]]; do
                 case "$1" in
                     -A) ALL_SESSIONS=true; shift ;;
                     --include-orchestrator) INCLUDE_ORCHESTRATOR=true; shift ;;
+                    --orchestrator-visibility-option)
+                        if [[ -z "$2" ]]; then
+                            echo "--orchestrator-visibility-option requires an option name" >&2
+                            exit 2
+                        fi
+                        ORCHESTRATOR_VISIBILITY_OPTION="$2"
+                        TMUXG_SHOW_ORCHESTRATOR_OPTION="$2"
+                        shift 2
+                        ;;
                     --auto-switch-list) AUTO_SWITCH_LIST=true; ALL_SESSIONS=true; shift ;;
                     *) break ;;
                 esac
@@ -291,7 +312,7 @@ else
     _get_ai_pane_cmd RELOAD_BIND_CMD --fzf-list "$SESSION"
 fi
 RESET_ATTRIBUTE_BIND="ctrl-r:execute-silent($RESET_BIND_CMD)+reload($RELOAD_BIND_CMD)+refresh-preview"
-printf -v TOGGLE_ORCHESTRATOR_BIND_CMD '%q --toggle-orchestrator-visibility' "$SCRIPT_DIR/get_ai_pane.sh"
+_get_ai_pane_cmd TOGGLE_ORCHESTRATOR_BIND_CMD --toggle-orchestrator-visibility
 _get_ai_pane_cmd FZF_HEADER_CMD --fzf-header
 TOGGLE_ORCHESTRATOR_BIND="ctrl-o:execute-silent($TOGGLE_ORCHESTRATOR_BIND_CMD)+reload($RELOAD_BIND_CMD)+transform-header($FZF_HEADER_CMD)+refresh-preview"
 HEADER="$(_fzf_header)"

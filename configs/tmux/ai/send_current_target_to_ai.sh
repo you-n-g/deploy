@@ -5,6 +5,8 @@
 # -A: scan AI panes across all sessions. When exactly one AI pane
 #     exists globally, send to it directly; otherwise show an fzf picker.
 #     (default: use the AI pane in the current session only)
+# The fzf picker uses @tmux-send-target-show-orchestrator for its Ctrl-O
+# orchestrator visibility toggle, independent from tmuxg's switcher toggle.
 
 QUIET=false
 ALL_SESSIONS=false
@@ -18,6 +20,8 @@ done
 [[ "$QUIET" == true ]] && trap 'exit 0' EXIT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib.sh"
+ORCHESTRATOR_OPTION="$TMUX_SEND_TARGET_SHOW_ORCHESTRATOR_OPTION"
 
 CURRENT_SESSION=$(tmux display-message -p '#S' 2>/dev/null)
 CURRENT_TARGET=$(tmux display-message -p '#S:#I.#P' 2>/dev/null)
@@ -28,9 +32,9 @@ if [[ -z "$CURRENT_SESSION" || -z "$CURRENT_TARGET" ]]; then
 fi
 
 if [[ "$ALL_SESSIONS" == true ]]; then
-    AI_PANE_ID=$("$SCRIPT_DIR/get_ai_pane.sh" --include-orchestrator -i -A)
+    AI_PANE_ID=$("$SCRIPT_DIR/get_ai_pane.sh" --orchestrator-visibility-option "$ORCHESTRATOR_OPTION" -i -A)
 else
-    AI_PANE_ID=$("$SCRIPT_DIR/get_ai_pane.sh" --include-orchestrator -i "$CURRENT_SESSION")
+    AI_PANE_ID=$("$SCRIPT_DIR/get_ai_pane.sh" --orchestrator-visibility-option "$ORCHESTRATOR_OPTION" -i "$CURRENT_SESSION")
 fi
 [[ -z "$AI_PANE_ID" ]] && exit 0
 

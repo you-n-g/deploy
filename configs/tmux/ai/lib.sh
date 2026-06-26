@@ -3,6 +3,7 @@
 
 AI_PROC_PAT='(^|/)(claude|gemini|codex)$'
 TMUXG_SHOW_ORCHESTRATOR_OPTION="@tmuxg-show-orchestrator"
+TMUX_SEND_TARGET_SHOW_ORCHESTRATOR_OPTION="@tmux-send-target-show-orchestrator"
 TMUXG_SESSION_BLACKLIST_REGEX_OPTION="@tmuxg-session-blacklist-regex"
 _AI_FZF_PREVIEW_HEIGHT=85%  # fzf preview-window height for AI-window selectors
 _AI_FZF_SESSION_COLOR_CODES=(31 32 33 34 35 36 91 92 93 94 95 96)
@@ -220,7 +221,7 @@ _tmuxg_orchestrator_visibility_label() {
 }
 
 _tmuxg_toggle_orchestrator_visibility() {
-    local next label script_dir session
+    local next label script_dir session context
 
     if _tmuxg_show_orchestrator_enabled; then
         next=0
@@ -231,7 +232,11 @@ _tmuxg_toggle_orchestrator_visibility() {
     fi
 
     tmux set-option -gq "$TMUXG_SHOW_ORCHESTRATOR_OPTION" "$next"
-    tmux display-message "tmuxg orchestrator: ${label}"
+    context=tmuxg
+    if [[ "$TMUXG_SHOW_ORCHESTRATOR_OPTION" == "$TMUX_SEND_TARGET_SHOW_ORCHESTRATOR_OPTION" ]]; then
+        context="send target"
+    fi
+    tmux display-message "${context} orchestrator: ${label}"
     script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
     session="$(tmux display-message -p '#{session_name}' 2>/dev/null || true)"
     if [[ -n "$session" ]]; then
