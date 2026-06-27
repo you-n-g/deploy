@@ -8,7 +8,7 @@ import unicodedata
 from pathlib import Path
 
 
-FIELD_SEP = "\x1f"
+FIELD_SEP = "\t"
 PANE_FORMAT = FIELD_SEP.join(
     [
         "#{pane_id}",
@@ -165,6 +165,7 @@ def write_edit_file(ranked: str, output_path: str) -> None:
             raise SystemExit(f"pane missing from current pane list: {pane}")
         rows.append(edit_row(panes[pane]))
 
+    pane_width = max((display_width(row["pane_id"]) for row in rows), default=0)
     target_width = max((display_width(row["target"]) for row in rows), default=0)
     state_width = max((display_width(row["state"]) for row in rows), default=0)
     path_width = max((display_width(row["path"]) for row in rows), default=0)
@@ -180,7 +181,7 @@ def write_edit_file(ranked: str, output_path: str) -> None:
         file.write("# Earlier columns are informational only. Long lines intentionally do not wrap in vim.\n\n")
         for row in rows:
             file.write(
-                f"{row['pane_id']} # "
+                f"{pad_display(row['pane_id'], pane_width)} # "
                 f"{pad_display(row['target'], target_width)} | "
                 f"{pad_display(row['state'], state_width)} | "
                 f"{pad_display(row['path'], path_width)} | "
@@ -231,8 +232,6 @@ def parse_edit_file(path: str, panes: dict[str, dict[str, str]]) -> tuple[list[s
             pending_reasons[resolved] = pending_reason(pending)
             attributes[resolved] = attribute
 
-    if not ranked:
-        raise SystemExit("edited sequence is empty")
     return ranked, pending_reasons, attributes
 
 

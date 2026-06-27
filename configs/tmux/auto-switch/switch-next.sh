@@ -36,7 +36,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 ranked="$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)"
-[[ -n "$ranked" ]] || { echo "No ranked panes in $ranked_option" >&2; exit 1; }
+[[ -n "$ranked" ]] || { tmux display-message "auto-switch: no ranked panes in $ranked_option"; exit 0; }
 
 skip_pane_id=""
 if [[ -n "$skip_pane_target" ]]; then
@@ -44,14 +44,14 @@ if [[ -n "$skip_pane_target" ]]; then
     || { echo "auto-switch: failed to resolve skip pane $skip_pane_target" >&2; exit 1; }
 fi
 
-pane_rows="$(tmux list-panes -a -F $'#{pane_id}\037#{@ai_agent_running}\037#{@ai_agent_background}\037#{@ai_agent_pending}\037#{session_name}\037#{window_id}' 2>/dev/null || true)"
+pane_rows="$(tmux list-panes -a -F '#{pane_id}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_pending}|#{session_name}|#{window_id}' 2>/dev/null || true)"
 
 lookup_pane_row() {
   local wanted="$1" pane running background pending session window_id
 
-  while IFS=$'\037' read -r pane running background pending session window_id; do
+  while IFS='|' read -r pane running background pending session window_id; do
     [[ "$pane" == "$wanted" ]] || continue
-    printf '%s\037%s\037%s\037%s\037%s\n' "$running" "$background" "$pending" "$session" "$window_id"
+    printf '%s|%s|%s|%s|%s\n' "$running" "$background" "$pending" "$session" "$window_id"
     return 0
   done <<< "$pane_rows"
 
@@ -65,7 +65,7 @@ for candidate in $ranked; do
   [[ -n "$skip_pane_id" && "$candidate" == "$skip_pane_id" ]] && continue
   row="$(lookup_pane_row "$candidate" || true)"
   [[ -n "$row" ]] || continue
-  IFS=$'\037' read -r running background pending session window_id <<< "$row"
+  IFS='|' read -r running background pending session window_id <<< "$row"
   if [[ "$running" != "1" \
     && "$background" != "1" \
     && -z "$pending" ]]; then

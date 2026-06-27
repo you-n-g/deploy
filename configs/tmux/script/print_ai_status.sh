@@ -13,7 +13,7 @@ show_orchestrator=0
 if _tmuxg_show_orchestrator_enabled; then
   show_orchestrator=1
 fi
-while IFS=$'\037' read -r session_name pane_id window_name pane_unread pane_running pane_background _pane_pending _attribute; do
+while IFS='|' read -r session_name pane_id window_name pane_unread pane_running pane_background _pane_pending _attribute; do
   [ -n "$session_name" ] || continue
   _tmuxg_session_is_blacklisted "$session_name" "$blacklist_regexes" && continue
   [ -n "$pane_id" ] || continue
@@ -30,7 +30,7 @@ while IFS=$'\037' read -r session_name pane_id window_name pane_unread pane_runn
   elif [ "$pane_unread" = "1" ]; then
     waiting=$((waiting + 1))
   fi
-done < <(tmux list-panes -a -F $'#{session_name}\037#{pane_id}\037#{window_name}\037#{@ai_agent_unread}\037#{@ai_agent_running}\037#{@ai_agent_background}\037#{@ai_agent_pending}\037#{@ai_agent_attribute}' 2>/dev/null)
+done < <(tmux list-panes -a -F '#{session_name}|#{pane_id}|#{window_name}|#{@ai_agent_unread}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_pending}|#{@ai_agent_attribute}' 2>/dev/null)
 
 parts=()
 [ "$running" -gt 0 ] && parts+=("$running")

@@ -47,7 +47,7 @@ pane_rank() {
 
 ai_pane=""
 fallback_pane=""
-while IFS=$'\037' read -r pane active attribute running background unread pending; do
+while IFS='|' read -r pane active attribute running background unread pending; do
   [ -n "$pane" ] || continue
   current_rank="$(pane_rank "$pane" 2>/dev/null || true)"
   has_ai_signal=0
@@ -63,7 +63,7 @@ while IFS=$'\037' read -r pane active attribute running background unread pendin
     fallback_pane="$pane"
     fallback_hint="$attribute"
   fi
-done < <(tmux list-panes -t "$current_window" -F $'#{pane_id}\037#{pane_active}\037#{@ai_agent_attribute}\037#{@ai_agent_running}\037#{@ai_agent_background}\037#{@ai_agent_unread}\037#{@ai_agent_pending}' 2>/dev/null)
+done < <(tmux list-panes -t "$current_window" -F '#{pane_id}|#{pane_active}|#{@ai_agent_attribute}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_unread}|#{@ai_agent_pending}' 2>/dev/null)
 if [ -z "$ai_pane" ] && [ -n "$fallback_pane" ]; then
   ai_pane="$fallback_pane"
   hint="${fallback_hint:-}"

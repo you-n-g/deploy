@@ -362,13 +362,14 @@ edit_sequence() {
   trap 'rm -f "$tmp" "$selected_file" "$vim_script"' RETURN
 
   ranked="$(editable_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
-  [[ -n "$ranked" ]] || { echo "no live AI panes to edit" >&2; wait_after_error; return 1; }
   write_edit_file "$tmp" "$ranked"
   focus_line="$(edit_focus_line "$tmp" "$ranked" "$edit_focus_target")"
   vim_selected_file="${selected_file//\'/''}"
   cat > "$vim_script" <<VIM
 setlocal filetype=conf nowrap
+syntax match AutoSwitchMeta /#.*$/ contains=AutoSwitchSeparator
 syntax match AutoSwitchSeparator /|/ containedin=ALL
+highlight AutoSwitchMeta ctermfg=245 cterm=NONE guifg=#8a8a8a gui=NONE
 highlight AutoSwitchSeparator ctermfg=45 cterm=bold guifg=#00d7ff gui=bold
 highlight AutoSwitchStateRunning ctermfg=110 cterm=NONE guifg=#87afd7 gui=NONE
 highlight AutoSwitchStateBackground ctermfg=109 cterm=NONE guifg=#87afaf gui=NONE
@@ -631,10 +632,6 @@ if [[ "$command_name" == "edit" ]]; then
 fi
 
 if [[ "$selection_cancelled" == "1" ]]; then
-  exit 0
-fi
-
-if [[ "$command_name" == "append-current" ]]; then
   exit 0
 fi
 
