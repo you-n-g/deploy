@@ -395,6 +395,21 @@ _codex_env() {
     )
 }
 
+_codex_extract_config_boundary_command() {
+    local config_boundary_commands=" exec e "
+
+    REPLY=""
+    reply=()
+    while (( $# > 0 )); do
+        if [[ -z "$REPLY" && "$config_boundary_commands" == *" $1 "* ]]; then
+            REPLY="$1"
+        else
+            reply+=("$1")
+        fi
+        shift
+    done
+}
+
 _codex_run_login() {
     local title="$1"
     shift
@@ -402,9 +417,16 @@ _codex_run_login() {
     # 将 auto_flag 拆成数组，而不是一个字符串
     auto_flag=($(_codex_auto_flag))  # 例如返回 "--sandbox danger-full-access --ask-for-approval on-request"
 
+    _codex_extract_config_boundary_command "$@"
+
+    if [[ -n "$REPLY" ]]; then
+        _myp_run "$MYPROXY_CODEX" codex "$REPLY" --disable hooks "${auto_flag[@]}" "${reply[@]}"
+        return
+    fi
+
     # 展开数组，用 "${auto_flag[@]}"，这样每个 flag 都是独立参数
     _start_ai_tui_output_tracker
-    _with_tmux_rename "$title" "$MYPROXY_CODEX" codex "${auto_flag[@]}" "$@"
+    _with_tmux_rename "$title" "$MYPROXY_CODEX" codex "${auto_flag[@]}" "${reply[@]}"
 }
 
 _codex_run_api() {
@@ -412,8 +434,16 @@ _codex_run_api() {
     shift
     local auto_flag
     auto_flag=($(_codex_auto_flag))
+
+    _codex_extract_config_boundary_command "$@"
+
+    if [[ -n "$REPLY" ]]; then
+        _codex_env _myp_run "$MYPROXY_CODEX" codex "$REPLY" --disable hooks "${auto_flag[@]}" "${reply[@]}"
+        return
+    fi
+
     _start_ai_tui_output_tracker
-    _codex_env _with_tmux_rename "$title" "$MYPROXY_CODEX" codex "${auto_flag[@]}" "$@"
+    _codex_env _with_tmux_rename "$title" "$MYPROXY_CODEX" codex "${auto_flag[@]}" "${reply[@]}"
 }
 
 function codexa() {
