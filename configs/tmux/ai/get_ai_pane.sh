@@ -116,6 +116,7 @@ _fzf_start_pos() {
     printf '%s\n' "$list" |
         perl -pe 's/\e\[[0-9;]*m//g' |
         awk '
+            $3 == "⏸" { next }
             /\[!\]/ && unread == 0 { unread = NR }
             $3 == "○" && ready == 0 { ready = NR }
             END {
@@ -325,8 +326,8 @@ START_POS=$(
 START_BIND_ARGS=()
 START_BIND_CMD=""
 if (( START_POS > 1 )); then
-    START_BIND_ARGS=(--bind "load:pos($START_POS)")
-    printf -v START_BIND_CMD ' --bind %q' "load:pos($START_POS)"
+    START_BIND_ARGS=(--sync --bind "start:pos($START_POS),load:pos($START_POS)")
+    printf -v START_BIND_CMD ' --sync --bind %q' "start:pos($START_POS),load:pos($START_POS)"
 fi
 
 if [[ -t 0 ]]; then
