@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-AI_TOOL="$(tmux show-environment -g TMUX_AI_TOOL | sed 's/^TMUX_AI_TOOL=//')"
+AI_TOOL="$(tmux show-environment -g TMUX_AI_TOOL 2>/dev/null | sed 's/^TMUX_AI_TOOL=//' || true)"
+AI_TOOL="${AI_TOOL:-codex}"
 case "$AI_TOOL" in
     codex)  TOOL_CMD="codexr" ;;
     claude) TOOL_CMD="clauder" ;;

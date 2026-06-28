@@ -12,6 +12,9 @@ ai_attribute_verbosity="${AI_ATTRIBUTE_VERBOSITY:-}"
 if [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_attribute 2>/dev/null)" ]; then
   exit 0
 fi
+# Intentional simple race: two hook invocations can both see an empty attribute
+# and spend tokens concurrently. We accept that small race to keep state in the
+# single @ai_agent_attribute option instead of adding a lock or attempted flag.
 
 prompt_file="$(mktemp)"
 output_file="$(mktemp)"
@@ -88,7 +91,5 @@ if [ -z "$attribute" ]; then
   exit 1
 fi
 
-if [ -z "$(tmux show -pv -t "$pane_id" @ai_agent_attribute 2>/dev/null)" ]; then
-  tmux set-option -pq -t "$pane_id" @ai_agent_attribute "$attribute"
-  "$SCRIPT_DIR/refresh_status_lines.sh" "$pane_id"
-fi
+tmux set-option -pq -t "$pane_id" @ai_agent_attribute "$attribute"
+"$SCRIPT_DIR/refresh_status_lines.sh" "$pane_id"

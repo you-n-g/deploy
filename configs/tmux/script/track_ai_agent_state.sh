@@ -138,10 +138,6 @@ ensure_ai_agent_attribute() {
   tmux run-shell -b "$cmd"
 }
 
-reset_ai_agent_attribute() {
-  tmux set-option -pqu -t "$pane_id" @ai_agent_attribute 2>/dev/null || true
-}
-
 has_ai_agent_state() {
   [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null)" ] \
     || [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_background 2>/dev/null)" ] \
@@ -305,7 +301,9 @@ log_ai_agent_state
 
 case "$state" in
   init)
-    reset_ai_agent_attribute
+    # Codex/Claude SessionStart can fire for resume/compact/status-bridge style
+    # events inside a still-running tmux pane. Keep the existing attribute stable;
+    # users can reset it explicitly from the AI pane picker when it is stale.
     tmux set-option -pq -t "$pane_id" @ai_agent_running 0
     tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
     tmux set-option -pq -t "$pane_id" @ai_agent_unread 0

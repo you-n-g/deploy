@@ -18,6 +18,7 @@ for p in git build-essential cmake python-dev htop zsh autossh exuberant-ctags \
     # in case of lacking specific package result in failing of all packages. So we just install them one by one
     sudo apt-get install -y $p
 done
+sudo apt-get install -y lsof
 # Explain the necessity of the above packages
 # jq: enhance the experience of json
 
