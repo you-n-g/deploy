@@ -116,7 +116,7 @@ vim.bo[buf].buflisted = false
 vim.bo[buf].modifiable = true
 vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 vim.bo[buf].modified = false
-vim.bo[buf].modifiable = false
+vim.bo[buf].modifiable = true
 vim.cmd("keepjumps buffer " .. buf)
 vim.cmd("keepjumps normal! G0")
 return _A.title

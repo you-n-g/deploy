@@ -601,7 +601,8 @@ alias copier="uvx copier"
 
 # ## Outlines: file managers
 # ranger的安装依赖  deploy_apps/install_fav_py_pack.sh
-# NOTE: ranger 直接通过 uvx 启动会有BUG(它依赖了一些非python的包？)
+# NOTE: ranger 直接通过 uvx 启动 console script 会触发 ranger-fm 的 __future__
+# import 位置问题；绕过 entrypoint，直接调用 Python main。
 # alias .r=". ranger"
 # alias ranger='if [ -n "$TMUX" ]; then prev_name=$(tmux display-message -p "#W"); tmux rename-window -t "$TMUX_PANE" ranger; command uvx --from ranger-fm ranger ; tmux rename-window -t "$TMUX_PANE" "$prev_name"; else command ranger; fi'  # if inside tmux, rename to 'ranger', run it, then restore name
 _tmux_file_manager() {
@@ -619,7 +620,7 @@ _tmux_file_manager() {
 }
 
 ranger() {
-    _tmux_file_manager ranger "$@"
+    _tmux_file_manager uvx --from ranger-fm python -c 'from ranger.core.main import main; main()' "$@"
 }
 
 lf() {
