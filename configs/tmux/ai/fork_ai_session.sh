@@ -147,16 +147,16 @@ case "$ai_name" in
         cmd="clauder --resume --fork-session"
         ;;
     codex)
-        # Codex session file path:
-        # .codex/sessions/YYYY/MM/DD/rollout-...-<UUID>.jsonl
-        # Prefer the live command line: resumed Codex TUIs keep the active
-        # session id there even when the jsonl file is not held open.
-        session_id=$(_codex_session_id_from_args "$ai_pid")
-        if [[ -z "$session_id" && -d "/proc/$ai_pid/fd" ]]; then
+        # Codex keeps the active session jsonl open. For forked sessions, the
+        # command-line id is the source session and can be stale.
+        if [[ -d "/proc/$ai_pid/fd" ]]; then
             session_id=$(_codex_session_id_from_proc_fd "$ai_pid")
         fi
         if [[ -z "$session_id" ]] && command -v lsof >/dev/null 2>&1; then
             session_id=$(_codex_session_id_from_lsof "$ai_pid")
+        fi
+        if [[ -z "$session_id" ]]; then
+            session_id=$(_codex_session_id_from_args "$ai_pid")
         fi
         if [[ -z "$session_id" ]]; then
             tmux display-message "Fork: failed to resolve Codex session id for $source_pane_id"
