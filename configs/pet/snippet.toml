@@ -483,7 +483,7 @@
   Description = "codex command"
   Output = ""
   Tag = []
-  command = "codexr exec -c 'model_reasoning_effort=\"low\"' '<command=|_Commit the relevant code changes. Focus only on in-place git changes and relevant git staged entries. If files are clearly missing from those in-place or staged changes and are needed for the same change, stage and commit them too. Do not stage or commit unrelated files. Make only one commit and then stop. Do not go beyond that._||_$update-code_|>'"
+  command = "codexr <cmd=|__||_exec_|> -c 'model_reasoning_effort=\"low\"' '<command=|_Commit the relevant code changes. Focus only on in-place git changes and relevant git staged entries. If files are clearly missing from those in-place or staged changes and are needed for the same change, stage and commit them too. Do not stage or commit unrelated files. Make only one commit and then stop. Do not go beyond that. 最后总结改了什么(至少带有每个文件的增减代码量说明)._||_$update-code_|>'"
 
 [[Snippets]]
   Description = "health check for openai & llm"
