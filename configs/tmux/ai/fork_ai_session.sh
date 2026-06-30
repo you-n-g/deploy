@@ -47,32 +47,6 @@ if [[ -n "$SOURCE_TARGET" ]]; then
     fi
 fi
 
-CODEX_SESSION_ID_RE='[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
-
-_first_codex_session_id() {
-    grep -oE "$CODEX_SESSION_ID_RE" | head -1
-}
-
-_codex_session_id_from_args() {
-    ps -p "$1" -o args= 2>/dev/null | _first_codex_session_id || true
-}
-
-_codex_session_id_from_proc_fd() {
-    find "/proc/$1/fd" -maxdepth 1 -type l -printf '%l\n' 2>/dev/null \
-        | _first_codex_session_id || true
-}
-
-_codex_session_id_from_lsof() {
-    local lsof_output
-
-    if command -v timeout >/dev/null 2>&1; then
-        lsof_output=$(timeout 3 lsof -p "$1" 2>/dev/null || true)
-    else
-        lsof_output=$(lsof -p "$1" 2>/dev/null || true)
-    fi
-    printf '%s\n' "$lsof_output" | awk '{print $NF}' | _first_codex_session_id || true
-}
-
 tmux_display() {
     local format="$1"
 
@@ -122,7 +96,6 @@ if [[ -z "$result" ]]; then
     exit 1
 fi
 
-ai_pid="${result%% *}"
 ai_name=$(basename "${result##* }")
 fork_name="${base_name}${SUFFIX}"
 
@@ -147,17 +120,7 @@ case "$ai_name" in
         cmd="clauder --resume --fork-session"
         ;;
     codex)
-        # Codex keeps the active session jsonl open. For forked sessions, the
-        # command-line id is the source session and can be stale.
-        if [[ -d "/proc/$ai_pid/fd" ]]; then
-            session_id=$(_codex_session_id_from_proc_fd "$ai_pid")
-        fi
-        if [[ -z "$session_id" ]] && command -v lsof >/dev/null 2>&1; then
-            session_id=$(_codex_session_id_from_lsof "$ai_pid")
-        fi
-        if [[ -z "$session_id" ]]; then
-            session_id=$(_codex_session_id_from_args "$ai_pid")
-        fi
+        session_id=$(_ai_session_id_for_pane "$source_pane_id" || true)
         if [[ -z "$session_id" ]]; then
             tmux display-message "Fork: failed to resolve Codex session id for $source_pane_id"
             exit 1
