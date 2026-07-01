@@ -7,7 +7,6 @@ WORKDIR="${3:-$HOME}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 command -v nvim >/dev/null 2>&1 || { tmux display-message "open pane in Vim: nvim not found"; exit 1; }
-command -v lsof >/dev/null 2>&1 || { tmux display-message "open pane in Vim: lsof not found"; exit 1; }
 
 find_nvim_pid_for_pane() {
   local pane="$1" root_pid ps_rows
@@ -54,20 +53,29 @@ find_nvim_pid_for_pane() {
 }
 
 nvim_server_for_pid() {
-  local pid="$1"
+  local pid="$1" fd_target inode socket_path
 
-  lsof -Fn -a -p "$pid" -U 2>/dev/null |
-    awk '
-      /^n\// {
-        name = substr($0, 2)
-        sub(/ type=STREAM.*/, "", name)
-        if (name ~ /\/fzf-lua\./) next
-        if (name ~ /\/nvim\.[0-9]+(\.[0-9]+)?$/ || name ~ /nvim\.sock$/) {
-          print name
-          exit 0
-        }
-      }
-    '
+  while IFS= read -r fd_target; do
+    socket_path=""
+    case "$fd_target" in
+      socket:\[*\])
+        inode="${fd_target#socket:[}"
+        inode="${inode%]}"
+        socket_path="$(awk -v inode="$inode" '$7 == inode && NF >= 8 { print $8; exit }' /proc/net/unix)"
+        ;;
+      *)
+        socket_path="$fd_target"
+        ;;
+    esac
+
+    case "$socket_path" in
+      */fzf-lua.*) ;;
+      */nvim.[0-9]*|*/nvim.sock)
+        printf '%s\n' "$socket_path"
+        return 0
+        ;;
+    esac
+  done < <(find "/proc/$pid/fd" -maxdepth 1 -type l -printf '%l\n' 2>/dev/null)
 }
 
 vim_pane="$("$SCRIPT_DIR/ensure_vim_window.sh" --print-pane "$SESSION" "$WORKDIR")"
@@ -117,7 +125,7 @@ vim.bo[buf].modifiable = true
 vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 vim.bo[buf].modified = false
 vim.bo[buf].modifiable = true
-vim.cmd("keepjumps buffer " .. buf)
+vim.cmd("keepjumps tab sbuffer " .. buf)
 vim.cmd("keepjumps normal! G0")
 return _A.title
 end)()
