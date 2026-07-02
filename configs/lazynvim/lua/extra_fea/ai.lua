@@ -170,7 +170,7 @@ local templates = {
   edit = function(content)
     local relative_path = get_relative_path()
     return string.format(
-      "We are edit the file @%s\nYou are focusing the following block\n```\n%s\n```",
+      "We are edit the file @%s\nYou are focusing the following block\n````\n%s\n````",
       relative_path,
       content
     )
@@ -178,7 +178,7 @@ local templates = {
   focus = function(content)
     local relative_path = get_relative_path()
     return string.format(
-      "Please pay attention to @%s, specifically this block:\n```\n%s\n```",
+      "Please pay attention to @%s, specifically this block:\n````\n%s\n````",
       relative_path,
       content
     )

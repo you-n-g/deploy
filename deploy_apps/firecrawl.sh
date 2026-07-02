@@ -8,7 +8,7 @@ DIR="$( cd "$(dirname "$(readlink -f "$0")")" || exit ; pwd -P )"
 
 # npm install puppeteer html2markdown
 
-mkdir ~/apps/
+mkdir -p ~/apps/
 
 cd ~/apps/
 

@@ -68,6 +68,22 @@ Produce a full architecture walkthrough and write it to **`codebase-walkthrough[
 
 3. **运行环境** — 如果涉及特殊环境（uv/conda/docker/虚拟机），说明在哪个环境哪台机器上运行。
 
+### Explaining changes / diffs
+
+当用户要求解释当前改动、diff、stash、PR changes、或“这次修改怎么执行”时，按
+`impl` 类报告写入 `codebase-impl-<slug>.md`，但内容要以 **change behavior**
+为中心：
+
+1. 先给一张改动范围 roadmap：列出本次 diff 直接改变的机制、文件和调用位置。
+2. 凡是在说明“本次改动新增/改变了什么行为、配置、分支、metadata、依赖或输出”时，
+   句首使用 `±` 前缀；普通控制流解释、调用位置、运行时证据、旧行为背景不加 `±`。
+3. 只展开和本次改动直接相关的关键分支；不要枚举改动前后行为完全相同的普通控制流。
+4. 对每个改动相关分支，构造一组具体的运行时变量场景（参数、metadata、flag、
+   返回值、异常对象等），并明确写出“改动前怎么走 / 改动后怎么走”。
+5. “正常通过”类分支只有在它本身被 diff 改变，或它是理解新增条件边界所必需时才写；
+   否则省略。写时要标明它和本次改动的关系，不要把它写成完整控制流巡礼。
+6. 每个 before/after 判断都必须挂 diff 或当前代码证据，仍然遵守「每一句断言都要挂证据」。
+
 ---
 
 ## Mode: `debug [<identifier>] [<question>]`
@@ -253,4 +269,5 @@ identifier 省略，用最近一次运行的 run id / 时间戳末段）。
 
 ### 其他
 - 输出文件直接写在**项目根目录**，Markdown 格式，不要写在子目录里。
+- explain 生成的 `codebase-*.md` 输出默认只是本地阅读产物，**不要 `git add`、commit 或纳入提交**；只有用户明确要求提交这些 explain 结果时才 stage/commit。
 - 语言跟随用户：用户用中文问就用中文写，用英文问就用英文写。
