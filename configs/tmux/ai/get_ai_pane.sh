@@ -319,9 +319,13 @@ TOGGLE_ORCHESTRATOR_BIND="ctrl-o:execute-silent($TOGGLE_ORCHESTRATOR_BIND_CMD)+r
 HEADER="$(_fzf_header)"
 printf -v HEADER_ARG '%q' "$HEADER"
 
-START_POS=$(
-    _fzf_start_pos "$LIST"
-)
+if [[ "$AUTO_SWITCH_LIST" == true ]]; then
+    START_POS=1
+else
+    START_POS=$(
+        _fzf_start_pos "$LIST"
+    )
+fi
 
 START_BIND_ARGS=()
 START_BIND_CMD=""
