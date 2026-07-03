@@ -68,7 +68,7 @@ EOF
 # AI_ATTRIBUTE_* are opt-in overrides; unset means use the same defaults as interactive codexr.
 # shellcheck disable=SC2016
 if ! env -u TMUX -u TMUX_PANE zsh -ic \
-  'args=(--disable hooks exec --skip-git-repo-check --sandbox danger-full-access -C "$2" -o "$1"); if [[ -n "$3" ]]; then args+=(-c "model_reasoning_effort=\"$3\""); fi; if [[ -n "$4" ]]; then args+=(-c "model_verbosity=\"$4\""); fi; args+=(-); codexr "${args[@]}"' \
+  'args=(--disable hooks exec --skip-git-repo-check -C "$2" -o "$1"); if [[ -n "$3" ]]; then args+=(-c "model_reasoning_effort=\"$3\""); fi; if [[ -n "$4" ]]; then args+=(-c "model_verbosity=\"$4\""); fi; args+=(-); codexr "${args[@]}"' \
   -- "$output_file" "$agent_cwd" "$ai_attribute_reasoning_effort" "$ai_attribute_verbosity" < "$prompt_file" >/dev/null 2>"$error_file"; then
   message="$(failure_message)"
   tmux display-message "AI attribute failed: $message"

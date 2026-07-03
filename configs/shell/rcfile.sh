@@ -358,11 +358,11 @@ function codexrl() {
 }
 
 _codex_auto_flag() {
-    if [[ "$(uname)" == "Linux" ]]; then
-        echo "--dangerously-bypass-approvals-and-sandbox"
-    else
-        echo "--sandbox danger-full-access --ask-for-approval on-request"
-    fi
+    echo "--dangerously-bypass-approvals-and-sandbox"
+}
+
+_codex_exec_auto_flag() {
+    echo "--dangerously-bypass-approvals-and-sandbox"
 }
 
 _codex_default_provider() {
@@ -415,11 +415,12 @@ _codex_run_login() {
     shift
     local auto_flag
     # 将 auto_flag 拆成数组，而不是一个字符串
-    auto_flag=($(_codex_auto_flag))  # 例如返回 "--sandbox danger-full-access --ask-for-approval on-request"
+    auto_flag=($(_codex_auto_flag))
 
     _codex_extract_config_boundary_command "$@"
 
     if [[ -n "$REPLY" ]]; then
+        auto_flag=($(_codex_exec_auto_flag))
         _myp_run "$MYPROXY_CODEX" codex "$REPLY" --disable hooks "${auto_flag[@]}" "${reply[@]}"
         return
     fi
@@ -438,6 +439,7 @@ _codex_run_api() {
     _codex_extract_config_boundary_command "$@"
 
     if [[ -n "$REPLY" ]]; then
+        auto_flag=($(_codex_exec_auto_flag))
         _codex_env _myp_run "$MYPROXY_CODEX" codex "$REPLY" --disable hooks "${auto_flag[@]}" "${reply[@]}"
         return
     fi
