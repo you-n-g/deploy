@@ -105,28 +105,18 @@ local function get_relative_path()
   return file_path
 end
 
-local function get_last_window_in_current_session()
-  -- current session name
-  local session = vim.fn.system("tmux display-message -p '#S'")
+local function get_last_pane_in_current_session()
+  local target = vim.fn.system({ "tmux", "display-message", "-p", "-t", "{last}", "#{session_name}\t#{window_index}\t#{pane_index}" })
   if vim.v.shell_error ~= 0 then
-    return nil, nil
+    return nil, nil, nil
   end
-  session = trim(session)
-  if session == "" then
-    return nil, nil
+  target = trim(target)
+  if target == "" then
+    return nil, nil, nil
   end
 
-  -- last (most recently used) window index in current session
-  local window = vim.fn.system("tmux list-windows -t " .. session .. " -F '#{window_index}' -f '#{window_last_flag}'")
-  if vim.v.shell_error ~= 0 then
-    return session, nil
-  end
-  window = trim(window)
-  if window == "" then
-    return session, nil
-  end
-
-  return session, window
+  local session, window, pane = target:match("^([^\t]+)\t([^\t]+)\t([^\t]+)$")
+  return session, window, pane
 end
 
 local function get_current_or_visual_content()
@@ -251,17 +241,19 @@ function M.send_to_ai(template, post_action)
   end)
 end
 
-function M.send_to_last_window(template, post_action)
-  local session, window = get_last_window_in_current_session()
+function M.send_to_last_pane(template, post_action)
+  local session, window, pane = get_last_pane_in_current_session()
   if not session then
-    print("No tmux session/window found")
+    print("No last tmux pane found")
     return
   end
   local content = get_current_or_visual_content()
   resolve_and_send(template, content, function(final_content)
-    tmux.send_to_tmux(final_content, session, window, nil, post_action)
+    tmux.send_to_tmux(final_content, session, window, pane, post_action)
   end)
 end
+
+M.send_to_last_window = M.send_to_last_pane
 
 function M.send_literal_to_ai(content, post_action)
   get_target_tmux(function(target_session, target_window, target_pane)
@@ -280,8 +272,8 @@ function M.setup()
   vim.keymap.set({ "n", "v" }, "<Localleader>cE", function() M.send_to_ai(true) end, { desc = "Send to AI/Tmux (pick template)" })
   vim.keymap.set({ "n", "v" }, "<Localleader>cp", function() M.send_path_to_ai() end, { desc = "Send Path to AI/Tmux" })
   vim.keymap.set({ "n", "v" }, "<Localleader>ct", function() M.send_current_tmux_target_to_ai() end, { desc = "Send current tmux target to AI/Tmux" })
-  vim.keymap.set({ "n", "v" }, "<Localleader>cl", function() M.send_to_last_window() end, { desc = "Send to last tmux window in current session (Raw, line/visual)" })
-  vim.keymap.set({ "n", "v" }, "<Localleader>cL", function() M.send_to_last_window(nil, "enter") end, { desc = "Send to last tmux window (Raw, no switch)" })
+  vim.keymap.set({ "n", "v" }, "<Localleader>cl", function() M.send_to_last_pane() end, { desc = "Send to last tmux pane in current session (Raw, line/visual)" })
+  vim.keymap.set({ "n", "v" }, "<Localleader>cL", function() M.send_to_last_pane(nil, "enter") end, { desc = "Send to last tmux pane (Raw, no switch)" })
   -- NOTE: this does not work in navigate-note, because the number leading command is defined by other shortcut.
   vim.keymap.set({ "n" }, "<Localleader>ch", function()
     local count = vim.v.count1

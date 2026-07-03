@@ -469,7 +469,7 @@ function codexs8121() {
         _codex_run_api codex-share-8121 \
             -c 'model_provider="lb8121"' \
             -c 'model_providers.lb8121.name="codex-backend-8121"' \
-            -c 'model_providers.lb8121.base_url="http://hc.zhilicon.com:8121/backend-api/codex"' \
+            -c 'model_providers.lb8121.base_url="http://hc.213428.xyz:8121/backend-api/codex"' \
             -c 'model_providers.lb8121.wire_api="responses"' \
             -c 'model_providers.lb8121.env_key="LB_API_KEY"' \
             "$@"
@@ -625,6 +625,20 @@ ranger() {
 
 lf() {
     _tmux_file_manager lf "$@"
+}
+
+vim() {
+    if [ -n "$TMUX" ]; then
+        local prev_name rc
+        prev_name=$(tmux display-message -p "#W")
+        tmux rename-window -t "$TMUX_PANE" " $(basename "$PWD")"
+        command vim "$@"
+        rc=$?
+        tmux rename-window -t "$TMUX_PANE" "$prev_name"
+        return "$rc"
+    else
+        command vim "$@"
+    fi
 }
 # 其他
 # -快捷键篇
