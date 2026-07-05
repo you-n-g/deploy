@@ -258,8 +258,14 @@ function proxy_check() {
 alias pypdb='python -m ipdb -c c'
 alias pyprof='python -m cProfile -o stats_out'
 
-alias ipify="curl cip.cc"
-# using this alias name  because the previous tool is ipify
+function ipify() {
+    if [[ $# -gt 0 ]]; then
+        curl "cip.cc/$1"
+    else
+        curl cip.cc
+    fi
+}
+# using this function name  because the previous tool is ipify
 
 # run with proxy (p) — auto-detect: if proxy needed, wrap with proxychains, else run normally
 function myp() {
@@ -471,7 +477,7 @@ function codexs8121() {
         _codex_run_api codex-share-8121 \
             -c 'model_provider="lb8121"' \
             -c 'model_providers.lb8121.name="codex-backend-8121"' \
-            -c 'model_providers.lb8121.base_url="http://hc.213428.xyz:8121/backend-api/codex"' \
+            -c 'model_providers.lb8121.base_url="https://hc.213428.xyz/8121/backend-api/codex"' \
             -c 'model_providers.lb8121.wire_api="responses"' \
             -c 'model_providers.lb8121.env_key="LB_API_KEY"' \
             "$@"
