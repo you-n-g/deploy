@@ -14,6 +14,15 @@ PG_DATA="$BASE/postgres-data"
 mkdir -p "$LOG_DIR" "$PG_DATA"
 
 export PATH="$HOME/.local/bin:$PATH"
+export UDOCKER_REGISTRY="${UDOCKER_REGISTRY:-https://docker.m.daocloud.io}"
+export UDOCKER_INDEX="${UDOCKER_INDEX:-https://docker.m.daocloud.io}"
+
+UDOCKER_PULL_ARGS=()
+if [ -n "${UDOCKER_PULL_PLATFORM:-}" ]; then
+  UDOCKER_PULL_ARGS+=(--platform="$UDOCKER_PULL_PLATFORM")
+elif [ "$(uname -s)" = "Darwin" ] && [ "$(uname -m)" = "arm64" ]; then
+  UDOCKER_PULL_ARGS+=(--platform=linux/arm64)
+fi
 
 ensure_udocker() {
   if ! command -v uv >/dev/null 2>&1; then
@@ -35,7 +44,7 @@ pull_images() {
     if udocker inspect "$image" >/dev/null 2>&1; then
       echo "$image already pulled"
     else
-      udocker pull "$image"
+      udocker pull "${UDOCKER_PULL_ARGS[@]}" "$image"
     fi
   done
 }
@@ -78,7 +87,11 @@ run_bg() {
   local name="$1"
   shift
   : >"$LOG_DIR/$name.log"
-  setsid -f sh -c "exec $* >> '$LOG_DIR/$name.log' 2>&1"
+  if command -v setsid >/dev/null 2>&1; then
+    setsid -f sh -c "exec $* >> '$LOG_DIR/$name.log' 2>&1"
+  else
+    nohup sh -c "exec $* >> '$LOG_DIR/$name.log' 2>&1" >/dev/null 2>&1 &
+  fi
 }
 
 start_redis() {

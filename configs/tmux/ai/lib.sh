@@ -605,7 +605,7 @@ _ai_pane_rows() {
 # Example output (after ANSI codes stripped):
 #   %12 work:3.0 ▶ claude          [act 5s]  [pane %12]
 #   %13 work:3.1 ● gemini          [act 0s]  [pane %13 marked switcher]
-#   %14 learn:0.0 ◉ codex [!]      [act 1m]  [pane %14]
+#   %14 learn:0.0 ◉ codex          [act 1m] [unread]  [pane %14]
 _ai_pane_fzf_list() {
     local current_target="${1:-}"
     local now="${2:-$(date +%s)}"
@@ -675,13 +675,21 @@ _ai_pane_fzf_list() {
             time_info="[v ${rel_visit} | a ${rel_act}]"
         fi
 
-        local unread_mark=""
-        (( is_unread )) && unread_mark=$' \033[33m[!]\033[0m'
         local pending_mark=""
+        local state_tags=""
+        [[ "$sess_win" == "$current_target" ]] && state_tags+=" [current]"
         if $is_pending; then
             local pending_label
             _ai_pending_reason_label "$pending_flag" pending_label
             pending_mark=$' \033[35m[pending:'"${pending_label}"$']\033[0m'
+        elif $has_background; then
+            state_tags+=" [background]"
+        elif $is_busy; then
+            state_tags+=" [running]"
+        elif (( is_unread )); then
+            state_tags+=$' \033[33m[unread]\033[0m'
+        else
+            state_tags+=" [idle]"
         fi
         local is_ranked=false
         case "$ranked_pane_ids" in
@@ -704,8 +712,8 @@ _ai_pane_fzf_list() {
             printf -v sort_key '%08d' "$input_index"
         fi
 
-        printf '%s\t%s\t%s %s %b%s\033[2m%s\033[0m  \033[2m%s%s\033[0m  \033[2m[%s]\033[0m\033[2m%s\033[0m\n' \
-            "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$display_wname" "$attribute_info" "$time_info" "${unread_mark}${pending_mark}" "$pane_marker" "$path_info"
+        printf '%s\t%s\t%s %s %b%s\033[2m%s\033[0m  \033[2m%s%s%s\033[0m  \033[2m[%s]\033[0m\033[2m%s\033[0m\n' \
+            "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$display_wname" "$attribute_info" "$time_info" "$pending_mark" "$state_tags" "$pane_marker" "$path_info"
     done |
     sort -t $'\t' -k1,1 -k2,2nr |
     cut -f3-

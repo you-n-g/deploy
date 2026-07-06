@@ -116,11 +116,13 @@ _fzf_start_pos() {
     printf '%s\n' "$list" |
         perl -pe 's/\e\[[0-9;]*m//g' |
         awk '
-            $3 == "⏸" { next }
-            /\[!\]/ && unread == 0 { unread = NR }
-            $3 == "○" && ready == 0 { ready = NR }
+            /\[pending:/ { next }
+            /\[unread\]/ && $4 == "news" && unread_news == 0 { unread_news = NR }
+            /\[unread\]/ && unread == 0 { unread = NR }
+            /\[idle\]/ && ready == 0 { ready = NR }
             END {
-                if (unread > 0) print unread
+                if (unread_news > 0) print unread_news
+                else if (unread > 0) print unread
                 else if (ready > 0) print ready
                 else print 1
             }
