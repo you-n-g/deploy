@@ -184,10 +184,18 @@ remote_app_server_ready=0
 remote_cleanup_done=0
 local_codex_config_args=()
 
+run_ssh() {
+    if ((${#ssh_args[@]})); then
+        ssh "${ssh_args[@]}" "$@"
+    else
+        ssh "$@"
+    fi
+}
+
 load_remote_codex_config_overrides() {
     local output
 
-    if ! output="$(ssh "${ssh_args[@]}" "$ssh_target" 'python3 - <<'"'"'PY'"'"'
+    if ! output="$(run_ssh "$ssh_target" 'python3 - <<'"'"'PY'"'"'
 import json
 import re
 import tomllib
@@ -244,9 +252,11 @@ PY
 append_config_overrides_for_local_tui() {
     local override
 
-    for override in "${codex_config_overrides[@]}"; do
-        local_codex_config_args+=(-c "$override")
-    done
+    if ((${#codex_config_overrides[@]})); then
+        for override in "${codex_config_overrides[@]}"; do
+            local_codex_config_args+=(-c "$override")
+        done
+    fi
 }
 
 read_remote_app_server_state() {
@@ -271,7 +281,7 @@ if [[ -r \"/proc/\$pid/cmdline\" ]] && tr '\0' ' ' <\"/proc/\$pid/cmdline\" | gr
 fi
 "
     # shellcheck disable=SC2029 # cleanup_script is intentionally built locally, then quoted for the remote shell.
-    ssh "${ssh_args[@]}" "$ssh_target" "bash -lc $(shell_quote "$cleanup_script")" >/dev/null 2>&1 || true
+    run_ssh "$ssh_target" "bash -lc $(shell_quote "$cleanup_script")" >/dev/null 2>&1 || true
 }
 
 cleanup() {
@@ -528,9 +538,11 @@ if [[ -n "$status_port" ]]; then
     app_server_cmd+=(--dangerously-bypass-hook-trust)
 fi
 app_server_cmd+=(app-server)
-for config_override in "${remote_config_overrides[@]}"; do
-    app_server_cmd+=(-c "$config_override")
-done
+if ((${#remote_config_overrides[@]})); then
+    for config_override in "${remote_config_overrides[@]}"; do
+        app_server_cmd+=(-c "$config_override")
+    done
+fi
 app_server_cmd+=(--listen "$remote_listen")
 
 # Run only the app-server through interactive bash so .bashrc entries after the
@@ -576,8 +588,13 @@ ssh_cmd=(ssh -o ExitOnForwardFailure=yes -L "${local_port}:127.0.0.1:${remote_po
 if [[ "$status_bridge_enabled" = "1" ]]; then
     ssh_cmd+=(-R "127.0.0.1:${remote_status_port}:127.0.0.1:${local_status_port}")
 fi
-ssh_cmd+=("${ssh_args[@]}" "$ssh_target" env -u BASH_ENV bash --noprofile --norc -s -- "$remote_cwd_arg" "$remote_codex_bin" "$remote_listen" "$connect_timeout" "$remote_status_arg")
-ssh_cmd+=("${codex_config_overrides[@]}")
+if ((${#ssh_args[@]})); then
+    ssh_cmd+=("${ssh_args[@]}")
+fi
+ssh_cmd+=("$ssh_target" env -u BASH_ENV bash --noprofile --norc -s -- "$remote_cwd_arg" "$remote_codex_bin" "$remote_listen" "$connect_timeout" "$remote_status_arg")
+if ((${#codex_config_overrides[@]})); then
+    ssh_cmd+=("${codex_config_overrides[@]}")
+fi
 
 "${ssh_cmd[@]}" <"$remote_script" >"$log_file" 2>&1 &
 ssh_pid="$!"
@@ -607,11 +624,16 @@ if [[ "$status_bridge_enabled" = "1" ]]; then
     echo "codex-remote: AI status bridge enabled for ${TMUX_PANE}" >&2
 fi
 set +e
-"$codex_bin" \
-    "${local_codex_config_args[@]}" \
-    --dangerously-bypass-approvals-and-sandbox \
-    --dangerously-bypass-hook-trust \
+local_codex_cmd=("$codex_bin")
+if ((${#local_codex_config_args[@]})); then
+    local_codex_cmd+=("${local_codex_config_args[@]}")
+fi
+local_codex_cmd+=(
+    --dangerously-bypass-approvals-and-sandbox
+    --dangerously-bypass-hook-trust
     --remote "ws://127.0.0.1:${local_port}"
+)
+"${local_codex_cmd[@]}"
 codex_status=$?
 set -e
 
