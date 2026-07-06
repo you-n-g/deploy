@@ -185,11 +185,23 @@ remote_cleanup_done=0
 local_codex_config_args=()
 
 run_ssh() {
-    if ((${#ssh_args[@]})); then
-        ssh "${ssh_args[@]}" "$@"
-    else
-        ssh "$@"
-    fi
+    local attempt
+    local max_attempts=3
+
+    for ((attempt = 1; attempt <= max_attempts; attempt++)); do
+        if ((${#ssh_args[@]})); then
+            ssh "${ssh_args[@]}" "$@" && return 0
+        else
+            ssh "$@" && return 0
+        fi
+
+        if ((attempt < max_attempts)); then
+            echo "codex-remote: ssh attempt ${attempt}/${max_attempts} failed; retrying in 2s" >&2
+            sleep 2
+        fi
+    done
+
+    return 1
 }
 
 load_remote_codex_config_overrides() {
@@ -448,6 +460,7 @@ prepare_remote_codex_home() {
             dest="$remote_codex_home/$name"
             [[ "$name" == "hooks.json" ]] && continue
             [[ "$name" == "plugins" && ( -e "$dest" || -L "$dest" ) ]] && continue
+            [[ -d "$codex_item" && ! -L "$codex_item" ]] && continue
             ln -sfnT "$codex_item" "$dest"
         done < <(find "$HOME/.codex" -mindepth 1 -maxdepth 1)
     fi
