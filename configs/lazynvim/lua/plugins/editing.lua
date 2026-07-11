@@ -103,34 +103,49 @@ return {
       -- - It will read .latexmkrc in the current directory for config
       --    - e.g. You can place into `$pdflatex = 'pdflatex %O -shell-escape %S';`
 
-      local function get_onedrive_path()
-        local handle = io.popen([[cmd.exe /c echo %onedriveconsumer% 2> /dev/null | sed -e 's/C:/\\mnt\\c/g' | sed -e 's/\\/\//g' | tr -d '\r' | tr -d '\n']])
-        if handle == nil then
-          print("Error: result is nil")
-        else
-          local result = handle:read("*a")
-          handle:close()
-          return result
+      local sysname = (vim.uv or vim.loop).os_uname().sysname
+
+      if sysname == "Darwin" then
+        -- Sioyek is already the preferred PDF reader in this config. VimTeX has
+        -- native support for it, including SyncTeX forward/inverse search.
+        vim.g.vimtex_view_method = "sioyek"
+        vim.g.vimtex_view_sioyek_exe = "sioyek"
+        if vim.fn.executable("sioyek") ~= 1 then
+          vim.notify(
+            "vimtex: sioyek is not executable; install Sioyek for PDF viewing",
+            vim.log.levels.WARN
+          )
         end
+      elseif vim.fn.executable("cmd.exe") == 1 then
+        local function get_onedrive_path()
+          local handle = io.popen([[cmd.exe /c echo %onedriveconsumer% 2> /dev/null | sed -e 's/C:/\\mnt\\c/g' | sed -e 's/\\/\//g' | tr -d '\r' | tr -d '\n']])
+          if handle == nil then
+            print("Error: result is nil")
+          else
+            local result = handle:read("*a")
+            handle:close()
+            return result
+          end
+        end
+
+        -- It will only works on windows disk
+        -- NOTE: this will result in a wrong Path
+        vim.g.vimtex_view_general_viewer = get_onedrive_path() .. '/APP/SumatraPDF/SumatraPDF-3.5.2-64.exe'
+        -- vim.g.vimtex_view_general_options = '-reuse-instance @pdf'
+
+        -- vim.g.vimtex_view_general_options = vim.fn.getcwd() .. "/main.pdf"
+        -- -- strip the left "/mnt/c/" part in vim.g.vimtex_view_general_options if exists
+        -- vim.g.vimtex_view_general_options = vim.g.vimtex_view_general_options:gsub("^/mnt/c", "")  -- the prefix / must be kept.
+        -- NOTE: it will not work when pwd does not match with the location of @tex.  It will concat the relative path with the @tex location.
+        -- vim.g.vimtex_view_general_options = "-reuse-instance -forward-search @tex @line @pdf"  -- this will be much simpler than above methods
+        -- NOTE: the path does not work. It only works after adding deploy/helper_scripts/bin/cygpath into the bin search path
+        vim.g.vimtex_view_general_options = "-reuse-instance @pdf"  --It seems the path to @tex can't be rightly handled. So we skip them
+
+        -- NOTE: hack!!!!  add "hack" to the $PATH environment to make it successfully to run cygpath
+        vim.env.PATH = vim.env.HOME .. '/deploy/helper_scripts/bin/hack' .. ':' .. vim.env.PATH
+        -- local h = io.popen([[cygpath -w test test]])
+        -- h:read("*a")
       end
-
-      -- It will only works on windows disk
-      -- NOTE: this will result in a wrong Path
-      vim.g.vimtex_view_general_viewer =  get_onedrive_path() .. '/APP/SumatraPDF/SumatraPDF-3.5.2-64.exe'
-      -- vim.g.vimtex_view_general_options = '-reuse-instance @pdf'
-
-      -- vim.g.vimtex_view_general_options = vim.fn.getcwd() .. "/main.pdf"
-      -- -- strip the left "/mnt/c/" part in vim.g.vimtex_view_general_options if exists
-      -- vim.g.vimtex_view_general_options = vim.g.vimtex_view_general_options:gsub("^/mnt/c", "")  -- the prefix / must be kept.
-      -- NOTE: it will not work when pwd does not match with the location of @tex.  It will concat the relative path with the @tex location.
-      -- vim.g.vimtex_view_general_options = "-reuse-instance -forward-search @tex @line @pdf"  -- this will be much simpler than above methods
-      -- NOTE: the path does not work. It only works after adding deploy/helper_scripts/bin/cygpath into the bin search path
-      vim.g.vimtex_view_general_options = "-reuse-instance @pdf"  --It seems the path to @tex can't be rightly handled. So we skip them
-
-      -- NOTE: hack!!!!  add "hack" to the $PATH environment to make it successfully to run cygpath
-      vim.env.PATH = vim.env.HOME .. '/deploy/helper_scripts/bin/hack' .. ':' .. vim.env.PATH
-      -- local h = io.popen([[cygpath -w test test]])
-      -- h:read("*a")
 
       -- NOTE: set default to main.tex (We don't need this now)
       -- It seems that the vimtex will prompt you to make the choice. But it may affect `simplegpt.nvim` everytime when you create a buffer with specific type.
