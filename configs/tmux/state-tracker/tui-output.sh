@@ -9,10 +9,25 @@ source "$SCRIPT_DIR/../ai/lib.sh"
 pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')"
 lock_dir="${TMUX_AI_STATE_TRACKER_LOCK_DIR:-/tmp}"
 lock_file="$lock_dir/tmux-ai-state-tracker.${pane_id#%}.lock"
-exec 9>"$lock_file"
-if ! flock -n 9; then
-  printf 'tui-output.sh: tracker already running for %s\n' "$pane_id" >&2
-  exit 0
+lock_path="$lock_file.d"
+if command -v flock >/dev/null 2>&1; then
+  exec 9>"$lock_file"
+  if ! flock -n 9; then
+    printf 'tui-output.sh: tracker already running for %s\n' "$pane_id" >&2
+    exit 0
+  fi
+else
+  if ! mkdir "$lock_path" 2>/dev/null; then
+    lock_pid="$(cat "$lock_path/pid" 2>/dev/null || true)"
+    if [[ -n "$lock_pid" ]] && kill -0 "$lock_pid" 2>/dev/null; then
+      printf 'tui-output.sh: tracker already running for %s\n' "$pane_id" >&2
+      exit 0
+    fi
+    rm -rf "$lock_path"
+    mkdir "$lock_path"
+  fi
+  printf '%s\n' "$$" >"$lock_path/pid"
+  trap 'rm -rf "$lock_path"' EXIT
 fi
 
 capture_recent_output() {
