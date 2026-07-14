@@ -10,14 +10,19 @@
 # 后来发现设置成文件更方便
 
 CONF_PATH=~/.gitconfig
-if [ -e $CONF_PATH ]; then
+if [ -e $CONF_PATH ] || [ -L $CONF_PATH ]; then
     mv $CONF_PATH ${CONF_PATH}.bak
 fi
 
-ln -s ~/deploy/configs/git/gitconfig $CONF_PATH
-
 # Config fir git-credential-manager
-if [ "$(uname -s 2>/dev/null)" != "Darwin" ]; then
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+    cp ~/deploy/configs/git/gitconfig $CONF_PATH
+    if git config --global --get-all credential.helper | grep -Fxq "/usr/local/bin/git-credential-manager"; then
+        git config --global --unset-all credential.helper /usr/local/bin/git-credential-manager
+    fi
+else
+    ln -s ~/deploy/configs/git/gitconfig $CONF_PATH
+
     mkdir -p ~/tmp/
     cd ~/tmp/
     wget https://github.com/git-ecosystem/git-credential-manager/releases/download/v2.5.1/gcm-linux_amd64.2.5.1.deb
