@@ -260,7 +260,40 @@ alias pyprof='python -m cProfile -o stats_out'
 
 function ipify() {
     if [[ $# -gt 0 ]]; then
-        curl "cip.cc/$1"
+        local target="$1"
+        local resolved
+
+        resolved="$(python3 - "$target" <<'PY'
+import ipaddress
+import socket
+import sys
+from urllib.parse import urlparse
+
+target = sys.argv[1]
+parsed = urlparse(target if "://" in target else f"//{target}")
+host = parsed.hostname or target
+
+try:
+    ipaddress.ip_address(host)
+    print(host)
+    raise SystemExit(0)
+except ValueError:
+    pass
+
+infos = socket.getaddrinfo(host, None, type=socket.SOCK_STREAM)
+for info in infos:
+    address = info[4][0]
+    try:
+        ipaddress.ip_address(address)
+    except ValueError:
+        continue
+    print(address)
+    raise SystemExit(0)
+
+raise SystemExit(f"failed to resolve domain: {host}")
+PY
+)" || return
+        curl "cip.cc/$resolved"
     else
         curl cip.cc
     fi
