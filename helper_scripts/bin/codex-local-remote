@@ -25,6 +25,8 @@ Options:
       --codex-bin CMD        local Codex command (default: $CODEX_BIN or codexr)
       --remote-codex-bin CMD remote Codex command (default: $REMOTE_CODEX_BIN or codex)
       --timeout SECONDS      wait for app-server/remote tmux setup (default: 20)
+      --reconnect-delay SECONDS
+                              wait before reconnecting after SSH drops (default: 5)
   -h, --help                 show this help
 
 Examples:
@@ -81,6 +83,7 @@ remote_status_port=""
 codex_bin="${CODEX_BIN:-codexr}"
 remote_codex_bin="${REMOTE_CODEX_BIN:-codex}"
 connect_timeout="20"
+reconnect_delay="5"
 ai_status_bridge=1
 mirror_local_config=0
 codex_config_overrides=()
@@ -145,6 +148,11 @@ while [[ $# -gt 0 ]]; do
             connect_timeout="$2"
             shift 2
             ;;
+        --reconnect-delay)
+            need_arg "$1" "${2:-}"
+            reconnect_delay="$2"
+            shift 2
+            ;;
         -h|--help)
             usage
             exit 0
@@ -182,6 +190,7 @@ for port_name in local_port remote_port local_status_port remote_status_port; do
     [[ -z "$port_value" || "$port_value" =~ ^[0-9]+$ ]] || die "--${port_name//_/-} must be numeric: $port_value"
 done
 [[ "$connect_timeout" =~ ^[0-9]+$ ]] || die "--timeout must be numeric: $connect_timeout"
+[[ "$reconnect_delay" =~ ^[0-9]+$ ]] || die "--reconnect-delay must be numeric: $reconnect_delay"
 
 if [[ -z "$local_port" ]]; then
     local_port="$(pick_free_port)"
@@ -201,6 +210,7 @@ fi
 
 local_listen="ws://127.0.0.1:${local_port}"
 remote_endpoint="ws://127.0.0.1:${remote_port}"
+remote_run_id="$$.$RANDOM.$(date +%s)"
 local_codex_home=""
 log_file="$(mktemp -t codex-local-remote.XXXXXX.log)"
 remote_script="$(mktemp -t codex-local-remote.XXXXXX.remote.sh)"
@@ -402,21 +412,52 @@ start_local_app_server() {
     done
 }
 
+kill_process_tree() {
+    local signal="$1"
+    local root_pid="$2"
+    local child_pid
+
+    [[ -n "$root_pid" ]] || return 0
+    kill -0 "$root_pid" 2>/dev/null || return 0
+
+    while IFS= read -r child_pid; do
+        [[ -n "$child_pid" ]] || continue
+        kill_process_tree "$signal" "$child_pid"
+    done < <(pgrep -P "$root_pid" 2>/dev/null || true)
+
+    kill "-$signal" "$root_pid" 2>/dev/null || true
+}
+
+terminate_process_tree() {
+    local root_pid="$1"
+    local _attempt
+
+    [[ -n "$root_pid" ]] || return 0
+    kill -0 "$root_pid" 2>/dev/null || return 0
+
+    kill_process_tree TERM "$root_pid"
+    for _attempt in {1..10}; do
+        kill -0 "$root_pid" 2>/dev/null || return 0
+        sleep 0.1
+    done
+    kill_process_tree KILL "$root_pid"
+}
+
 cleanup() {
     if [[ -n "$ssh_pid" ]] && kill -0 "$ssh_pid" 2>/dev/null; then
-        kill "$ssh_pid" 2>/dev/null || true
-        wait "$ssh_pid" 2>/dev/null || true
+        terminate_process_tree "$ssh_pid"
     fi
     if [[ -n "$app_server_pid" ]] && kill -0 "$app_server_pid" 2>/dev/null; then
-        kill "$app_server_pid" 2>/dev/null || true
-        wait "$app_server_pid" 2>/dev/null || true
+        terminate_process_tree "$app_server_pid"
     fi
     if [[ "$local_cleanup_done" = "0" ]]; then
         local_cleanup_done=1
         rm -f "$log_file" "$remote_script" "$app_server_log_file"
     fi
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'cleanup; exit 130' INT
+trap 'cleanup; exit 143' TERM
 
 write_remote_script() {
     cat >"$remote_script" <<'REMOTE_SCRIPT'
@@ -429,20 +470,37 @@ remote_codex_bin="${3:?missing remote codex binary}"
 remote_endpoint="${4:?missing remote endpoint}"
 connect_timeout="${5:-20}"
 status_port="${6:-}"
+remote_run_marker="${7:?missing remote run marker}"
 empty_arg_sentinel="__CODEX_LOCAL_REMOTE_EMPTY_ARG__"
 remote_config_overrides=()
 status_bridge_pid=""
 status_monitor_pid=""
 pane_id=""
 ready_file=""
+remote_parent_pid="$PPID"
+adopted_inactive_pane=0
 
 [[ "$status_port" == "$empty_arg_sentinel" ]] && status_port=""
 
-shift 6
+shift 7
 remote_config_overrides=("$@")
 
 shell_quote() {
     printf "'%s'" "$(printf "%s" "$1" | sed "s/'/'\\\\''/g")"
+}
+
+pane_is_listed() {
+    local target_pane="$1"
+
+    tmux list-panes -a -F '#{pane_id}' 2>/dev/null | grep -Fxq "$target_pane"
+}
+
+remote_parent_alive() {
+    local current_ppid
+
+    kill -0 "$remote_parent_pid" 2>/dev/null || return 1
+    current_ppid="$(ps -o ppid= -p "$$" 2>/dev/null | tr -d ' ')"
+    [[ -n "$current_ppid" && "$current_ppid" != "1" ]]
 }
 
 cleanup() {
@@ -454,12 +512,12 @@ cleanup() {
         kill "$status_bridge_pid" 2>/dev/null || true
         wait "$status_bridge_pid" 2>/dev/null || true
     fi
-    if [[ -n "$pane_id" ]]; then
-        tmux kill-pane -t "$pane_id" 2>/dev/null || true
-    fi
     [[ -z "$ready_file" ]] || rm -f "$ready_file"
 }
-trap cleanup EXIT INT TERM HUP
+trap cleanup EXIT
+trap 'cleanup; exit 130' INT
+trap 'cleanup; exit 143' TERM
+trap 'cleanup; exit 129' HUP
 
 command -v tmux >/dev/null 2>&1 || { echo "remote tmux not found" >&2; exit 1; }
 command -v python3 >/dev/null 2>&1 || { echo "remote python3 not found" >&2; exit 1; }
@@ -474,6 +532,120 @@ fi
 start_dir="$HOME"
 ready_file="${TMPDIR:-/tmp}/codex-local-remote-start.$$.$RANDOM"
 rm -f "$ready_file"
+
+strip_ai_window_state_prefix() {
+    local name="$1"
+    while :; do
+        case "$name" in
+            "● "*) name="${name#● }" ;;
+            "⏵ "*) name="${name#⏵ }" ;;
+            "◒ "*) name="${name#◒ }" ;;
+            "⏸ "*) name="${name#⏸ }" ;;
+            "◉ "*) name="${name#◉ }" ;;
+            "○ "*) name="${name#○ }" ;;
+            *) break ;;
+        esac
+    done
+    printf '%s\n' "$name"
+}
+
+adopt_previous_remote_location() {
+    local old_pane old_session old_window old_base_name old_run_id
+
+    while IFS=$'\t' read -r old_pane old_session old_window; do
+        [[ -n "$old_pane" ]] || continue
+        old_run_id="$(tmux show -pv -t "$old_pane" @codex_local_remote_run_id 2>/dev/null || true)"
+        old_base_name="$(strip_ai_window_state_prefix "$old_window")"
+        if [[ "$old_run_id" == "$remote_run_marker" ]]; then
+            pane_id="$old_pane"
+            remote_session="$old_session"
+            remote_window="$old_base_name"
+            return 0
+        fi
+    done < <(tmux list-panes -a -F $'#{pane_id}\t#{session_name}\t#{window_name}' 2>/dev/null || true)
+}
+
+remote_run_helper_alive() {
+    local run_id="$1"
+    local pid args
+
+    [[ -n "$run_id" ]] || return 1
+    while read -r pid args; do
+        [[ -n "$pid" && "$pid" != "$$" ]] || continue
+        [[ "$args" == *"$run_id"* ]] || continue
+        return 0
+    done < <(ps -eo pid=,args= 2>/dev/null || true)
+
+    return 1
+}
+
+adopt_inactive_marked_remote_location() {
+    local old_pane old_session old_window old_base_name old_run_id old_marker
+
+    while IFS=$'\t' read -r old_pane old_session old_window; do
+        [[ -n "$old_pane" ]] || continue
+        old_marker="$(tmux show -pv -t "$old_pane" @codex_local_remote 2>/dev/null || true)"
+        [[ "$old_marker" == "1" ]] || continue
+        old_base_name="$(strip_ai_window_state_prefix "$old_window")"
+        [[ "$old_base_name" == "$remote_window" ]] || continue
+        old_run_id="$(tmux show -pv -t "$old_pane" @codex_local_remote_run_id 2>/dev/null || true)"
+        if ! remote_run_helper_alive "$old_run_id"; then
+            pane_id="$old_pane"
+            remote_session="$old_session"
+            remote_window="$old_base_name"
+            adopted_inactive_pane=1
+            return 0
+        fi
+    done < <(tmux list-panes -a -F $'#{pane_id}\t#{session_name}\t#{window_name}' 2>/dev/null || true)
+}
+
+cleanup_previous_remote_helpers() {
+    local pid args
+
+    while read -r pid args; do
+        [[ -n "$pid" && "$pid" != "$$" ]] || continue
+        [[ "$args" == *"$remote_run_marker"* ]] || continue
+        kill "$pid" 2>/dev/null || true
+    done < <(ps -eo pid=,args= 2>/dev/null || true)
+}
+
+process_tree_has_remote_codex() {
+    local root_pid="$1"
+    local child args
+
+    args="$(ps -o args= -p "$root_pid" 2>/dev/null || true)"
+    if [[ "$args" == *codex* && "$args" == *"--remote"* ]]; then
+        return 0
+    fi
+
+    while IFS= read -r child; do
+        [[ -n "$child" ]] || continue
+        if process_tree_has_remote_codex "$child"; then
+            return 0
+        fi
+    done < <(pgrep -P "$root_pid" 2>/dev/null || true)
+
+    return 1
+}
+
+pane_has_remote_codex() {
+    local pane_pid
+
+    pane_pid="$(tmux display-message -p -t "$pane_id" '#{pane_pid}' 2>/dev/null || true)"
+    [[ -n "$pane_pid" ]] || return 1
+    process_tree_has_remote_codex "$pane_pid"
+}
+
+send_start_cmd_to_pane() {
+    local buffer_name
+
+    buffer_name="codex-local-remote-start-${pane_id#%}"
+    tmux send-keys -t "$pane_id" C-c 2>/dev/null || true
+    tmux set-buffer -b "$buffer_name" "$start_cmd"
+    tmux paste-buffer -b "$buffer_name" -t "$pane_id"
+    tmux send-keys -t "$pane_id" Enter
+    tmux delete-buffer -b "$buffer_name" 2>/dev/null || true
+}
 
 remote_tui_cmd=("$remote_codex_bin")
 if ((${#remote_config_overrides[@]})); then
@@ -496,11 +668,25 @@ start_cmd="while [[ ! -e $(shell_quote "$ready_file") ]]; do sleep 0.1; done; "
 start_cmd+="env -u BASH_ENV bash -ic 'exec 2>&3; exec \"\$@\"' bash${quoted_tui_cmd} 3>&2 2>/dev/null; "
 start_cmd+="rc=\$?; echo; echo codex-local-remote TUI exited with status \$rc; exec \"\${SHELL:-bash}\" -l"
 
-if tmux has-session -t "$remote_session" 2>/dev/null; then
-    pane_id="$(tmux new-window -d -P -F '#{pane_id}' -t "$remote_session:" -n "$remote_window" -c "$start_dir" "$start_cmd")"
-else
-    pane_id="$(tmux new-session -d -P -F '#{pane_id}' -s "$remote_session" -n "$remote_window" -c "$start_dir" "$start_cmd")"
+adopt_previous_remote_location
+if [[ -z "$pane_id" ]]; then
+    adopt_inactive_marked_remote_location
 fi
+cleanup_previous_remote_helpers
+
+reuse_existing_pane=0
+if [[ -n "$pane_id" ]] && pane_is_listed "$pane_id"; then
+    reuse_existing_pane=1
+else
+    pane_id=""
+    if tmux has-session -t "$remote_session" 2>/dev/null; then
+        pane_id="$(tmux new-window -d -P -F '#{pane_id}' -t "$remote_session:" -n "$remote_window" -c "$start_dir" "$start_cmd")"
+    else
+        pane_id="$(tmux new-session -d -P -F '#{pane_id}' -s "$remote_session" -n "$remote_window" -c "$start_dir" "$start_cmd")"
+    fi
+fi
+tmux set-option -pq -t "$pane_id" @codex_local_remote 1
+tmux set-option -pq -t "$pane_id" @codex_local_remote_run_id "$remote_run_marker"
 
 start_status_bridge() {
     [[ -n "$status_port" ]] || return 0
@@ -570,10 +756,18 @@ PY
         sleep 0.2
     done
 
+    if ! kill -0 "$status_bridge_pid" 2>/dev/null; then
+        echo "remote AI status bridge exited after another process occupied 127.0.0.1:${status_port}" >&2
+        exit 1
+    fi
+
 }
 
 start_status_bridge
 touch "$ready_file"
+if [[ "$reuse_existing_pane" == "1" ]] && { [[ "$adopted_inactive_pane" == "1" ]] || ! pane_has_remote_codex; }; then
+    send_start_cmd_to_pane
+fi
 if [[ -n "$status_port" ]]; then
     "$tracker_script" "$pane_id" >/dev/null 2>&1 &
     status_monitor_pid="$!"
@@ -584,11 +778,13 @@ echo "CODEX_LOCAL_REMOTE_TMUX_SESSION=$remote_session"
 echo "CODEX_LOCAL_REMOTE_TMUX_WINDOW=$remote_window"
 echo "CODEX_LOCAL_REMOTE_REMOTE_READY=1"
 
-while tmux display-message -p -t "$pane_id" '#{pane_id}' >/dev/null 2>&1; do
+while remote_parent_alive && pane_is_listed "$pane_id"; do
     sleep 1
 done
 
-pane_id=""
+if ! pane_is_listed "$pane_id"; then
+    pane_id=""
+fi
 REMOTE_SCRIPT
     chmod +x "$remote_script"
 }
@@ -602,61 +798,161 @@ start_local_app_server
 write_remote_script
 
 empty_ssh_arg="__CODEX_LOCAL_REMOTE_EMPTY_ARG__"
-remote_status_arg="$empty_ssh_arg"
-if [[ "$ai_status_bridge" = "1" ]]; then
-    remote_status_arg="$remote_status_port"
-fi
+build_ssh_cmd() {
+    local remote_status_arg="$empty_ssh_arg"
 
-ssh_cmd=(ssh -o ExitOnForwardFailure=yes -R "127.0.0.1:${remote_port}:127.0.0.1:${local_port}")
-if [[ "$ai_status_bridge" = "1" ]]; then
-    ssh_cmd+=(-L "127.0.0.1:${local_status_port}:127.0.0.1:${remote_status_port}")
-fi
-if ((${#ssh_args[@]})); then
-    ssh_cmd+=("${ssh_args[@]}")
-fi
-ssh_cmd+=("$ssh_target" env -u BASH_ENV bash --noprofile --norc -s -- "$remote_session" "$remote_window" "$remote_codex_bin" "$remote_endpoint" "$connect_timeout" "$remote_status_arg")
-if ((${#remote_tui_config_values[@]})); then
-    ssh_cmd+=("${remote_tui_config_values[@]}")
-fi
-
-"${ssh_cmd[@]}" <"$remote_script" >"$log_file" 2>&1 &
-ssh_pid="$!"
-
-deadline=$((SECONDS + connect_timeout))
-while ! grep -q '^CODEX_LOCAL_REMOTE_REMOTE_READY=1$' "$log_file" 2>/dev/null; do
-    if ! kill -0 "$ssh_pid" 2>/dev/null; then
-        echo "codex-local-remote: ssh/remote tmux setup exited before it became ready" >&2
-        cat "$log_file" >&2
-        exit 1
+    remote_endpoint="ws://127.0.0.1:${remote_port}"
+    if [[ "$ai_status_bridge" = "1" ]]; then
+        remote_status_arg="$remote_status_port"
     fi
-    if (( SECONDS >= deadline )); then
-        echo "codex-local-remote: timed out waiting for remote tmux Codex setup" >&2
-        echo "codex-local-remote: local app-server ${local_listen}; remote endpoint ${ssh_target} ${remote_endpoint}" >&2
-        cat "$log_file" >&2
-        exit 1
+
+    ssh_cmd=(
+        ssh
+        -o ExitOnForwardFailure=yes
+        -o ServerAliveInterval=15
+        -o ServerAliveCountMax=2
+        -R "127.0.0.1:${remote_port}:127.0.0.1:${local_port}"
+    )
+    if [[ "$ai_status_bridge" = "1" ]]; then
+        ssh_cmd+=(-L "127.0.0.1:${local_status_port}:127.0.0.1:${remote_status_port}")
     fi
-    sleep 0.2
+    if ((${#ssh_args[@]})); then
+        ssh_cmd+=("${ssh_args[@]}")
+    fi
+    ssh_cmd+=(
+        "$ssh_target"
+        env -u BASH_ENV bash --noprofile --norc -s --
+        "$remote_session"
+        "$remote_window"
+        "$remote_codex_bin"
+        "$remote_endpoint"
+        "$connect_timeout"
+        "$remote_status_arg"
+        "codex-local-remote-run:${remote_run_id}"
+    )
+    if ((${#remote_tui_config_values[@]})); then
+        ssh_cmd+=("${remote_tui_config_values[@]}")
+    fi
+}
+
+cleanup_stale_remote_run() {
+    local cleanup_ssh_cmd
+
+    cleanup_ssh_cmd=(
+        ssh
+        -o ServerAliveInterval=15
+        -o ServerAliveCountMax=2
+    )
+    if ((${#ssh_args[@]})); then
+        cleanup_ssh_cmd+=("${ssh_args[@]}")
+    fi
+    cleanup_ssh_cmd+=("$ssh_target" env -u BASH_ENV bash --noprofile --norc -s)
+
+    "${cleanup_ssh_cmd[@]}" <<REMOTE_CLEANUP
+set -euo pipefail
+
+run_id="codex-local-remote-run:${remote_run_id}"
+pids=()
+parents=()
+
+while read -r pid ppid args; do
+    [[ -n "\$pid" && "\$pid" != "\$\$" ]] || continue
+    [[ "\$args" == *"\$run_id"* ]] || continue
+    pids+=("\$pid")
+    [[ -z "\$ppid" || "\$ppid" == "1" ]] || parents+=("\$ppid")
+done < <(ps -eo pid=,ppid=,args= 2>/dev/null || true)
+
+for pid in "\${pids[@]}"; do
+    kill "\$pid" 2>/dev/null || true
 done
+sleep 1
+for ppid in "\${parents[@]}"; do
+    kill "\$ppid" 2>/dev/null || true
+done
+REMOTE_CLEANUP
+}
 
-remote_pane="$(awk -F= '/^CODEX_LOCAL_REMOTE_TMUX_PANE=/ { print $2; exit }' "$log_file")"
 echo "codex-local-remote: local app-server ready ${local_listen}" >&2
-echo "codex-local-remote: remote Codex TUI started at ${ssh_target} ${remote_session}:${remote_window} ${remote_pane}" >&2
 if [[ "$ai_status_bridge" = "1" ]]; then
     echo "codex-local-remote: AI status bridge enabled local 127.0.0.1:${local_status_port} -> remote 127.0.0.1:${remote_status_port}" >&2
 fi
-echo "codex-local-remote: keep this process running while the remote TUI is in use" >&2
+echo "codex-local-remote: keep this process running; SSH drops will reconnect automatically" >&2
 
-set +e
-wait "$ssh_pid"
-ssh_status=$?
-set -e
-ssh_pid=""
+attempt=0
+while true; do
+    attempt=$((attempt + 1))
+    build_ssh_cmd
+    : >"$log_file"
+    "${ssh_cmd[@]}" <"$remote_script" >"$log_file" 2>&1 &
+    ssh_pid="$!"
 
-if [[ "$ssh_status" -ne 0 ]]; then
-    echo "codex-local-remote: ssh/remote tmux process exited with status ${ssh_status}" >&2
-    if [[ -s "$log_file" ]]; then
-        echo "codex-local-remote: remote setup log follows:" >&2
-        cat "$log_file" >&2
+    deadline=$((SECONDS + connect_timeout))
+    remote_ready=0
+    while ! grep -q '^CODEX_LOCAL_REMOTE_REMOTE_READY=1$' "$log_file" 2>/dev/null; do
+        if ! kill -0 "$ssh_pid" 2>/dev/null; then
+            set +e
+            wait "$ssh_pid"
+            ssh_status=$?
+            set -e
+            ssh_pid=""
+            if [[ "$ssh_status" -eq 255 ]]; then
+                echo "codex-local-remote: SSH setup failed with status 255; retrying in ${reconnect_delay}s (attempt ${attempt})" >&2
+                [[ ! -s "$log_file" ]] || cat "$log_file" >&2
+                if grep -q "remote port forwarding failed for listen port ${remote_port}" "$log_file" 2>/dev/null; then
+                    echo "codex-local-remote: cleaning stale remote tunnel for run ${remote_run_id}" >&2
+                    if ! cleanup_stale_remote_run >/dev/null 2>&1; then
+                        echo "codex-local-remote: stale remote tunnel cleanup failed; retrying normally" >&2
+                    fi
+                fi
+                sleep "$reconnect_delay"
+                continue 2
+            fi
+            echo "codex-local-remote: ssh/remote tmux setup exited before it became ready" >&2
+            cat "$log_file" >&2
+            exit "$ssh_status"
+        fi
+        if (( SECONDS >= deadline )); then
+            echo "codex-local-remote: timed out waiting for remote tmux Codex setup; retrying in ${reconnect_delay}s (attempt ${attempt})" >&2
+            echo "codex-local-remote: local app-server ${local_listen}; remote endpoint ${ssh_target} ${remote_endpoint}" >&2
+            cat "$log_file" >&2
+            kill "$ssh_pid" 2>/dev/null || true
+            wait "$ssh_pid" 2>/dev/null || true
+            ssh_pid=""
+            sleep "$reconnect_delay"
+            continue 2
+        fi
+        sleep 0.2
+    done
+
+    remote_ready=1
+    remote_pane="$(awk -F= '/^CODEX_LOCAL_REMOTE_TMUX_PANE=/ { print $2; exit }' "$log_file")"
+    remote_actual_session="$(awk -F= '/^CODEX_LOCAL_REMOTE_TMUX_SESSION=/ { print $2; exit }' "$log_file")"
+    remote_actual_window="$(awk -F= '/^CODEX_LOCAL_REMOTE_TMUX_WINDOW=/ { print $2; exit }' "$log_file")"
+    echo "codex-local-remote: remote Codex TUI started at ${ssh_target} ${remote_actual_session:-$remote_session}:${remote_actual_window:-$remote_window} ${remote_pane} (attempt ${attempt})" >&2
+
+    set +e
+    wait "$ssh_pid"
+    ssh_status=$?
+    set -e
+    ssh_pid=""
+
+    if [[ "$ssh_status" -eq 0 ]]; then
+        echo "codex-local-remote: remote tmux pane ended normally" >&2
+        exit 0
     fi
-    exit "$ssh_status"
-fi
+
+    if [[ "$ssh_status" -eq 130 || "$ssh_status" -eq 143 ]]; then
+        exit "$ssh_status"
+    fi
+
+    if [[ "$remote_ready" = "1" ]]; then
+        echo "codex-local-remote: SSH tunnel dropped with status ${ssh_status}; reconnecting in ${reconnect_delay}s" >&2
+    else
+        echo "codex-local-remote: SSH exited with status ${ssh_status}; reconnecting in ${reconnect_delay}s" >&2
+    fi
+    [[ ! -s "$log_file" ]] || {
+        echo "codex-local-remote: last remote log follows:" >&2
+        cat "$log_file" >&2
+    }
+    sleep "$reconnect_delay"
+done
