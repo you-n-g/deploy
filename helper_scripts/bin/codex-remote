@@ -15,6 +15,8 @@ Options:
       --local-port PORT      local forwarded port (default: pick a free port)
       --remote-port PORT     remote app-server port (default: same as the picked local port)
       --no-ai-status-bridge  do not bridge remote Codex hooks back to local tmux
+      --no-auto-reconnect    exit after the first local Codex transport failure
+      --reconnect-delay SEC  delay before reconnecting after transport failure (default: 2)
       --codex-bin CMD        local Codex command (default: $CODEX_BIN or codex)
       --remote-codex-bin CMD remote Codex command (default: $REMOTE_CODEX_BIN or codex)
       --timeout SECONDS      wait for the remote app-server to become reachable (default: 20)
@@ -82,6 +84,8 @@ codex_bin="${CODEX_BIN:-codex}"
 remote_codex_bin="${REMOTE_CODEX_BIN:-codex}"
 connect_timeout="20"
 ai_status_bridge=1
+auto_reconnect=1
+reconnect_delay="2"
 codex_config_overrides=()
 
 while [[ $# -gt 0 ]]; do
@@ -109,6 +113,15 @@ while [[ $# -gt 0 ]]; do
         --no-ai-status-bridge)
             ai_status_bridge=0
             shift
+            ;;
+        --no-auto-reconnect)
+            auto_reconnect=0
+            shift
+            ;;
+        --reconnect-delay)
+            need_arg "$1" "${2:-}"
+            reconnect_delay="$2"
+            shift 2
             ;;
         --codex-bin)
             need_arg "$1" "${2:-}"
@@ -158,17 +171,14 @@ if [[ -n "$remote_port" ]]; then
     [[ "$remote_port" =~ ^[0-9]+$ ]] || die "--remote-port must be numeric: $remote_port"
 fi
 [[ "$connect_timeout" =~ ^[0-9]+$ ]] || die "--timeout must be numeric: $connect_timeout"
+[[ "$reconnect_delay" =~ ^[0-9]+$ ]] || die "--reconnect-delay must be numeric: $reconnect_delay"
 
-if [[ -z "$local_port" ]]; then
-    local_port="$(pick_free_port)"
+requested_local_port="$local_port"
+requested_remote_port="$remote_port"
+if [[ -n "$requested_local_port" ]]; then
+    [[ "$requested_local_port" =~ ^[0-9]+$ ]] || die "--local-port must be numeric: $requested_local_port"
 fi
-[[ "$local_port" =~ ^[0-9]+$ ]] || die "--local-port must be numeric: $local_port"
-
-if [[ -z "$remote_port" ]]; then
-    remote_port="$local_port"
-fi
-
-remote_listen="ws://127.0.0.1:${remote_port}"
+remote_listen=""
 
 log_file="$(mktemp -t codex-remote.XXXXXX.log)"
 remote_script="$(mktemp -t codex-remote.XXXXXX.remote.sh)"
@@ -183,6 +193,8 @@ remote_app_server_pid=""
 remote_app_server_ready=0
 remote_cleanup_done=0
 local_codex_config_args=()
+interrupted=0
+attempt_status=0
 
 run_ssh() {
     local attempt
@@ -190,8 +202,10 @@ run_ssh() {
 
     for ((attempt = 1; attempt <= max_attempts; attempt++)); do
         if ((${#ssh_args[@]})); then
+            # shellcheck disable=SC2029 # SSH target and command arguments are intentionally assembled locally.
             ssh "${ssh_args[@]}" "$@" && return 0
         else
+            # shellcheck disable=SC2029 # SSH target and command arguments are intentionally assembled locally.
             ssh "$@" && return 0
         fi
 
@@ -278,6 +292,22 @@ read_remote_app_server_state() {
     fi
 }
 
+prepare_attempt_ports() {
+    if [[ -n "$requested_local_port" ]]; then
+        local_port="$requested_local_port"
+    else
+        local_port="$(pick_free_port)"
+    fi
+
+    if [[ -n "$requested_remote_port" ]]; then
+        remote_port="$requested_remote_port"
+    else
+        remote_port="$local_port"
+    fi
+
+    remote_listen="ws://127.0.0.1:${remote_port}"
+}
+
 cleanup_remote_app_server() {
     read_remote_app_server_state
     [[ -n "$remote_app_server_pid" ]] || return 0
@@ -296,19 +326,28 @@ fi
     run_ssh "$ssh_target" "bash -lc $(shell_quote "$cleanup_script")" >/dev/null 2>&1 || true
 }
 
-cleanup() {
+cleanup_attempt() {
     cleanup_remote_app_server
     if [[ -n "$ssh_pid" ]] && kill -0 "$ssh_pid" 2>/dev/null; then
         kill "$ssh_pid" 2>/dev/null || true
         wait "$ssh_pid" 2>/dev/null || true
     fi
-    if [[ -n "$status_bridge_pid" ]] && kill -0 "$status_bridge_pid" 2>/dev/null; then
-        kill "$status_bridge_pid" 2>/dev/null || true
-        wait "$status_bridge_pid" 2>/dev/null || true
-    fi
     if [[ -n "$status_monitor_pid" ]] && kill -0 "$status_monitor_pid" 2>/dev/null; then
         kill "$status_monitor_pid" 2>/dev/null || true
         wait "$status_monitor_pid" 2>/dev/null || true
+    fi
+    ssh_pid=""
+    status_monitor_pid=""
+    remote_app_server_pid=""
+    remote_app_server_ready=0
+    remote_cleanup_done=0
+}
+
+cleanup() {
+    cleanup_attempt
+    if [[ -n "$status_bridge_pid" ]] && kill -0 "$status_bridge_pid" 2>/dev/null; then
+        kill "$status_bridge_pid" 2>/dev/null || true
+        wait "$status_bridge_pid" 2>/dev/null || true
     fi
     rm -f "$log_file"
     rm -f "$remote_script"
@@ -316,7 +355,16 @@ cleanup() {
         rm -f "$status_log_file"
     fi
 }
-trap cleanup EXIT INT TERM
+
+handle_interrupt() {
+    interrupted=1
+    trap - INT TERM
+    cleanup
+    exit 130
+}
+
+trap cleanup EXIT
+trap handle_interrupt INT TERM
 
 start_status_bridge() {
     [[ "$ai_status_bridge" = "1" ]] || return 0
@@ -583,80 +631,125 @@ REMOTE_SCRIPT
     chmod +x "$remote_script"
 }
 
+run_codex_remote_attempt() {
+    local codex_status
+
+    attempt_status=0
+    prepare_attempt_ports
+    : >"$log_file"
+
+    empty_ssh_arg="__CODEX_REMOTE_EMPTY_ARG__"
+    remote_cwd_arg="$remote_cwd"
+    [[ -n "$remote_cwd_arg" ]] || remote_cwd_arg="$empty_ssh_arg"
+    remote_status_arg="$empty_ssh_arg"
+    if [[ "$status_bridge_enabled" = "1" ]]; then
+        remote_status_arg="$remote_status_port"
+    fi
+
+    ssh_cmd=(
+        ssh
+        -o ExitOnForwardFailure=yes
+        -o ServerAliveInterval=30
+        -o ServerAliveCountMax=3
+        -L "${local_port}:127.0.0.1:${remote_port}"
+    )
+    if [[ "$status_bridge_enabled" = "1" ]]; then
+        ssh_cmd+=(-R "127.0.0.1:${remote_status_port}:127.0.0.1:${local_status_port}")
+    fi
+    if ((${#ssh_args[@]})); then
+        ssh_cmd+=("${ssh_args[@]}")
+    fi
+    ssh_cmd+=("$ssh_target" env -u BASH_ENV bash --noprofile --norc -s -- "$remote_cwd_arg" "$remote_codex_bin" "$remote_listen" "$connect_timeout" "$remote_status_arg")
+    if ((${#codex_config_overrides[@]})); then
+        ssh_cmd+=("${codex_config_overrides[@]}")
+    fi
+
+    "${ssh_cmd[@]}" <"$remote_script" >"$log_file" 2>&1 &
+    ssh_pid="$!"
+
+    deadline=$((SECONDS + connect_timeout))
+    while true; do
+        read_remote_app_server_state
+        if [[ "$remote_app_server_ready" = "1" ]] && probe_app_server_ws "$local_port"; then
+            break
+        fi
+        if ! kill -0 "$ssh_pid" 2>/dev/null; then
+            echo "codex-remote: ssh/app-server process exited before the remote app-server became ready" >&2
+            cat "$log_file" >&2
+            attempt_status=1
+            return 0
+        fi
+        if (( SECONDS >= deadline )); then
+            echo "codex-remote: timed out waiting for remote app-server WebSocket readiness" >&2
+            echo "codex-remote: local endpoint ws://127.0.0.1:${local_port} -> ${ssh_target} ${remote_listen}" >&2
+            cat "$log_file" >&2
+            attempt_status=1
+            return 0
+        fi
+        sleep 0.2
+    done
+
+    echo "codex-remote: remote app-server ready $ssh_target ${remote_listen} -> ws://127.0.0.1:${local_port}" >&2
+    if [[ "$status_bridge_enabled" = "1" ]]; then
+        echo "codex-remote: AI status bridge enabled for ${TMUX_PANE}" >&2
+    fi
+    start_tui_state_monitor
+
+    local_codex_cmd=("$codex_bin")
+    if ((${#local_codex_config_args[@]})); then
+        local_codex_cmd+=("${local_codex_config_args[@]}")
+    fi
+    local_codex_cmd+=(
+        --dangerously-bypass-approvals-and-sandbox
+        --dangerously-bypass-hook-trust
+        --remote "ws://127.0.0.1:${local_port}"
+    )
+    if "${local_codex_cmd[@]}"; then
+        codex_status=0
+    else
+        codex_status=$?
+    fi
+
+    if [[ "$codex_status" -ne 0 ]]; then
+        echo "codex-remote: local Codex exited with status ${codex_status} while connecting to ws://127.0.0.1:${local_port}" >&2
+        echo "codex-remote: SSH forwarding and remote WebSocket readiness had already succeeded; reconnecting may fix a startup race or transient disconnect" >&2
+        echo "codex-remote: persistent failures usually indicate a Codex version/protocol mismatch or a remote app-server crash" >&2
+        if [[ -s "$log_file" ]]; then
+            echo "codex-remote: remote app-server log follows:" >&2
+            cat "$log_file" >&2
+        fi
+    fi
+
+    attempt_status="$codex_status"
+    return 0
+}
+
 start_status_bridge
-start_tui_state_monitor
 load_remote_codex_config_overrides
 append_config_overrides_for_local_tui
 write_remote_script
 
-empty_ssh_arg="__CODEX_REMOTE_EMPTY_ARG__"
-remote_cwd_arg="$remote_cwd"
-[[ -n "$remote_cwd_arg" ]] || remote_cwd_arg="$empty_ssh_arg"
-remote_status_arg="$empty_ssh_arg"
-if [[ "$status_bridge_enabled" = "1" ]]; then
-    remote_status_arg="$remote_status_port"
-fi
-
-ssh_cmd=(ssh -o ExitOnForwardFailure=yes -L "${local_port}:127.0.0.1:${remote_port}")
-if [[ "$status_bridge_enabled" = "1" ]]; then
-    ssh_cmd+=(-R "127.0.0.1:${remote_status_port}:127.0.0.1:${local_status_port}")
-fi
-if ((${#ssh_args[@]})); then
-    ssh_cmd+=("${ssh_args[@]}")
-fi
-ssh_cmd+=("$ssh_target" env -u BASH_ENV bash --noprofile --norc -s -- "$remote_cwd_arg" "$remote_codex_bin" "$remote_listen" "$connect_timeout" "$remote_status_arg")
-if ((${#codex_config_overrides[@]})); then
-    ssh_cmd+=("${codex_config_overrides[@]}")
-fi
-
-"${ssh_cmd[@]}" <"$remote_script" >"$log_file" 2>&1 &
-ssh_pid="$!"
-
-deadline=$((SECONDS + connect_timeout))
+attempt=1
 while true; do
-    read_remote_app_server_state
-    if [[ "$remote_app_server_ready" = "1" ]] && probe_app_server_ws "$local_port"; then
-        break
+    if ((attempt > 1)); then
+        echo "codex-remote: reconnect attempt ${attempt}; press Ctrl-C to stop" >&2
     fi
-    if ! kill -0 "$ssh_pid" 2>/dev/null; then
-        echo "codex-remote: ssh/app-server process exited before the remote app-server became ready" >&2
-        cat "$log_file" >&2
-        exit 1
+
+    run_codex_remote_attempt
+
+    cleanup_attempt
+
+    if [[ "$interrupted" = "1" || "$attempt_status" -eq 130 || "$attempt_status" -eq 143 ]]; then
+        exit "$attempt_status"
     fi
-    if (( SECONDS >= deadline )); then
-        echo "codex-remote: timed out waiting for remote app-server WebSocket readiness" >&2
-        echo "codex-remote: local endpoint ws://127.0.0.1:${local_port} -> ${ssh_target} ${remote_listen}" >&2
-        cat "$log_file" >&2
-        exit 1
+    if [[ "$attempt_status" -eq 0 ]]; then
+        exit 0
     fi
-    sleep 0.2
+    if [[ "$auto_reconnect" = "0" ]]; then
+        exit "$attempt_status"
+    fi
+
+    echo "codex-remote: reconnecting in ${reconnect_delay}s after exit status ${attempt_status}; press Ctrl-C to stop" >&2
+    sleep "$reconnect_delay"
+    attempt=$((attempt + 1))
 done
-
-echo "codex-remote: remote app-server ready $ssh_target ${remote_listen} -> ws://127.0.0.1:${local_port}" >&2
-if [[ "$status_bridge_enabled" = "1" ]]; then
-    echo "codex-remote: AI status bridge enabled for ${TMUX_PANE}" >&2
-fi
-set +e
-local_codex_cmd=("$codex_bin")
-if ((${#local_codex_config_args[@]})); then
-    local_codex_cmd+=("${local_codex_config_args[@]}")
-fi
-local_codex_cmd+=(
-    --dangerously-bypass-approvals-and-sandbox
-    --dangerously-bypass-hook-trust
-    --remote "ws://127.0.0.1:${local_port}"
-)
-"${local_codex_cmd[@]}"
-codex_status=$?
-set -e
-
-if [[ "$codex_status" -ne 0 ]]; then
-    echo "codex-remote: local Codex exited with status ${codex_status} while connecting to ws://127.0.0.1:${local_port}" >&2
-    echo "codex-remote: SSH forwarding and remote WebSocket readiness had already succeeded; retrying may fix a startup race" >&2
-    echo "codex-remote: persistent failures usually indicate a Codex version/protocol mismatch or a remote app-server crash" >&2
-    if [[ -s "$log_file" ]]; then
-        echo "codex-remote: remote app-server log follows:" >&2
-        cat "$log_file" >&2
-    fi
-    exit "$codex_status"
-fi

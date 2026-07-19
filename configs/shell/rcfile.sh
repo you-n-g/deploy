@@ -532,12 +532,12 @@ _claude_env() {
 
 function claudeauto() {
     _start_ai_tui_output_tracker
-    _claude_env _with_tmux_rename claude "$MYPROXY_CLAUDE" claude --enable-auto-mode "$@"
+    _claude_env _with_tmux_rename claude "$MYPROXY_CLAUDE" claude --model claude-opus-4-7 --enable-auto-mode "$@"
 }
 
 function claudeyolo() {
     _start_ai_tui_output_tracker
-    IS_SANDBOX=1 _claude_env _with_tmux_rename claude "$MYPROXY_CLAUDE" claude --dangerously-skip-permissions "$@"
+    IS_SANDBOX=1 _claude_env _with_tmux_rename claude "$MYPROXY_CLAUDE" claude --model claude-opus-4-7 --dangerously-skip-permissions "$@"
 }
 
 function clauder() {

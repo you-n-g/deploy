@@ -730,3 +730,9 @@
   Output = ""
   Tag = []
   command = "curl -fsSL https://raw.githubusercontent.com/you-n-g/deploy/master/helper_scripts/get_info/sys.sh | bash -s -- get_container_cpu_info"
+
+[[Snippets]]
+  Description = "login"
+  Output = ""
+  Tag = []
+  command = "codex-remote -C ~/vaults/livesync-headless bj.vm.213428.xyz"
