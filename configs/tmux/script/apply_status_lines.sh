@@ -60,9 +60,9 @@ compact_buttons="$(
     sb_g ' g ' \
     sb_cg 'C-g' \
     sb_G ' G ' \
-    sb_a ' a ' \
+    sb_ca 'C-a' \
     sb_mA 'M-A' \
-    sb_as 'C-m' \
+    sb_a ' a ' \
     sb_mc 'M-c' \
     sb_ml 'M-l' \
     sb_cc 'C-c' \
@@ -75,9 +75,9 @@ expanded_buttons="$(
     sb_g ' g ' \
     sb_cg 'C-g' \
     sb_G ' G ' \
-    sb_a ' a ' \
+    sb_ca 'C-a' \
     sb_mA 'M-A' \
-    sb_as 'C-m' \
+    sb_a ' a ' \
     sb_mc 'M-c' \
     sb_ml 'M-l' \
     sb_cc 'C-c' \

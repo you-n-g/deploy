@@ -101,6 +101,9 @@ case "$button" in
   sb_as)
     tmux run-shell -b "$HOME/deploy/configs/tmux/ai/switch_to_marked_or_switcher_pane.sh '$current_pane'"
     ;;
+  sb_ca|sb_auto_switch_mode)
+    tmux run-shell -b "$HOME/deploy/configs/tmux/auto-switch/mode-loop.sh toggle"
+    ;;
   sb_a|sb_auto_switch_next)
     auto_switch_next
     ;;
