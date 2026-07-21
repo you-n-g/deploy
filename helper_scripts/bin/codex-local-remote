@@ -311,7 +311,7 @@ prepare_local_codex_home() {
             [[ "$name" == "plugins" && ( -e "$dest" || -L "$dest" ) ]] && continue
             [[ -d "$codex_item" && ! -L "$codex_item" ]] && continue
             rm -f "$dest"
-            ln -s "$codex_item" "$dest"
+            ln -sf "$codex_item" "$dest"
         done < <(find "$HOME/.codex" -mindepth 1 -maxdepth 1)
     fi
 
@@ -471,6 +471,7 @@ remote_endpoint="${4:?missing remote endpoint}"
 connect_timeout="${5:-20}"
 status_port="${6:-}"
 remote_run_marker="${7:?missing remote run marker}"
+remote_resume_session_id="${8:-}"
 empty_arg_sentinel="__CODEX_LOCAL_REMOTE_EMPTY_ARG__"
 remote_config_overrides=()
 status_bridge_pid=""
@@ -481,12 +482,36 @@ remote_parent_pid="$PPID"
 adopted_inactive_pane=0
 
 [[ "$status_port" == "$empty_arg_sentinel" ]] && status_port=""
+[[ "$remote_resume_session_id" == "$empty_arg_sentinel" ]] && remote_resume_session_id=""
 
-shift 7
+shift 8
 remote_config_overrides=("$@")
 
 shell_quote() {
     printf "'%s'" "$(printf "%s" "$1" | sed "s/'/'\\\\''/g")"
+}
+
+quote_args() {
+    local arg quoted
+
+    quoted=""
+    for arg in "$@"; do
+        quoted+=" $(shell_quote "$arg")"
+    done
+    printf '%s' "$quoted"
+}
+
+build_start_cmd_from_quoted() {
+    local quoted_cmd="$1"
+    local cmd
+
+    cmd="while [[ ! -e $(shell_quote "$ready_file") ]]; do sleep 0.1; done; "
+    cmd+="env -u BASH_ENV bash -ic 'exec 2>&3; exec \"\$@\"' bash${quoted_cmd} 3>&2 2>/dev/null; "
+    cmd+="rc=\$?; "
+    cmd+="last_session_id=\$(tmux capture-pane -t \"\${TMUX_PANE:?}\" -p -S -3000 2>/dev/null | sed -nE 's/.*Session ID:[[:space:]]*([0-9a-fA-F-]{36}).*/\\1/p' | tail -n 1); "
+    cmd+="if [[ -n \"\$last_session_id\" ]]; then tmux set-option -pq -t \"\$TMUX_PANE\" @codex_local_remote_session_id \"\$last_session_id\"; fi; "
+    cmd+="echo; echo codex-local-remote TUI exited with status \$rc; exec \"\${SHELL:-bash}\" -l"
+    printf '%s' "$cmd"
 }
 
 pane_is_listed() {
@@ -628,12 +653,65 @@ process_tree_has_remote_codex() {
     return 1
 }
 
+process_tree_remote_codex_resume_session_id() {
+    local root_pid="$1"
+    local child args session_id
+
+    args="$(ps -o args= -p "$root_pid" 2>/dev/null || true)"
+    if [[ "$args" == *codex* && "$args" == *"--remote"* ]]; then
+        session_id="$(sed -nE 's/.*(^|[[:space:]])resume[[:space:]]+([0-9a-fA-F-]{36})([[:space:]].*)?$/\2/p' <<<"$args" | tail -n 1)"
+        if [[ -n "$session_id" ]]; then
+            printf '%s\n' "$session_id"
+            return 0
+        fi
+    fi
+
+    while IFS= read -r child; do
+        [[ -n "$child" ]] || continue
+        if process_tree_remote_codex_resume_session_id "$child"; then
+            return 0
+        fi
+    done < <(pgrep -P "$root_pid" 2>/dev/null || true)
+
+    return 1
+}
+
 pane_has_remote_codex() {
     local pane_pid
 
     pane_pid="$(tmux display-message -p -t "$pane_id" '#{pane_pid}' 2>/dev/null || true)"
     [[ -n "$pane_pid" ]] || return 1
     process_tree_has_remote_codex "$pane_pid"
+}
+
+running_resume_session_id_from_pane() {
+    local pane_pid
+
+    pane_pid="$(tmux display-message -p -t "$pane_id" '#{pane_pid}' 2>/dev/null || true)"
+    [[ -n "$pane_pid" ]] || return 1
+    process_tree_remote_codex_resume_session_id "$pane_pid"
+}
+
+latest_session_id_from_pane_output() {
+    tmux capture-pane -t "$pane_id" -p -S -3000 2>/dev/null \
+        | sed -nE 's/.*Session ID:[[:space:]]*([0-9a-fA-F-]{36}).*/\1/p' \
+        | tail -n 1
+}
+
+stored_session_id_from_pane() {
+    tmux show -pv -t "$pane_id" @codex_local_remote_session_id 2>/dev/null || true
+}
+
+best_resume_session_id_for_pane() {
+    local session_id
+
+    session_id="$(stored_session_id_from_pane)"
+    if [[ -n "$session_id" ]]; then
+        printf '%s\n' "$session_id"
+        return 0
+    fi
+
+    latest_session_id_from_pane_output
 }
 
 send_start_cmd_to_pane() {
@@ -648,9 +726,11 @@ send_start_cmd_to_pane() {
 }
 
 remote_tui_cmd=("$remote_codex_bin")
+remote_resume_tui_cmd=("$remote_codex_bin")
 if ((${#remote_config_overrides[@]})); then
     for config_override in "${remote_config_overrides[@]}"; do
         remote_tui_cmd+=(-c "$config_override")
+        remote_resume_tui_cmd+=(-c "$config_override")
     done
 fi
 remote_tui_cmd+=(
@@ -658,15 +738,19 @@ remote_tui_cmd+=(
     --dangerously-bypass-hook-trust
     --remote "$remote_endpoint"
 )
+remote_resume_tui_cmd+=(
+    --dangerously-bypass-approvals-and-sandbox
+    --dangerously-bypass-hook-trust
+    --remote "$remote_endpoint"
+    resume
+)
 
-quoted_tui_cmd=""
-for arg in "${remote_tui_cmd[@]}"; do
-    quoted_tui_cmd+=" $(shell_quote "$arg")"
-done
-
-start_cmd="while [[ ! -e $(shell_quote "$ready_file") ]]; do sleep 0.1; done; "
-start_cmd+="env -u BASH_ENV bash -ic 'exec 2>&3; exec \"\$@\"' bash${quoted_tui_cmd} 3>&2 2>/dev/null; "
-start_cmd+="rc=\$?; echo; echo codex-local-remote TUI exited with status \$rc; exec \"\${SHELL:-bash}\" -l"
+fresh_start_cmd="$(build_start_cmd_from_quoted "$(quote_args "${remote_tui_cmd[@]}")")"
+resume_start_cmd="$fresh_start_cmd"
+if [[ -n "$remote_resume_session_id" ]]; then
+    resume_start_cmd="$(build_start_cmd_from_quoted "$(quote_args "${remote_resume_tui_cmd[@]}" "$remote_resume_session_id")")"
+fi
+start_cmd="$fresh_start_cmd"
 
 adopt_previous_remote_location
 if [[ -z "$pane_id" ]]; then
@@ -765,7 +849,18 @@ PY
 
 start_status_bridge
 touch "$ready_file"
+running_resume_session_id="$(running_resume_session_id_from_pane || true)"
+if [[ -n "$running_resume_session_id" ]]; then
+    tmux set-option -pq -t "$pane_id" @codex_local_remote_session_id "$running_resume_session_id"
+fi
 if [[ "$reuse_existing_pane" == "1" ]] && { [[ "$adopted_inactive_pane" == "1" ]] || ! pane_has_remote_codex; }; then
+    pane_resume_session_id="$(best_resume_session_id_for_pane)"
+    if [[ -n "$pane_resume_session_id" ]]; then
+        tmux set-option -pq -t "$pane_id" @codex_local_remote_session_id "$pane_resume_session_id"
+        start_cmd="$(build_start_cmd_from_quoted "$(quote_args "${remote_resume_tui_cmd[@]}" "$pane_resume_session_id")")"
+    else
+        start_cmd="$resume_start_cmd"
+    fi
     send_start_cmd_to_pane
 fi
 if [[ -n "$status_port" ]]; then
@@ -800,6 +895,7 @@ write_remote_script
 empty_ssh_arg="__CODEX_LOCAL_REMOTE_EMPTY_ARG__"
 build_ssh_cmd() {
     local remote_status_arg="$empty_ssh_arg"
+    local remote_resume_arg="$empty_ssh_arg"
 
     remote_endpoint="ws://127.0.0.1:${remote_port}"
     if [[ "$ai_status_bridge" = "1" ]]; then
@@ -829,6 +925,7 @@ build_ssh_cmd() {
         "$connect_timeout"
         "$remote_status_arg"
         "codex-local-remote-run:${remote_run_id}"
+        "$remote_resume_arg"
     )
     if ((${#remote_tui_config_values[@]})); then
         ssh_cmd+=("${remote_tui_config_values[@]}")

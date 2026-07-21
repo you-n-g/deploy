@@ -106,16 +106,11 @@ return {
       local sysname = (vim.uv or vim.loop).os_uname().sysname
 
       if sysname == "Darwin" then
-        -- Sioyek is already the preferred PDF reader in this config. VimTeX has
-        -- native support for it, including SyncTeX forward/inverse search.
-        vim.g.vimtex_view_method = "sioyek"
-        vim.g.vimtex_view_sioyek_exe = "sioyek"
-        if vim.fn.executable("sioyek") ~= 1 then
-          vim.notify(
-            "vimtex: sioyek is not executable; install Sioyek for PDF viewing",
-            vim.log.levels.WARN
-          )
-        end
+        -- Force Preview on macOS. The system default here is WPS, which is a
+        -- poor fit for technical PDFs and VimTeX workflow.
+        vim.g.vimtex_view_method = "general"
+        vim.g.vimtex_view_general_viewer = "open"
+        vim.g.vimtex_view_general_options = "-a Preview @pdf"
       elseif vim.fn.executable("cmd.exe") == 1 then
         local function get_onedrive_path()
           local handle = io.popen([[cmd.exe /c echo %onedriveconsumer% 2> /dev/null | sed -e 's/C:/\\mnt\\c/g' | sed -e 's/\\/\//g' | tr -d '\r' | tr -d '\n']])
