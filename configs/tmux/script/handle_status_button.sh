@@ -18,15 +18,6 @@ auto_switch_next() {
   tmux run-shell -b "$HOME/deploy/configs/tmux/auto-switch/switch-next.sh --skip-pane '$current_pane'"
 }
 
-auto_switch_promote_or_next() {
-  if [ -z "$current_pane" ]; then
-    tmux display-message "No current pane for auto-switch"
-    exit 1
-  fi
-
-  tmux run-shell -b "$HOME/deploy/configs/tmux/auto-switch/promote-or-switch-next.sh '$current_pane'"
-}
-
 clear_buttons_expanded_overrides() {
   tmux list-sessions -F '#S' 2>/dev/null | while IFS= read -r session_name; do
     tmux set-option -qu -t "${session_name}:" @status-buttons-expanded 2>/dev/null || true
@@ -110,14 +101,11 @@ case "$button" in
   sb_as)
     tmux run-shell -b "$HOME/deploy/configs/tmux/ai/switch_to_marked_or_switcher_pane.sh '$current_pane'"
     ;;
-  sb_ca)
-    tmux run-shell -b "$HOME/deploy/configs/tmux/auto-switch/sequence.sh prepend-current '$current_pane'"
-    ;;
-  sb_auto_switch_mode)
+  sb_ca|sb_auto_switch_mode)
     tmux run-shell -b "$HOME/deploy/configs/tmux/auto-switch/mode-loop.sh toggle"
     ;;
   sb_a|sb_auto_switch_next)
-    auto_switch_promote_or_next
+    auto_switch_next
     ;;
   right)
     auto_switch_next
