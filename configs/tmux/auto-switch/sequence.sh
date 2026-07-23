@@ -12,6 +12,7 @@ usage() {
 Usage:
   sequence.sh reset-current <pane>
   sequence.sh append-current <pane>
+  sequence.sh prepend-current <pane>
   sequence.sh edit [focus-pane]
   sequence.sh new-ranked-panes
   sequence.sh select-saved
@@ -39,7 +40,7 @@ message=""
 selection_cancelled=0
 
 case "$command_name" in
-  reset-current|append-current)
+  reset-current|append-current|prepend-current)
     target_pane="${1:-}"
     [[ -n "$target_pane" ]] || { echo "$command_name requires a pane target" >&2; exit 2; }
     shift
@@ -596,6 +597,17 @@ case "$command_name" in
     esac
     tmux set-option -gq "$ranked_option" "$ranked"
     ;;
+  prepend-current)
+    target_pane="$(resolve_pane "$target_pane")" || { echo "pane does not resolve: $target_pane" >&2; exit 1; }
+    require_ai_pane "$target_pane"
+    ranked="$(normalize_existing_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
+    reordered="$target_pane"
+    for pane in $ranked; do
+      [[ "$pane" == "$target_pane" ]] && continue
+      reordered="${reordered:+$reordered }$pane"
+    done
+    tmux set-option -gq "$ranked_option" "$reordered"
+    ;;
   edit)
     edit_sequence
     ;;
@@ -635,7 +647,7 @@ if [[ "$selection_cancelled" == "1" ]]; then
   exit 0
 fi
 
-if [[ "$command_name" == "append-current" ]]; then
+if [[ "$command_name" == "append-current" || "$command_name" == "prepend-current" ]]; then
   exit 0
 fi
 
