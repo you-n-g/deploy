@@ -1,0 +1,543 @@
+#!/usr/bin/env -S uv run --no-project --with markdown-it-py --with mdit-py-plugins python
+# vim: filetype=python
+
+import argparse
+import errno
+import html
+import mimetypes
+import os
+import posixpath
+import re
+import shutil
+import subprocess
+import sys
+import threading
+import time
+import webbrowser
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import unquote, urlparse
+
+from markdown_it import MarkdownIt
+from mdit_py_plugins.footnote import footnote_plugin
+
+
+PORT_SEARCH_LIMIT = 100
+CLOUDFLARE_URL_RE = re.compile(r"https://[-a-zA-Z0-9.]+\.trycloudflare\.com")
+
+
+HTML_PAGE = """<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{title}</title>
+  <style>
+    :root {{
+      color-scheme: light dark;
+      --bg: #fbfbf8;
+      --fg: #1f2328;
+      --muted: #6a737d;
+      --border: #d8dee4;
+      --code-bg: #f2f4f7;
+      --link: #0969da;
+    }}
+    @media (prefers-color-scheme: dark) {{
+      :root {{
+        --bg: #0d1117;
+        --fg: #e6edf3;
+        --muted: #8b949e;
+        --border: #30363d;
+        --code-bg: #161b22;
+        --link: #58a6ff;
+      }}
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.62;
+    }}
+    main {{
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 40px 28px 72px;
+    }}
+    #status {{
+      position: fixed;
+      right: 14px;
+      bottom: 12px;
+      padding: 5px 9px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--muted);
+      font-size: 12px;
+      opacity: 0.86;
+    }}
+    h1, h2, h3, h4, h5, h6 {{
+      line-height: 1.25;
+      margin: 1.35em 0 0.55em;
+    }}
+    h1 {{
+      padding-bottom: 0.25em;
+      border-bottom: 1px solid var(--border);
+      font-size: 2rem;
+    }}
+    h2 {{
+      padding-bottom: 0.2em;
+      border-bottom: 1px solid var(--border);
+      font-size: 1.55rem;
+    }}
+    p, ul, ol, blockquote, pre, table {{ margin: 0.8em 0; }}
+    a {{ color: var(--link); }}
+    img {{ max-width: 100%; height: auto; }}
+    blockquote {{
+      margin-left: 0;
+      padding-left: 1em;
+      border-left: 4px solid var(--border);
+      color: var(--muted);
+    }}
+    code {{
+      padding: 0.15em 0.35em;
+      border-radius: 4px;
+      background: var(--code-bg);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }}
+    pre {{
+      overflow: auto;
+      padding: 14px 16px;
+      border-radius: 6px;
+      background: var(--code-bg);
+    }}
+    pre code {{ padding: 0; background: transparent; }}
+    table {{
+      width: 100%;
+      border-collapse: collapse;
+      display: block;
+      overflow-x: auto;
+    }}
+    th, td {{
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+    }}
+    .footnotes {{
+      margin-top: 2rem;
+      padding-top: 0.8rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.92em;
+    }}
+    .footnote-ref, .footnote-backref {{
+      text-decoration: none;
+    }}
+    [data-source-line] {{ scroll-margin-top: 16px; }}
+  </style>
+</head>
+<body>
+  <main id="content"></main>
+  <div id="status">loading</div>
+  <script>
+    const content = document.getElementById("content");
+    const statusEl = document.getElementById("status");
+    let lastVersion = null;
+
+    function scrollRatio() {{
+      const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      return window.scrollY / max;
+    }}
+
+    function findAnchor() {{
+      const points = [
+        [Math.min(window.innerWidth / 2, window.innerWidth - 20), 80],
+        [Math.min(window.innerWidth / 2, window.innerWidth - 20), Math.min(180, window.innerHeight / 3)]
+      ];
+      for (const [x, y] of points) {{
+        let el = document.elementFromPoint(x, y);
+        while (el && el !== content) {{
+          if (el.dataset && el.dataset.sourceLine) {{
+            return {{
+              line: el.dataset.sourceLine,
+              offset: el.getBoundingClientRect().top,
+              ratio: scrollRatio()
+            }};
+          }}
+          el = el.parentElement;
+        }}
+      }}
+      return {{ line: null, offset: 0, ratio: scrollRatio() }};
+    }}
+
+    function restoreAnchor(anchor) {{
+      if (anchor.line) {{
+        const target = content.querySelector(`[data-source-line="${{anchor.line}}"]`);
+        if (target) {{
+          window.scrollTo({{ top: window.scrollY + target.getBoundingClientRect().top - anchor.offset }});
+          return;
+        }}
+      }}
+      const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      window.scrollTo({{ top: max * anchor.ratio }});
+    }}
+
+    async function refresh(force = false) {{
+      const stateResp = await fetch("/api/state", {{ cache: "no-store" }});
+      if (!stateResp.ok) throw new Error(await stateResp.text());
+      const state = await stateResp.json();
+      if (!force && state.version === lastVersion) return;
+
+      const anchor = findAnchor();
+      const contentResp = await fetch("/api/content", {{ cache: "no-store" }});
+      if (!contentResp.ok) throw new Error(await contentResp.text());
+      content.innerHTML = await contentResp.text();
+      lastVersion = state.version;
+      requestAnimationFrame(() => restoreAnchor(anchor));
+      statusEl.textContent = new Date().toLocaleTimeString();
+    }}
+
+    async function loop() {{
+      try {{
+        await refresh();
+      }} catch (err) {{
+        statusEl.textContent = "error";
+        console.error(err);
+      }} finally {{
+        setTimeout(loop, {interval_ms});
+      }}
+    }}
+
+    refresh(true).finally(loop);
+  </script>
+</body>
+</html>
+"""
+
+
+class ReusableThreadingHTTPServer(ThreadingHTTPServer):
+    allow_reuse_address = True
+
+
+class MarkdownRenderer:
+    def __init__(self) -> None:
+        self.md = MarkdownIt("commonmark", {"html": True}).enable("table").use(footnote_plugin)
+        self._add_source_line_anchors()
+
+    def _add_source_line_anchors(self) -> None:
+        block_open = {
+            "blockquote_open",
+            "bullet_list_open",
+            "code_block",
+            "fence",
+            "heading_open",
+            "hr",
+            "ordered_list_open",
+            "paragraph_open",
+            "table_open",
+        }
+
+        for token_name in block_open:
+            default_rule = self.md.renderer.rules.get(token_name)
+
+            def render(tokens, idx, options, env, default_rule=default_rule):
+                token = tokens[idx]
+                if token.map:
+                    token.attrSet("data-source-line", str(token.map[0] + 1))
+                if default_rule:
+                    return default_rule(tokens, idx, options, env)
+                return self.md.renderer.renderToken(tokens, idx, options, env)
+
+            self.md.renderer.rules[token_name] = render
+
+    def render(self, markdown_text: str) -> str:
+        return self.md.render(markdown_text)
+
+
+class App:
+    def __init__(self, markdown_path: Path, interval_ms: int) -> None:
+        self.markdown_path = markdown_path
+        self.root = markdown_path.parent
+        self.interval_ms = interval_ms
+        self.renderer = MarkdownRenderer()
+
+    def version(self) -> str:
+        stat = self.markdown_path.stat()
+        return f"{stat.st_mtime_ns}:{stat.st_size}"
+
+    def markdown_text(self) -> str:
+        return self.markdown_path.read_text(encoding="utf-8")
+
+    def rendered_html(self) -> str:
+        return self.renderer.render(self.markdown_text())
+
+
+class CloudflareTunnel:
+    def __init__(self, cloudflared: str, local_url: str, timeout: float) -> None:
+        self.cloudflared = cloudflared
+        self.local_url = local_url
+        self.timeout = timeout
+        self.process: subprocess.Popen[str] | None = None
+        self.public_url: str | None = None
+        self.lines: list[str] = []
+        self.lock = threading.Lock()
+
+    def start(self) -> str:
+        self.process = subprocess.Popen(
+            [
+                self.cloudflared,
+                "tunnel",
+                "--url",
+                self.local_url,
+                "--no-autoupdate",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        )
+        threading.Thread(target=self._capture_output, daemon=True).start()
+
+        deadline = time.monotonic() + self.timeout
+        while time.monotonic() < deadline:
+            with self.lock:
+                if self.public_url:
+                    return self.public_url
+                tail = "\n".join(self.lines[-20:])
+
+            if self.process.poll() is not None:
+                raise RuntimeError(f"cloudflared exited before publishing a URL:\n{tail}")
+            time.sleep(0.1)
+
+        self.stop()
+        with self.lock:
+            tail = "\n".join(self.lines[-20:])
+        raise RuntimeError(f"timed out waiting for cloudflared public URL:\n{tail}")
+
+    def _capture_output(self) -> None:
+        assert self.process is not None
+        assert self.process.stdout is not None
+        for line in self.process.stdout:
+            line = line.rstrip()
+            with self.lock:
+                self.lines.append(line)
+                match = CLOUDFLARE_URL_RE.search(line)
+                if match:
+                    self.public_url = match.group(0)
+
+    def stop(self) -> None:
+        if self.process is None or self.process.poll() is not None:
+            return
+        self.process.terminate()
+        try:
+            self.process.wait(timeout=5)
+        except (KeyboardInterrupt, subprocess.TimeoutExpired):
+            self.process.kill()
+            self.process.wait()
+
+
+class Handler(BaseHTTPRequestHandler):
+    app: App
+
+    def do_GET(self) -> None:
+        self.handle_request(head_only=False)
+
+    def do_HEAD(self) -> None:
+        self.handle_request(head_only=True)
+
+    def handle_request(self, head_only: bool) -> None:
+        parsed = urlparse(self.path)
+        try:
+            if parsed.path == "/":
+                self.send_text(
+                    HTML_PAGE.format(
+                        title=html.escape(self.app.markdown_path.name),
+                        interval_ms=self.app.interval_ms,
+                    ),
+                    "text/html; charset=utf-8",
+                    head_only=head_only,
+                )
+            elif parsed.path == "/api/state":
+                self.send_text(
+                    f'{{"version": "{self.app.version()}"}}',
+                    "application/json; charset=utf-8",
+                    head_only=head_only,
+                )
+            elif parsed.path == "/api/content":
+                self.send_text(self.app.rendered_html(), "text/html; charset=utf-8", head_only=head_only)
+            elif parsed.path.startswith("/assets/"):
+                self.send_asset(parsed.path.removeprefix("/assets/"), head_only=head_only)
+            else:
+                self.send_asset(parsed.path, head_only=head_only)
+        except OSError as exc:
+            self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, str(exc))
+
+    def log_message(self, fmt: str, *args: object) -> None:
+        sys.stderr.write("%s - %s\n" % (self.log_date_time_string(), fmt % args))
+
+    def send_text(self, text: str, content_type: str, head_only: bool = False) -> None:
+        payload = text.encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        if not head_only:
+            self.wfile.write(payload)
+
+    def send_asset(self, raw_rel_path: str, head_only: bool = False) -> None:
+        rel_path = posixpath.normpath(unquote(raw_rel_path)).lstrip("/")
+        asset_path = (self.app.root / rel_path).resolve()
+        try:
+            asset_path.relative_to(self.app.root)
+        except ValueError:
+            self.send_error(HTTPStatus.FORBIDDEN, "asset path escapes markdown directory")
+            return
+        if not asset_path.is_file():
+            self.send_error(HTTPStatus.NOT_FOUND, "asset not found")
+            return
+
+        content_type = mimetypes.guess_type(asset_path.name)[0] or "application/octet-stream"
+        payload = asset_path.read_bytes()
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        if not head_only:
+            self.wfile.write(payload)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Serve a live Markdown preview that keeps the browser scroll position on updates.",
+    )
+    parser.add_argument("markdown_file", help="Markdown file to preview")
+    parser.add_argument("-p", "--port", type=int, default=8765, help="Preferred bind port, default: 8765")
+    parser.add_argument("--host", default="127.0.0.1", help="Bind host, default: 127.0.0.1")
+    parser.add_argument("--interval-ms", type=int, default=700, help="Browser polling interval, default: 700")
+    parser.add_argument("--no-open", action="store_true", help="Do not open the browser automatically")
+    parser.add_argument("--local-only", action="store_true", help="Do not publish through Cloudflare")
+    parser.add_argument("--cloudflared", help="Path to cloudflared, default: auto-detect")
+    parser.add_argument("--tunnel-timeout", type=float, default=30.0, help="Seconds to wait for Cloudflare URL")
+    return parser.parse_args()
+
+
+def bind_server(host: str, preferred_port: int) -> ReusableThreadingHTTPServer:
+    if preferred_port == 0:
+        return ReusableThreadingHTTPServer((host, 0), Handler)
+
+    last_port = min(65535, preferred_port + PORT_SEARCH_LIMIT)
+    for port in range(preferred_port, last_port + 1):
+        try:
+            return ReusableThreadingHTTPServer((host, port), Handler)
+        except OSError as exc:
+            if exc.errno != errno.EADDRINUSE:
+                raise
+
+    raise OSError(
+        errno.EADDRINUSE,
+        f"no free port found on {host} in range {preferred_port}-{last_port}",
+    )
+
+
+def find_cloudflared(explicit_path: str | None) -> str:
+    if explicit_path:
+        path = Path(explicit_path).expanduser().resolve()
+        if not path.is_file():
+            raise FileNotFoundError(f"cloudflared not found: {path}")
+        return str(path)
+
+    bundled = Path.home() / "repos/coding-agent/.tools/cloudflared"
+    if bundled.is_file():
+        return str(bundled)
+
+    discovered = shutil.which("cloudflared")
+    if discovered:
+        return discovered
+
+    raise FileNotFoundError(
+        "cloudflared not found. Install cloudflared or pass --cloudflared /path/to/cloudflared."
+    )
+
+
+def can_open_browser() -> bool:
+    if "BROWSER" in os.environ:
+        return True
+    if not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+        return False
+    browsers = [
+        "xdg-open",
+        "x-www-browser",
+        "firefox",
+        "chromium",
+        "chromium-browser",
+        "google-chrome",
+    ]
+    return any(shutil.which(browser) for browser in browsers)
+
+
+def main() -> int:
+    args = parse_args()
+    markdown_path = Path(args.markdown_file).expanduser().resolve()
+    if not markdown_path.exists():
+        print(f"error: markdown file does not exist: {markdown_path}", file=sys.stderr)
+        return 1
+    if not markdown_path.is_file():
+        print(f"error: markdown path is not a file: {markdown_path}", file=sys.stderr)
+        return 1
+    if args.interval_ms < 100:
+        print("error: --interval-ms must be >= 100", file=sys.stderr)
+        return 1
+    if args.tunnel_timeout <= 0:
+        print("error: --tunnel-timeout must be > 0", file=sys.stderr)
+        return 1
+    if not 0 <= args.port <= 65535:
+        print("error: --port must be between 0 and 65535", file=sys.stderr)
+        return 1
+
+    Handler.app = App(markdown_path, args.interval_ms)
+    try:
+        server = bind_server(args.host, args.port)
+    except OSError as exc:
+        print(f"error: cannot bind preview server: {exc}", file=sys.stderr)
+        return 1
+
+    url = f"http://{args.host}:{server.server_port}/"
+    print(f"Serving {markdown_path}", flush=True)
+    if args.port != 0 and server.server_port != args.port:
+        print(f"Port {args.port} is in use; using {server.server_port}.", flush=True)
+    print(f"Open {url}", flush=True)
+    print("Press Ctrl-C to stop.", flush=True)
+
+    tunnel = None
+    if not args.local_only:
+        try:
+            cloudflared = find_cloudflared(args.cloudflared)
+            tunnel = CloudflareTunnel(cloudflared, url, args.tunnel_timeout)
+            public_url = tunnel.start()
+            print(f"Cloudflare {public_url}", flush=True)
+            print("Cloudflare quick tunnel is temporary and stops with this process.", flush=True)
+        except (FileNotFoundError, OSError, RuntimeError) as exc:
+            print(f"error: cannot start Cloudflare tunnel: {exc}", file=sys.stderr)
+            server.server_close()
+            return 1
+
+    if not args.no_open and can_open_browser():
+        threading.Timer(0.2, lambda: webbrowser.open(url)).start()
+
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nStopped.")
+    finally:
+        if tunnel is not None:
+            tunnel.stop()
+        server.server_close()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
