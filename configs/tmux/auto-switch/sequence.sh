@@ -354,7 +354,7 @@ wait_after_error() {
 }
 
 edit_sequence() {
-  local tmp selected_file vim_script vim_selected_file vim_script_file editor editor_name focus_line selected_pane resolved_selected_pane
+  local tmp selected_file vim_script vim_selected_file vim_script_file editor editor_name focus_line focus_pane vim_focus_match selected_pane resolved_selected_pane
   local -a editor_argv
 
   tmp="$(mktemp "${TMPDIR:-/tmp}/auto-switch-sequence.XXXXXX")"
@@ -365,6 +365,11 @@ edit_sequence() {
   ranked="$(editable_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
   write_edit_file "$tmp" "$ranked"
   focus_line="$(edit_focus_line "$tmp" "$ranked" "$edit_focus_target")"
+  focus_pane="$(resolve_pane "$edit_focus_target" || true)"
+  vim_focus_match=""
+  if [[ -n "$focus_pane" && -n "$(pane_line_in_edit_file "$tmp" "$focus_pane")" ]]; then
+    vim_focus_match="call matchadd('AutoSwitchCurrentPane', '^\\V${focus_pane}\\m\\s.*$', 100)"
+  fi
   vim_selected_file="${selected_file//\'/''}"
   cat > "$vim_script" <<VIM
 setlocal filetype=conf nowrap
@@ -377,11 +382,13 @@ highlight AutoSwitchStateBackground ctermfg=109 cterm=NONE guifg=#87afaf gui=NON
 highlight AutoSwitchStatePending ctermfg=139 cterm=NONE guifg=#af87af gui=NONE
 highlight AutoSwitchStateUnread ctermfg=143 cterm=NONE guifg=#afaf5f gui=NONE
 highlight AutoSwitchStateIdle ctermfg=245 cterm=NONE guifg=#8a8a8a gui=NONE
+highlight AutoSwitchCurrentPane cterm=bold,reverse gui=bold,reverse
 call matchadd('AutoSwitchStateRunning', '|\\s*\\zsrunning\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateBackground', '|\\s*\\zsbackground\\ze\\s*|', 40)
 call matchadd('AutoSwitchStatePending', '|\\s*\\zspending[^|]*\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateUnread', '|\\s*\\zsunread\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateIdle', '|\\s*\\zsidle\\ze\\s*|', 40)
+$vim_focus_match
 nnoremap <buffer> q :wq<CR>
 let g:auto_switch_selected_pane_file = '$vim_selected_file'
 function! AutoSwitchSaveSelectPane() abort
