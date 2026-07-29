@@ -368,7 +368,7 @@ edit_sequence() {
   focus_pane="$(resolve_pane "$edit_focus_target" || true)"
   vim_focus_match=""
   if [[ -n "$focus_pane" && -n "$(pane_line_in_edit_file "$tmp" "$focus_pane")" ]]; then
-    vim_focus_match="call matchadd('AutoSwitchCurrentPane', '^\\V${focus_pane}\\m\\s.*$', 100)"
+    vim_focus_match="call matchadd('AutoSwitchCurrentPane', '^\\V${focus_pane}\\m\\ze\\s', 100)"
   fi
   vim_selected_file="${selected_file//\'/''}"
   cat > "$vim_script" <<VIM
