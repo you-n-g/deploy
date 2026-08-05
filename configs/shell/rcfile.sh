@@ -516,6 +516,26 @@ function codexs8121() {
             "$@"
 }
 
+function codexs8124() {
+    local api_key
+    if [[ -z "$api_key" ]]; then
+        api_key="$(get-cred codex-hc-8124 gpt-4.1.gpg)" || return
+    fi
+    if [[ -z "$api_key" ]]; then
+        echo "codexs8124: empty LB_API_KEY from get-cred codex-hc-8124 gpt-4.1.gpg" >&2
+        return 1
+    fi
+
+    LB_API_KEY="$api_key" \
+        _codex_run_api codex-share-8124 \
+            -c 'model_provider="lb8124"' \
+            -c 'model_providers.lb8124.name="codex-backend-8124"' \
+            -c 'model_providers.lb8124.base_url="https://hc.213428.xyz/8124/backend-api/codex"' \
+            -c 'model_providers.lb8124.wire_api="responses"' \
+            -c 'model_providers.lb8124.env_key="LB_API_KEY"' \
+            "$@"
+}
+
 function c() {
     "$HOME/deploy/helper_scripts/bin/c" "$@"
 }

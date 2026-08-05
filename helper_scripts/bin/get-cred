@@ -66,6 +66,9 @@ case "$TYPE" in
     codex-hc-fte)
         LINE=15
         ;;
+    codex-hc-8124)
+        LINE=7
+        ;;
     *)
         echo "Usage: $0 [base|model|key|xyz_base|xyz_key|feishu_hook_id|feishu_secret|feishu_app_id|feishu_app_secret|feishu_chat_id|codex-hc-fte] [filename.gpg]" >&2
         exit 1
