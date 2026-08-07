@@ -54,6 +54,12 @@
   command = "tmux list-panes -a -F \"#{pane_pid} #{session_name}:#{window_index}:#{pane_index}\""
 
 [[Snippets]]
+  Description = "choose Codex provider for current tmux session"
+  Output = ""
+  Tag = []
+  command = "codex-provider"
+
+[[Snippets]]
   Description = "py-spy record"
   Output = ""
   Tag = []

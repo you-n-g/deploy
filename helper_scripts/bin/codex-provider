@@ -1,0 +1,163 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#   "textual>=8.2,<9",
+# ]
+# ///
+
+from __future__ import annotations
+
+import os
+import subprocess
+import sys
+from typing import ClassVar
+
+from textual.app import App, ComposeResult
+from textual.widgets import Footer, Header, OptionList, Static
+from textual.widgets.option_list import Option
+
+VARIABLE = "CODEXR_PROVIDER"
+CHOICES = (
+    ("lb8121", "lb8121 — shared 8121 endpoint (default)"),
+    ("openai", "openai — official OpenAI login"),
+    ("xyz", "xyz — XYZ normally, Azure inside Obsidian"),
+    ("inherit", "inherit — remove the current-session override"),
+)
+
+
+class ToolError(RuntimeError):
+    pass
+
+
+def run_tmux(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+    result = subprocess.run(
+        ["tmux", *args], capture_output=True, text=True, check=False
+    )
+    if check and result.returncode:
+        raise ToolError(
+            result.stderr.strip() or f"tmux exited with {result.returncode}"
+        )
+    return result
+
+
+def current_session() -> str:
+    pane = os.environ.get("TMUX_PANE")
+    if not os.environ.get("TMUX") or not pane:
+        raise ToolError("must run inside a tmux pane")
+    return run_tmux("display-message", "-p", "-t", pane, "#S").stdout.strip()
+
+
+def read_variable(*scope: str) -> str | None:
+    result = run_tmux("show-environment", *scope, VARIABLE, check=False)
+    line = result.stdout.strip()
+    if line.startswith(f"{VARIABLE}="):
+        return line.split("=", 1)[1]
+    if result.returncode and "unknown variable" not in result.stderr:
+        raise ToolError(result.stderr.strip())
+    return None
+
+
+class ProviderApp(App[None]):
+    TITLE = "Codex provider"
+    CSS = """
+    #status { margin: 1 2; padding: 1 2; border: round $accent; }
+    #providers { margin: 0 2 1 2; height: auto; border: round $primary; }
+    """
+    BINDINGS: ClassVar[list[tuple[str, str, str]]] = [
+        ("right", "apply", "Apply"),
+        ("r", "refresh", "Refresh"),
+        ("left,escape,q", "quit", "Quit"),
+    ]
+
+    def __init__(self, session: str) -> None:
+        super().__init__()
+        self.session = session
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Static(id="status")
+        yield OptionList(
+            *(Option(label, id=value) for value, label in CHOICES), id="providers"
+        )
+        yield Footer()
+
+    def on_mount(self) -> None:
+        self.refresh_status()
+        self.sync_highlight()
+        self.query_one(OptionList).focus()
+        self.set_interval(1, self.refresh_status)
+
+    def values(self) -> tuple[str | None, str | None, str | None, str]:
+        session_value = read_variable("-t", self.session)
+        global_value = read_variable("-g")
+        shell_value = os.environ.get(VARIABLE)
+        effective = session_value or global_value or shell_value or "lb8121"
+        return session_value, global_value, shell_value, effective
+
+    def refresh_status(self) -> None:
+        session_value, global_value, shell_value, effective = self.values()
+        source = (
+            "session"
+            if session_value
+            else "global"
+            if global_value
+            else "shell"
+            if shell_value
+            else "default"
+        )
+        self.query_one("#status", Static).update(
+            f"Session: {self.session}\n"
+            f"Session override: {session_value or '<inherit>'}\n"
+            f"Global value: {global_value or '<unset>'}\n"
+            f"Effective: {effective} ({source})"
+        )
+
+    def sync_highlight(self) -> None:
+        session_value, _, _, effective = self.values()
+        target = session_value or effective
+        values = [value for value, _ in CHOICES]
+        self.query_one(OptionList).highlighted = (
+            values.index(target) if target in values else values.index("xyz")
+        )
+
+    def apply(self, value: str) -> None:
+        try:
+            if value == "inherit":
+                run_tmux("set-environment", "-t", self.session, "-r", VARIABLE)
+            else:
+                run_tmux("set-environment", "-t", self.session, VARIABLE, value)
+        except ToolError as error:
+            self.notify(str(error), severity="error")
+            return
+        self.refresh_status()
+        self.sync_highlight()
+        self.notify(f"{VARIABLE} → {value}")
+
+    def action_apply(self) -> None:
+        options = self.query_one(OptionList)
+        if options.highlighted is not None:
+            self.apply(options.get_option_at_index(options.highlighted).id)
+
+    def action_refresh(self) -> None:
+        self.refresh_status()
+        self.sync_highlight()
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        self.apply(event.option.id)
+
+
+def main() -> int:
+    if sys.argv[1:] in (["-h"], ["--help"]):
+        print("codex-provider: choose CODEXR_PROVIDER for the current tmux session")
+        return 0
+    ProviderApp(current_session()).run()
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except ToolError as error:
+        print(f"codex-provider: {error}", file=sys.stderr)
+        raise SystemExit(1) from error

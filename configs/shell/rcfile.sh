@@ -365,11 +365,6 @@ function geminir() {
 
 # codex with rename
 function codexr() {
-    if [[ "$(uname)" == "Linux" ]]; then
-        codexs8121 "$@"
-        return
-    fi
-
     local provider
     provider=$(_codex_default_provider)
 
@@ -378,8 +373,7 @@ function codexr() {
             codexs8121 "$@"
             ;;
         openai)
-            # only default openai provider needs login
-            _codex_run_login codex "$@"
+            codexo "$@"
             ;;
         *)
             if [[ "${PWD:l}" != *obsidian* ]]; then
@@ -404,8 +398,36 @@ _codex_exec_auto_flag() {
     echo "--dangerously-bypass-approvals-and-sandbox"
 }
 
+_tmux_environment_value() {
+    local name="$1"
+    local value
+
+    # A session override wins over the tmux global environment.
+    [[ -n "${TMUX:-}" ]] || return 1
+
+    if [[ -n "${TMUX_PANE:-}" ]]; then
+        value="$(tmux show-environment -t "$TMUX_PANE" "$name" 2>/dev/null)" || value=""
+    else
+        value="$(tmux show-environment "$name" 2>/dev/null)" || value=""
+    fi
+    if [[ "$value" == "$name="* ]]; then
+        printf '%s\n' "${value#*=}"
+        return 0
+    fi
+
+    value="$(tmux show-environment -g "$name" 2>/dev/null)" || value=""
+    if [[ "$value" == "$name="* ]]; then
+        printf '%s\n' "${value#*=}"
+        return 0
+    fi
+
+    return 1
+}
+
 _codex_default_provider() {
-    local provider="${CODEXR_PROVIDER:-}"
+    local provider
+
+    provider="$(_tmux_environment_value CODEXR_PROVIDER)" || provider="${CODEXR_PROVIDER:-}"
 
     if [[ -n "$provider" ]]; then
         echo "$provider"
@@ -490,6 +512,10 @@ _codex_run_api() {
 function codexa() {
     # run my azure codex
     _codex_run_api codex "$@"
+}
+
+function codexo() {
+    _codex_run_login codex-openai -c 'model_provider="openai"' "$@"
 }
 
 function codexyz() {
