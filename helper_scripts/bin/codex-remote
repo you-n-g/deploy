@@ -330,7 +330,10 @@ cleanup_remote_app_server() {
     cleanup_script="
 pid=$(shell_quote "$remote_app_server_pid")
 listen=$(shell_quote "$remote_listen")
-if [[ -r \"/proc/\$pid/cmdline\" ]] && tr '\0' ' ' <\"/proc/\$pid/cmdline\" | grep -F -- \"app-server --listen \$listen\" >/dev/null; then
+if [[ -r \"/proc/\$pid/cmdline\" ]] &&
+    grep -Fzx -- \"app-server\" \"/proc/\$pid/cmdline\" >/dev/null &&
+    grep -Fzx -- \"--listen\" \"/proc/\$pid/cmdline\" >/dev/null &&
+    grep -Fzx -- \"\$listen\" \"/proc/\$pid/cmdline\" >/dev/null; then
     kill \"\$pid\" 2>/dev/null || true
 fi
 "
