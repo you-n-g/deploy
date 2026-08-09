@@ -71,7 +71,7 @@ tmux show -pv -t '<target-pane>' @ai_agent_running
 
 在交互式 Agent pane 中监控时，优先让当前 Agent 自己被 tmux 唤醒，不要额外创建 pane/window，除非用户明确要求。
 
-无论是脚本自动唤醒，还是手动通过 tmux 向 Codex/Claude pane 发送唤醒消息，都必须在粘贴文本后发送键盘事件 `Enter`。只 paste 文本不会可靠提交；消息可能停在输入框里，导致 watcher 看起来“安排了”，但实际没有开始执行。
+无论是脚本自动唤醒，还是手动通过 tmux 向 Codex/Claude pane 发送唤醒消息，都必须在粘贴文本后等待 1 秒，再发送键盘事件 `Enter`。只 paste 文本不会可靠提交；paste 后立刻 Enter 也可能被 TUI 忽略或只把消息留在输入框里，导致 watcher 看起来“安排了”，但实际没有开始执行。
 
 必须先确定真正的 watcher pane，但不要让调用方同时手填 target 和 watcher 两个 pane，除非确实需要覆盖默认值。`schedule-wakeup.sh` 默认用当前进程的 `$TMUX_PANE` 作为 watcher，这是最可靠的“唤醒自己”来源。不要在 `exec` shell 里用无 `-t` 的 `tmux display-message -p '#S:#I.#{pane_index}'` 来猜“当前 pane”；它可能返回用户当前 active client pane（例如 vim pane），而不是正在执行监控的 Codex/Claude pane。如果 `$TMUX_PANE` 不存在，或需要唤醒另一个 Agent，才显式传 `--pane <watcher-pane>`，并验证 `@ai_agent_attribute` 或 `@ai_agent_running` 非空。
 
@@ -103,7 +103,7 @@ AI window 目标正在等待输入、而用户要求等它开始运行时，使�
   --message '<下一次唤醒时要提交给 Agent 的检查指令>'
 ```
 
-脚本会通过 `tmux run-shell -b`、`tmux load-buffer`、`tmux paste-buffer` 和 `tmux send-keys Enter` 提交消息。最后一步必须是键盘事件 `Enter`，并且要验证消息确实触发了 watcher；不要改成只 `paste-buffer`，也不要改成 `send-keys ... C-m`，因为 Codex/Claude TUI 中可能只把文本留在输入框里，没有真正提交。
+脚本会通过 `tmux run-shell -b`、`tmux load-buffer`、`tmux paste-buffer`、等待 1 秒、再 `tmux send-keys Enter` 提交消息。最后一步必须是键盘事件 `Enter`，并且要验证消息确实触发了 watcher；不要改成只 `paste-buffer`，不要在 paste 后立刻 Enter，也不要改成 `send-keys ... C-m`，因为 Codex/Claude TUI 中可能只把文本留在输入框里，没有真正提交。
 
 `schedule-wakeup.sh` 是唯一唤醒入口，但必须用 `--mode` 把规则分清楚：默认 `timer` 只负责固定时间 one-shot 唤醒；`--mode ai-idle` 轮询单个 AI window 的 `@ai_agent_running`、停下或关闭后立即唤醒；`--mode ai-running` 轮询单个 AI window 的 `@ai_agent_running`、开始运行或关闭后立即唤醒。不要在默认 timer 模式里混入 AI Agent 状态判断，也不要把候选排序、多目标选择、pending 处理塞进 wakeup 脚本；这些属于调用方 skill。
 
@@ -113,7 +113,7 @@ AI window 目标正在等待输入、而用户要求等它开始运行时，使�
 
 取消自己创建的 watcher 也必须保持静默。`schedule-wakeup.sh` 的后台 job 应在收到 `TERM` / `INT` / `HUP` 时清理临时 message 文件并正常退出，避免 tmux 把整条 `run-shell` command 作为 “terminated by signal ...” 错误刷到用户屏幕上。
 
-自唤醒提交必须验证“消息已提交”，不能只验证“消息已粘贴”。Codex/Claude TUI 处理大段 paste 可能有延迟；无论是 timer 还是 AI idle 条件 watcher，都不要在 `paste-buffer` 后立刻发送最后一个回车。应在 paste 后短暂等待，再用单独的 `tmux send-keys -t '<watcher-pane>' Enter` 发送键盘事件；随后检查 watcher pane 的 `@ai_agent_running` 或 capture 内容。如果消息仍停留在输入区（例如只显示 `[Pasted Content ...]` / `› <message>`，且 `@ai_agent_running` 仍为 `0`），再补发一次 `Enter`，并重新验证。若验证仍失败，必须明确报告自唤醒没有正常触发。
+自唤醒提交必须验证“消息已提交”，不能只验证“消息已粘贴”。Codex/Claude TUI 处理大段 paste 可能有延迟；无论是 timer 还是 AI idle 条件 watcher，都不要在 `paste-buffer` 后立刻发送最后一个回车。应在 paste 后等待 1 秒，再用单独的 `tmux send-keys -t '<watcher-pane>' Enter` 发送键盘事件；随后检查 watcher pane 的 `@ai_agent_running` 或 capture 内容。如果消息仍停留在输入区（例如只显示 `[Pasted Content ...]` / `› <message>`，且 `@ai_agent_running` 仍为 `0`），再等待 1 秒后补发一次 `Enter`，并重新验证。若验证仍失败，必须明确报告自唤醒没有正常触发。
 
 安排新 wakeup 前不需要手动检查旧 timer/condition watcher；统一交给 `schedule-wakeup.sh` 清理同一 watcher pane 的旧 wakeup。不要清理其它 watcher pane 的 sleep/monitor 进程。
 

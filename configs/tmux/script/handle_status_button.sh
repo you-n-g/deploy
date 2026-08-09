@@ -31,6 +31,15 @@ set_buttons_expanded() {
   refresh_all_sessions=1
 }
 
+new_livesync_remote_window() {
+  if [ -z "$session" ]; then
+    tmux display-message "No current session for livesync remote"
+    exit 1
+  fi
+
+  tmux new-window -t "${session}:" -n livesync-headless -c "$path" "zsh -ic 'codex-remote -C ~/vaults/livesync-headless bj.vm.213428.xyz'"
+}
+
 case "$button" in
   aip_*)
     tmux switch-client -t "%${button#aip_}"
@@ -70,6 +79,9 @@ case "$button" in
     ;;
   sb_mc)
     tmux run-shell -b "$HOME/deploy/configs/tmux/ai/tmuxg.sh --force-new -q"
+    ;;
+  sb_ls)
+    new_livesync_remote_window
     ;;
   sb_cg)
     tmux run-shell -b "$HOME/deploy/configs/tmux/ai/tmuxg.sh -A -q"
