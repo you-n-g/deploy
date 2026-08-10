@@ -74,8 +74,12 @@ case "$button" in
   sb_G)
     tmux run-shell -b "$HOME/deploy/configs/tmux/ai/tmuxg.sh --auto-switch-list -q"
     ;;
-  sb_mA)
-    tmux display-popup -E -w 100% -h 100% "$HOME/deploy/configs/tmux/auto-switch/sequence.sh select-saved"
+  sb_ma|sb_mA)
+    if [ -z "$current_pane" ]; then
+      tmux display-message "No current pane for auto-switch prepend"
+      exit 1
+    fi
+    tmux run-shell -b "$HOME/deploy/configs/tmux/auto-switch/sequence.sh prepend-current '$current_pane'"
     ;;
   sb_mc)
     tmux run-shell -b "$HOME/deploy/configs/tmux/ai/tmuxg.sh --force-new -q"
