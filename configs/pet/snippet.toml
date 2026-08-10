@@ -742,3 +742,9 @@
   Output = ""
   Tag = []
   command = "codex-remote -C ~/vaults/livesync-headless bj.vm.213428.xyz"
+
+[[Snippets]]
+  Description = "mount ai4ai-TR from ali-cn"
+  Output = ""
+  Tag = []
+  command = "mkdir -p \"$HOME/repos/servers/ai4ai-TR\" && sshfs ali-cn:/data/xiaoyang/repos/ai4ai-TR \"$HOME/repos/servers/ai4ai-TR\" -o idmap=user,reconnect,ServerAliveInterval=15,ServerAliveCountMax=3"

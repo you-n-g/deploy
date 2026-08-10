@@ -13,6 +13,7 @@ remote SSH host. This is the reverse of codex-remote:
 Options:
       --remote-session NAME  remote tmux session to create/use (default: codex)
       --remote-window NAME   remote tmux window name (default: basename of local cwd)
+      --resume SESSION_ID    resume this Codex session on start
   -c, --config KEY=VALUE     Codex config override; may be repeated
       --local-port PORT      local app-server port (default: pick a free port)
       --remote-port PORT     remote forwarded app-server port (default: local port)
@@ -37,6 +38,8 @@ Examples:
 Notes:
   SSH_LOGIN_OPTIONS are passed to ssh before SSH_TARGET, so options such as
   -p, -i, -J, -F, and -o work even though they appear after SSH_TARGET here.
+  Startup update checks are disabled for both Codex processes by default. Pass
+  -c 'check_for_update_on_startup=true' to enable them for a run.
   The local app-server uses $HOME/.codex-local-remote-status so hook trust can
   persist across runs while still allowing this script to install bridge hooks.
 EOF
@@ -86,7 +89,8 @@ connect_timeout="20"
 reconnect_delay="5"
 ai_status_bridge=1
 mirror_local_config=0
-codex_config_overrides=()
+resume_session_id=""
+codex_config_overrides=('check_for_update_on_startup=false')
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -98,6 +102,11 @@ while [[ $# -gt 0 ]]; do
         --remote-window)
             need_arg "$1" "${2:-}"
             remote_window="$2"
+            shift 2
+            ;;
+        --resume)
+            need_arg "$1" "${2:-}"
+            resume_session_id="$2"
             shift 2
             ;;
         -c|--config)
@@ -191,6 +200,9 @@ for port_name in local_port remote_port local_status_port remote_status_port; do
 done
 [[ "$connect_timeout" =~ ^[0-9]+$ ]] || die "--timeout must be numeric: $connect_timeout"
 [[ "$reconnect_delay" =~ ^[0-9]+$ ]] || die "--reconnect-delay must be numeric: $reconnect_delay"
+if [[ -n "$resume_session_id" && ! "$resume_session_id" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
+    die "--resume must be a UUID: $resume_session_id"
+fi
 
 if [[ -z "$local_port" ]]; then
     local_port="$(pick_free_port)"
@@ -625,12 +637,16 @@ adopt_inactive_marked_remote_location() {
 }
 
 cleanup_previous_remote_helpers() {
-    local pid args
+    local pid args target_endpoint
+
+    target_endpoint="$remote_endpoint"
 
     while read -r pid args; do
         [[ -n "$pid" && "$pid" != "$$" ]] || continue
-        [[ "$args" == *"$remote_run_marker"* ]] || continue
-        kill "$pid" 2>/dev/null || true
+        [[ "$args" == *"codex-local-remote-run:"* ]] || continue
+        if [[ "$args" == *"$remote_run_marker"* ]] || [[ "$args" == *"$target_endpoint"* ]]; then
+            kill "$pid" 2>/dev/null || true
+        fi
     done < <(ps -eo pid=,args= 2>/dev/null || true)
 }
 
@@ -692,26 +708,12 @@ running_resume_session_id_from_pane() {
     process_tree_remote_codex_resume_session_id "$pane_pid"
 }
 
-latest_session_id_from_pane_output() {
-    tmux capture-pane -t "$pane_id" -p -S -3000 2>/dev/null \
-        | sed -nE 's/.*Session ID:[[:space:]]*([0-9a-fA-F-]{36}).*/\1/p' \
-        | tail -n 1
-}
-
 stored_session_id_from_pane() {
     tmux show -pv -t "$pane_id" @codex_local_remote_session_id 2>/dev/null || true
 }
 
 best_resume_session_id_for_pane() {
-    local session_id
-
-    session_id="$(stored_session_id_from_pane)"
-    if [[ -n "$session_id" ]]; then
-        printf '%s\n' "$session_id"
-        return 0
-    fi
-
-    latest_session_id_from_pane_output
+    stored_session_id_from_pane
 }
 
 send_start_cmd_to_pane() {
@@ -901,6 +903,9 @@ build_ssh_cmd() {
     if [[ "$ai_status_bridge" = "1" ]]; then
         remote_status_arg="$remote_status_port"
     fi
+    if [[ -n "$resume_session_id" ]]; then
+        remote_resume_arg="$resume_session_id"
+    fi
 
     ssh_cmd=(
         ssh
@@ -933,7 +938,7 @@ build_ssh_cmd() {
 }
 
 cleanup_stale_remote_run() {
-    local cleanup_ssh_cmd
+    local cleanup_ssh_cmd target_endpoint
 
     cleanup_ssh_cmd=(
         ssh
@@ -944,17 +949,22 @@ cleanup_stale_remote_run() {
         cleanup_ssh_cmd+=("${ssh_args[@]}")
     fi
     cleanup_ssh_cmd+=("$ssh_target" env -u BASH_ENV bash --noprofile --norc -s)
+    target_endpoint="$(shell_quote "$remote_endpoint")"
 
     "${cleanup_ssh_cmd[@]}" <<REMOTE_CLEANUP
 set -euo pipefail
 
 run_id="codex-local-remote-run:${remote_run_id}"
+target_endpoint=${target_endpoint}
 pids=()
 parents=()
 
 while read -r pid ppid args; do
     [[ -n "\$pid" && "\$pid" != "\$\$" ]] || continue
-    [[ "\$args" == *"\$run_id"* ]] || continue
+    [[ "\$args" == *"codex-local-remote-run:"* ]] || continue
+    if [[ "\$args" != *"\$run_id"* && "\$args" != *"\$target_endpoint"* ]]; then
+        continue
+    fi
     pids+=("\$pid")
     [[ -z "\$ppid" || "\$ppid" == "1" ]] || parents+=("\$ppid")
 done < <(ps -eo pid=,ppid=,args= 2>/dev/null || true)
