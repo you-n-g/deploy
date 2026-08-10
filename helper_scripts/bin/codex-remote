@@ -18,6 +18,7 @@ Options:
       --no-auto-reconnect    exit after the first local Codex transport failure
       --reconnect-delay SEC  delay before reconnecting after transport failure (default: 2)
       --resume SESSION_ID     resume this Codex session on every local TUI start
+      --fork SESSION_ID       fork this Codex session and run one local TUI attempt
       --codex-bin CMD        local Codex command (default: $CODEX_BIN or codex)
       --remote-codex-bin CMD remote Codex command (default: $REMOTE_CODEX_BIN or codex)
       --timeout SECONDS      wait for the remote app-server to become reachable (default: 20)
@@ -90,6 +91,7 @@ ai_status_bridge=1
 auto_reconnect=1
 reconnect_delay="2"
 resume_session_id=""
+fork_session_id=""
 codex_config_overrides=('check_for_update_on_startup=false')
 
 while [[ $# -gt 0 ]]; do
@@ -130,6 +132,11 @@ while [[ $# -gt 0 ]]; do
         --resume)
             need_arg "$1" "${2:-}"
             resume_session_id="$2"
+            shift 2
+            ;;
+        --fork)
+            need_arg "$1" "${2:-}"
+            fork_session_id="$2"
             shift 2
             ;;
         --codex-bin)
@@ -183,6 +190,12 @@ fi
 [[ "$reconnect_delay" =~ ^[0-9]+$ ]] || die "--reconnect-delay must be numeric: $reconnect_delay"
 if [[ -n "$resume_session_id" && ! "$resume_session_id" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
     die "--resume must be a UUID: $resume_session_id"
+fi
+if [[ -n "$fork_session_id" && ! "$fork_session_id" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
+    die "--fork must be a UUID: $fork_session_id"
+fi
+if [[ -n "$resume_session_id" && -n "$fork_session_id" ]]; then
+    die "--resume and --fork are mutually exclusive"
 fi
 
 requested_local_port="$local_port"
@@ -722,6 +735,9 @@ run_codex_remote_attempt() {
     if [[ -n "$resume_session_id" ]]; then
         echo "codex-remote: resuming Codex session ${resume_session_id}" >&2
         local_codex_cmd+=(resume "$resume_session_id")
+    elif [[ -n "$fork_session_id" ]]; then
+        echo "codex-remote: forking Codex session ${fork_session_id}" >&2
+        local_codex_cmd+=(fork "$fork_session_id")
     fi
     if "${local_codex_cmd[@]}"; then
         codex_status=0
@@ -763,6 +779,10 @@ while true; do
     fi
     if [[ "$attempt_status" -eq 0 ]]; then
         exit 0
+    fi
+    if [[ -n "$fork_session_id" ]]; then
+        echo "codex-remote: fork mode is one-shot; not reconnecting because retrying would fork another new session" >&2
+        exit "$attempt_status"
     fi
     if [[ "$auto_reconnect" = "0" ]]; then
         exit "$attempt_status"
