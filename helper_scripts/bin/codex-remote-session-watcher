@@ -1,0 +1,236 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage:
+  codex-remote-session-watcher watch --pane PANE --root-pid PID --session-file FILE --tmux-option OPTION
+  codex-remote-session-watcher resolve --pane PANE --session-file FILE --tmux-option OPTION
+
+Track the Codex session id for a codex-remote pane. This is intentionally a
+small companion script so the reconnect/session detection logic can evolve
+without making codex-remote harder to read.
+
+Interface:
+  Inputs:
+    --pane PANE
+      Tmux pane target to inspect, usually the caller's $TMUX_PANE.
+    --root-pid PID
+      Root process pid for watch mode. The watcher scans this process tree for
+      a Codex process that has opened a ~/.codex/sessions/*.jsonl file, or has
+      a session id in argv.
+    --session-file FILE
+      Caller-owned disk file used to persist the latest resolved session id
+      within the current codex-remote process lifetime.
+    --tmux-option OPTION
+      Pane-local tmux option used as a longer-lived cache for the latest
+      resolved session id.
+
+  Outputs:
+    watch:
+      - Writes the latest session id to --session-file when one is found.
+      - Writes the same id to the pane's --tmux-option.
+      - Does not print successful updates to stdout.
+      - Runs until --root-pid exits.
+    resolve:
+      - Prints the resolved session id to stdout when one is found.
+      - Also refreshes --session-file and --tmux-option with that id.
+      - Prints nothing when no precise session id is available.
+    Errors:
+      - Invalid arguments or missing tmux are printed to stderr and exit nonzero.
+      - "No session id found" is not an error; resolve exits zero with empty
+        stdout so codex-remote can keep the first fresh launch behavior.
+EOF
+}
+
+die() {
+    echo "codex-remote-session-watcher: $*" >&2
+    exit 1
+}
+
+session_id_re='[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
+mode="${1:-}"
+[[ -n "$mode" ]] || {
+    usage >&2
+    exit 1
+}
+shift
+
+pane=""
+root_pid=""
+session_file=""
+tmux_option=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --pane)
+            [[ -n "${2:-}" ]] || die "--pane requires an argument"
+            pane="$2"
+            shift 2
+            ;;
+        --root-pid)
+            [[ -n "${2:-}" ]] || die "--root-pid requires an argument"
+            root_pid="$2"
+            shift 2
+            ;;
+        --session-file)
+            [[ -n "${2:-}" ]] || die "--session-file requires an argument"
+            session_file="$2"
+            shift 2
+            ;;
+        --tmux-option)
+            [[ -n "${2:-}" ]] || die "--tmux-option requires an argument"
+            tmux_option="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            die "unknown argument: $1"
+            ;;
+    esac
+done
+
+[[ -n "$pane" ]] || die "--pane is required"
+[[ -n "$session_file" ]] || die "--session-file is required"
+[[ -n "$tmux_option" ]] || die "--tmux-option is required"
+command -v tmux >/dev/null 2>&1 || die "tmux is required"
+
+first_codex_session_id() {
+    grep -oE "$session_id_re" | head -1 || true
+}
+
+session_id_from_proc_fd() {
+    local pid="$1"
+
+    [[ -d "/proc/$pid/fd" ]] || return 1
+    find "/proc/$pid/fd" -maxdepth 1 -type l -printf '%l\n' 2>/dev/null |
+        first_codex_session_id
+}
+
+session_id_from_lsof() {
+    local pid="$1" lsof_output
+
+    command -v lsof >/dev/null 2>&1 || return 1
+    if command -v timeout >/dev/null 2>&1; then
+        lsof_output="$(timeout 3 lsof -p "$pid" 2>/dev/null || true)"
+    else
+        lsof_output="$(lsof -p "$pid" 2>/dev/null || true)"
+    fi
+    printf '%s\n' "$lsof_output" | awk '{print $NF}' | first_codex_session_id
+}
+
+session_id_from_args() {
+    local pid="$1"
+
+    ps -p "$pid" -o args= 2>/dev/null | first_codex_session_id
+}
+
+session_id_for_pid() {
+    local pid="$1" session_id
+
+    session_id="$(session_id_from_proc_fd "$pid" || true)"
+    if [[ -z "$session_id" ]]; then
+        session_id="$(session_id_from_lsof "$pid" || true)"
+    fi
+    if [[ -z "$session_id" ]]; then
+        session_id="$(session_id_from_args "$pid" || true)"
+    fi
+
+    [[ -n "$session_id" ]] || return 1
+    printf '%s\n' "$session_id"
+}
+
+process_tree_session_id() {
+    local pid="$1" child session_id
+
+    session_id="$(session_id_for_pid "$pid" || true)"
+    if [[ -n "$session_id" ]]; then
+        printf '%s\n' "$session_id"
+        return 0
+    fi
+
+    while IFS= read -r child; do
+        [[ -n "$child" ]] || continue
+        if process_tree_session_id "$child"; then
+            return 0
+        fi
+    done < <(pgrep -P "$pid" 2>/dev/null || true)
+
+    return 1
+}
+
+latest_session_id_from_pane_output() {
+    tmux capture-pane -t "$pane" -p -S -3000 2>/dev/null |
+        sed -nE 's/.*Session ID:[[:space:]]*([0-9a-fA-F-]{36}).*/\1/p' |
+        tail -n 1
+}
+
+stored_session_id_from_pane() {
+    tmux show -pv -t "$pane" "$tmux_option" 2>/dev/null || true
+}
+
+store_session_id() {
+    local session_id="$1"
+
+    [[ -n "$session_id" ]] || return 0
+    [[ "$session_id" =~ ^$session_id_re$ ]] || return 0
+
+    printf '%s\n' "$session_id" >"$session_file"
+    tmux set-option -pq -t "$pane" "$tmux_option" "$session_id"
+    printf '%s\n' "$session_id"
+}
+
+resolve_session_id() {
+    local session_id
+
+    if [[ -s "$session_file" ]]; then
+        session_id="$(head -n 1 "$session_file")"
+        store_session_id "$session_id"
+        return 0
+    fi
+
+    session_id="$(latest_session_id_from_pane_output || true)"
+    if [[ -n "$session_id" ]]; then
+        store_session_id "$session_id"
+        return 0
+    fi
+
+    session_id="$(stored_session_id_from_pane || true)"
+    if [[ -n "$session_id" ]]; then
+        store_session_id "$session_id"
+        return 0
+    fi
+}
+
+watch_session_id() {
+    local session_id
+
+    [[ -n "$root_pid" ]] || die "--root-pid is required for watch"
+    [[ "$root_pid" =~ ^[0-9]+$ ]] || die "--root-pid must be numeric: $root_pid"
+
+    while kill -0 "$root_pid" 2>/dev/null; do
+        session_id="$(process_tree_session_id "$root_pid" || true)"
+        if [[ -z "$session_id" ]]; then
+            session_id="$(latest_session_id_from_pane_output || true)"
+        fi
+        if [[ -n "$session_id" ]]; then
+            store_session_id "$session_id" >/dev/null
+        fi
+        sleep 1
+    done
+}
+
+case "$mode" in
+    resolve)
+        resolve_session_id
+        ;;
+    watch)
+        watch_session_id
+        ;;
+    *)
+        die "unknown mode: $mode"
+        ;;
+esac

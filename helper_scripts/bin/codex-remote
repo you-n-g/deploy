@@ -218,8 +218,12 @@ remote_app_server_pid=""
 remote_app_server_ready=0
 remote_cleanup_done=0
 local_codex_config_args=()
+local_session_monitor_pid=""
+session_id_file="$(mktemp -t codex-remote.XXXXXX.session-id)"
 interrupted=0
 attempt_status=0
+codex_remote_session_option="@codex_remote_session_id"
+codex_remote_session_watcher="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/codex-remote-session-watcher"
 
 run_ssh() {
     local attempt
@@ -317,6 +321,45 @@ read_remote_app_server_state() {
     fi
 }
 
+adopt_session_id_for_reconnect() {
+    local session_id
+
+    [[ -z "$resume_session_id" ]] || return 0
+    [[ -z "$fork_session_id" ]] || return 0
+    [[ -n "${TMUX_PANE:-}" ]] || return 0
+    [[ -x "$codex_remote_session_watcher" ]] || die "codex-remote session watcher is not executable: $codex_remote_session_watcher"
+
+    session_id="$("$codex_remote_session_watcher" resolve \
+        --pane "$TMUX_PANE" \
+        --session-file "$session_id_file" \
+        --tmux-option "$codex_remote_session_option" || true)"
+    [[ -n "$session_id" ]] || return 0
+
+    resume_session_id="$session_id"
+    echo "codex-remote: learned Codex session ${session_id}; future reconnects will resume it" >&2
+}
+
+start_local_session_monitor() {
+    [[ -z "$fork_session_id" ]] || return 0
+    [[ -n "${TMUX_PANE:-}" ]] || return 0
+    [[ -x "$codex_remote_session_watcher" ]] || die "codex-remote session watcher is not executable: $codex_remote_session_watcher"
+
+    "$codex_remote_session_watcher" watch \
+        --pane "$TMUX_PANE" \
+        --root-pid "$$" \
+        --session-file "$session_id_file" \
+        --tmux-option "$codex_remote_session_option" &
+    local_session_monitor_pid="$!"
+}
+
+stop_local_session_monitor() {
+    if [[ -n "$local_session_monitor_pid" ]] && kill -0 "$local_session_monitor_pid" 2>/dev/null; then
+        kill "$local_session_monitor_pid" 2>/dev/null || true
+        wait "$local_session_monitor_pid" 2>/dev/null || true
+    fi
+    local_session_monitor_pid=""
+}
+
 prepare_attempt_ports() {
     if [[ -n "$requested_local_port" ]]; then
         local_port="$requested_local_port"
@@ -360,6 +403,7 @@ cleanup_attempt() {
         kill "$ssh_pid" 2>/dev/null || true
         wait "$ssh_pid" 2>/dev/null || true
     fi
+    stop_local_session_monitor
     if [[ -n "$status_monitor_pid" ]] && kill -0 "$status_monitor_pid" 2>/dev/null; then
         kill "$status_monitor_pid" 2>/dev/null || true
         wait "$status_monitor_pid" 2>/dev/null || true
@@ -379,6 +423,7 @@ cleanup() {
     fi
     rm -f "$log_file"
     rm -f "$remote_script"
+    rm -f "$session_id_file"
     if [[ -n "$status_log_file" ]]; then
         rm -f "$status_log_file"
     fi
@@ -663,6 +708,9 @@ run_codex_remote_attempt() {
     local codex_status
 
     attempt_status=0
+    if ((${attempt:-1} > 1)); then
+        adopt_session_id_for_reconnect
+    fi
     prepare_attempt_ports
     : >"$log_file"
 
@@ -739,11 +787,13 @@ run_codex_remote_attempt() {
         echo "codex-remote: forking Codex session ${fork_session_id}" >&2
         local_codex_cmd+=(fork "$fork_session_id")
     fi
+    start_local_session_monitor
     if "${local_codex_cmd[@]}"; then
         codex_status=0
     else
         codex_status=$?
     fi
+    adopt_session_id_for_reconnect
 
     if [[ "$codex_status" -ne 0 ]]; then
         echo "codex-remote: local Codex exited with status ${codex_status} while connecting to ws://127.0.0.1:${local_port}" >&2
