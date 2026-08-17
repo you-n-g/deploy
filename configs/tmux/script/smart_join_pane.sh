@@ -39,16 +39,22 @@ case "$target_height" in ''|*[!0-9]*|0) target_height="$(tmux display-message -p
 
 ratio=$((target_width * 100 / target_height))
 
-join_flags=()
 if [ "$focus_target" = "--focus-target" ]; then
   # Switch before moving the source pane. If it is the source session's last
   # pane, moving it destroys that session and would otherwise detach the client.
   tmux switch-client -t "$target_pane"
-  join_flags=(-d)
+fi
+
+join_cmd=(tmux join-pane)
+if [ "$focus_target" = "--focus-target" ]; then
+  join_cmd+=(-d)
 fi
 
 if [ "$ratio" -ge "$min_ratio" ]; then
-  tmux join-pane "${join_flags[@]}" -h -t "$target_pane" -s "$source_pane"
+  join_cmd+=(-h)
 else
-  tmux join-pane "${join_flags[@]}" -v -t "$target_pane" -s "$source_pane"
+  join_cmd+=(-v)
 fi
+
+join_cmd+=(-t "$target_pane" -s "$source_pane")
+"${join_cmd[@]}"
