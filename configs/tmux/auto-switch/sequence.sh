@@ -173,7 +173,14 @@ saved_sequences() {
 }
 
 current_ranked_sequence() {
-  normalize_existing_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)"
+  local raw normalized
+
+  raw="$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)"
+  normalized="$(normalize_existing_sequence "$raw")"
+  if [[ "$normalized" != "$raw" ]]; then
+    tmux set-option -gq "$ranked_option" "$normalized"
+  fi
+  printf '%s\n' "$normalized"
 }
 
 set_saved_sequences() {
@@ -362,7 +369,7 @@ edit_sequence() {
   vim_script="$(mktemp "${TMPDIR:-/tmp}/auto-switch-edit.XXXXXX.vim")"
   trap 'rm -f "$tmp" "$selected_file" "$vim_script"' RETURN
 
-  ranked="$(editable_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
+  ranked="$(editable_sequence "$(current_ranked_sequence)")"
   write_edit_file "$tmp" "$ranked"
   focus_line="$(edit_focus_line "$tmp" "$ranked" "$edit_focus_target")"
   focus_pane="$(resolve_pane "$edit_focus_target" || true)"
@@ -475,7 +482,7 @@ saved_live_sequence() {
   local index="$1" ranked
 
   if [[ "$index" == "__new__" ]]; then
-    normalize_existing_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)"
+    current_ranked_sequence
     return 0
   fi
 
@@ -500,9 +507,9 @@ saved_list_rows() {
 saved_picker_rows() {
   local index=0 ranked live live_count total_count
 
-  ranked="$(normalize_existing_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
+  ranked="$(current_ranked_sequence)"
   live_count="$(sequence_count "$ranked")"
-  total_count="$(sequence_count "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
+  total_count="$(sequence_count "$ranked")"
   printf '%s\t%s %s\t%s\n' "__new__" "new" "$(line_count_label "$total_count" "$live_count")" "+ new ranked panes"
 
   while IFS= read -r ranked; do
@@ -641,8 +648,7 @@ case "$command_name" in
     exit 0
     ;;
   show)
-    ranked="$(normalize_existing_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
-    tmux set-option -gq "$ranked_option" "$ranked"
+    ranked="$(current_ranked_sequence)"
     ;;
 esac
 
