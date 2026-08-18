@@ -1,4 +1,9 @@
 return {
+  -- Disable treesitter per-machine by exporting `DISABLE_TREESITTER=1` (e.g. in
+  -- configs/shell/env.local). Its parsers are compiled .so files that fail to
+  -- load on hosts with an incompatible (too old) glibc.
+  { "nvim-treesitter/nvim-treesitter", enabled = vim.env.DISABLE_TREESITTER ~= "1" },
+
   -- NOTE: we disable it due to lacking of following features.
   -- 1. Multiple quote pairing is not supported in the future (https://github.com/echasnovski/mini.nvim/discussions/255)
   -- 2. fast wrap is not supported
