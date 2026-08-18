@@ -1,0 +1,126 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["websockets>=15,<16"]
+# ///
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import os
+import subprocess
+import sys
+import time
+
+import websockets
+
+RECEIVER = "__msg_bridge_receiver__"
+
+
+async def server(host: str, port: int) -> None:
+    receivers: set[websockets.ServerConnection] = set()
+
+    async def handle(ws: websockets.ServerConnection) -> None:
+        first = await ws.recv()
+        if first == RECEIVER:
+            receivers.add(ws)
+            try:
+                await ws.wait_closed()
+            finally:
+                receivers.discard(ws)
+            return
+        await broadcast(receivers, first)
+        async for msg in ws:
+            await broadcast(receivers, msg)
+
+    async with websockets.serve(handle, host, port):
+        print(f"msg-bridge server listening on ws://{host}:{port}")
+        await asyncio.Future()
+
+
+async def broadcast(receivers: set[websockets.ServerConnection], msg: str) -> None:
+    dead = []
+    for ws in receivers:
+        try:
+            await ws.send(msg)
+        except websockets.ConnectionClosed:
+            dead.append(ws)
+    for ws in dead:
+        receivers.discard(ws)
+
+
+async def send(url: str) -> None:
+    async with websockets.connect(url) as ws:
+        print("type text, Enter sends; Ctrl-D exits")
+        while True:
+            try:
+                msg = await asyncio.to_thread(input, "> ")
+            except EOFError:
+                return
+            if msg.strip():
+                await ws.send(msg)
+
+
+def tmux(*args: str) -> str:
+    return subprocess.check_output(["tmux", *args], text=True).strip()
+
+
+def active_pane(session: str | None) -> str:
+    if not os.environ.get("TMUX"):
+        raise SystemExit("msg-bridge recv must run inside tmux")
+    session = session or tmux("display-message", "-p", "#S")
+    return tmux("display-message", "-p", "-t", f"{session}:", "#{pane_id}")
+
+
+def inject(msg: str, session: str | None, enter_delay: float) -> None:
+    pane = active_pane(session)
+    buf = f"msg-bridge-{os.getpid()}-{time.time_ns()}"
+    subprocess.run(["tmux", "set-buffer", "-b", buf, "--", msg], check=True)
+    try:
+        subprocess.run(["tmux", "paste-buffer", "-b", buf, "-t", pane], check=True)
+        if enter_delay:
+            time.sleep(enter_delay)
+        subprocess.run(["tmux", "send-keys", "-t", pane, "Enter"], check=True)
+    finally:
+        subprocess.run(["tmux", "delete-buffer", "-b", buf], check=False)
+
+
+async def recv(url: str, session: str | None, enter_delay: float) -> None:
+    while True:
+        try:
+            async with websockets.connect(url) as ws:
+                await ws.send(RECEIVER)
+                async for msg in ws:
+                    inject(msg, session, enter_delay)
+        except (OSError, websockets.ConnectionClosed):
+            await asyncio.sleep(1)
+
+
+def main() -> None:
+    p = argparse.ArgumentParser()
+    sub = p.add_subparsers(dest="cmd", required=True)
+    sp = sub.add_parser("server")
+    sp.add_argument("--host", default="0.0.0.0")
+    sp.add_argument("--port", type=int, default=8765)
+    sp = sub.add_parser("send")
+    sp.add_argument("url")
+    sp = sub.add_parser("recv")
+    sp.add_argument("url")
+    sp.add_argument("--session", help="tmux session to inject into; default: current session")
+    sp.add_argument("--enter-delay", type=float, default=0.2)
+    args = p.parse_args()
+
+    if args.cmd == "server":
+        asyncio.run(server(args.host, args.port))
+    elif args.cmd == "send":
+        asyncio.run(send(args.url))
+    else:
+        asyncio.run(recv(args.url, args.session, args.enter_delay))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit(130)
