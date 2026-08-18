@@ -423,6 +423,9 @@ local modules = {
     -- Cons:
     -- - Already join cursor: https://www.cursor.com/en/blog/supermaven
     "you-n-g/supermaven-nvim",
+    -- Disable per-machine by exporting `DISABLE_SUPERMAVEN=1` (e.g. in
+    -- configs/shell/env.local) when supermaven isn't wanted/available.
+    enabled = vim.env.DISABLE_SUPERMAVEN ~= "1",
     -- config = function()
     --   require("supermaven-nvim").setup({})
     -- end,
