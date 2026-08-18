@@ -1,24 +1,28 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["websockets>=15,<16"]
+# dependencies = ["typer>=0.12,<1", "websockets>=15,<16"]
 # ///
 
 from __future__ import annotations
 
-import argparse
 import asyncio
 import os
 import subprocess
 import sys
 import time
+from typing import Annotated
 
+import typer
 import websockets
 
+DEFAULT_HOST = "127.0.0.1"
+DEFAULT_PORT = 8765
 RECEIVER = "__msg_bridge_receiver__"
+app = typer.Typer(add_completion=False, help="Tiny sender / bridge / receiver for tmux message input")
 
 
-async def server(host: str, port: int) -> None:
+async def bridge_loop(host: str, port: int) -> None:
     receivers: set[websockets.ServerConnection] = set()
 
     async def handle(ws: websockets.ServerConnection) -> None:
@@ -35,7 +39,7 @@ async def server(host: str, port: int) -> None:
             await broadcast(receivers, msg)
 
     async with websockets.serve(handle, host, port):
-        print(f"msg-bridge server listening on ws://{host}:{port}")
+        print(f"msg-bridge b listening on ws://{host}:{port}")
         await asyncio.Future()
 
 
@@ -50,7 +54,19 @@ async def broadcast(receivers: set[websockets.ServerConnection], msg: str) -> No
         receivers.discard(ws)
 
 
-async def send(url: str) -> None:
+def endpoint(host: str, port: int) -> tuple[str, int, str]:
+    if host.startswith("ws://"):
+        host = host.removeprefix("ws://")
+    if host.startswith("wss://"):
+        raise SystemExit("wss:// is not supported by this tiny bridge")
+    if ":" in host and host.rsplit(":", 1)[1].isdigit():
+        host, port_text = host.rsplit(":", 1)
+        port = int(port_text)
+    return host, port, f"ws://{host}:{port}"
+
+
+async def send_loop(host: str, port: int) -> None:
+    _, _, url = endpoint(host, port)
     async with websockets.connect(url) as ws:
         print("type text, Enter sends; Ctrl-D exits")
         while True:
@@ -67,8 +83,8 @@ def tmux(*args: str) -> str:
 
 
 def active_pane(session: str | None) -> str:
-    if not os.environ.get("TMUX"):
-        raise SystemExit("msg-bridge recv must run inside tmux")
+    if not session and not os.environ.get("TMUX"):
+        raise SystemExit("msg-bridge r must run inside tmux unless --session is set")
     session = session or tmux("display-message", "-p", "#S")
     return tmux("display-message", "-p", "-t", f"{session}:", "#{pane_id}")
 
@@ -86,7 +102,8 @@ def inject(msg: str, session: str | None, enter_delay: float) -> None:
         subprocess.run(["tmux", "delete-buffer", "-b", buf], check=False)
 
 
-async def recv(url: str, session: str | None, enter_delay: float) -> None:
+async def receive_loop(host: str, port: int, session: str | None, enter_delay: float) -> None:
+    _, _, url = endpoint(host, port)
     while True:
         try:
             async with websockets.connect(url) as ws:
@@ -97,30 +114,35 @@ async def recv(url: str, session: str | None, enter_delay: float) -> None:
             await asyncio.sleep(1)
 
 
-def main() -> None:
-    p = argparse.ArgumentParser()
-    sub = p.add_subparsers(dest="cmd", required=True)
-    sp = sub.add_parser("server")
-    sp.add_argument("--host", default="0.0.0.0")
-    sp.add_argument("--port", type=int, default=8765)
-    sp = sub.add_parser("send")
-    sp.add_argument("url")
-    sp = sub.add_parser("recv")
-    sp.add_argument("url")
-    sp.add_argument("--session", help="tmux session to inject into; default: current session")
-    sp.add_argument("--enter-delay", type=float, default=0.2)
-    args = p.parse_args()
+@app.command("b", help="bridge messages from senders to receivers")
+def b(
+    host: Annotated[str, typer.Option("--host", "-H")] = "0.0.0.0",
+    port: Annotated[int, typer.Option("--port", "-P")] = DEFAULT_PORT,
+) -> None:
+    host, port, _ = endpoint(host, port)
+    asyncio.run(bridge_loop(host, port))
 
-    if args.cmd == "server":
-        asyncio.run(server(args.host, args.port))
-    elif args.cmd == "send":
-        asyncio.run(send(args.url))
-    else:
-        asyncio.run(recv(args.url, args.session, args.enter_delay))
+
+@app.command("s", help="send one-line messages")
+def s(
+    host: Annotated[str, typer.Option("--host", "-H")] = DEFAULT_HOST,
+    port: Annotated[int, typer.Option("--port", "-P")] = DEFAULT_PORT,
+) -> None:
+    asyncio.run(send_loop(host, port))
+
+
+@app.command("r", help="receive messages and inject into tmux")
+def r(
+    host: Annotated[str, typer.Option("--host", "-H")] = DEFAULT_HOST,
+    port: Annotated[int, typer.Option("--port", "-P")] = DEFAULT_PORT,
+    session: Annotated[str | None, typer.Option("--session")] = None,
+    enter_delay: Annotated[float, typer.Option("--enter-delay")] = 0.2,
+) -> None:
+    asyncio.run(receive_loop(host, port, session, enter_delay))
 
 
 if __name__ == "__main__":
     try:
-        main()
+        app()
     except KeyboardInterrupt:
         sys.exit(130)
