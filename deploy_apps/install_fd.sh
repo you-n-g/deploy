@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# fd may already be provided by `module add fd-latest` (configs/shell/modules.sh).
+if command -v fd >/dev/null 2>&1; then
+    echo "fd already available ($(command -v fd)); skipping install."
+    exit 0
+fi
 
 FD_PATH=~/apps/fd/
 FILE_PATH=$FD_PATH/fd-v8.1.1-x86_64-unknown-linux-gnu/fd

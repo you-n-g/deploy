@@ -19,7 +19,12 @@ refresh_runtime_path() {
 	hash -r
 }
 
-sudo bash -c "echo -e '\$nrconf{kernelhints} = -1;\n\$nrconf{restart} = \"l\";' > /etc/needrestart/conf.d/99mychanges.conf"  # disble popups
+# Passwordless sudo may be unavailable (e.g. shared HPC box). Skip sudo steps then.
+if sudo -n true 2>/dev/null; then HAVE_SUDO=1; else HAVE_SUDO=0; fi
+
+if [ "$HAVE_SUDO" = 1 ]; then
+	sudo bash -c "echo -e '\$nrconf{kernelhints} = -1;\n\$nrconf{restart} = \"l\";' > /etc/needrestart/conf.d/99mychanges.conf"  # disble popups
+fi
 
 SSH_FLAG=""
 while getopts ":s" opt; do
@@ -63,6 +68,12 @@ EOF
 cd $REPO_PATH
 chmod a+x ./deploy_apps/*
 
+# Optional per-machine patch (git-ignored): if present it puts modern
+# tmux/neovim/rg/fd/node on PATH via `module add`, and the installers below
+# self-skip when the binary is already available. Absent on normal machines,
+# in which case the original install workflow runs unchanged.
+[ -f "$REPO_PATH/configs/shell/modules.sh" ] && . "$REPO_PATH/configs/shell/modules.sh"
+
 ./deploy_apps/deploy_nodejs.sh # this is for other packages
 refresh_runtime_path
 ./deploy_apps/deploy_miniconda.sh
@@ -81,9 +92,10 @@ bash ./configs/llm/conf_llm.sh
 curl -L https://iterm2.com/shell_integration/install_shell_integration_and_utilities.sh | bash
 
 # This is very important for tmux-pet. otherwise, tmux-pet with variables will not work
-sudo ./deploy_apps/set_code.sh
-
-sudo rm /etc/needrestart/conf.d/99mychanges.conf
+if [ "$HAVE_SUDO" = 1 ]; then
+	sudo ./deploy_apps/set_code.sh
+	sudo rm /etc/needrestart/conf.d/99mychanges.conf
+fi
 
 cat <<EOF
 Maybe the following things should be done mannually

@@ -23,3 +23,10 @@ path_prepend_if_missing "$HOME/.luarocks/bin"
 path_append_if_missing "$HOME/.local/bin"
 
 export PATH
+
+# Optional per-machine overrides (git-ignored). Use this to set local-only env
+# vars such as `export CLAUDE_MODEL=claude-opus-4-8` without touching tracked
+# files. Absent on machines that don't need it -> no-op.
+if [ -f "$HOME/deploy/configs/shell/env.local" ]; then
+    . "$HOME/deploy/configs/shell/env.local"
+fi

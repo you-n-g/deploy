@@ -1,3 +1,8 @@
+# Optional per-machine patch (git-ignored): e.g. `module add tmux-latest ...` on
+# boxes without sudo / with an old glibc. Absent on normal machines -> no-op.
+# Must run BEFORE the zsh block below, which uses `fzf --zsh` at startup.
+[ -f "$HOME/deploy/configs/shell/modules.sh" ] && source "$HOME/deploy/configs/shell/modules.sh"
+
 # # Outlines: Zsh only
 # NOTE:
 # - This should be included after conda because it leverages some conda-related features.
@@ -209,6 +214,8 @@ fi
 
 # # Outlines: Common config
 
+# (modules.sh is sourced at the very top of this file so `fzf --zsh` in the zsh
+# block works; env.sh path setup still happens here.)
 source "$HOME/deploy/configs/shell/env.sh"
 
 alias gitlog="git log --all --oneline --graph --decorate"
@@ -576,14 +583,18 @@ _claude_env() {
     "$@"
 }
 
+# Default Claude model; override per-machine in configs/shell/env.local
+# (e.g. `export CLAUDE_MODEL=claude-opus-4-8`).
+: "${CLAUDE_MODEL:=claude-opus-4-7}"
+
 function claudeauto() {
     _start_ai_tui_output_tracker
-    _claude_env _with_tmux_rename claude "$MYPROXY_CLAUDE" claude --model claude-opus-4-7 --enable-auto-mode "$@"
+    _claude_env _with_tmux_rename claude "$MYPROXY_CLAUDE" claude --model "$CLAUDE_MODEL" --enable-auto-mode "$@"
 }
 
 function claudeyolo() {
     _start_ai_tui_output_tracker
-    IS_SANDBOX=1 _claude_env _with_tmux_rename claude "$MYPROXY_CLAUDE" claude --model claude-opus-4-7 --dangerously-skip-permissions "$@"
+    IS_SANDBOX=1 _claude_env _with_tmux_rename claude "$MYPROXY_CLAUDE" claude --model "$CLAUDE_MODEL" --dangerously-skip-permissions "$@"
 }
 
 function clauder() {

@@ -23,9 +23,22 @@ export PATH="$HOME/anaconda3/bin:$HOME/miniconda3/bin:$PATH"   # for enable cond
 # - 在老的系统中找不到正确版本的tmux，导致 vim-slime, ranger 之类的软件失效(失效表现为遇到tmux相关的的步骤就卡住)
 # ln -s $TMUX_EXE ~/bin/tmux
 
-# use homebrew to install tmux
-# Sometime I found conda's tmux is not working. homebrew is more stable across different *nix systems
-if command -v brew >/dev/null 2>&1 ; then
+# tmux is preferably provided by `module add tmux-latest` (configs/shell/modules.sh).
+# Our tmux.conf needs >=3.2 (display-popup). Only install when the tmux on PATH
+# is missing or too old.
+TMUX_MIN_VERSION=3.2
+tmux_version_ok() {
+    command -v tmux >/dev/null 2>&1 || return 1
+    # tmux -V -> "tmux 3.7b" / "tmux 3.1"; keep only the leading number.
+    local cur
+    cur=$(tmux -V | sed -E 's/^tmux[[:space:]]+([0-9]+\.[0-9]+).*/\1/')
+    # true when cur >= TMUX_MIN_VERSION (sort -V puts the min first)
+    [ "$(printf '%s\n%s\n' "$TMUX_MIN_VERSION" "$cur" | sort -V | head -n1)" = "$TMUX_MIN_VERSION" ]
+}
+
+if tmux_version_ok ; then
+    echo "tmux $(tmux -V) is new enough (>=$TMUX_MIN_VERSION); skipping install."
+elif command -v brew >/dev/null 2>&1 ; then
     if ! brew list tmux >/dev/null 2>&1 ; then
         brew install tmux
         # this may take very long time
@@ -36,6 +49,7 @@ else
     echo "Homebrew not found, skipping brew-based tmux installation"
 fi
 
+# tmuxinator needs ruby/rvm; the script handles the already-installed case itself.
 bash ~/deploy/deploy_apps/install_tmuxinator.sh
 
 
