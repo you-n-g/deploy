@@ -15,4 +15,11 @@ log/
 .aider*
 .env
 
+# Optional per-machine patch: `module add ...` etc. for special envs (e.g. no
+# sudo / old glibc HPC boxes). Not tracked; deploy works without it.
+configs/shell/modules.sh
+
+# Optional per-machine env overrides (e.g. CLAUDE_MODEL). Not tracked.
+configs/shell/env.local
+
 configs/llm/merged-skills/

@@ -11,14 +11,15 @@ ensure_login_shell_is_zsh() {
   zsh_path="$(which zsh 2>/dev/null || true)"
   [ -n "${zsh_path}" ] || return 0
 
-  # Already configured.
+  # Already the login shell.
   [ "${SHELL:-}" = "${zsh_path}" ] && return 0
 
-  echo "Setting login shell to zsh: ${zsh_path}"
-  if command -v sudo >/dev/null 2>&1; then
-    sudo chsh -s "${zsh_path}" "${USER:-$(id -un)}"
-  else
-    chsh -s "${zsh_path}"
+  # `chsh` only works for accounts in local /etc/passwd. On shared boxes the
+  # account is usually LDAP/SSS-backed, where chsh can't help and no sudo is
+  # available. Try chsh when the account is local.
+  if grep -q "^${USER:-$(id -un)}:" /etc/passwd 2>/dev/null && chsh -s "${zsh_path}" 2>/dev/null; then
+    echo "Set login shell to zsh via chsh: ${zsh_path}"
+    return 0
   fi
 }
 
@@ -30,8 +31,10 @@ cd "$DIR_PATH"
 # TODO: use zinit in the future.
 
 # Install antigen runtime only. Plugin/theme config stays in rcfile.sh.
+# NOTE: the old https://git.io/antigen shortlink is dead (git.io was retired),
+# so pull directly from the upstream repo.
 if [ ! -f "$ANTIGEN_FILE" ]; then
-  curl -fsSL https://git.io/antigen -o "$ANTIGEN_FILE"
+  curl -fsSL https://raw.githubusercontent.com/zsh-users/antigen/master/bin/antigen.zsh -o "$ANTIGEN_FILE"
 fi
 
 # Initialize conda for zsh if available.

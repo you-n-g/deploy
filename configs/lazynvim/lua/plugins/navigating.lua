@@ -144,7 +144,10 @@ return {
   --   dependencies = { "nvim-lua/plenary.nvim"}
   -- },
   {
-    url = "git@github.com:you-n-g/navigate-note.nvim",
+    -- Use HTTPS by default so it works on hosts where SSH (port 22) is blocked.
+    -- If you have SSH set up and prefer it, switch back to:
+    --   url = "git@github.com:you-n-g/navigate-note.nvim",
+    url = "https://github.com/you-n-g/navigate-note.nvim",
     config = true,
     event = "VeryLazy", -- greatly boost the initial of neovim
     opts = {

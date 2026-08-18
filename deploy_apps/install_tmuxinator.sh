@@ -14,6 +14,31 @@ if [ "$UNAME_S" = "Darwin" ]; then
 fi
 
 
+# Already installed? (e.g. via `module add ruby-3.1.0` + user gem, see
+# configs/shell/modules.sh). Just (re)link the config and stop.
+if command -v tmuxinator >/dev/null 2>&1; then
+    echo "tmuxinator already available ($(command -v tmuxinator)); linking config only."
+    rm -rf ~/.tmuxinator
+    ln -snf ~/deploy/configs/tmux/tmuxinator/ ~/.tmuxinator
+    exit 0
+fi
+
+# If a new-enough ruby+gem is on PATH (system ruby 2.5 is too old for current
+# tmuxinator; load one with e.g. `module add ruby-3.1.0`), install the gem into
+# the user dir. This avoids the heavy rvm bootstrap below.
+if command -v gem >/dev/null 2>&1 && \
+   ruby -e 'exit((RUBY_VERSION.split(".").map(&:to_i) <=> [2,6,0]) >= 0 ? 0 : 1)' 2>/dev/null; then
+    if gem install --user-install tmuxinator; then
+        rm -rf ~/.tmuxinator
+        ln -snf ~/deploy/configs/tmux/tmuxinator/ ~/.tmuxinator
+        echo "tmuxinator installed via 'gem install --user-install'."
+        echo "NOTE: ensure the user gem bin dir is on PATH (configs/shell/modules.sh handles this)."
+        exit 0
+    fi
+    echo "user gem install failed; falling back to rvm below." >&2
+fi
+
+
 # 这个全局安装rvm的我试了很久， 都没成功
 # TODO: 刚刚装的 rvm不一定能马上找到
 # FIXME: 这一步要翻墙才能搞定

@@ -108,11 +108,12 @@ install_or_update_neovim_app() {
 }
 
 build_from_source() {
-  # For legacy system with glibc 2.27, we have to build from source
+  # For legacy system with old glibc (and no sudo / no AppImage FUSE), build
+  # neovim from source. Needs gettext + a C toolchain (gcc/cmake/make) on PATH.
   # - https://www.reddit.com/r/neovim/comments/1cxdf1i/nvim_appimagerelease_tarballs_not_working_on/
-  # this for vim with old version.
-  sudo apt-get install -y gettext
+  command -v gettext >/dev/null 2>&1 || sudo apt-get install -y gettext
   APP_PATH=~/apps/nvim-source
+  mkdir -p ~/bin
   mkdir -p $APP_PATH
   cd ~/apps/nvim-source
   wget https://github.com/neovim/neovim/archive/refs/tags/stable.tar.gz
@@ -133,19 +134,42 @@ merge_previous_config() {
 	echo TODO
 }
 
+# true when the neovim on PATH is >= $1 (default 0.10, required by LazyVim)
+nvim_version_ok() {
+  command -v nvim >/dev/null 2>&1 || return 1
+  local min="${1:-0.10}" cur
+  # `nvim --version` first line: "NVIM v0.11.4" -> 0.11.4
+  cur=$(nvim --version | head -n1 | sed -E 's/^NVIM v([0-9]+\.[0-9]+(\.[0-9]+)?).*/\1/')
+  [ "$(printf '%s\n%s\n' "$min" "$cur" | sort -V | head -n1)" = "$min" ]
+}
+
 deploy() {
-  sudo apt-get install -y libfuse2 xsel
   # - libfuse2: https://askubuntu.com/a/1451171
   # - xsel: https://github.com/tmux-plugins/tmux-yank to support copying in tmux and the system clipboard
   #   MobaXterm can support bi-directional clipboard between remote and local
+  # Only install what's missing so we don't require sudo on already-provisioned hosts.
+  missing_pkgs=()
+  dpkg -s libfuse2 >/dev/null 2>&1 || missing_pkgs+=(libfuse2)
+  command -v xsel >/dev/null 2>&1 || missing_pkgs+=(xsel)
+  if [ "${#missing_pkgs[@]}" -gt 0 ]; then
+    sudo apt-get install -y "${missing_pkgs[@]}"
+  else
+    echo "libfuse2 and xsel already present; skipping apt-get install."
+  fi
 
-  # nodejs is necessary for language servers
-  deploy_apps/deploy_nodejs.sh
-  
-  brew install ripgrep
-  # - frequently used by nvim
+  # neovim is preferably provided by `module add neovim-latest`
+  # (configs/shell/modules.sh). Only build/install when it's missing or too old.
 
-  install_or_update_neovim_app
+  # nodejs is necessary for language servers (also available via `module add nodejs-latest`)
+  command -v node >/dev/null 2>&1 || bash ~/deploy/deploy_apps/deploy_nodejs.sh
+  # ripgrep is frequently used by nvim (also via `module add ripgrep-latest`)
+  command -v rg >/dev/null 2>&1 || brew install ripgrep
+
+  if nvim_version_ok 0.10 ; then
+    echo "neovim $(nvim --version | head -n1) is new enough; skipping install."
+  else
+    install_or_update_neovim_app
+  fi
   install_lazyvim
   install_lazygit
   link_conf
