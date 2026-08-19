@@ -136,6 +136,46 @@ _codex_session_id_for_pid() {
     printf '%s\n' "$session_id"
 }
 
+# Claude Code tracks each live session in <config>/sessions/<pid>.json. Unlike
+# older versions, that file stays current: `sessionId` is rewritten on /clear,
+# and status/updatedAt are refreshed as the session runs. It also records the
+# owning tmux pane and the process start time, both of which we verify so a
+# stale file from a recycled pid can't hand back the wrong session.
+# The file only appears once the session has real content, so a freshly started
+# claude with no turns yet legitimately has no id to report.
+_claude_session_id_for_pid() {
+    local ai_pid="${1:?usage: _claude_session_id_for_pid AI_PID}"
+    local expect_pane="${2:-}"
+    local state_file="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions/$ai_pid.json"
+    local proc_start=""
+
+    [[ -r "$state_file" ]] || return 1
+    [[ -r "/proc/$ai_pid/stat" ]] && proc_start=$(awk '{print $22}' "/proc/$ai_pid/stat" 2>/dev/null)
+
+    python3 -c '
+import json, sys
+
+path, expect_pane, proc_start = sys.argv[1], sys.argv[2], sys.argv[3]
+with open(path) as handle:
+    state = json.load(handle)
+
+session_id = state.get("sessionId") or ""
+if not session_id:
+    sys.exit(1)
+
+# "session:@window.%pane" -> "%pane"; only the pane id is stable across renames.
+pane = (state.get("tmux") or "").rpartition(".")[2]
+if expect_pane and pane and pane != expect_pane:
+    sys.exit(1)
+
+recorded_start = state.get("procStart")
+if proc_start and recorded_start is not None and str(recorded_start) != proc_start:
+    sys.exit(1)
+
+print(session_id)
+' "$state_file" "$expect_pane" "$proc_start"
+}
+
 _ai_session_id_for_pane() {
     local pane_id="${1:?usage: _ai_session_id_for_pane PANE_ID}"
     local pane_pid result ai_pid ai_name
@@ -147,6 +187,7 @@ _ai_session_id_for_pane() {
 
     case "$ai_name" in
         codex) _codex_session_id_for_pid "$ai_pid" ;;
+        claude) _claude_session_id_for_pid "$ai_pid" "$pane_id" ;;
         *) return 1 ;;
     esac
 }
