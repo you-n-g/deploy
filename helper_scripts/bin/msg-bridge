@@ -114,11 +114,20 @@ def tmux(*args: str) -> str:
     return subprocess.check_output(["tmux", *args], text=True).strip()
 
 
+def active_client_tty() -> str:
+    clients = tmux("list-clients", "-F", "#{client_activity} #{client_tty}").splitlines()
+    if not clients:
+        raise SystemExit("msg-bridge r requires an attached tmux client unless --session is set")
+    _activity, tty = max((line.split(maxsplit=1) for line in clients), key=lambda item: int(item[0]))
+    return tty
+
+
 def active_pane(session: str | None) -> str:
-    if not session and not os.environ.get("TMUX"):
+    if session:
+        return tmux("display-message", "-p", "-t", f"{session}:", "#{pane_id}")
+    if not os.environ.get("TMUX"):
         raise SystemExit("msg-bridge r must run inside tmux unless --session is set")
-    session = session or tmux("display-message", "-p", "#S")
-    return tmux("display-message", "-p", "-t", f"{session}:", "#{pane_id}")
+    return tmux("display-message", "-p", "-t", active_client_tty(), "#{pane_id}")
 
 
 def inject(msg: str, session: str | None, enter_delay: float) -> None:
