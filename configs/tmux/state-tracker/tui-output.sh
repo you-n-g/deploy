@@ -37,6 +37,15 @@ capture_recent_output() {
   printf '%s\n' "$recent"
 }
 
+# The footer a TUI keeps on screen for as long as the foreground turn is still
+# interruptible. Codex drops it the instant ESC lands, which is exactly the
+# interrupt path the stale-running timeout below exists for.
+FOREGROUND_WORKING_RE='esc[[:space:]]+to[[:space:]]+(interrupt|interupt)|press[[:space:]]+esc|(^|[[:space:]])(working|baking)[[:space:]]*\('
+
+has_foreground_working_marker() {
+  printf '%s\n' "$1" | grep -Eiq "$FOREGROUND_WORKING_RE"
+}
+
 detect_tui_state() {
   local recent="$1"
 
@@ -52,8 +61,7 @@ detect_tui_state() {
   # the running marker.
   if printf '%s\n' "$recent" | grep -Eiq \
     'pursuing[[:space:]]+goal|<goal_context>|active[[:space:]]+thread[[:space:]]+goal|tasks[[:space:]]+[0-9]+/[0-9]+' \
-    && printf '%s\n' "$recent" | grep -Eiq \
-      'esc[[:space:]]+to[[:space:]]+(interrupt|interupt)|press[[:space:]]+esc|(^|[[:space:]])(working|baking)[[:space:]]*\('; then
+    && has_foreground_working_marker "$recent"; then
     printf 'running\n'
   fi
 }
@@ -105,10 +113,21 @@ emit_busy_to_idle() {
 # Side-effect detector: mark a stale running pane idle when the timeout matches.
 # It always returns 0 so the main loop can run other independent detectors.
 maybe_mark_stale_running_idle() {
+  local recent="$1"
   local running window_activity now idle_after
 
   running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
   [[ "$running" == "1" ]] || return 0
+
+  # Silence alone is not evidence of an ended turn. During the model phase the
+  # TUI only repaints when tokens arrive, so a stalled API stream freezes the
+  # screen while the turn is very much alive -- measured here at 11s, 12s and
+  # once 69s, all well past the timeout. The interrupt footer stays up through
+  # all of it, so requiring its absence is what separates a stalled live turn
+  # from a dead one.
+  if has_foreground_working_marker "$recent"; then
+    return 0
+  fi
 
   window_activity="$(tmux display-message -p -t "$pane_id" '#{window_activity}')"
   now="$(date +%s)"
@@ -158,7 +177,7 @@ while tmux display-message -p -t "$pane_id" '#{pane_id}' >/dev/null 2>&1 && pane
   if [[ -n "$desired_state" ]]; then
     ensure_state "$desired_state"
   fi
-  maybe_mark_stale_running_idle
+  maybe_mark_stale_running_idle "$recent"
   ai_state="$(current_ai_state)"
   emit_busy_to_idle "$last_ai_state" "$ai_state"
   last_ai_state="$ai_state"
