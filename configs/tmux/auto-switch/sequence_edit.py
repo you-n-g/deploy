@@ -173,13 +173,6 @@ def write_edit_file(ranked: str, output_path: str) -> None:
     attribute_width = max((display_width(row["attribute"]) for row in rows), default=0)
 
     with open(output_path, "w", encoding="utf-8") as file:
-        file.write('# Edit auto-switch order. Keep one pane id before "#"; edit Attribute and Pending columns.\n')
-        file.write("# Reorder lines to change priority. Delete a line to remove that pane from the sequence.\n")
-        file.write("# Vim shortcut: normal-mode q saves and exits.\n")
-        file.write("# Vim shortcut: normal-mode Enter saves, exits, and switches to the pane on the current line.\n")
-        file.write('# Attribute column updates @ai_agent_attribute; write "no attribute" to clear.\n')
-        file.write('# Pending column updates @ai_agent_pending; empty clears it, "/" means no reason was provided.\n')
-        file.write("# Earlier columns are informational only. Long lines intentionally do not wrap in vim.\n\n")
         for row in rows:
             file.write(
                 f"{pad_display(row['pane_id'], pane_width)} # "
@@ -189,6 +182,18 @@ def write_edit_file(ranked: str, output_path: str) -> None:
                 f"{pad_display(row['attribute'], attribute_width)} | "
                 f"{row['pending']}\n"
             )
+        # Notes come last so the first pane sits on line 1 and NG jumps straight
+        # to the Nth pane. parse_edit_file skips comment lines wherever they
+        # appear, so this is purely about where the cursor arithmetic starts.
+        file.write("\n")
+        file.write('# Edit auto-switch order. Keep one pane id before "#"; edit Attribute and Pending columns.\n')
+        file.write("# Reorder lines to change priority. Delete a line to remove that pane from the sequence.\n")
+        file.write("# Vim shortcut: normal-mode q saves and exits.\n")
+        file.write("# Vim shortcut: normal-mode Enter saves, exits, and switches to the pane on the current line.\n")
+        file.write("# Vim shortcut: normal-mode Tab / Shift-Tab jump to the next / previous non-pending pane line.\n")
+        file.write('# Attribute column updates @ai_agent_attribute; write "no attribute" to clear.\n')
+        file.write('# Pending column updates @ai_agent_pending; empty clears it, "/" means no reason was provided.\n')
+        file.write("# Earlier columns are informational only. Long lines intentionally do not wrap in vim.\n")
 
 
 def parse_edit_comment(comment: str, line_no: int) -> Tuple[str, str]:
