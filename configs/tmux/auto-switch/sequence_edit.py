@@ -6,6 +6,7 @@ import subprocess
 import sys
 import unicodedata
 from pathlib import Path
+from typing import Dict, List, Set, Tuple
 
 
 FIELD_SEP = "\t"
@@ -28,7 +29,7 @@ STATE_PREFIXES = ("● ", "⏵ ", "◒ ", "⏸ ", "◉ ", "○ ")
 
 
 def tmux_output(*args: str) -> str:
-    return subprocess.check_output(["tmux", *args], text=True)
+    return subprocess.check_output(["tmux", *args], universal_newlines=True)
 
 
 def tmux_run(*args: str) -> None:
@@ -83,8 +84,8 @@ def pending_reason(pending: str) -> str:
     return pending
 
 
-def load_panes() -> dict[str, dict[str, str]]:
-    rows: dict[str, dict[str, str]] = {}
+def load_panes() -> Dict[str, Dict[str, str]]:
+    rows: Dict[str, Dict[str, str]] = {}
     output = tmux_output("list-panes", "-a", "-F", PANE_FORMAT)
     for line in output.splitlines():
         parts = line.split(FIELD_SEP, 10)
@@ -119,7 +120,7 @@ def load_panes() -> dict[str, dict[str, str]]:
     return rows
 
 
-def resolve_pane(target: str, panes: dict[str, dict[str, str]]) -> str:
+def resolve_pane(target: str, panes: Dict[str, Dict[str, str]]) -> str:
     if target in panes:
         return target
     try:
@@ -131,8 +132,8 @@ def resolve_pane(target: str, panes: dict[str, dict[str, str]]) -> str:
 
 def normalize_sequence(ranked: str) -> str:
     panes = load_panes()
-    seen: set[str] = set()
-    out: list[str] = []
+    seen: Set[str] = set()
+    out: List[str] = []
     for candidate in ranked.split():
         resolved = resolve_pane(candidate, panes)
         if not resolved or resolved in seen:
@@ -142,7 +143,7 @@ def normalize_sequence(ranked: str) -> str:
     return " ".join(out)
 
 
-def edit_row(row: dict[str, str]) -> dict[str, str]:
+def edit_row(row: Dict[str, str]) -> Dict[str, str]:
     window_name = strip_state_prefix(row["window_name"])
     target = f"{row['session_name']}:{window_name}.{row['pane_index']}"
     state = state_label(row["unread"], row["running"], row["background"], row["pending"])
@@ -159,7 +160,7 @@ def edit_row(row: dict[str, str]) -> dict[str, str]:
 
 def write_edit_file(ranked: str, output_path: str) -> None:
     panes = load_panes()
-    rows: list[dict[str, str]] = []
+    rows: List[Dict[str, str]] = []
     for pane in ranked.split():
         if pane not in panes:
             raise SystemExit(f"pane missing from current pane list: {pane}")
@@ -190,7 +191,7 @@ def write_edit_file(ranked: str, output_path: str) -> None:
             )
 
 
-def parse_edit_comment(comment: str, line_no: int) -> tuple[str, str]:
+def parse_edit_comment(comment: str, line_no: int) -> Tuple[str, str]:
     parts = comment.rsplit("|", 2)
     if len(parts) != 3:
         raise SystemExit(f"line {line_no} missing Pending or Attribute column after #: {comment}")
@@ -198,11 +199,11 @@ def parse_edit_comment(comment: str, line_no: int) -> tuple[str, str]:
     return pending.strip(), attribute.strip()
 
 
-def parse_edit_file(path: str, panes: dict[str, dict[str, str]]) -> tuple[list[str], dict[str, str], dict[str, str]]:
-    ranked: list[str] = []
-    pending_reasons: dict[str, str] = {}
-    attributes: dict[str, str] = {}
-    seen: set[str] = set()
+def parse_edit_file(path: str, panes: Dict[str, Dict[str, str]]) -> Tuple[List[str], Dict[str, str], Dict[str, str]]:
+    ranked: List[str] = []
+    pending_reasons: Dict[str, str] = {}
+    attributes: Dict[str, str] = {}
+    seen: Set[str] = set()
     with open(path, encoding="utf-8") as file:
         for line_no, line in enumerate(file, start=1):
             line = line.rstrip("\n")
@@ -239,7 +240,7 @@ def tmux_option(pane: str, option: str) -> str:
     result = subprocess.run(
         ["tmux", "show-option", "-pv", "-t", pane, option],
         check=False,
-        text=True,
+        universal_newlines=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
     )
@@ -314,7 +315,10 @@ def apply_edit_file(path: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers = parser.add_subparsers(dest="command")
+    # `required=` kwarg for add_subparsers only exists on Python 3.7+; set the
+    # attribute directly so this keeps working on the host's Python 3.6.
+    subparsers.required = True
 
     normalize_parser = subparsers.add_parser("normalize")
     normalize_parser.add_argument("ranked")
