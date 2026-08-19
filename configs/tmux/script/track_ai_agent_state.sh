@@ -304,6 +304,13 @@ case "$state" in
     # Codex/Claude SessionStart can fire for resume/compact/status-bridge style
     # events inside a still-running tmux pane. Keep the existing attribute stable;
     # users can reset it explicitly from the AI pane picker when it is stale.
+    #
+    # Clearing @ai_agent_running here assumes the pane really is between turns.
+    # Auto-compaction breaks that assumption: it fires mid-turn and the turn
+    # keeps going afterwards, but @ai_agent_running only comes back on the next
+    # UserPromptSubmit, which never arrives. So the Claude hook config no longer
+    # routes the compact source here; a turn that dies without a Stop hook is
+    # cleaned up by the stale-running timeout in state-tracker/tui-output.sh.
     tmux set-option -pq -t "$pane_id" @ai_agent_running 0
     tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
     tmux set-option -pq -t "$pane_id" @ai_agent_unread 0

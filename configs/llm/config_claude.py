@@ -6,6 +6,10 @@ from pathlib import Path
 SETTINGS_PATH = Path.home() / ".claude/settings.json"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HOOK_SETTINGS_PATH = REPO_ROOT / "configs/llm/claude/agent-state-hooks.settings.json"
+# What marks a hook group as ours, so reinstalling replaces it instead of
+# appending a duplicate. Must stay in sync with the commands in
+# HOOK_SETTINGS_PATH, which call the wrapper rather than the tracker directly.
+HOOK_MARKER = "claude_agent_state_hook.sh"
 
 
 def load_json(path: Path):
@@ -27,7 +31,7 @@ def install_agent_hooks():
             group for group in target_groups
             if not any(
                 hook.get("type") == "command"
-                and "track_ai_agent_state.sh" in hook.get("command", "")
+                and HOOK_MARKER in hook.get("command", "")
                 for hook in group.get("hooks", [])
             )
         ]
