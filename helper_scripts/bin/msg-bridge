@@ -1,13 +1,14 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["python-socks[asyncio]>=2,<3", "typer>=0.12,<1", "websockets>=15,<16"]
+# dependencies = ["prompt_toolkit>=3,<4", "python-socks[asyncio]>=2,<3", "typer>=0.12,<1", "websockets>=15,<16"]
 # ///
 
 from __future__ import annotations
 
 import asyncio
 import os
+import socket
 import subprocess
 import sys
 import time
@@ -17,7 +18,7 @@ import typer
 import websockets
 
 DEFAULT_HOST = "127.0.0.1"
-DEFAULT_PORT = 8765
+DEFAULT_PORT = 443
 RECEIVER = "__msg_bridge_receiver__"
 app = typer.Typer(add_completion=False, help="Tiny sender / bridge / receiver for tmux message input")
 
@@ -54,7 +55,7 @@ async def broadcast(receivers: set[websockets.ServerConnection], msg: str) -> No
         receivers.discard(ws)
 
 
-def endpoint(host: str, port: int) -> tuple[str, int, str]:
+def parse_endpoint(host: str, port: int) -> tuple[str, int]:
     if host.startswith("ws://"):
         host = host.removeprefix("ws://")
     if host.startswith("wss://"):
@@ -62,16 +63,47 @@ def endpoint(host: str, port: int) -> tuple[str, int, str]:
     if ":" in host and host.rsplit(":", 1)[1].isdigit():
         host, port_text = host.rsplit(":", 1)
         port = int(port_text)
-    return host, port, f"ws://{host}:{port}"
+    return host, port
+
+
+def ws_url(host: str, port: int) -> str:
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    return f"ws://{host}:{port}"
+
+
+def client_endpoint(host: str, port: int) -> tuple[str, int, str]:
+    raw_host, port = parse_endpoint(host, port)
+    infos = socket.getaddrinfo(raw_host, port, type=socket.SOCK_STREAM)
+    ipv4 = [info for info in infos if info[0] == socket.AF_INET]
+    resolved_host = (ipv4 or infos)[0][4][0]
+    if resolved_host != raw_host:
+        print(f"msg-bridge endpoint: {raw_host}:{port} -> {resolved_host}:{port}", flush=True)
+    else:
+        print(f"msg-bridge endpoint: {resolved_host}:{port}", flush=True)
+    return resolved_host, port, ws_url(resolved_host, port)
 
 
 async def send_loop(host: str, port: int) -> None:
-    _, _, url = endpoint(host, port)
+    _, _, url = client_endpoint(host, port)
+    session = None
+    if sys.stdin.isatty():
+        from prompt_toolkit.key_binding import KeyBindings
+        from prompt_toolkit import PromptSession
+        from prompt_toolkit.history import InMemoryHistory
+
+        bindings = KeyBindings()
+
+        @bindings.add("c-g")
+        def _(event) -> None:
+            event.app.current_buffer.open_in_editor()
+
+        session = PromptSession(history=InMemoryHistory(), key_bindings=bindings)
     async with websockets.connect(url) as ws:
-        print("type text, Enter sends; Ctrl-D exits")
+        print("type text, Ctrl-G edits in $EDITOR, Enter sends; Ctrl-D exits")
         while True:
             try:
-                msg = await asyncio.to_thread(input, "> ")
+                msg = await session.prompt_async("> ") if session else await asyncio.to_thread(input, "> ")
             except EOFError:
                 return
             if msg.strip():
@@ -103,7 +135,7 @@ def inject(msg: str, session: str | None, enter_delay: float) -> None:
 
 
 async def receive_loop(host: str, port: int, session: str | None, enter_delay: float) -> None:
-    _, _, url = endpoint(host, port)
+    _, _, url = client_endpoint(host, port)
     while True:
         try:
             async with websockets.connect(url) as ws:
@@ -119,7 +151,7 @@ def b(
     host: Annotated[str, typer.Option("--host", "-H")] = "0.0.0.0",
     port: Annotated[int, typer.Option("--port", "-P")] = DEFAULT_PORT,
 ) -> None:
-    host, port, _ = endpoint(host, port)
+    host, port = parse_endpoint(host, port)
     asyncio.run(bridge_loop(host, port))
 
 
