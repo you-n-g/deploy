@@ -197,28 +197,27 @@ if [[ -z "$result" ]]; then
     exit 1
 fi
 
+ai_pid="${result%% *}"
 ai_name=$(basename "${result##* }")
 fork_name="${base_name}${SUFFIX}"
 
 case "$ai_name" in
     claude)
-        # Intentionally no session id -- the Resume picker handles it.
-        #
-        # If you're tempted to "fix" this by auto-detecting the current session,
-        # the obvious leads have all been tried and ruled out:
-        #   1. /proc/<pid>/fd + grep '.claude/tasks/<UUID>'
-        #      Only populated while a subagent (Task tool) is running, and the
-        #      UUID there is the subagent task id, NOT the parent session id.
-        #   2. ~/.claude/sessions/<pid>.json (.sessionId field)
-        #      Written once at startup; not refreshed after /clear, /resume,
-        #      --fork-session, /new. Empirically stale for most long-lived pids.
-        #   3. ls -t ~/.claude/projects/<cwd-hash>/*.jsonl | head -1
-        #      Works for a single claude per cwd, but gets polluted when
-        #      multiple claude instances share the cwd (common: axrd-3rd etc.).
-        # Claude Code doesn't keep the session jsonl fd open, so there's no
-        # reliable external anchor. Picker is time-sorted -- two Enters on the
-        # top row forks the current session.
-        cmd="clauder --resume --fork-session"
+        # <config>/sessions/<pid>.json now tracks the live session id (it is
+        # rewritten on /clear) and records the owning pane, so we can fork this
+        # exact session instead of making the user confirm the top row of the
+        # time-sorted Resume picker. See _claude_session_id_for_pid for the
+        # checks that keep a stale file from resolving to the wrong session.
+        session_id=$(_claude_session_id_for_pid "$ai_pid" "$source_pane_id" || true)
+        if [[ -n "$session_id" ]]; then
+            cmd="clauder --resume '$session_id' --fork-session"
+        else
+            # Either the session has no turns yet (no state file until it does)
+            # or the file didn't match this pane. Say which pane we gave up on
+            # and hand over to the picker rather than forking the wrong session.
+            tmux display-message "Fork: no live session id for $source_pane_id; using Resume picker"
+            cmd="clauder --resume --fork-session"
+        fi
         ;;
     codex)
         session_id=$(_ai_session_id_for_pane "$source_pane_id" || true)
