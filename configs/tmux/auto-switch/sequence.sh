@@ -7,6 +7,19 @@ source "$HOME/deploy/configs/tmux/script/ai_label.sh"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 sequence_edit_helper="$script_dir/sequence_edit.py"
 
+# sequence_edit.py uses typing syntax that needs Python >=3.9, but the host's
+# system python3 is 3.6. Run it via uv pinned to Python 3.11. uv comes from
+# `module add uv-latest` (configs/shell/modules.sh) and its bin propagates into
+# tmux popups through the PATH inherited at tmux-server start. Fail loudly if uv
+# is missing rather than silently falling back to an incompatible python.
+run_sequence_edit() {
+  command -v uv >/dev/null 2>&1 || {
+    echo "uv not found on PATH; sequence_edit.py needs it (module add uv-latest, then restart tmux)" >&2
+    exit 1
+  }
+  UV_PYTHON_DOWNLOADS=never uv run --no-project --python 3.11 "$sequence_edit_helper" "$@"
+}
+
 usage() {
   cat >&2 <<'USAGE'
 Usage:
@@ -91,7 +104,7 @@ require_ai_pane() {
 }
 
 normalize_existing_sequence() {
-  python3 "$sequence_edit_helper" normalize "$1"
+  run_sequence_edit normalize "$1"
 }
 
 editable_sequence() {
@@ -334,12 +347,12 @@ edit_focus_line() {
 
 write_edit_file() {
   local file="$1" ranked="$2"
-  python3 "$sequence_edit_helper" write "$ranked" "$file"
+  run_sequence_edit write "$ranked" "$file"
 }
 
 apply_edit_file() {
   local file="$1"
-  python3 "$sequence_edit_helper" apply "$file"
+  run_sequence_edit apply "$file"
 }
 
 switch_to_pane() {
