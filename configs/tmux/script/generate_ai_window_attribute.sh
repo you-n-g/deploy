@@ -36,7 +36,7 @@ failure_message() {
     message="$(sed '/^[[:space:]]*$/d' "$error_file" | tail -n 1 || true)"
   fi
   if [ -z "$message" ]; then
-    message="codexr exec returned non-zero without stderr"
+    message="${ai_tool} agent returned non-zero without stderr"
   fi
 
   printf '%s\n' "$message"
@@ -45,6 +45,14 @@ failure_message() {
 session_id="$(tmux display-message -p -t "$window_id" '#{session_id}')"
 tmux_socket="$(tmux display-message -p '#{socket_path}')"
 agent_cwd="$(dirname -- "$prompt_file")"
+
+# Which AI CLI generates the description. Defaults to codex to preserve the
+# previous behavior; set the tmux global `TMUX_AI_TOOL=claude` to use clauder.
+ai_tool="$(tmux show-environment -g TMUX_AI_TOOL 2>/dev/null | sed 's/^TMUX_AI_TOOL=//')"
+case "$ai_tool" in
+  claude) ai_tool="claude" ;;
+  *) ai_tool="codex" ;;
+esac
 
 cat > "$prompt_file" <<EOF
 你在给一个 tmux AI agent window 生成属性描述，供窗口列表展示。
@@ -64,12 +72,29 @@ Pane ID: ${pane_id}
 tmux -S '${tmux_socket}' capture-pane -ept '${pane_id}'
 EOF
 
-# Run through interactive zsh so rcfile's codexr wrapper owns provider/profile selection.
-# AI_ATTRIBUTE_* are opt-in overrides; unset means use the same defaults as interactive codexr.
-# shellcheck disable=SC2016
-if ! env -u TMUX -u TMUX_PANE zsh -ic \
-  'args=(--disable hooks exec --skip-git-repo-check -C "$2" -o "$1"); if [[ -n "$3" ]]; then args+=(-c "model_reasoning_effort=\"$3\""); fi; if [[ -n "$4" ]]; then args+=(-c "model_verbosity=\"$4\""); fi; args+=(-); codexr "${args[@]}"' \
-  -- "$output_file" "$agent_cwd" "$ai_attribute_reasoning_effort" "$ai_attribute_verbosity" < "$prompt_file" >/dev/null 2>"$error_file"; then
+# Run through interactive zsh so rcfile's codexr/clauder wrapper owns
+# provider/profile selection. The prompt is fed on stdin and the attribute is
+# collected in $output_file (codex writes it via `-o`; claude prints to stdout).
+run_agent() {
+  if [ "$ai_tool" = "claude" ]; then
+    # clauder -p is Claude Code's print/headless mode; it reads the prompt from
+    # stdin and writes the answer to stdout. The AI_ATTRIBUTE_* reasoning and
+    # verbosity knobs are codex-only, so they don't apply here.
+    # shellcheck disable=SC2016
+    env -u TMUX -u TMUX_PANE zsh -ic \
+      'cd -- "$1" || exit 1; clauder -p --output-format text' \
+      -- "$agent_cwd" < "$prompt_file" >"$output_file" 2>"$error_file"
+  else
+    # AI_ATTRIBUTE_* are opt-in overrides; unset means use the same defaults as
+    # interactive codexr.
+    # shellcheck disable=SC2016
+    env -u TMUX -u TMUX_PANE zsh -ic \
+      'args=(--disable hooks exec --skip-git-repo-check -C "$2" -o "$1"); if [[ -n "$3" ]]; then args+=(-c "model_reasoning_effort=\"$3\""); fi; if [[ -n "$4" ]]; then args+=(-c "model_verbosity=\"$4\""); fi; args+=(-); codexr "${args[@]}"' \
+      -- "$output_file" "$agent_cwd" "$ai_attribute_reasoning_effort" "$ai_attribute_verbosity" < "$prompt_file" >/dev/null 2>"$error_file"
+  fi
+}
+
+if ! run_agent; then
   message="$(failure_message)"
   tmux display-message "AI attribute failed: $message"
   case "$message" in
