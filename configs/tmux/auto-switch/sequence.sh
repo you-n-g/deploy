@@ -12,12 +12,17 @@ sequence_edit_helper="$script_dir/sequence_edit.py"
 # `module add uv-latest` (configs/shell/modules.sh) and its bin propagates into
 # tmux popups through the PATH inherited at tmux-server start. Fail loudly if uv
 # is missing rather than silently falling back to an incompatible python.
+#
+# --no-config: uv walks parent dirs looking for uv.toml. Panes running under
+# shared scratch (/px/...) sit below a uv.toml we have no read permission on,
+# which makes uv abort before the helper ever starts. This script needs no uv
+# config at all, so opt out of the search entirely.
 run_sequence_edit() {
   command -v uv >/dev/null 2>&1 || {
     echo "uv not found on PATH; sequence_edit.py needs it (module add uv-latest, then restart tmux)" >&2
     exit 1
   }
-  UV_PYTHON_DOWNLOADS=never uv run --no-project --python 3.11 "$sequence_edit_helper" "$@"
+  UV_PYTHON_DOWNLOADS=never uv run --no-config --no-project --python 3.11 "$sequence_edit_helper" "$@"
 }
 
 usage() {
