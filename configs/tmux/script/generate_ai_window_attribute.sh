@@ -74,16 +74,19 @@ EOF
 
 # Run through interactive zsh so rcfile's codexr/clauder wrapper owns
 # provider/profile selection. The prompt is fed on stdin and the attribute is
-# collected in $output_file (codex writes it via `-o`; claude prints to stdout).
+# collected in $output_file. The shell's own stdout is discarded: an interactive
+# login prints a host banner there, and it would otherwise land in the output
+# ahead of the agent's answer.
 run_agent() {
   if [ "$ai_tool" = "claude" ]; then
     # clauder -p is Claude Code's print/headless mode; it reads the prompt from
-    # stdin and writes the answer to stdout. The AI_ATTRIBUTE_* reasoning and
-    # verbosity knobs are codex-only, so they don't apply here.
+    # stdin and prints the answer, so redirect that inside the shell to keep the
+    # banner out (codex does the same thing via its own `-o`). The AI_ATTRIBUTE_*
+    # reasoning and verbosity knobs are codex-only, so they don't apply here.
     # shellcheck disable=SC2016
     env -u TMUX -u TMUX_PANE zsh -ic \
-      'cd -- "$1" || exit 1; clauder -p --output-format text' \
-      -- "$agent_cwd" < "$prompt_file" >"$output_file" 2>"$error_file"
+      'cd -- "$2" || exit 1; clauder -p --output-format text > "$1"' \
+      -- "$output_file" "$agent_cwd" < "$prompt_file" >/dev/null 2>"$error_file"
   else
     # AI_ATTRIBUTE_* are opt-in overrides; unset means use the same defaults as
     # interactive codexr.
