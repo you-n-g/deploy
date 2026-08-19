@@ -287,7 +287,12 @@ notify_orchestrator_on_idle() {
   [ -n "$orchestrator_pane_id" ] || return 0
   [ "$orchestrator_pane_id" != "$pane_id" ] || return 0
 
-  prompt_text="请关注这个 TMA：${pane_target}（${source_base_name}）已经停下来并有新的更新。根据 project-mindmap 这个skill看是否需要汇总信息。"
+  # 这条 idle 边可能来自「turn 正常结束」，也可能来自「上游 LLM-API 把流掐了」。
+  # 后者 Claude Code 不会自动重试（流已经产出过内容，重试会重复执行 tool call），
+  # Stop hook 也不触发，于是一个本来还要继续干活的 TMA 就永久停在半路。让
+  # orchestrator 先分辨是哪一种，是后者就替它续上。
+  # 保持单行：paste-buffer 没开 -p，多行文本会把换行直接送进 TUI。
+  prompt_text="请关注这个 TMA：${pane_target}（${source_base_name}）已经停下来并有新的更新。根据 project-mindmap 这个skill看是否需要汇总信息。另外先 capture 这个 pane 确认它是怎么停下来的：如果是被上游 LLM-API 错误打断的（屏幕上有 API Error / Connection lost mid-response / 连接重置 / 请求超时这类，也就是上游不出错它就会继续干下去），那它并没有把活做完，请直接向它发送「继续」让它接着原来的工作，不要按任务已完成来汇总。"
   buffer_name="tma-idle-notify-${pane_id#%}"
   tmux set-buffer -b "$buffer_name" "$prompt_text"
   tmux paste-buffer -b "$buffer_name" -t "$orchestrator_pane_id"
