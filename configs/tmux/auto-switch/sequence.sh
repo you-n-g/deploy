@@ -429,6 +429,47 @@ function! AutoSwitchSaveSelectPane() abort
   quit
 endfunction
 nnoremap <buffer> <CR> :call AutoSwitchSaveSelectPane()<CR>
+
+" Tab / Shift-Tab hop between the lines worth landing on: pane rows that are
+" not parked. Header comments and blank lines are skipped because only pane
+" rows start with a %id, and a pane is parked when the Pending column holds a
+" reason -- that column is everything after the final '|', the same split
+" parse_edit_comment does. Backslashes are avoided on purpose: this file is a
+" bash heredoc, so every one would have to be doubled.
+function! s:AutoSwitchIsPaneLine(lnum) abort
+  return getline(a:lnum)[0] ==# '%'
+endfunction
+
+function! s:AutoSwitchIsPending(lnum) abort
+  let l:line = getline(a:lnum)
+  let l:bar = strridx(l:line, '|')
+  return l:bar >= 0 && !empty(trim(strpart(l:line, l:bar + 1)))
+endfunction
+
+function! s:AutoSwitchHop(direction) abort
+  let l:total = line('$')
+  let l:lnum = line('.')
+  " Walk at most one full pass so a buffer with no landable row terminates;
+  " wrapping means the only such row can be the one already under the cursor.
+  for l:step in range(1, l:total)
+    let l:lnum += a:direction
+    if l:lnum < 1
+      let l:lnum = l:total
+    elseif l:lnum > l:total
+      let l:lnum = 1
+    endif
+    if s:AutoSwitchIsPaneLine(l:lnum) && !s:AutoSwitchIsPending(l:lnum)
+      call cursor(l:lnum, 1)
+      return
+    endif
+  endfor
+  echohl WarningMsg
+  echo 'No non-pending pane line to jump to'
+  echohl None
+endfunction
+
+nnoremap <buffer> <Tab> :call <SID>AutoSwitchHop(1)<CR>
+nnoremap <buffer> <S-Tab> :call <SID>AutoSwitchHop(-1)<CR>
 VIM
   vim_script_file="${vim_script//\'/''}"
 
