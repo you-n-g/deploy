@@ -6,8 +6,13 @@
 # # Outlines: Zsh only
 # NOTE:
 # - This should be included after conda because it leverages some conda-related features.
+# - Gate on ZSH_VERSION, i.e. the interpreter actually running this file. $SHELL
+#   is only the user's preferred login shell, and it stays "zsh" in every
+#   process a tmux pane spawns -- including the `bash -lc` that Claude Code
+#   hooks run, which reaches here through .bashrc and then tries to parse
+#   antigen/oh-my-zsh/p10k as bash.
 
-if [ `basename "$SHELL"` = zsh -o "$0" = '-zsh' ]; then
+if [ -n "${ZSH_VERSION:-}" ]; then
     ZF_CMD=$(cat<<"EOF"
 z -l | sort -h -r | awk '{ print $2 }' | fzf --preview="echo {} | xargs ls -lat"
 EOF
