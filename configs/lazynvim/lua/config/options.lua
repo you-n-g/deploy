@@ -6,6 +6,7 @@ local opt = vim.opt
 opt.wrap = true -- enable line wrap
 opt.fencs = "ucs-bom,utf-8,euc-cn,cp936,gb18030,latin1" -- to support gbk chinese
 opt.spelllang = { "en", "cjk" } -- keep English spellcheck without marking CJK text
+opt.timeoutlen = 1000 -- allow comfortable multi-key mappings such as <C-x><C-t>
 
 -- TODO: All these does not work. I think it is related to both Mobaxterm & neovim
 -- opt.gcr = "a:NoiceHiddenCursor,"
