@@ -95,74 +95,10 @@ nvim_server_for_pid() {
 vim_pane="$("$SCRIPT_DIR/ensure_vim_window.sh" --print-pane "$SESSION" "$WORKDIR")"
 [[ -n "$vim_pane" ]] || { tmux display-message "open pane in Vim: failed to locate Vim pane"; exit 1; }
 
-remote_expr="$(python3 - "$SOURCE_PANE" <<'PY'
-import json
-import subprocess
-import sys
-import time
-
-source_pane = sys.argv[1]
-pane_height = subprocess.check_output(
-    ["tmux", "display-message", "-p", "-t", source_pane, "#{pane_height}"],
-    text=True,
-).strip()
-if not pane_height.isdigit():
-    raise RuntimeError(f"invalid pane height: {pane_height!r}")
-
-capture_start = f"-{max(int(pane_height), 1)}"
-text = subprocess.check_output(
-    ["tmux", "capture-pane", "-p", "-t", source_pane, "-S", capture_start],
-    text=True,
-    errors="replace",
-)
-pane_label = subprocess.check_output(
-    ["tmux", "display-message", "-p", "-t", source_pane, "#{session_name}:#{window_index}.#{pane_index}"],
-    text=True,
-).strip()
-
-lines = text.splitlines()
-while lines and lines[-1].strip() == "":
-    lines.pop()
-if not lines:
-    lines = [""]
-title = f"tmux://{pane_label}/{int(time.time())}"
-
-lua_code = r"""(function()
-local lines = vim.fn.json_decode(_A.lines_json)
-local buf = vim.api.nvim_create_buf(false, true)
-vim.api.nvim_buf_set_name(buf, _A.title)
-vim.bo[buf].buftype = "nofile"
-vim.bo[buf].bufhidden = "wipe"
-vim.bo[buf].swapfile = false
-vim.bo[buf].buflisted = false
-vim.bo[buf].modifiable = true
-vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-vim.bo[buf].modified = false
-vim.bo[buf].modifiable = true
-vim.cmd("keepjumps tab sbuffer " .. buf)
-vim.cmd("keepjumps normal! G0")
-return _A.title
-end)()
-"""
-
-def vim_string(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-args = {
-    "lines_json": json.dumps(lines, ensure_ascii=False),
-    "title": title,
+remote_expr="$("$SCRIPT_DIR/capture_pane_to_nvim_expr.py" "$SOURCE_PANE")" || {
+  tmux display-message "open pane in Vim: failed to capture pane"
+  exit 1
 }
-print(
-    "luaeval("
-    + vim_string(lua_code)
-    + ", {'lines_json': "
-    + vim_string(args["lines_json"])
-    + ", 'title': "
-    + vim_string(args["title"])
-    + "})"
-)
-PY
-)"
 
 nvim_pid=""
 nvim_server=""
