@@ -5,6 +5,19 @@ set -euo pipefail
 event="${1:?usage: claude_agent_state_hook.sh init|running|pretool|stop [TARGET]}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 TRACK_STATE="$SCRIPT_DIR/track_ai_agent_state.sh"
+# Claude Code deletes TMUX and TMUX_PANE from the environment of background
+# sessions on purpose -- they are on the deny-list it applies when spawning a
+# `--bg` session or a bg warm spare. Such a session has no pane of its own, and
+# it must not touch the state of the pane that launched it: that pane runs its
+# own hooks, and its Stop hook already keeps itself marked busy while background
+# work is outstanding. So there is nothing to track here.
+#
+# No tmux at all is the same story for any other non-pane launch. Missing
+# TMUX_PANE *inside* tmux is not, and stays fatal.
+if [ -z "${2:-}" ] && [ -z "${TMUX:-}" ]; then
+  exit 0
+fi
+
 target="${2:-${TMUX_PANE:?usage: claude_agent_state_hook.sh init|running|pretool|stop [TARGET]}}"
 
 has_background_work() {
