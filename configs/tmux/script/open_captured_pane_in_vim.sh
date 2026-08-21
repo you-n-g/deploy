@@ -6,6 +6,14 @@ SOURCE_PANE="${2:?usage: open_captured_pane_in_vim.sh SESSION SOURCE_PANE WORKDI
 WORKDIR="${3:-$HOME}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
+# Nothing below reads the caller's cwd, but uv does: capture_pane_to_nvim_expr.py
+# runs under `uv run --script`, and uv discovers its configuration by walking the
+# cwd upwards. A `run-shell` keybinding inherits whatever cwd the tmux client had,
+# and on this host that walk can cross a directory the user may not stat (the
+# 0750 .../workspace/px above a project checkout), where uv dies with EACCES
+# before the script starts. Run from a directory we own instead.
+cd -- "$SCRIPT_DIR"
+
 command -v nvim >/dev/null 2>&1 || { tmux display-message "open pane in Vim: nvim not found"; exit 1; }
 
 find_nvim_pids_for_pane() {
