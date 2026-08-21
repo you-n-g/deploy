@@ -114,6 +114,9 @@ case "$button" in
   sb_ml)
     tmux run-shell -b "$HOME/deploy/configs/tmux/ai/switch_to_last_ai_window.sh -q"
     ;;
+  sb_cq)
+    tmux run-shell -b "$HOME/deploy/configs/tmux/script/quick_question.sh '$session' '$path'"
+    ;;
   sb_as)
     tmux run-shell -b "$HOME/deploy/configs/tmux/ai/switch_to_marked_or_switcher_pane.sh '$current_pane'"
     ;;
