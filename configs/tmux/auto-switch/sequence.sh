@@ -397,9 +397,13 @@ edit_sequence() {
   fi
   vim_selected_file="${selected_file//\'/''}"
   cat > "$vim_script" <<VIM
-setlocal filetype=conf nowrap
+setlocal filetype=conf nowrap cursorline
 syntax match AutoSwitchMeta /#.*$/ contains=AutoSwitchSeparator
 syntax match AutoSwitchSeparator /|/ containedin=ALL
+" vim runs with -u NONE here, so the stock CursorLine (a thin underline) is all
+" there is to mark where the cursor sits on a wide, densely coloured table. A
+" solid background band reads at a glance; cterm=NONE drops the underline.
+highlight CursorLine cterm=NONE ctermbg=238 guibg=#444444
 highlight AutoSwitchMeta ctermfg=245 cterm=NONE guifg=#8a8a8a gui=NONE
 highlight AutoSwitchSeparator ctermfg=45 cterm=bold guifg=#00d7ff gui=bold
 highlight AutoSwitchStateRunning ctermfg=110 cterm=NONE guifg=#87afd7 gui=NONE
