@@ -17,7 +17,18 @@ sequence_edit_helper="$script_dir/sequence_edit.py"
 # shared scratch (/px/...) sit below a uv.toml we have no read permission on,
 # which makes uv abort before the helper ever starts. This script needs no uv
 # config at all, so opt out of the search entirely.
+#
+# SEQUENCE_EDIT_PYTHON overrides all of that with a plain interpreter path, set
+# per machine in configs/shell/env.local. On hosts where uv lives on cvmfs (a
+# 64MB binary behind a FUSE/GCS mount with an LRU cache), every eviction turns
+# `prefix A` into a multi-second stall re-fetching it at ~5MB/s, while a local
+# python3.11 starts in 10ms. The helper imports nothing outside the stdlib, so
+# uv is only ever supplying an interpreter >=3.9 here.
 run_sequence_edit() {
+  if [[ -n "${SEQUENCE_EDIT_PYTHON:-}" ]]; then
+    "$SEQUENCE_EDIT_PYTHON" "$sequence_edit_helper" "$@"
+    return
+  fi
   command -v uv >/dev/null 2>&1 || {
     echo "uv not found on PATH; sequence_edit.py needs it (module add uv-latest, then restart tmux)" >&2
     exit 1
@@ -110,10 +121,6 @@ require_ai_pane() {
 
 normalize_existing_sequence() {
   run_sequence_edit normalize "$1"
-}
-
-editable_sequence() {
-  normalize_existing_sequence "$1"
 }
 
 status_prefix() {
@@ -387,7 +394,10 @@ edit_sequence() {
   vim_script="$(mktemp "${TMPDIR:-/tmp}/auto-switch-edit.XXXXXX.vim")"
   trap 'rm -f "$tmp" "$selected_file" "$vim_script"' RETURN
 
-  ranked="$(editable_sequence "$(current_ranked_sequence)")"
+  # current_ranked_sequence already returns the normalized sequence, and
+  # normalize is idempotent — re-normalizing here only bought another helper
+  # process on the `prefix A` path.
+  ranked="$(current_ranked_sequence)"
   write_edit_file "$tmp" "$ranked"
   focus_line="$(edit_focus_line "$tmp" "$ranked" "$edit_focus_target")"
   focus_pane="$(resolve_pane "$edit_focus_target" || true)"
