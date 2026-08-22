@@ -1,0 +1,6 @@
+{
+  "statusLine": {
+    "type": "command",
+    "command": "bash \"$HOME/deploy/configs/llm/claude/statusline-command.sh\""
+  }
+}
