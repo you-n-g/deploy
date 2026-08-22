@@ -1,6 +1,10 @@
 #!/bin/bash
 # Shared helpers for AI window detection
 
+# Panes that only host a broker service are not AI windows. Drop this line to
+# turn the exclusion off; see the file for what it covers.
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/lib/broker_service.sh"
+
 AI_PROC_PAT='(^|/)(claude|gemini|codex)$'
 _AI_CODEX_SESSION_ID_RE='[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
 TMUXG_SHOW_ORCHESTRATOR_OPTION="@tmuxg-show-orchestrator"
@@ -85,12 +89,19 @@ _find_ai_pid() {
 }
 
 # Check if a pane has an AI process (boolean wrapper around _find_ai_pid).
+# This answers "is this an AI window?" one pane at a time; _ai_pane_rows answers
+# it in batch. Both have to apply lib/broker_service.sh, or a broker pane drops
+# out of the renames but stays in the pickers.
 _has_ai_proc() {
+    local found
+
     if [[ $# -ge 2 ]]; then
-        _find_ai_pid "$1" "$2" > /dev/null
+        found="$(_find_ai_pid "$1" "$2")" || return 1
     else
-        _find_ai_pid "$1" > /dev/null
+        found="$(_find_ai_pid "$1")" || return 1
     fi
+
+    ! _ai_pid_under_service "${found%% *}" "$1"
 }
 
 _first_codex_session_id() {
@@ -524,6 +535,10 @@ _ai_ranked_pane_id_set() {
     printf ' %s ' "$seen"
 }
 
+# Print "PANE_PID<TAB>AI_PID" for every AI process found under one of the given
+# pane pids. The AI pid comes along because the caller still has to ask
+# _ai_pid_under_service whether that process belongs to the pane or to a broker,
+# and the ps snapshot carries no argv to answer it here.
 _ai_pane_pid_set() {
     local pane_pids="$1"
     local ps_data="$2"
@@ -547,13 +562,13 @@ _ai_pane_pid_set() {
             current = pid
             while (current in parent) {
                 if (current in pane_pid) {
-                    found[current] = 1
+                    found[current "\t" pid] = 1
                     break
                 }
                 current = parent[current]
             }
         }
-        for (pid in found) print pid
+        for (pair in found) print pair
     }
     ' <(printf '%s\n' "$pane_pids") <(printf '%s\n' "$ps_data")
 }
@@ -600,7 +615,13 @@ _ai_pane_rows() {
         -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}.#{pane_index}\t#{window_name}\t#{window_id}\t#{pane_id}\t#{pane_pid}\t#{pane_active}\t#{window_activity}\t#{@ai_agent_unread}\t#{@ai_agent_running}\t#{@ai_agent_background}\t#{@ai_agent_pending}\t#{pane_current_path}\t#{@ai_agent_attribute}' 2>/dev/null) || return 1
     pane_pids=$(printf '%s\n' "$pane_rows" | awk -F '\t' '{ print $6 }')
     ps_cache="$(_ai_process_snapshot)" || return 1
-    ai_pane_pids=$(_ai_pane_pid_set "$pane_pids" "$ps_cache")
+    # Same question _has_ai_proc answers one pane at a time, batched over the ps
+    # snapshot: which of these panes is an AI window? It has to stay in sync with
+    # that function, so it applies the same broker exclusion.
+    ai_pane_pids=$(_ai_pane_pid_set "$pane_pids" "$ps_cache" |
+        while IFS=$'\t' read -r pane_pid ai_pid; do
+            _ai_pid_under_service "$ai_pid" "$pane_pid" || printf '%s\n' "$pane_pid"
+        done)
 
     awk -F '\t' '
         FNR == NR {

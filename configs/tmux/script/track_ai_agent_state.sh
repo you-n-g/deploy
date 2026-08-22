@@ -82,6 +82,15 @@ if ! pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')" || [ -z "$pa
   fi
   exit 1
 fi
+
+# Not an AI window, so it gets no AI state: no marker, no rename, no place in
+# any list. The states that go through is_live_ai_pane below would catch this
+# too, but init/running/background/idle do not, and those are exactly the ones a
+# brokered session fires. See _pane_hosts_ai_service.
+if _pane_hosts_ai_service "$(tmux display-message -p -t "$pane_id" '#{pane_pid}')"; then
+  exit 0
+fi
+
 window_id="$(tmux display-message -p -t "$pane_id" '#{window_id}')"
 sync_window_name=1
 state_source="${AI_AGENT_STATE_SOURCE:-}"
