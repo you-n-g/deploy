@@ -37,6 +37,60 @@ capture_recent_output() {
   printf '%s\n' "$recent"
 }
 
+# How long this pane has been quiet. Two independent measures, because neither
+# is right in every layout:
+#
+# - window-activity: tmux's own clock. Cheap and stateless, but it lives on the
+#   window, so in a split every pane reads whatever the busiest sibling did
+#   last. A pane that died next to a live one never looks quiet.
+# - pane-output: this pane's screen content, diffed by this process once per
+#   loop. Genuinely per-pane, at the cost of carrying state across iterations.
+#   tmux has no #{pane_activity}, so there is no stateless way to get this.
+#
+# QUIET_SOURCE picks the one maybe_mark_stale_running_idle consults. Keep both
+# working: window-activity becomes the better answer again the moment tmux
+# grows a per-pane clock, or for setups that never split an AI window.
+QUIET_SOURCE="${TMUX_AI_STATE_TRACKER_QUIET_SOURCE:-pane-output}"
+
+seconds_since_window_activity() {
+  local window_activity now
+
+  window_activity="$(tmux display-message -p -t "$pane_id" '#{window_activity}')"
+  now="$(date +%s)"
+  printf '%s\n' "$((now - window_activity))"
+}
+
+# Updated by note_pane_output on every loop iteration; read by
+# seconds_since_pane_output.
+pane_output_snapshot=""
+pane_output_changed_at="$(date +%s)"
+
+note_pane_output() {
+  local recent="$1"
+
+  [ "$recent" != "$pane_output_snapshot" ] || return 0
+  pane_output_snapshot="$recent"
+  pane_output_changed_at="$(date +%s)"
+}
+
+seconds_since_pane_output() {
+  local now
+
+  now="$(date +%s)"
+  printf '%s\n' "$((now - pane_output_changed_at))"
+}
+
+seconds_since_activity() {
+  case "$QUIET_SOURCE" in
+    pane-output) seconds_since_pane_output ;;
+    window-activity) seconds_since_window_activity ;;
+    *)
+      printf 'unknown TMUX_AI_STATE_TRACKER_QUIET_SOURCE: %s\n' "$QUIET_SOURCE" >&2
+      exit 1
+      ;;
+  esac
+}
+
 # The footer a TUI keeps on screen for as long as the foreground turn is still
 # interruptible. Codex drops it the instant ESC lands, which is exactly the
 # interrupt path the stale-running timeout below exists for.
@@ -114,7 +168,7 @@ emit_busy_to_idle() {
 # It always returns 0 so the main loop can run other independent detectors.
 maybe_mark_stale_running_idle() {
   local recent="$1"
-  local running window_activity now idle_after
+  local running idle_after
 
   running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
   [[ "$running" == "1" ]] || return 0
@@ -129,11 +183,8 @@ maybe_mark_stale_running_idle() {
     return 0
   fi
 
-  window_activity="$(tmux display-message -p -t "$pane_id" '#{window_activity}')"
-  now="$(date +%s)"
   idle_after="${TMUX_AI_STATE_TRACKER_RUNNING_IDLE_AFTER:-10}"
-
-  if (( now - window_activity < idle_after )); then
+  if (( $(seconds_since_activity) < idle_after )); then
     return 0
   fi
 
@@ -173,6 +224,7 @@ last_ai_state="$(current_ai_state)"
 
 while tmux display-message -p -t "$pane_id" '#{pane_id}' >/dev/null 2>&1 && pane_has_ai_proc; do
   recent="$(capture_recent_output)"
+  note_pane_output "$recent"
   desired_state="$(detect_tui_state "$recent")"
   if [[ -n "$desired_state" ]]; then
     ensure_state "$desired_state"
