@@ -253,9 +253,32 @@ sync_ai_window_name() {
   [ "$current_name" = "$desired_name" ] || tmux rename-window -t "$window_id" "$desired_name"
 }
 
+# 一个 TMA 停下来之后 orchestrator 该做什么，是随项目变的：这个 repo 要更新
+# mindmap，那个 repo 可能要跑测试或者回写某个看板。所以项目可以在
+# .tma/idle-notify.md 里写一段，追加到下面那条通用提示后面。
+# 从 orchestrator pane 的 cwd 往上找到 git root，第一个命中的生效，不合并。
+# 用 --show-prefix 而不是 --show-toplevel：cwd 经常是通过 symlink 进 repo 的，
+# toplevel 给的是物理路径，拿来做字符串比较永远对不上。
+project_idle_note() {
+  local dir="$1" prefix levels note i
+
+  [ -d "$dir" ] || return 0
+  prefix="$(git -C "$dir" rev-parse --show-prefix 2>/dev/null || true)"
+  levels="$(printf '%s' "$prefix" | tr -cd / | wc -c)"
+  for (( i = 0; i <= levels; i++ )); do
+    note="$dir/.tma/idle-notify.md"
+    # 压成单行，理由同下面 prompt_text 处：paste-buffer 没开 -p。
+    if [ -f "$note" ]; then
+      tr '\n' ' ' < "$note" | tr -s ' ' | sed -e 's/^ *//' -e 's/ *$//'
+      return 0
+    fi
+    dir="$(dirname "$dir")"
+  done
+}
+
 notify_orchestrator_on_idle() {
   local session_name pane_target source_window_name source_base_name orchestrator_window_id orchestrator_pane_id
-  local prompt_text buffer_name activity notified_activity
+  local prompt_text project_note buffer_name activity notified_activity
 
   # Only supplemental TUI-observed idle edges should ask the orchestrator to
   # summarize an idle pane. Normal Stop hooks still own state updates; the TUI
@@ -293,6 +316,8 @@ notify_orchestrator_on_idle() {
   # orchestrator 先分辨是哪一种，是后者就替它续上。
   # 保持单行：paste-buffer 没开 -p，多行文本会把换行直接送进 TUI。
   prompt_text="请关注这个 TMA：${pane_target}（${source_base_name}）已经停下来并有新的更新。根据 project-mindmap 这个skill看是否需要汇总信息。另外先 capture 这个 pane 确认它是怎么停下来的：如果是被上游 LLM-API 错误打断的（屏幕上有 API Error / Connection lost mid-response / 连接重置 / 请求超时这类，也就是上游不出错它就会继续干下去），那它并没有把活做完，请直接向它发送「继续」让它接着原来的工作，不要按任务已完成来汇总。"
+  project_note="$(project_idle_note "$(tmux display-message -p -t "$orchestrator_pane_id" '#{pane_current_path}')")"
+  [ -z "$project_note" ] || prompt_text="$prompt_text $project_note"
   buffer_name="tma-idle-notify-${pane_id#%}"
   tmux set-buffer -b "$buffer_name" "$prompt_text"
   tmux paste-buffer -b "$buffer_name" -t "$orchestrator_pane_id"
