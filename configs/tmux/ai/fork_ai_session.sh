@@ -199,6 +199,8 @@ fi
 
 ai_pid="${result%% *}"
 ai_name=$(basename "${result##* }")
+# The source window name carries an AI state marker; the fork gets its own.
+_strip_ai_window_state_prefix "$base_name" base_name
 fork_name="${base_name}${SUFFIX}"
 
 case "$ai_name" in
