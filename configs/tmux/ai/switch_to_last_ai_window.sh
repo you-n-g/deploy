@@ -18,14 +18,12 @@ done
 [[ "$QUIET" == true ]] && trap 'exit 0' EXIT
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-source "$SCRIPT_DIR/lib.sh"
 
-current_target="$(tmux display-message -p '#{session_name}:#{window_index}.#{pane_index}' 2>/dev/null || true)"
-row="$(_ai_pane_rows -a | awk -F $'\t' -v cur="$current_target" '$2 != cur && !found { print; found=1 }')"
-if [[ -z "$row" ]]; then
+# Shared with the editor's send-to-last-pane binding, so the pane this jumps to
+# and the pane that sends to are always the same one.
+if ! pane_target="$("$SCRIPT_DIR/last_ai_pane.sh")"; then
     tmux display-message "No other AI pane found"
     exit 1
 fi
 
-IFS=$'\t' read -r _last_visit pane_target _wname _pane_id _pane_pid _wact_raw _unread _running _background _pending _pane_path _attribute <<< "$row"
 tmux switch-client -t "$pane_target"
