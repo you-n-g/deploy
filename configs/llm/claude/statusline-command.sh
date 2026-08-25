@@ -1,11 +1,24 @@
 #!/usr/bin/env bash
 # Claude Code statusline modeled on the user's powerlevel10k prompt
-# (~/deploy/configs/shell/p10k.zsh), whose visible segments are:
+# (~/deploy/configs/shell/p10k.zsh). The segments actually enabled there are:
 #   left:  dir, vcs (git status), prompt_char
-#   right: time (most other right-side segments are conditional/rarely shown)
+#   right: time, plus many env-manager segments (aws, gcloud, kubecontext,
+#          pyenv, nodenv, ...) that p10k only shows while typing a matching
+#          command, i.e. not a steady-state part of the prompt.
 #
-# Renders: <dir> <git-branch [+staged !unstaged ?untracked]>  <time>
-# using the same color numbers as the p10k config.
+# For a single-line Claude Code status we mirror only the steady-state,
+# always-relevant segments: dir, git branch/status, and conda/venv env.
+# `prompt_char`, `status` (exit code) and `time` don't map to anything
+# meaningful in Claude Code (no command is being typed/executed), so they're
+# left out; the command-triggered segments (aws/gcloud/kubecontext/...) are
+# skipped for the same reason.
+#
+# Prepended/appended: model name (+ effort level) and context-window usage.
+# Neither has a p10k equivalent, but both are useful in a Claude Code status
+# line and were requested separately from the p10k migration.
+#
+# Renders: <model>  <dir> <git-branch [+staged !unstaged ?untracked]>  <conda/venv env>  ctx:NN%
+# using the same color numbers as the p10k config where a segment has one.
 #
 # Git calls pass --no-optional-locks so they never block on a repo lock held
 # by another process (e.g. another agent running in the same worktree), and
@@ -16,11 +29,12 @@ set -u
 
 RESET=$'\e[0m'
 DIR_FG=$'\e[38;5;31m'                 # POWERLEVEL9K_DIR_FOREGROUND
-GIT_CLEAN_FG=$'\e[38;5;76m'           # POWERLEVEL9K_VCS_CLEAN_FOREGROUND
-GIT_MODIFIED_FG=$'\e[38;5;178m'       # POWERLEVEL9K_VCS_MODIFIED_FOREGROUND
-GIT_UNTRACKED_FG=$'\e[38;5;39m'       # POWERLEVEL9K_VCS_UNTRACKED_FOREGROUND
-TIME_FG=$'\e[38;5;66m'                # POWERLEVEL9K_TIME_FOREGROUND
+GIT_BRANCH_FG=$'\e[38;5;76m'          # my_git_formatter()'s $clean, applied to the branch name itself
+GIT_MODIFIED_FG=$'\e[38;5;178m'       # my_git_formatter()'s $modified, for +staged / !unstaged
+GIT_UNTRACKED_FG=$'\e[38;5;39m'       # my_git_formatter()'s $untracked, for ?untracked
+ENV_FG=$'\e[38;5;37m'                 # POWERLEVEL9K_VIRTUALENV_FOREGROUND / POWERLEVEL9K_ANACONDA_FOREGROUND
 MODEL_FG=$'\e[38;5;141m'              # not a p10k segment; added for model/effort display
+CTX_FG=$'\e[38;5;244m'                # not a p10k segment; dimmed grey (p10k's "stale vcs" grey) for context usage
 
 input="$(cat)"
 
@@ -68,7 +82,7 @@ if [ "${#dir_display}" -gt 50 ]; then
     dir_display="${short#/}"
 fi
 
-# ---- vcs segment: branch + staged/unstaged/untracked counts ----
+# ---- vcs segment: branch (always green, per my_git_formatter's $clean) + counts ----
 git_seg=""
 if [ -n "$git_root" ]; then
     status_output="$(git -C "$cwd" --no-optional-locks status --porcelain --branch 2>/dev/null)"
@@ -92,20 +106,22 @@ if [ -n "$git_root" ]; then
         END { printf "%d %d %d", s + 0, m + 0, u + 0 }
     ')"
 
-    if [ "$staged" -gt 0 ] || [ "$unstaged" -gt 0 ]; then
-        branch_fg="$GIT_MODIFIED_FG"
-    else
-        branch_fg="$GIT_CLEAN_FG"
-    fi
-
-    git_seg="${branch_fg}${branch}${RESET}"
+    git_seg="${GIT_BRANCH_FG}${branch}${RESET}"
     [ "$staged" -gt 0 ] && git_seg="$git_seg ${GIT_MODIFIED_FG}+${staged}${RESET}"
     [ "$unstaged" -gt 0 ] && git_seg="$git_seg ${GIT_MODIFIED_FG}!${unstaged}${RESET}"
     [ "$untracked" -gt 0 ] && git_seg="$git_seg ${GIT_UNTRACKED_FG}?${untracked}${RESET}"
 fi
 
-# ---- time segment ----
-now="$(date +%H:%M:%S)"
+# ---- env segment: conda/venv, whichever is active. This reads directly from
+# the environment (not the stdin JSON) since Claude Code inherits it from the
+# shell that launched it, same as p10k's virtualenv/anaconda segments do.
+# "base" is hidden, matching how most people treat the default conda env.
+env_seg=""
+if [ -n "${VIRTUAL_ENV:-}" ]; then
+    env_seg="${ENV_FG}$(basename "$VIRTUAL_ENV")${RESET}"
+elif [ -n "${CONDA_DEFAULT_ENV:-}" ] && [ "$CONDA_DEFAULT_ENV" != "base" ]; then
+    env_seg="${ENV_FG}${CONDA_DEFAULT_ENV}${RESET}"
+fi
 
 # ---- model/effort segment: prefixed to the line, e.g. "Opus·max" ----
 # effort.level is absent for models that don't take an effort parameter;
@@ -115,14 +131,36 @@ effort_level="$(printf '%s' "$input" | jq -r '.effort.level // empty')"
 model_seg=""
 if [ -n "$model_name" ]; then
     if [ -n "$effort_level" ]; then
-        model_seg="${MODEL_FG}${model_name}·${effort_level}${RESET}  "
+        model_seg="${MODEL_FG}${model_name}·${effort_level}${RESET}"
     else
-        model_seg="${MODEL_FG}${model_name}${RESET}  "
+        model_seg="${MODEL_FG}${model_name}${RESET}"
     fi
 fi
 
-if [ -n "$git_seg" ]; then
-    printf '%s%s%s%s %s  %s%s%s\n' "$model_seg" "$DIR_FG" "$dir_display" "$RESET" "$git_seg" "$TIME_FG" "$now" "$RESET"
-else
-    printf '%s%s%s%s  %s%s%s\n' "$model_seg" "$DIR_FG" "$dir_display" "$RESET" "$TIME_FG" "$now" "$RESET"
+# ---- context usage segment ----
+ctx_pct="$(printf '%s' "$input" | jq -r '.context_window.used_percentage // empty')"
+ctx_seg=""
+if [ -n "$ctx_pct" ]; then
+    ctx_seg="${CTX_FG}ctx:$(printf '%.0f' "$ctx_pct")%${RESET}"
 fi
+
+# ---- assemble: model  dir git-status  env  ctx ----
+segs=()
+[ -n "$model_seg" ] && segs+=("$model_seg")
+if [ -n "$git_seg" ]; then
+    segs+=("${DIR_FG}${dir_display}${RESET} ${git_seg}")
+else
+    segs+=("${DIR_FG}${dir_display}${RESET}")
+fi
+[ -n "$env_seg" ] && segs+=("$env_seg")
+[ -n "$ctx_seg" ] && segs+=("$ctx_seg")
+
+out=""
+for seg in "${segs[@]}"; do
+    if [ -z "$out" ]; then
+        out="$seg"
+    else
+        out="$out  $seg"
+    fi
+done
+printf '%s\n' "$out"
