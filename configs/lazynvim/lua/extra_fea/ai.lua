@@ -105,18 +105,30 @@ local function get_relative_path()
   return file_path
 end
 
-local function get_last_pane_in_current_session()
-  local target = vim.fn.system({ "tmux", "display-message", "-p", "-t", "{last}", "#{session_name}\t#{window_index}\t#{pane_index}" })
-  if vim.v.shell_error ~= 0 then
-    return nil, nil, nil
+-- The AI pane the user most recently looked at, anywhere.
+--
+-- Not tmux's own "{last}": as a pane target that means the previous pane within
+-- the current window, so once this window has a split next to it, {last} resolves
+-- to the neighbour and never to the pane the user actually came from. The real
+-- answer is the @last_visit stamps, which is what last_ai_pane.sh reads -- the
+-- same script behind the prefix M-l jump, so both land on the same pane.
+local function get_last_visited_ai_pane()
+  local cmd = { vim.fn.expand("~/deploy/configs/tmux/ai/last_ai_pane.sh") }
+  local self_pane = vim.env.TMUX_PANE
+  if self_pane and self_pane ~= "" then
+    -- Exclude this editor's own pane, not the client's current pane: they differ
+    -- whenever the send is triggered from a pane that is not the active one.
+    table.insert(cmd, "--exclude")
+    table.insert(cmd, self_pane)
   end
-  target = trim(target)
-  if target == "" then
+
+  local target = trim(vim.fn.system(cmd))
+  if vim.v.shell_error ~= 0 or target == "" then
     return nil, nil, nil
   end
 
-  local session, window, pane = target:match("^([^\t]+)\t([^\t]+)\t([^\t]+)$")
-  return session, window, pane
+  -- "session:window.pane"; a tmux session name cannot contain ":".
+  return target:match("^([^:]+):([^%.]+)%.(.+)$")
 end
 
 local function get_current_or_visual_content()
@@ -242,9 +254,9 @@ function M.send_to_ai(template, post_action)
 end
 
 function M.send_to_last_pane(template, post_action)
-  local session, window, pane = get_last_pane_in_current_session()
+  local session, window, pane = get_last_visited_ai_pane()
   if not session then
-    print("No last tmux pane found")
+    print("No last visited AI pane found")
     return
   end
   local content = get_current_or_visual_content()
