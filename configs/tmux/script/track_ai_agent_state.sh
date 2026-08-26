@@ -285,6 +285,41 @@ project_idle_note() {
   done
 }
 
+# Paste a message into a TUI pane and make sure it actually got submitted.
+#
+# The wait between paste and Enter is not a formality, and 0.2s was not enough:
+# a Codex/Claude TUI still digesting a few hundred characters of paste swallows
+# the Enter, and the message just sits in the input box. Four idle notices piled
+# up unsent in one orchestrator that way. CLAUDE.md and watch-target/SKILL.md
+# both specify a full second; this is the same submit-then-verify shape
+# watch-target/scripts/run-wakeup.sh already uses.
+#
+# Serialized per target pane. Waiting longer widens the window in which another
+# pane's paste can land between ours and our Enter -- several agents going idle
+# together is exactly the case that surfaced this -- and interleaved pastes
+# submit as one merged blob. The lock makes the longer wait safe.
+submit_to_tui_pane() {
+  local pane="$1" text="$2" buffer="$3"
+  local lock_file="$HOME/.cache/tma-notify-${pane#%}.lock"
+
+  mkdir -p "$HOME/.cache"
+  (
+    flock 9
+    tmux set-buffer -b "$buffer" "$text"
+    tmux paste-buffer -b "$buffer" -t "$pane"
+    sleep 1
+    tmux send-keys -t "$pane" Enter
+    sleep 1
+
+    # A TUI that accepted the message reports itself running. Still idle means
+    # the Enter did not land, so spend one more.
+    if [ "$(tmux show -pv -t "$pane" @ai_agent_running 2>/dev/null || true)" != "1" ]; then
+      tmux send-keys -t "$pane" Enter
+    fi
+    tmux delete-buffer -b "$buffer" 2>/dev/null || true
+  ) 9>"$lock_file"
+}
+
 notify_orchestrator_on_idle() {
   local session_name pane_target source_window_name source_base_name orchestrator_window_id orchestrator_pane_id
   local prompt_text project_note buffer_name activity notified_activity
@@ -328,11 +363,7 @@ notify_orchestrator_on_idle() {
   project_note="$(project_idle_note "$(tmux display-message -p -t "$orchestrator_pane_id" '#{pane_current_path}')")"
   [ -z "$project_note" ] || prompt_text="$prompt_text $project_note"
   buffer_name="tma-idle-notify-${pane_id#%}"
-  tmux set-buffer -b "$buffer_name" "$prompt_text"
-  tmux paste-buffer -b "$buffer_name" -t "$orchestrator_pane_id"
-  sleep 0.2
-  tmux send-keys -t "$orchestrator_pane_id" Enter
-  tmux delete-buffer -b "$buffer_name" 2>/dev/null || true
+  submit_to_tui_pane "$orchestrator_pane_id" "$prompt_text" "$buffer_name"
   tmux set-option -pq -t "$pane_id" @ai_agent_orchestrator_idle_notified_activity "$activity"
 }
 
