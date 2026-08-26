@@ -384,6 +384,9 @@ function codexr() {
         lb8121)
             codexs8121 "$@"
             ;;
+        litellm)
+            codexlm "$@"
+            ;;
         openai)
             codexo "$@"
             ;;
@@ -572,6 +575,36 @@ function codexs8124() {
             -c 'model_providers.lb8124.wire_api="responses"' \
             -c 'model_providers.lb8124.env_key="LB_API_KEY"' \
             "$@"
+}
+
+# LiteLLM gateway -- the same key and endpoint Claude Code talks to, reached
+# over the OpenAI wire instead. The key is not in git; set LITELLM_API_KEY in
+# configs/shell/env.local.
+#
+# Pick the model from codex's own catalog (`codex debug models`), not from the
+# gateway's much longer list. Anything outside the catalog still answers, but
+# codex has no metadata for it, warns on every run and falls back to generic
+# limits. gpt-5.6-sol is the catalog's priority-1 coding model and the gateway
+# serves it under the same slug.
+#
+# One warning survives on purpose: codex warms a plugin catalog from
+# chatgpt.com, which 401s on a gateway key. `plugins.*` is a map of plugin
+# definitions, not a switch, so there is no config that silences it without
+# also hiding real warnings behind RUST_LOG=error.
+function codexlm() {
+    if [[ -z "${LITELLM_API_KEY:-}" ]]; then
+        echo "codexlm: LITELLM_API_KEY unset; set it in configs/shell/env.local" >&2
+        return 1
+    fi
+
+    _codex_run_api codex-litellm \
+        -c 'model_provider="litellm"' \
+        -c 'model_providers.litellm.name="litellm-models-llm-jt"' \
+        -c 'model_providers.litellm.base_url="https://models.llm.jt/v1"' \
+        -c 'model_providers.litellm.wire_api="responses"' \
+        -c 'model_providers.litellm.env_key="LITELLM_API_KEY"' \
+        -c 'model="gpt-5.6-sol"' \
+        "$@"
 }
 
 function c() {
