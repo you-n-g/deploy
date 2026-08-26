@@ -384,6 +384,9 @@ function codexr() {
         lb8121)
             codexs8121 "$@"
             ;;
+        litellm)
+            codexlm "$@"
+            ;;
         openai)
             codexo "$@"
             ;;
@@ -572,6 +575,41 @@ function codexs8124() {
             -c 'model_providers.lb8124.wire_api="responses"' \
             -c 'model_providers.lb8124.env_key="LB_API_KEY"' \
             "$@"
+}
+
+# LiteLLM gateway -- the same key and endpoint Claude Code talks to, reached
+# over the OpenAI wire instead. The key is not in git; set LITELLM_API_KEY in
+# configs/shell/env.local.
+#
+# Pick the model from codex's own catalog (`codex debug models`), not from the
+# gateway's much longer list. Anything outside the catalog still answers, but
+# codex has no metadata for it, warns on every run and falls back to generic
+# limits. Configure `litellm.model` in gateways.local.json with a slug served
+# by both codex's catalog and the gateway.
+#
+# One warning survives on purpose: codex warms a plugin catalog from
+# chatgpt.com, which 401s on a gateway key. `plugins.*` is a map of plugin
+# definitions, not a switch, so there is no config that silences it without
+# also hiding real warnings behind RUST_LOG=error.
+function codexlm() {
+    local gateway_url gateway_model
+    gateway_url="$(python3 -c 'import json; from pathlib import Path; config = json.loads((Path.home() / ".config/llm/gateways.local.json").read_text())["litellm"]; print(json.dumps(config["base_url"].rstrip("/") + "/v1"))')" || return
+    gateway_model="$(python3 -c 'import json; from pathlib import Path; config = json.loads((Path.home() / ".config/llm/gateways.local.json").read_text())["litellm"]; print(config.get("model", ""))')" || return
+    if [[ -z "${LITELLM_API_KEY:-}" ]]; then
+        echo "codexlm: LITELLM_API_KEY unset; set it in configs/shell/env.local" >&2
+        return 1
+    fi
+    local -a model_args=()
+    [[ -z "$gateway_model" ]] || model_args=(-c "model=\"$gateway_model\"")
+
+    _codex_run_api codex-litellm \
+        -c 'model_provider="litellm"' \
+        -c 'model_providers.litellm.name="litellm-gateway"' \
+        -c "model_providers.litellm.base_url=$gateway_url" \
+        -c 'model_providers.litellm.wire_api="responses"' \
+        -c 'model_providers.litellm.env_key="LITELLM_API_KEY"' \
+        "${model_args[@]}" \
+        "$@"
 }
 
 function c() {
