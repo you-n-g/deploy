@@ -3,10 +3,14 @@ set -euo pipefail
 
 WINDOW_NAME="vim"
 PRINT_PANE=false
+PREFER_WINDOW=""
 
 while [[ "${1:-}" == -* ]]; do
   case "$1" in
     --print-pane) PRINT_PANE=true; shift ;;
+    # Look here first. A caller acting on a specific pane wants the Vim sitting
+    # next to it, not whichever one the session happens to hand back.
+    --prefer-window) PREFER_WINDOW="$2"; shift 2 ;;
     *) echo "ensure_vim_window.sh: unknown option $1" >&2; exit 2 ;;
   esac
 done
@@ -21,11 +25,18 @@ WORKDIR="${WORKDIR:-$HOME}"
 
 tmux has-session -t "$SESSION" 2>/dev/null
 
-find_vim_window() {
-  local pane_rows ps_rows
+# Taken once: this is a big host and the scan runs up to twice below.
+ps_rows="$(ps -ax -o pid=,ppid=,comm= 2>/dev/null)"
 
-  pane_rows="$(tmux list-panes -s -t "$SESSION" -F $'#{window_id}\t#{pane_id}\t#{pane_pid}' 2>/dev/null)"
-  ps_rows="$(ps -ax -o pid=,ppid=,comm= 2>/dev/null)"
+# Usage: find_vim_window <tmux list-panes args...>
+#
+# Prints "window_id<TAB>pane_id" for a pane running Vim, or nothing. Which pane
+# wins among several is not defined -- the awk loop below walks an associative
+# array -- so the caller narrows the search instead of ranking the results.
+find_vim_window() {
+  local pane_rows
+
+  pane_rows="$(tmux list-panes "$@" -F $'#{window_id}\t#{pane_id}\t#{pane_pid}' 2>/dev/null)"
 
   awk -F '\t' '
     FNR == NR {
@@ -65,7 +76,15 @@ find_vim_window() {
 
 window_id=""
 pane_id=""
-IFS=$'\t' read -r window_id pane_id < <(find_vim_window) || true
+
+# The Vim in the caller's own window, if there is one, before anything else.
+if [[ -n "$PREFER_WINDOW" ]]; then
+  IFS=$'\t' read -r window_id pane_id < <(find_vim_window -t "$PREFER_WINDOW") || true
+fi
+
+if [[ -z "$window_id" ]]; then
+  IFS=$'\t' read -r window_id pane_id < <(find_vim_window -s -t "$SESSION") || true
+fi
 
 if [[ -z "$window_id" ]]; then
   IFS=$'\t' read -r window_id pane_id < <(

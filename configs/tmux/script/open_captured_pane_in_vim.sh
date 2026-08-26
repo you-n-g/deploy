@@ -100,7 +100,11 @@ nvim_server_for_pid() {
   done < <(lsof -a -p "$pid" -U -Fn 2>/dev/null)
 }
 
-vim_pane="$("$SCRIPT_DIR/ensure_vim_window.sh" --print-pane "$SESSION" "$WORKDIR")"
+# Prefer a Vim already sharing a window with the pane being captured: that is
+# the one the user is looking at, and reusing it keeps the capture next to its
+# source instead of throwing the view to some other window.
+source_window="$(tmux display-message -p -t "$SOURCE_PANE" '#{window_id}')"
+vim_pane="$("$SCRIPT_DIR/ensure_vim_window.sh" --print-pane --prefer-window "$source_window" "$SESSION" "$WORKDIR")"
 [[ -n "$vim_pane" ]] || { tmux display-message "open pane in Vim: failed to locate Vim pane"; exit 1; }
 
 remote_expr="$("$SCRIPT_DIR/capture_pane_to_nvim_expr.py" "$SOURCE_PANE")" || {
