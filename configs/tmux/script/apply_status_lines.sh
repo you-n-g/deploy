@@ -95,7 +95,6 @@ expanded_buttons="$(
     sb_t ' t ' \
     sb_ct 'C-t' \
     sb_kp "$(click_only 'K-p')" \
-    sb_ks "$(click_only 'K-s')" \
     sb_mf 'M-f' \
     sb_less "$(click_only '<<<')"
 )"

@@ -107,10 +107,6 @@ case "$button" in
     tmux kill-pane -t "$current_pane"
     refresh_all_sessions=1
     ;;
-  sb_ks)
-    "$HOME/deploy/configs/tmux/script/close_current_session.sh" "$session" "$last_session"
-    refresh_all_sessions=1
-    ;;
   sb_ml)
     tmux run-shell -b "$HOME/deploy/configs/tmux/ai/switch_to_last_ai_window.sh -q"
     ;;
