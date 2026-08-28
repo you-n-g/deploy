@@ -108,7 +108,7 @@ tmux show -pv -t '<target-pane>' @ai_agent_running
   - **未达成，且需要人**（它在问用户问题、认证/额度失败、要用户做技术选择、同一个错误反复出现）→ 不要替用户回答，也不要替它做决定，直接汇报给用户并结束本轮监督。
 - 目标 pane/window 消失 → 汇报并结束。
 
-督促消息按 CLAUDE.md 的 TMA 约定发送：`tmux set-buffer` → `paste-buffer` → `sleep 1` → `send-keys Enter`，首行署名 `⟦TMA⟧ <自己的 window 名>.<pane 序号>`。
+督促消息按 CLAUDE.md 的 TMA 约定发送：`tmux set-buffer` → `paste-buffer` → `sleep 1` → `send-keys Enter`，首行写 `⟦TMA⟧ <发件人> → <收件人>`，两边都是 `<window 名>.<pane 序号>`。
 
 ### 3. 终止条件
 
