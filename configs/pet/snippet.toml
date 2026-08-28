@@ -486,6 +486,12 @@
   command = "key_shell.sh <cred=|_azure_lite_||_openai_lite_gpt_5_||_openai_lite_o4_mini_||_openai_lite_o3_||_openai_lite_o3_mini_||_openai_lite_||_azure_ad_lite_||_deepseek_lite_||_openai_lite_gpt_4_1_|> bash -c 'uvx -p 3.12 --from aider-chat aider --model <model=|_$CHAT_MODEL_||_$CHAT_MODEL_|> --weak-model <model> <commit_conf=|_--dirty-commits_||_--no-dirty-commits_|> -m \"<command=/commit>\"'"
 
 [[Snippets]]
+  Description = "AI TUI command"
+  Output = ""
+  Tag = []
+  command = "<disable_rename=|_TMUX_AI_DISABLE_RENAME=1_||__|> $(tmux show-environment -g TMUX_AI_TOOL | cut -d= -f2)r <effort=|__||_-c 'model_reasoning_effort=\"low\"'_||_-c 'model_reasoning_effort=\"medium\"'_||_-c 'model_reasoning_effort=\"high\"'_||_--effort low_||_--effort medium_||_--effort high_|>"
+
+[[Snippets]]
   Description = "codex command"
   Output = ""
   Tag = []
@@ -754,3 +760,9 @@
   Output = ""
   Tag = []
   command = "mkdir -p \"$HOME/repos/servers/ai4ai-TR\" && sshfs ali-cn:/data/xiaoyang/repos/ai4ai-TR \"$HOME/repos/servers/ai4ai-TR\" -o idmap=user,reconnect,ServerAliveInterval=15,ServerAliveCountMax=3"
+
+[[Snippets]]
+  Description = "update TMA orchestrator notification"
+  Output = ""
+  Tag = []
+  command = "vim .tma/idle-notify.md"
