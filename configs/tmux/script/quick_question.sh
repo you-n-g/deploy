@@ -17,6 +17,8 @@ path="${2:-$HOME}"
 [[ -n "$session" ]] || { usage; exit 2; }
 
 ranked_option="@auto_switch_ranked_panes"
+livesync_command="${TMA_LIVESYNC_COMMAND:-codex-remote -C ~/vaults/livesync-headless bj.vm.213428.xyz}"
+printf -v shell_command 'TMUX_AI_WINDOW_NAME=quick-question zsh -ic %q' "$livesync_command"
 
 pane="$(
   tmux new-window \
@@ -25,7 +27,7 @@ pane="$(
     -t "${session}:" \
     -n quick-question \
     -c "$path" \
-    "zsh -ic 'codex-remote -C ~/vaults/livesync-headless bj.vm.213428.xyz'"
+    "$shell_command"
 )"
 
 ranked="$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)"

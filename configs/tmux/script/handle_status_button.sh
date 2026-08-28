@@ -32,12 +32,16 @@ set_buttons_expanded() {
 }
 
 new_livesync_remote_window() {
+  local livesync_command shell_command
+
   if [ -z "$session" ]; then
     tmux display-message "No current session for livesync remote"
     exit 1
   fi
 
-  tmux new-window -t "${session}:" -n livesync-headless -c "$path" "zsh -ic 'codex-remote -C ~/vaults/livesync-headless bj.vm.213428.xyz'"
+  livesync_command="${TMA_LIVESYNC_COMMAND:-codex-remote -C ~/vaults/livesync-headless bj.vm.213428.xyz}"
+  printf -v shell_command 'TMUX_AI_WINDOW_NAME=livesync-headless zsh -ic %q' "$livesync_command"
+  tmux new-window -t "${session}:" -n livesync-headless -c "$path" "$shell_command"
 }
 
 case "$button" in

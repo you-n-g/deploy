@@ -14,7 +14,7 @@ import sys
 from typing import ClassVar
 
 from textual.app import App, ComposeResult
-from textual.widgets import Footer, Header, OptionList, Static
+from textual.widgets import Footer, Header, OptionList, RadioButton, RadioSet, Static
 from textual.widgets.option_list import Option
 
 VARIABLE = "CODEXR_PROVIDER"
@@ -22,7 +22,11 @@ CHOICES = (
     ("lb8121", "lb8121 — shared 8121 endpoint (default)"),
     ("openai", "openai — official OpenAI login"),
     ("xyz", "xyz — XYZ normally, Azure inside Obsidian"),
-    ("inherit", "inherit — remove the current-session override"),
+    ("inherit", "inherit — remove the selected-scope override"),
+)
+SCOPES = (
+    ("session", "Current session"),
+    ("global", "Global tmux server"),
 )
 
 
@@ -58,10 +62,20 @@ def read_variable(*scope: str) -> str | None:
     return None
 
 
+def set_provider(scope: str, session: str, value: str) -> None:
+    target = ["-g"] if scope == "global" else ["-t", session]
+    if value == "inherit":
+        run_tmux("set-environment", *target, "-r", VARIABLE)
+    else:
+        run_tmux("set-environment", *target, VARIABLE, value)
+
+
 class ProviderApp(App[None]):
     TITLE = "Codex provider"
     CSS = """
     #status { margin: 1 2; padding: 1 2; border: round $accent; }
+    #scope { margin: 0 2 1 2; height: 3; layout: horizontal; border: round $secondary; }
+    #scope RadioButton { width: 1fr; }
     #providers { margin: 0 2 1 2; height: auto; border: round $primary; }
     """
     BINDINGS: ClassVar[list[tuple[str, str, str]]] = [
@@ -73,10 +87,19 @@ class ProviderApp(App[None]):
     def __init__(self, session: str) -> None:
         super().__init__()
         self.session = session
+        self.scope = "session"
 
     def compose(self) -> ComposeResult:
         yield Header()
         yield Static(id="status")
+        yield RadioSet(
+            *(
+                RadioButton(label, value=value == self.scope, id=value)
+                for value, label in SCOPES
+            ),
+            id="scope",
+            compact=True,
+        )
         yield OptionList(
             *(Option(label, id=value) for value, label in CHOICES), id="providers"
         )
@@ -110,29 +133,27 @@ class ProviderApp(App[None]):
             f"Session: {self.session}\n"
             f"Session override: {session_value or '<inherit>'}\n"
             f"Global value: {global_value or '<unset>'}\n"
-            f"Effective: {effective} ({source})"
+            f"Effective: {effective} ({source})\n"
+            f"Apply to: {self.scope}"
         )
 
     def sync_highlight(self) -> None:
-        session_value, _, _, effective = self.values()
-        target = session_value or effective
+        session_value, global_value, _, _ = self.values()
+        target = (
+            session_value if self.scope == "session" else global_value
+        ) or "inherit"
         values = [value for value, _ in CHOICES]
-        self.query_one(OptionList).highlighted = (
-            values.index(target) if target in values else values.index("xyz")
-        )
+        self.query_one(OptionList).highlighted = values.index(target)
 
     def apply(self, value: str) -> None:
         try:
-            if value == "inherit":
-                run_tmux("set-environment", "-t", self.session, "-r", VARIABLE)
-            else:
-                run_tmux("set-environment", "-t", self.session, VARIABLE, value)
+            set_provider(self.scope, self.session, value)
         except ToolError as error:
             self.notify(str(error), severity="error")
             return
         self.refresh_status()
         self.sync_highlight()
-        self.notify(f"{VARIABLE} → {value}")
+        self.notify(f"{self.scope} {VARIABLE} → {value}")
 
     def action_apply(self) -> None:
         options = self.query_one(OptionList)
@@ -143,13 +164,18 @@ class ProviderApp(App[None]):
         self.refresh_status()
         self.sync_highlight()
 
+    def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
+        self.scope = event.pressed.id or "session"
+        self.refresh_status()
+        self.sync_highlight()
+
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         self.apply(event.option.id)
 
 
 def main() -> int:
     if sys.argv[1:] in (["-h"], ["--help"]):
-        print("codex-provider: choose CODEXR_PROVIDER for the current tmux session")
+        print("codex-provider: choose session or global tmux CODEXR_PROVIDER")
         return 0
     ProviderApp(current_session()).run()
     return 0
