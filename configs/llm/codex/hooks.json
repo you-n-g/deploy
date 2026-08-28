@@ -2,10 +2,25 @@
   "hooks": {
     "SessionStart": [
       {
+        "_comment": "compact is deliberately absent. Codex re-fires SessionStart after compacting, mid-turn, and init clears @ai_agent_running -- which then only comes back on the next UserPromptSubmit that never arrives, so a working pane sits marked idle. Same reason the Claude side matches startup|resume|clear.",
+        "matcher": "startup|resume|clear",
         "hooks": [
           {
             "type": "command",
             "command": "bash -lc 'AI_AGENT_STATE_SOURCE=codex-hook:session-start exec \"$HOME/deploy/configs/tmux/script/track_ai_agent_state.sh\" init'",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "_comment": "A turn can resume without a UserPromptSubmit -- after a compaction, or when a queued message is picked up -- and nothing else would mark the pane running again. Every such continuation reaches a tool call. Guarded by a single tmux read so the common already-running case costs nothing.",
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -lc '[ \"$(tmux show -pv -t \"$TMUX_PANE\" @ai_agent_running 2>/dev/null)\" = 1 ] && exit 0; AI_AGENT_STATE_SOURCE=codex-hook:pre-tool-use exec \"$HOME/deploy/configs/tmux/script/track_ai_agent_state.sh\" running'",
             "timeout": 5
           }
         ]
