@@ -307,9 +307,9 @@ submit_to_tui_pane() {
     flock 9
     tmux set-buffer -b "$buffer" "$text"
     tmux paste-buffer -b "$buffer" -t "$pane"
-    sleep 1
+    sleep 2
     tmux send-keys -t "$pane" Enter
-    sleep 1
+    sleep 2
 
     # A TUI that accepted the message reports itself running. Still idle means
     # the Enter did not land, so spend one more.
