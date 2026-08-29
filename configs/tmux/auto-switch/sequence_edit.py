@@ -120,6 +120,22 @@ def load_panes() -> Dict[str, Dict[str, str]]:
     return rows
 
 
+def load_session_names(pane_ids: List[str]) -> Dict[str, str]:
+    if not pane_ids:
+        return {}
+
+    helper = Path(__file__).resolve().parent.parent / "ai/session_names.sh"
+    output = subprocess.check_output(
+        [os.fspath(helper)] + pane_ids,
+        universal_newlines=True,
+    )
+    names: Dict[str, str] = {}
+    for line in output.splitlines():
+        pane_id, name = line.split(FIELD_SEP, 1)
+        names[pane_id] = name
+    return names
+
+
 def resolve_pane(target: str, panes: Dict[str, Dict[str, str]]) -> str:
     if target in panes:
         return target
@@ -143,7 +159,7 @@ def normalize_sequence(ranked: str) -> str:
     return " ".join(out)
 
 
-def edit_row(row: Dict[str, str]) -> Dict[str, str]:
+def edit_row(row: Dict[str, str], session_name: str) -> Dict[str, str]:
     window_name = strip_state_prefix(row["window_name"])
     target = f"{row['session_name']}:{window_name}.{row['pane_index']}"
     state = state_label(row["unread"], row["running"], row["background"], row["pending"])
@@ -155,22 +171,25 @@ def edit_row(row: Dict[str, str]) -> Dict[str, str]:
         "path": row["path"],
         "pending": pending_reason(row["pending"]),
         "attribute": attribute,
+        "session_name": session_name or "unnamed",
     }
 
 
 def write_edit_file(ranked: str, output_path: str) -> None:
     panes = load_panes()
+    session_names = load_session_names(ranked.split())
     rows: List[Dict[str, str]] = []
     for pane in ranked.split():
         if pane not in panes:
             raise SystemExit(f"pane missing from current pane list: {pane}")
-        rows.append(edit_row(panes[pane]))
+        rows.append(edit_row(panes[pane], session_names.get(pane, "")))
 
     pane_width = max((display_width(row["pane_id"]) for row in rows), default=0)
     target_width = max((display_width(row["target"]) for row in rows), default=0)
     state_width = max((display_width(row["state"]) for row in rows), default=0)
     path_width = max((display_width(row["path"]) for row in rows), default=0)
     attribute_width = max((display_width(row["attribute"]) for row in rows), default=0)
+    session_name_width = max((display_width(row["session_name"]) for row in rows), default=0)
 
     with open(output_path, "w", encoding="utf-8") as file:
         for row in rows:
@@ -180,6 +199,7 @@ def write_edit_file(ranked: str, output_path: str) -> None:
                 f"{pad_display(row['state'], state_width)} | "
                 f"{pad_display(row['path'], path_width)} | "
                 f"{pad_display(row['attribute'], attribute_width)} | "
+                f"{pad_display(row['session_name'], session_name_width)} | "
                 f"{row['pending']}\n"
             )
         # Notes come last so the first pane sits on line 1 and NG jumps straight
@@ -192,15 +212,16 @@ def write_edit_file(ranked: str, output_path: str) -> None:
         file.write("# Vim shortcut: normal-mode Enter saves, exits, and switches to the pane on the current line.\n")
         file.write("# Vim shortcut: normal-mode Tab / Shift-Tab jump to the next / previous non-pending pane line.\n")
         file.write('# Attribute column updates @ai_agent_attribute; write "no attribute" to clear.\n')
+        file.write("# Session column is the live Codex/Claude display name and is informational only.\n")
         file.write('# Pending column updates @ai_agent_pending; empty clears it, "/" means no reason was provided.\n')
         file.write("# Earlier columns are informational only. Long lines intentionally do not wrap in vim.\n")
 
 
 def parse_edit_comment(comment: str, line_no: int) -> Tuple[str, str]:
-    parts = comment.rsplit("|", 2)
-    if len(parts) != 3:
-        raise SystemExit(f"line {line_no} missing Pending or Attribute column after #: {comment}")
-    _, attribute, pending = parts
+    parts = comment.rsplit("|", 3)
+    if len(parts) != 4:
+        raise SystemExit(f"line {line_no} missing Pending, Session, or Attribute column after #: {comment}")
+    _, attribute, _session_name, pending = parts
     return pending.strip(), attribute.strip()
 
 

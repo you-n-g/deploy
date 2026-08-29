@@ -334,7 +334,7 @@ first_edit_pane_line() {
 }
 
 edit_focus_line() {
-  local file="$1" ranked="$2" focus_target="$3" focus_pane focus_window pane pane_window line
+  local file="$1" ranked="$2" focus_target="$3" focus_pane focus_window window_panes pane line
 
   [[ -n "$focus_target" ]] || { first_edit_pane_line "$file" "$ranked"; return 0; }
   focus_pane="$(resolve_pane "$focus_target" || true)"
@@ -345,13 +345,15 @@ edit_focus_line() {
 
   focus_window="$(tmux display-message -p -t "$focus_pane" '#{window_id}' 2>/dev/null || true)"
   [[ -n "$focus_window" ]] || { first_edit_pane_line "$file" "$ranked"; return 0; }
+  window_panes="$(tmux list-panes -t "$focus_window" -F '#{pane_id}')"
 
   for pane in $ranked; do
-    pane_window="$(tmux display-message -p -t "$pane" '#{window_id}' 2>/dev/null || true)"
-    if [[ "$pane_window" == "$focus_window" ]]; then
-      line="$(pane_line_in_edit_file "$file" "$pane")"
-      [[ -z "$line" ]] || { printf '%s\n' "$line"; return 0; }
-    fi
+    case $'\n'"$window_panes"$'\n' in
+      *$'\n'"$pane"$'\n'*) ;;
+      *) continue ;;
+    esac
+    line="$(pane_line_in_edit_file "$file" "$pane")"
+    [[ -z "$line" ]] || { printf '%s\n' "$line"; return 0; }
   done
 
   first_edit_pane_line "$file" "$ranked"
