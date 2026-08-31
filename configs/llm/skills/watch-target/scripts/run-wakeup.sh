@@ -128,9 +128,9 @@ submit_message() {
 
   tmux load-buffer -b "$buffer" "$file"
   tmux paste-buffer -b "$buffer" -t "$pane"
-  interruptible_sleep 1
+  interruptible_sleep 2
   tmux send-keys -t "$pane" Enter
-  interruptible_sleep 1
+  interruptible_sleep 2
 
   running="$(tmux show -pv -t "$pane" @ai_agent_running 2>/dev/null || true)"
   if [[ "$running" == "0" ]]; then
