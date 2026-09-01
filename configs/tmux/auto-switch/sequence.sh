@@ -423,6 +423,39 @@ highlight AutoSwitchStateBackground ctermfg=109 cterm=NONE guifg=#87afaf gui=NON
 highlight AutoSwitchStatePending ctermfg=139 cterm=NONE guifg=#af87af gui=NONE
 highlight AutoSwitchStateUnread ctermfg=143 cterm=NONE guifg=#afaf5f gui=NONE
 highlight AutoSwitchStateIdle ctermfg=245 cterm=NONE guifg=#8a8a8a gui=NONE
+" Keep the zebra striping deliberately faint: it should separate adjacent pane
+" rows without competing with state, session, cursor, or current-pane colors.
+highlight AutoSwitchRowOdd ctermbg=233 guibg=#121212
+highlight AutoSwitchRowEven ctermbg=234 guibg=#1c1c1c
+highlight AutoSwitchActiveRow ctermbg=238 guibg=#444444
+for s:auto_switch_row in range(1, line('$'))
+  if getline(s:auto_switch_row) !~# '^%[0-9]\+\s'
+    continue
+  endif
+  let s:auto_switch_row_group = s:auto_switch_row % 2
+        \ ? 'AutoSwitchRowOdd' : 'AutoSwitchRowEven'
+  call matchadd(s:auto_switch_row_group,
+        \ '\%' . s:auto_switch_row . 'l^%[0-9]\+.*$', 5)
+endfor
+" A match background is drawn over Vim's regular CursorLine regardless of the
+" latter's highlight definition. Mirror the active row with a priority-90 match:
+" above row/session/state colors, but below the priority-100 current-pane mark.
+let s:auto_switch_active_row_match = -1
+function! s:AutoSwitchRefreshActiveRow() abort
+  if s:auto_switch_active_row_match > 0
+    call matchdelete(s:auto_switch_active_row_match)
+    let s:auto_switch_active_row_match = -1
+  endif
+  if getline('.') =~# '^%[0-9]\+\s'
+    let s:auto_switch_active_row_match = matchadd(
+          \ 'AutoSwitchActiveRow', '\%' . line('.') . 'l^.*$', 90)
+  endif
+endfunction
+augroup AutoSwitchActiveRow
+  autocmd! * <buffer>
+  autocmd CursorMoved,CursorMovedI <buffer> call <SID>AutoSwitchRefreshActiveRow()
+augroup END
+call s:AutoSwitchRefreshActiveRow()
 " Match the AI-window switcher's ANSI session palette. ctermfg uses the
 " corresponding xterm palette indexes; guifg keeps the same normal/bright split.
 highlight AutoSwitchSession31 ctermfg=1 cterm=NONE guifg=#cd0000 gui=NONE
