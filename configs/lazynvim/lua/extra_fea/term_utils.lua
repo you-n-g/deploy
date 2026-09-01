@@ -369,7 +369,12 @@ function M.open_file_with_line_in_normal()
   if vim.fn.filereadable(file) == 0 then
     local ok_fzf, fzf = pcall(require, "fzf-lua")
     if ok_fzf then
-      fzf.files({ query = file })
+      fzf.files({
+        query = file,
+        -- Ignore VCS rules such as .gitignore, but still respect .ignore.
+        no_ignore = true,
+        toggle_ignore_flag = "--no-ignore-vcs",
+      })
     else
       vim.cmd("normal! gf")
     end
