@@ -423,12 +423,46 @@ highlight AutoSwitchStateBackground ctermfg=109 cterm=NONE guifg=#87afaf gui=NON
 highlight AutoSwitchStatePending ctermfg=139 cterm=NONE guifg=#af87af gui=NONE
 highlight AutoSwitchStateUnread ctermfg=143 cterm=NONE guifg=#afaf5f gui=NONE
 highlight AutoSwitchStateIdle ctermfg=245 cterm=NONE guifg=#8a8a8a gui=NONE
+" Match the AI-window switcher's ANSI session palette. ctermfg uses the
+" corresponding xterm palette indexes; guifg keeps the same normal/bright split.
+highlight AutoSwitchSession31 ctermfg=1 cterm=NONE guifg=#cd0000 gui=NONE
+highlight AutoSwitchSession32 ctermfg=2 cterm=NONE guifg=#00cd00 gui=NONE
+highlight AutoSwitchSession33 ctermfg=3 cterm=NONE guifg=#cdcd00 gui=NONE
+highlight AutoSwitchSession34 ctermfg=4 cterm=NONE guifg=#0000ee gui=NONE
+highlight AutoSwitchSession35 ctermfg=5 cterm=NONE guifg=#cd00cd gui=NONE
+highlight AutoSwitchSession36 ctermfg=6 cterm=NONE guifg=#00cdcd gui=NONE
+highlight AutoSwitchSession91 ctermfg=9 cterm=NONE guifg=#ff0000 gui=NONE
+highlight AutoSwitchSession92 ctermfg=10 cterm=NONE guifg=#00ff00 gui=NONE
+highlight AutoSwitchSession93 ctermfg=11 cterm=NONE guifg=#ffff00 gui=NONE
+highlight AutoSwitchSession94 ctermfg=12 cterm=NONE guifg=#5c5cff gui=NONE
+highlight AutoSwitchSession95 ctermfg=13 cterm=NONE guifg=#ff00ff gui=NONE
+highlight AutoSwitchSession96 ctermfg=14 cterm=NONE guifg=#00ffff gui=NONE
 highlight AutoSwitchCurrentPane cterm=bold,reverse gui=bold,reverse
 call matchadd('AutoSwitchStateRunning', '|\\s*\\zsrunning\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateBackground', '|\\s*\\zsbackground\\ze\\s*|', 40)
 call matchadd('AutoSwitchStatePending', '|\\s*\\zspending[^|]*\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateUnread', '|\\s*\\zsunread\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateIdle', '|\\s*\\zsidle\\ze\\s*|', 40)
+let s:auto_switch_session_groups = [
+      \\ 'AutoSwitchSession31', 'AutoSwitchSession32', 'AutoSwitchSession33',
+      \\ 'AutoSwitchSession34', 'AutoSwitchSession35', 'AutoSwitchSession36',
+      \\ 'AutoSwitchSession91', 'AutoSwitchSession92', 'AutoSwitchSession93',
+      \\ 'AutoSwitchSession94', 'AutoSwitchSession95', 'AutoSwitchSession96']
+let s:auto_switch_session_group_by_name = {}
+for s:auto_switch_line in getline(1, '$')
+  let s:auto_switch_session = matchstr(
+        \\ s:auto_switch_line, '^%[0-9]\\+\\s\\+#\\s\\+\\zs[^:]\\+\\ze:')
+  if empty(s:auto_switch_session) || has_key(
+        \\ s:auto_switch_session_group_by_name, s:auto_switch_session)
+    continue
+  endif
+  let s:auto_switch_group = s:auto_switch_session_groups[
+        \\ len(s:auto_switch_session_group_by_name) % len(s:auto_switch_session_groups)]
+  let s:auto_switch_session_group_by_name[s:auto_switch_session] = s:auto_switch_group
+  let s:auto_switch_literal_session = escape(s:auto_switch_session, '\\')
+  call matchadd(s:auto_switch_group,
+        \\ '^%[0-9]\\+\\s\\+#\\s\\+\\zs\\V' . s:auto_switch_literal_session . '\\m\\ze:', 35)
+endfor
 $vim_focus_match
 nnoremap <buffer> q :wq<CR>
 let g:auto_switch_selected_pane_file = '$vim_selected_file'
