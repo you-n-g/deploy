@@ -335,17 +335,26 @@ function _myp_run() {
     esac
 }
 
-# unified runner with tmux rename; args: title proxy_mode cmd...
+# Unified runner with tmux rename; args: title proxy_mode cmd...
+# An explicit name (automatic-rename=0) may be user-owned, so leave it alone.
 function _with_tmux_rename() {
     local title="${TMUX_AI_WINDOW_NAME:-$1}"
     local proxy_mode="$2"
     shift 2
     if [ -n "$TMUX" ] && [ -z "${TMUX_AI_DISABLE_RENAME:-}" ]; then
-        local prev_name
-        prev_name=$(tmux display-message -p "#W")
-        tmux rename-window -t "$TMUX_PANE" "$title"
+        local automatic_rename
+        automatic_rename=$(tmux display-message -p -t "$TMUX_PANE" '#{automatic-rename}') || return
+        case "$automatic_rename" in
+            0) ;;
+            1)
+                tmux rename-window -t "$TMUX_PANE" "$title" || return
+                ;;
+            *)
+                echo "unexpected tmux automatic-rename value: $automatic_rename" >&2
+                return 1
+                ;;
+        esac
         _myp_run "$proxy_mode" "$@"
-        tmux rename-window -t "$TMUX_PANE" "$prev_name"
     else
         _myp_run "$proxy_mode" "$@"
     fi
