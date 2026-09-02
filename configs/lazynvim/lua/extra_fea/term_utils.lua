@@ -95,6 +95,12 @@ function M.normalize_path_for_edit(path)
   return vim.fn.expand(path)
 end
 
+local function strip_non_ascii_edges(value)
+  -- 'isfname' makes <cfile> absorb adjacent UTF-8 Chinese text and punctuation.
+  -- Keep non-ASCII characters inside the path; only trim prose attached at its edges.
+  return (value:gsub("^[\128-\255]+", ""):gsub("[\128-\255]+$", ""))
+end
+
 local function cursor_distance(match_start, match_end, cursor_idx)
   if not cursor_idx then
     return 0
@@ -370,7 +376,7 @@ function M.open_file_with_line_in_normal()
     local ok_fzf, fzf = pcall(require, "fzf-lua")
     if ok_fzf then
       fzf.files({
-        query = file,
+        query = strip_non_ascii_edges(file),
         -- Ignore VCS rules such as .gitignore, but still respect .ignore.
         no_ignore = true,
         toggle_ignore_flag = "--no-ignore-vcs",
