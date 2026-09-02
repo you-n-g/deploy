@@ -30,9 +30,9 @@ ps_rows="$(ps -ax -o pid=,ppid=,comm= 2>/dev/null)"
 
 # Usage: find_vim_window <tmux list-panes args...>
 #
-# Prints "window_id<TAB>pane_id" for a pane running Vim, or nothing. Which pane
-# wins among several is not defined -- the awk loop below walks an associative
-# array -- so the caller narrows the search instead of ranking the results.
+# Prints "window_id<TAB>pane_id" for a pane running Vim, or nothing. Candidates
+# are ordered by numeric window id, then pane id; the caller still narrows the
+# search so a Vim beside the source pane wins before the session-wide scan.
 find_vim_window() {
   local pane_rows
 
@@ -64,12 +64,23 @@ find_vim_window() {
         current = pid
         while (current in parent) {
           if (current in root_pid) {
-            print root_window[current] "\t" root_pane[current]
-            exit 0
+            candidate_window = root_window[current]
+            candidate_pane = root_pane[current]
+            candidate_window_number = substr(candidate_window, 2) + 0
+            candidate_pane_number = substr(candidate_pane, 2) + 0
+            if (best_window == "" || candidate_window_number < best_window_number ||
+                (candidate_window_number == best_window_number && candidate_pane_number < best_pane_number)) {
+              best_window = candidate_window
+              best_pane = candidate_pane
+              best_window_number = candidate_window_number
+              best_pane_number = candidate_pane_number
+            }
+            break
           }
           current = parent[current]
         }
       }
+      if (best_window != "") print best_window "\t" best_pane
     }
   ' <(printf '%s\n' "$pane_rows") <(printf '%s\n' "$ps_rows")
 }
