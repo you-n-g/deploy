@@ -8,6 +8,11 @@ local pane_format = table.concat({
   "#{pane_current_command}",
   "#{pane_current_path}",
 }, "\t")
+local last_visited_format = table.concat({
+  "#{@last_visit}",
+  target_format,
+  "#{pane_id}",
+}, "\t")
 
 local function trim(value)
   return value:gsub("^%s*(.-)%s*$", "%1")
@@ -63,6 +68,55 @@ local function list_panes()
   return rows
 end
 
+-- tmux hooks stamp @last_visit whenever the user enters a pane. Skip this
+-- Neovim pane so the shortcut refers to the place visited immediately before it.
+local function last_visited_pane()
+  if vim.fn.executable("tmux") ~= 1 then
+    error("tmux_complete: tmux executable is required")
+  end
+
+  local output = vim.fn.system({ "tmux", "list-panes", "-a", "-F", last_visited_format })
+  if vim.v.shell_error ~= 0 then
+    error("tmux_complete: tmux list-panes failed: " .. trim(output))
+  end
+
+  local current_pane = vim.env.TMUX_PANE or ""
+  local latest_visit = -1
+  local latest_target = nil
+  for line in output:gmatch("[^\n]+") do
+    local last_visit, target, pane_id = line:match("^([^\t]*)\t([^\t]*)\t(.*)$")
+    if not last_visit then
+      error("tmux_complete: unexpected tmux list-panes row: " .. line)
+    end
+
+    local visit = tonumber(last_visit)
+    if visit and pane_id ~= current_pane and visit > latest_visit then
+      latest_visit = visit
+      latest_target = clean_field(target)
+    end
+  end
+
+  if not latest_target then
+    error("tmux_complete: no previously visited tmux pane found")
+  end
+  return latest_target
+end
+
+local function insert_link(target)
+  local line = vim.api.nvim_get_current_line()
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local row = cursor[1]
+  local cursor_col = cursor[2]
+  local col = cursor_col + 1
+  local replace_at, replace_until = completion_bounds(line, col)
+  local link = string.format("[[tmux://%s]]", target)
+  local before = replace_at > 1 and line:sub(1, replace_at - 1) or ""
+  local after = line:sub(replace_until)
+
+  vim.api.nvim_set_current_line(before .. link .. after)
+  vim.api.nvim_win_set_cursor(0, { row, replace_at + #link - 1 })
+end
+
 function M.complete_pane()
   local line = vim.api.nvim_get_current_line()
   local col = vim.api.nvim_win_get_cursor(0)[2] + 1
@@ -95,10 +149,17 @@ function M.complete_pane()
   })
 end
 
+function M.insert_last_visited_pane()
+  insert_link(last_visited_pane())
+end
+
 function M.setup()
   vim.keymap.set({ "i" }, "<C-x><C-t>", function()
     M.complete_pane()
   end, { silent = true, desc = "Complete navigate-note tmux pane link" })
+  vim.keymap.set({ "i" }, "<C-x><M-t>", function()
+    M.insert_last_visited_pane()
+  end, { silent = true, desc = "Insert last visited tmux pane link" })
 end
 
 M.setup()
