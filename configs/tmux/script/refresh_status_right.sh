@@ -7,6 +7,11 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # Wait for TPM/theme plugins to finish populating status-right first.
 sleep 1
 
+# Gruvbox's colour237 inactive border blends into its background. Keep inactive
+# pane edges visible in mid-grey and make the active pane unmistakably warm.
+tmux set-option -g pane-border-style 'fg=colour244'
+tmux set-option -g pane-active-border-style 'fg=colour214,bold'
+
 mount_path="$(tmux show-options -gqv @disk-usage-path 2>/dev/null || true)"
 if [ -z "$mount_path" ]; then
   if [ "$(uname)" = "Darwin" ]; then
