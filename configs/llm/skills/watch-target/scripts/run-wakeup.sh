@@ -96,18 +96,29 @@ target_exists() {
 }
 
 wait_for_condition() {
-  local running
+  local running idle_polls
+  local required_idle_polls=3
 
   case "$mode" in
     timer)
       interruptible_sleep "$seconds"
       ;;
     ai-idle)
+      # Goal-mode continuations briefly emit Stop between turns. Treat those as
+      # state jitter unless the target stays idle across several normal polls.
+      idle_polls=0
       while :; do
         target_exists || return 0
         running="$(tmux show -pv -t "$target" @ai_agent_running 2>/dev/null)" \
           || { echo "target $target is missing @ai_agent_running" >&2; exit 1; }
-        [[ "$running" != "1" ]] && return 0
+        if [[ "$running" == "1" ]]; then
+          idle_polls=0
+        else
+          idle_polls=$((idle_polls + 1))
+          if (( idle_polls >= required_idle_polls )); then
+            return 0
+          fi
+        fi
         interruptible_sleep "$poll_seconds"
       done
       ;;
@@ -121,6 +132,16 @@ wait_for_condition() {
       done
       ;;
   esac
+}
+
+condition_still_satisfied() {
+  local running
+
+  [[ "$mode" == "ai-idle" ]] || return 0
+  target_exists || return 0
+  running="$(tmux show -pv -t "$target" @ai_agent_running 2>/dev/null)" \
+    || { echo "target $target is missing @ai_agent_running" >&2; exit 1; }
+  [[ "$running" != "1" ]]
 }
 
 submit_message() {
@@ -138,6 +159,11 @@ submit_message() {
   fi
 }
 
-wait_for_condition
-submit_message
+while :; do
+  wait_for_condition
+  if condition_still_satisfied; then
+    submit_message
+    break
+  fi
+done
 exit 0
