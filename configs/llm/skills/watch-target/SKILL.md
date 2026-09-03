@@ -39,7 +39,7 @@ metadata:
 5. 对刚启动、重启、恢复，或用户提示“刚起来容易出错”的普通监控目标，下一次唤醒不要直接使用默认 `1800` 秒。先使用 warm-up cadence：`60s -> 120s -> 180s -> 240s -> 480s`；每次健康复查后进入下一个间隔，出现失败/卡住/等待输入就立即诊断处理。完成 warm-up 且目标仍健康运行后，再回到用户给定 interval；如果用户没给 interval，回到默认 `1800` 秒。用户明确指定更短间隔时，以用户指定为上限，不要把 warm-up 调长。
 6. 安排 warm-up 唤醒时，把当前阶段和下一阶段写进唤醒消息里，例如 `warm-up 2/5, next interval 120s`，这样下一次被唤醒时能延续递增节奏，而不是丢失状态后直接退回默认间隔。
 7. 只有目标未完成或后续动作未完成时，才安排下一次 one-shot 唤醒；不要写 `while true`、cron 或固定轮询守护进程。普通监控目标沿用用户给定 interval 或默认 interval，不要因为可能存在状态信号就擅自改成条件监控。
-   如果目标是 Codex/Claude 等 AI window，且当前 `@ai_agent_running=1`，不要使用默认 `1800` 秒 timer；必须使用 AI idle 条件唤醒，一旦 `@ai_agent_running` 从 `1` 变成非 `1` 就立即唤醒 watcher。
+   如果目标是 Codex/Claude 等 AI window，且当前 `@ai_agent_running=1`，不要使用默认 `1800` 秒 timer；必须使用 AI idle 条件唤醒。目标需要连续 3 次轮询都是 idle 才会唤醒 watcher，避免 goal continuation 在 turn 边界产生的短暂 idle 脉冲误触发；不要为此改变原有轮询间隔。
    如果用户要等待 AI window 从 idle/等待输入状态变成 running（典型是 auto-switch 等用户提交 prompt 后继续调度），不要手写 `while` 轮询；使用 `schedule-wakeup.sh --mode ai-running`，一旦 `@ai_agent_running` 变成 `1` 就立即唤醒 watcher。
    AI 条件唤醒只监听单个目标。需要处理多个候选时，由上层 skill 在唤醒后重新扫描和排序，不要在 wakeup 里塞多目标调度逻辑。
    AI 条件唤醒的另一个终止条件是目标 pane/window 被关闭；目标消失也要唤醒 watcher，让 watcher 重新读取状态并执行后续策略。
