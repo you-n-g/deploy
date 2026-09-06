@@ -190,6 +190,7 @@ else
     workdir=$(tmux display-message -p -t "$source_pane_id" '#{pane_current_path}')
     base_name=$(tmux display-message -p -t "$source_pane_id" '#{window_name}')
 fi
+source_session=$(tmux display-message -p -t "$source_pane_id" '#S')
 
 result=$(_find_ai_pid "$pane_pid")
 if [[ -z "$result" ]]; then
@@ -249,7 +250,7 @@ if [[ "$DISABLE_TMUX_RENAME" == true ]]; then
 else
     printf -v launch_cmd 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$fork_name" "$cmd"
 fi
-win_id=$(tmux new-window -d -P -F '#{window_id}' -n "$fork_name" -c "$workdir" "$launch_cmd")
+win_id=$(tmux new-window -d -P -F '#{window_id}' -t "$source_session:" -n "$fork_name" -c "$workdir" "$launch_cmd")
 # Block TUI escape-sequence renames. Wrapper-driven renames are controlled by
 # TMUX_AI_WINDOW_NAME or disabled with TMUX_AI_DISABLE_RENAME.
 tmux set-window-option -t "$win_id" allow-rename off
