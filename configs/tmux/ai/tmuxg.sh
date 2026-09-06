@@ -32,17 +32,14 @@ done
 [[ "$QUIET" == true ]] && trap 'exit 0' EXIT
 
 _create_new_ai_window() {
-    local tool workdir cmd initial_window_name
+    local tool workdir cmd base_window_name initial_window_name
     tool=$(tmux show-environment -g TMUX_AI_TOOL 2>/dev/null | cut -d= -f2)
     [ -z "$tool" ] && tool=codex
-    initial_window_name="${WINDOW_NAME:-$tool}"
     workdir=$(tmux display-message -p '#{pane_current_path}')
+    base_window_name="${WINDOW_NAME:-${workdir##*/}}"
+    initial_window_name="○ $base_window_name"
 
-    if [[ -n "$WINDOW_NAME" ]]; then
-        printf -v cmd 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$WINDOW_NAME" "${tool}r"
-    else
-        printf -v cmd 'zsh -ic %q' "${tool}r"
-    fi
+    printf -v cmd 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$base_window_name" "${tool}r"
     tmux new-window -n "$initial_window_name" -c "$workdir" "$cmd"
 }
 
