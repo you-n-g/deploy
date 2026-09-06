@@ -99,15 +99,24 @@ async def send_loop(host: str, port: int) -> None:
             event.app.current_buffer.open_in_editor()
 
         session = PromptSession(history=InMemoryHistory(), key_bindings=bindings)
-    async with websockets.connect(url, open_timeout=60) as ws:
+    ws = await websockets.connect(url, open_timeout=60)
+    try:
         print("type text, Ctrl-G edits in $EDITOR, Enter sends; Ctrl-D exits")
         while True:
             try:
                 msg = await session.prompt_async("> ") if session else await asyncio.to_thread(input, "> ")
             except EOFError:
                 return
-            if msg.strip():
+            if not msg.strip():
+                continue
+            try:
                 await ws.send(msg)
+            except websockets.ConnectionClosed:
+                print("connection lost; reconnecting and retrying this message...", flush=True)
+                ws = await websockets.connect(url, open_timeout=60)
+                await ws.send(msg)
+    finally:
+        await ws.close()
 
 
 def tmux(*args: str) -> str:
