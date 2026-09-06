@@ -24,6 +24,7 @@ CHOICES = (
     ("xyz", "xyz — XYZ normally, Azure inside Obsidian"),
     ("inherit", "inherit — remove the selected-scope override"),
 )
+PROVIDER_VALUES = tuple(value for value, _ in CHOICES)
 SCOPES = (
     ("session", "Current session"),
     ("global", "Global tmux server"),
@@ -129,12 +130,18 @@ class ProviderApp(App[None]):
             if shell_value
             else "default"
         )
+        unsupported = (
+            f"\nUnsupported value: {effective} — choose a listed provider"
+            if effective not in PROVIDER_VALUES
+            else ""
+        )
         self.query_one("#status", Static).update(
             f"Session: {self.session}\n"
             f"Session override: {session_value or '<inherit>'}\n"
             f"Global value: {global_value or '<unset>'}\n"
             f"Effective: {effective} ({source})\n"
             f"Apply to: {self.scope}"
+            f"{unsupported}"
         )
 
     def sync_highlight(self) -> None:
@@ -142,8 +149,9 @@ class ProviderApp(App[None]):
         target = (
             session_value if self.scope == "session" else global_value
         ) or "inherit"
-        values = [value for value, _ in CHOICES]
-        self.query_one(OptionList).highlighted = values.index(target)
+        self.query_one(OptionList).highlighted = (
+            PROVIDER_VALUES.index(target) if target in PROVIDER_VALUES else None
+        )
 
     def apply(self, value: str) -> None:
         try:
