@@ -335,12 +335,14 @@ function _myp_run() {
     esac
 }
 
-# Unified runner with tmux rename; args: title proxy_mode cmd...
+# Unified runner with tmux rename; args: proxy_mode cmd...
+# Explicit AI window names win; otherwise use the current directory name.
+# Start with the idle marker; the state tracker replaces it as state changes.
 # An explicit name (automatic-rename=0) may be user-owned, so leave it alone.
 function _with_tmux_rename() {
-    local title="${TMUX_AI_WINDOW_NAME:-$1}"
-    local proxy_mode="$2"
-    shift 2
+    local title="○ ${TMUX_AI_WINDOW_NAME:-${PWD:t}}"
+    local proxy_mode="$1"
+    shift
     if [ -n "$TMUX" ] && [ -z "${TMUX_AI_DISABLE_RENAME:-}" ]; then
         local automatic_rename
         automatic_rename=$(tmux display-message -p -t "$TMUX_PANE" '#{automatic-rename}') || return
@@ -381,7 +383,7 @@ function _start_codex_tui_output_tracker() {
 
 # gemini with rename
 function geminir() {
-    _with_tmux_rename gemini "$MYPROXY_GEMINI" gemini "$@"
+    _with_tmux_rename "$MYPROXY_GEMINI" gemini "$@"
 }
 
 # codex with rename
@@ -496,8 +498,6 @@ _codex_extract_config_boundary_command() {
 }
 
 _codex_run_login() {
-    local title="$1"
-    shift
     local auto_flag
     # 将 auto_flag 拆成数组，而不是一个字符串
     auto_flag=($(_codex_auto_flag))
@@ -512,12 +512,10 @@ _codex_run_login() {
 
     # 展开数组，用 "${auto_flag[@]}"，这样每个 flag 都是独立参数
     _start_ai_tui_output_tracker
-    _with_tmux_rename "$title" "$MYPROXY_CODEX" codex "${auto_flag[@]}" "${reply[@]}"
+    _with_tmux_rename "$MYPROXY_CODEX" codex "${auto_flag[@]}" "${reply[@]}"
 }
 
 _codex_run_api() {
-    local title="$1"
-    shift
     local auto_flag
     auto_flag=($(_codex_auto_flag))
 
@@ -530,20 +528,20 @@ _codex_run_api() {
     fi
 
     _start_ai_tui_output_tracker
-    _codex_env _with_tmux_rename "$title" "$MYPROXY_CODEX" codex "${auto_flag[@]}" "${reply[@]}"
+    _codex_env _with_tmux_rename "$MYPROXY_CODEX" codex "${auto_flag[@]}" "${reply[@]}"
 }
 
 function codexa() {
     # run my azure codex
-    _codex_run_api codex "$@"
+    _codex_run_api "$@"
 }
 
 function codexo() {
-    _codex_run_login codex-openai -c 'model_provider="openai"' "$@"
+    _codex_run_login -c 'model_provider="openai"' "$@"
 }
 
 function codexyz() {
-    _codex_run_api codex-xyz -c 'model_provider="xyz"' "$@"
+    _codex_run_api -c 'model_provider="xyz"' "$@"
 }
 
 function codexs8121() {
@@ -557,7 +555,7 @@ function codexs8121() {
     fi
 
     LB_API_KEY="$api_key" \
-        _codex_run_api codex-share-8121 \
+        _codex_run_api \
             -c 'model_provider="lb8121"' \
             -c 'model_providers.lb8121.name="codex-backend-8121"' \
             -c 'model_providers.lb8121.base_url="https://hc.213428.xyz/8121/backend-api/codex"' \
@@ -577,7 +575,7 @@ function codexs8124() {
     fi
 
     LB_API_KEY="$api_key" \
-        _codex_run_api codex-share-8124 \
+        _codex_run_api \
             -c 'model_provider="lb8124"' \
             -c 'model_providers.lb8124.name="codex-backend-8124"' \
             -c 'model_providers.lb8124.base_url="https://hc.213428.xyz/8124/backend-api/codex"' \
@@ -606,7 +604,7 @@ function codexlm() {
         return 1
     fi
 
-    _codex_run_api codex-litellm \
+    _codex_run_api \
         -c 'model_provider="litellm"' \
         -c 'model_providers.litellm.name="litellm-models-llm-jt"' \
         -c 'model_providers.litellm.base_url="https://models.llm.jt/v1"' \
@@ -636,12 +634,12 @@ _claude_env() {
 
 function claudeauto() {
     _start_ai_tui_output_tracker
-    _claude_env _with_tmux_rename claude "$MYPROXY_CLAUDE" claude --model "$CLAUDE_MODEL" --enable-auto-mode "$@"
+    _claude_env _with_tmux_rename "$MYPROXY_CLAUDE" claude --model "$CLAUDE_MODEL" --enable-auto-mode "$@"
 }
 
 function claudeyolo() {
     _start_ai_tui_output_tracker
-    IS_SANDBOX=1 _claude_env _with_tmux_rename claude "$MYPROXY_CLAUDE" claude --model "$CLAUDE_MODEL" --dangerously-skip-permissions "$@"
+    IS_SANDBOX=1 _claude_env _with_tmux_rename "$MYPROXY_CLAUDE" claude --model "$CLAUDE_MODEL" --dangerously-skip-permissions "$@"
 }
 
 function clauder() {
