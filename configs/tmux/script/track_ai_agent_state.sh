@@ -225,6 +225,23 @@ is_tui_idle_notify_source() {
   esac
 }
 
+has_pending_watch_target_wakeup() {
+  local pid command
+
+  while read -r pid command; do
+    [ -n "$pid" ] || continue
+    case "$command" in
+      bash\ */run-wakeup.sh*|*/bash\ */run-wakeup.sh*) ;;
+      *) continue ;;
+    esac
+    case " $command " in
+      *" --pane $pane_id "*) return 0 ;;
+    esac
+  done < <(ps -axo pid=,command=)
+
+  return 1
+}
+
 sync_ai_window_name() {
   local current_name base_name running background unread pending prefix desired_name
 
@@ -411,14 +428,23 @@ case "$state" in
     ;;
   idle)
     tmux set-option -pq -t "$pane_id" @ai_agent_running 0
-    tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
-    if is_window_visible; then
+    if has_pending_watch_target_wakeup; then
+      # The foreground turn stopped only because watch-target is waiting for
+      # its next one-shot wakeup. Keep the pane in background until that
+      # wakeup submits the next turn.
+      tmux set-option -pq -t "$pane_id" @ai_agent_background 1
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
+      tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
     else
-      tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
+      tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
+      if is_window_visible; then
+        tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
+      else
+        tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
+      fi
+      ensure_ai_agent_attribute
+      notify_orchestrator_on_idle
     fi
-    ensure_ai_agent_attribute
-    notify_orchestrator_on_idle
     ;;
   visit)
     if is_live_ai_pane; then
