@@ -401,12 +401,21 @@ function codexr() {
         openai)
             codexo "$@"
             ;;
-        *)
+        xyz)
             if [[ "${PWD:l}" != *obsidian* ]]; then
                 codexyz "$@"
             else
                 codexa "$@"
             fi
+            ;;
+        *)
+            case "$provider" in
+                *[!A-Za-z0-9_-]*)
+                    echo "codexr: unsupported provider id: $provider" >&2
+                    return 1
+                    ;;
+            esac
+            _codex_run_api -c "model_provider=\"$provider\"" "$@"
             ;;
     esac
 }
