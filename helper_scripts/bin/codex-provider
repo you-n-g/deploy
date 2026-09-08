@@ -9,8 +9,11 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
+import tomllib
+from pathlib import Path
 from typing import ClassVar
 
 from textual.app import App, ComposeResult
@@ -18,13 +21,11 @@ from textual.widgets import Footer, Header, OptionList, RadioButton, RadioSet, S
 from textual.widgets.option_list import Option
 
 VARIABLE = "CODEXR_PROVIDER"
-CHOICES = (
+STATIC_CHOICES = (
     ("lb8121", "lb8121 — shared 8121 endpoint (default)"),
     ("openai", "openai — official OpenAI login"),
     ("xyz", "xyz — XYZ normally, Azure inside Obsidian"),
-    ("inherit", "inherit — remove the selected-scope override"),
 )
-PROVIDER_VALUES = tuple(value for value, _ in CHOICES)
 SCOPES = (
     ("session", "Current session"),
     ("global", "Global tmux server"),
@@ -33,6 +34,35 @@ SCOPES = (
 
 class ToolError(RuntimeError):
     pass
+
+
+def provider_choices() -> tuple[tuple[str, str], ...]:
+    config_path = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")) / "config.toml"
+    configured: list[tuple[str, str]] = []
+
+    if config_path.exists():
+        try:
+            with config_path.open("rb") as config_file:
+                config = tomllib.load(config_file)
+        except (OSError, tomllib.TOMLDecodeError) as error:
+            raise ToolError(f"cannot read {config_path}: {error}") from error
+
+        providers = config.get("model_providers", {})
+        if not isinstance(providers, dict):
+            raise ToolError(f"model_providers in {config_path} must be a table")
+        for provider_id, provider in providers.items():
+            if not re.fullmatch(r"[A-Za-z0-9_-]+", provider_id):
+                raise ToolError(f"unsupported provider id in {config_path}: {provider_id!r}")
+            if not isinstance(provider, dict):
+                raise ToolError(f"model_providers.{provider_id} in {config_path} must be a table")
+            display_name = provider.get("name") or provider_id
+            configured.append((provider_id, f"{provider_id} — {display_name} (config)"))
+
+    choices = list(STATIC_CHOICES)
+    known = {value for value, _ in choices}
+    choices.extend(choice for choice in configured if choice[0] not in known)
+    choices.append(("inherit", "inherit — remove the selected-scope override"))
+    return tuple(choices)
 
 
 def run_tmux(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -85,10 +115,12 @@ class ProviderApp(App[None]):
         ("left,escape,q", "quit", "Quit"),
     ]
 
-    def __init__(self, session: str) -> None:
+    def __init__(self, session: str, choices: tuple[tuple[str, str], ...]) -> None:
         super().__init__()
         self.session = session
         self.scope = "session"
+        self.choices = choices
+        self.provider_values = tuple(value for value, _ in choices)
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -102,7 +134,7 @@ class ProviderApp(App[None]):
             compact=True,
         )
         yield OptionList(
-            *(Option(label, id=value) for value, label in CHOICES), id="providers"
+            *(Option(label, id=value) for value, label in self.choices), id="providers"
         )
         yield Footer()
 
@@ -132,7 +164,7 @@ class ProviderApp(App[None]):
         )
         unsupported = (
             f"\nUnsupported value: {effective} — choose a listed provider"
-            if effective not in PROVIDER_VALUES
+            if effective not in self.provider_values
             else ""
         )
         self.query_one("#status", Static).update(
@@ -150,7 +182,7 @@ class ProviderApp(App[None]):
             session_value if self.scope == "session" else global_value
         ) or "inherit"
         self.query_one(OptionList).highlighted = (
-            PROVIDER_VALUES.index(target) if target in PROVIDER_VALUES else None
+            self.provider_values.index(target) if target in self.provider_values else None
         )
 
     def apply(self, value: str) -> None:
@@ -185,7 +217,7 @@ def main() -> int:
     if sys.argv[1:] in (["-h"], ["--help"]):
         print("codex-provider: choose session or global tmux CODEXR_PROVIDER")
         return 0
-    ProviderApp(current_session()).run()
+    ProviderApp(current_session(), provider_choices()).run()
     return 0
 
 
