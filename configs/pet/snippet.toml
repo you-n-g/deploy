@@ -54,12 +54,6 @@
   command = "tmux list-panes -a -F \"#{pane_pid} #{session_name}:#{window_index}:#{pane_index}\""
 
 [[Snippets]]
-  Description = "choose Codex provider for current tmux session"
-  Output = ""
-  Tag = []
-  command = "codex-provider"
-
-[[Snippets]]
   Description = "py-spy record"
   Output = ""
   Tag = []
@@ -694,12 +688,6 @@
   Output = ""
   Tag = []
   command = "SESSION=$(tmux list-sessions -F '#S' | fzf) && if [ -n \"$SESSION\" ]; then tmux new-session -d -t \"$SESSION\" -s \"$SESSION-<session_name_suffix=|_mirror_|>\" ; tmux switch-client -t \"$SESSION-<session_name_suffix=|_mirror_|>\" ; fi"
-
-[[Snippets]]
-  Description = "Config Tmux AI tool"
-  Output = ""
-  Tag = []
-  command = "tmux set-env -g TMUX_AI_TOOL <tool=|_codex_||_gemini_||_claude_|>"
 
 [[Snippets]]
   Description = "last git commit url"

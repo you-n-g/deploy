@@ -12,15 +12,25 @@ import os
 import re
 import subprocess
 import sys
-import tomllib
 from pathlib import Path
 from typing import ClassVar
 
+import tomllib
 from textual.app import App, ComposeResult
-from textual.widgets import Footer, Header, OptionList, RadioButton, RadioSet, Static
+from textual.widgets import (
+    Footer,
+    Header,
+    OptionList,
+    RadioButton,
+    RadioSet,
+    Static,
+    TabbedContent,
+    TabPane,
+)
 from textual.widgets.option_list import Option
 
-VARIABLE = "CODEXR_PROVIDER"
+PROVIDER_VARIABLE = "CODEXR_PROVIDER"
+AI_TOOL_VARIABLE = "TMUX_AI_TOOL"
 STATIC_CHOICES = (
     ("lb8121", "lb8121 — shared 8121 endpoint (default)"),
     ("openai", "openai — official OpenAI login"),
@@ -30,6 +40,11 @@ SCOPES = (
     ("session", "Current session"),
     ("global", "Global tmux server"),
 )
+AI_TOOL_CHOICES = (
+    ("codex", "codex — launch Codex with codexr"),
+    ("gemini", "gemini — launch Gemini"),
+    ("claude", "claude — launch Claude Code with clauder"),
+)
 
 
 class ToolError(RuntimeError):
@@ -37,7 +52,9 @@ class ToolError(RuntimeError):
 
 
 def provider_choices() -> tuple[tuple[str, str], ...]:
-    config_path = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")) / "config.toml"
+    config_path = (
+        Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")) / "config.toml"
+    )
     configured: list[tuple[str, str]] = []
 
     if config_path.exists():
@@ -52,9 +69,13 @@ def provider_choices() -> tuple[tuple[str, str], ...]:
             raise ToolError(f"model_providers in {config_path} must be a table")
         for provider_id, provider in providers.items():
             if not re.fullmatch(r"[A-Za-z0-9_-]+", provider_id):
-                raise ToolError(f"unsupported provider id in {config_path}: {provider_id!r}")
+                raise ToolError(
+                    f"unsupported provider id in {config_path}: {provider_id!r}"
+                )
             if not isinstance(provider, dict):
-                raise ToolError(f"model_providers.{provider_id} in {config_path} must be a table")
+                raise ToolError(
+                    f"model_providers.{provider_id} in {config_path} must be a table"
+                )
             display_name = provider.get("name") or provider_id
             configured.append((provider_id, f"{provider_id} — {display_name} (config)"))
 
@@ -83,10 +104,10 @@ def current_session() -> str:
     return run_tmux("display-message", "-p", "-t", pane, "#S").stdout.strip()
 
 
-def read_variable(*scope: str) -> str | None:
-    result = run_tmux("show-environment", *scope, VARIABLE, check=False)
+def read_variable(variable: str, *scope: str) -> str | None:
+    result = run_tmux("show-environment", *scope, variable, check=False)
     line = result.stdout.strip()
-    if line.startswith(f"{VARIABLE}="):
+    if line.startswith(f"{variable}="):
         return line.split("=", 1)[1]
     if result.returncode and "unknown variable" not in result.stderr:
         raise ToolError(result.stderr.strip())
@@ -96,21 +117,28 @@ def read_variable(*scope: str) -> str | None:
 def set_provider(scope: str, session: str, value: str) -> None:
     target = ["-g"] if scope == "global" else ["-t", session]
     if value == "inherit":
-        run_tmux("set-environment", *target, "-r", VARIABLE)
+        run_tmux("set-environment", *target, "-r", PROVIDER_VARIABLE)
     else:
-        run_tmux("set-environment", *target, VARIABLE, value)
+        run_tmux("set-environment", *target, PROVIDER_VARIABLE, value)
+
+
+def set_ai_tool(value: str) -> None:
+    run_tmux("set-environment", "-g", AI_TOOL_VARIABLE, value)
 
 
 class ProviderApp(App[None]):
-    TITLE = "Codex provider"
+    TITLE = "Tmux AI settings"
     CSS = """
-    #status { margin: 1 2; padding: 1 2; border: round $accent; }
+    TabbedContent { height: 1fr; }
+    .status { margin: 1 2; padding: 1 2; border: round $accent; }
     #scope { margin: 0 2 1 2; height: 3; layout: horizontal; border: round $secondary; }
     #scope RadioButton { width: 1fr; }
-    #providers { margin: 0 2 1 2; height: auto; border: round $primary; }
+    .choices { margin: 0 2 1 2; height: auto; border: round $primary; }
     """
     BINDINGS: ClassVar[list[tuple[str, str, str]]] = [
         ("right", "apply", "Apply"),
+        ("1", "show_tab('provider-tab')", "Provider"),
+        ("2", "show_tab('ai-tool-tab')", "AI tool"),
         ("r", "refresh", "Refresh"),
         ("left,escape,q", "quit", "Quit"),
     ]
@@ -121,33 +149,45 @@ class ProviderApp(App[None]):
         self.scope = "session"
         self.choices = choices
         self.provider_values = tuple(value for value, _ in choices)
+        self.ai_tool_values = tuple(value for value, _ in AI_TOOL_CHOICES)
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Static(id="status")
-        yield RadioSet(
-            *(
-                RadioButton(label, value=value == self.scope, id=value)
-                for value, label in SCOPES
-            ),
-            id="scope",
-            compact=True,
-        )
-        yield OptionList(
-            *(Option(label, id=value) for value, label in self.choices), id="providers"
-        )
+        with TabbedContent(initial="provider-tab"):
+            with TabPane("Codex Provider", id="provider-tab"):
+                yield Static(id="provider-status", classes="status")
+                yield RadioSet(
+                    *(
+                        RadioButton(label, value=value == self.scope, id=value)
+                        for value, label in SCOPES
+                    ),
+                    id="scope",
+                    compact=True,
+                )
+                yield OptionList(
+                    *(Option(label, id=value) for value, label in self.choices),
+                    id="providers",
+                    classes="choices",
+                )
+            with TabPane("AI Tool", id="ai-tool-tab"):
+                yield Static(id="ai-tool-status", classes="status")
+                yield OptionList(
+                    *(Option(label, id=value) for value, label in AI_TOOL_CHOICES),
+                    id="ai-tools",
+                    classes="choices",
+                )
         yield Footer()
 
     def on_mount(self) -> None:
         self.refresh_status()
         self.sync_highlight()
-        self.query_one(OptionList).focus()
+        self.query_one("#providers", OptionList).focus()
         self.set_interval(1, self.refresh_status)
 
     def values(self) -> tuple[str | None, str | None, str | None, str]:
-        session_value = read_variable("-t", self.session)
-        global_value = read_variable("-g")
-        shell_value = os.environ.get(VARIABLE)
+        session_value = read_variable(PROVIDER_VARIABLE, "-t", self.session)
+        global_value = read_variable(PROVIDER_VARIABLE, "-g")
+        shell_value = os.environ.get(PROVIDER_VARIABLE)
         effective = session_value or global_value or shell_value or "lb8121"
         return session_value, global_value, shell_value, effective
 
@@ -167,7 +207,7 @@ class ProviderApp(App[None]):
             if effective not in self.provider_values
             else ""
         )
-        self.query_one("#status", Static).update(
+        self.query_one("#provider-status", Static).update(
             f"Session: {self.session}\n"
             f"Session override: {session_value or '<inherit>'}\n"
             f"Global value: {global_value or '<unset>'}\n"
@@ -175,14 +215,33 @@ class ProviderApp(App[None]):
             f"Apply to: {self.scope}"
             f"{unsupported}"
         )
+        ai_tool = read_variable(AI_TOOL_VARIABLE, "-g")
+        unsupported_ai_tool = (
+            f"\nUnsupported value: {ai_tool} — choose a listed tool"
+            if ai_tool and ai_tool not in self.ai_tool_values
+            else ""
+        )
+        self.query_one("#ai-tool-status", Static).update(
+            f"Global {AI_TOOL_VARIABLE}: {ai_tool or '<unset>'}\n"
+            "Applies to newly launched TMA agents"
+            f"{unsupported_ai_tool}"
+        )
 
     def sync_highlight(self) -> None:
         session_value, global_value, _, _ = self.values()
         target = (
             session_value if self.scope == "session" else global_value
         ) or "inherit"
-        self.query_one(OptionList).highlighted = (
-            self.provider_values.index(target) if target in self.provider_values else None
+        self.query_one("#providers", OptionList).highlighted = (
+            self.provider_values.index(target)
+            if target in self.provider_values
+            else None
+        )
+        ai_tool = read_variable(AI_TOOL_VARIABLE, "-g")
+        self.query_one("#ai-tools", OptionList).highlighted = (
+            self.ai_tool_values.index(ai_tool)
+            if ai_tool in self.ai_tool_values
+            else None
         )
 
     def apply(self, value: str) -> None:
@@ -193,12 +252,35 @@ class ProviderApp(App[None]):
             return
         self.refresh_status()
         self.sync_highlight()
-        self.notify(f"{self.scope} {VARIABLE} → {value}")
+        self.notify(f"{self.scope} {PROVIDER_VARIABLE} → {value}")
+
+    def apply_ai_tool(self, value: str) -> None:
+        try:
+            set_ai_tool(value)
+        except ToolError as error:
+            self.notify(str(error), severity="error")
+            return
+        self.refresh_status()
+        self.sync_highlight()
+        self.notify(f"global {AI_TOOL_VARIABLE} → {value}")
 
     def action_apply(self) -> None:
-        options = self.query_one(OptionList)
+        active_tab = self.query_one(TabbedContent).active
+        options = self.query_one(
+            "#providers" if active_tab == "provider-tab" else "#ai-tools", OptionList
+        )
         if options.highlighted is not None:
-            self.apply(options.get_option_at_index(options.highlighted).id)
+            value = options.get_option_at_index(options.highlighted).id
+            if active_tab == "provider-tab":
+                self.apply(value)
+            else:
+                self.apply_ai_tool(value)
+
+    def action_show_tab(self, tab_id: str) -> None:
+        self.query_one(TabbedContent).active = tab_id
+        self.query_one(
+            "#providers" if tab_id == "provider-tab" else "#ai-tools", OptionList
+        ).focus()
 
     def action_refresh(self) -> None:
         self.refresh_status()
@@ -210,12 +292,15 @@ class ProviderApp(App[None]):
         self.sync_highlight()
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
-        self.apply(event.option.id)
+        if event.option_list.id == "providers":
+            self.apply(event.option.id)
+        else:
+            self.apply_ai_tool(event.option.id)
 
 
 def main() -> int:
     if sys.argv[1:] in (["-h"], ["--help"]):
-        print("codex-provider: choose session or global tmux CODEXR_PROVIDER")
+        print("llm-conf: configure Codex provider and the global tmux AI tool")
         return 0
     ProviderApp(current_session(), provider_choices()).run()
     return 0
@@ -225,5 +310,5 @@ if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except ToolError as error:
-        print(f"codex-provider: {error}", file=sys.stderr)
+        print(f"llm-conf: {error}", file=sys.stderr)
         raise SystemExit(1) from error
