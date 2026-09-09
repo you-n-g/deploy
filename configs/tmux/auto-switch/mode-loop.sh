@@ -19,7 +19,7 @@ refresh_status() {
 }
 
 set_status_symbol() {
-  tmux set-option -gq @auto_switch_status_symbol " ○"
+  tmux set-option -gq @auto_switch_status_symbol " ↻"
 }
 
 clear_status_symbol() {
