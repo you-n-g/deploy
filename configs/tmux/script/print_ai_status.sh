@@ -19,9 +19,7 @@ while IFS='|' read -r session_name pane_id window_name pane_unread pane_running 
   [ -n "$pane_id" ] || continue
   [ -n "${pane_unread}${pane_running}${pane_background}${_pane_pending}${_attribute}" ] || continue
   if [ "$show_orchestrator" = "0" ]; then
-    display_window_name="$window_name"
-    _strip_ai_window_state_prefix "$window_name" display_window_name
-    [ "$display_window_name" = "orchestrator" ] && continue
+    [ "$window_name" = "orchestrator" ] && continue
   fi
   if [ "$pane_background" = "1" ]; then
     background=$((background + 1))

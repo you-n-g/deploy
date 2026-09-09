@@ -3,7 +3,6 @@ import argparse
 import os
 import re
 import subprocess
-import sys
 import unicodedata
 from pathlib import Path
 from typing import Dict, List, Set, Tuple
@@ -25,7 +24,6 @@ PANE_FORMAT = FIELD_SEP.join(
         "#{@ai_agent_attribute}",
     ]
 )
-STATE_PREFIXES = ("● ", "⏵ ", "◒ ", "⏸ ", "◉ ", "○ ")
 
 
 def tmux_output(*args: str) -> str:
@@ -54,16 +52,6 @@ def display_width(text: str) -> int:
 
 def pad_display(text: str, width: int) -> str:
     return text + " " * max(0, width - display_width(text))
-
-
-def strip_state_prefix(name: str) -> str:
-    while True:
-        for prefix in STATE_PREFIXES:
-            if name.startswith(prefix):
-                name = name[len(prefix) :]
-                break
-        else:
-            return name
 
 
 def state_label(unread: str, running: str, background: str, pending: str) -> str:
@@ -160,7 +148,7 @@ def normalize_sequence(ranked: str) -> str:
 
 
 def edit_row(row: Dict[str, str], session_name: str) -> Dict[str, str]:
-    window_name = strip_state_prefix(row["window_name"])
+    window_name = row["window_name"]
     target = f"{row['session_name']}:{window_name}.{row['pane_index']}"
     state = state_label(row["unread"], row["running"], row["background"], row["pending"])
     attribute = strip_tmux_format(row["attribute"]) or "no attribute"
@@ -262,45 +250,6 @@ def parse_edit_file(path: str, panes: Dict[str, Dict[str, str]]) -> Tuple[List[s
     return ranked, pending_reasons, attributes
 
 
-def tmux_option(pane: str, option: str) -> str:
-    result = subprocess.run(
-        ["tmux", "show-option", "-pv", "-t", pane, option],
-        check=False,
-        universal_newlines=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-    )
-    if result.returncode != 0:
-        return ""
-    return result.stdout.rstrip("\n")
-
-
-def sync_ai_window_name(pane: str) -> None:
-    window_id = tmux_output("display-message", "-p", "-t", pane, "#{window_id}").strip()
-    current_name = tmux_output("display-message", "-p", "-t", window_id, "#W").rstrip("\n")
-    base_name = strip_state_prefix(current_name)
-
-    pending = tmux_option(pane, "@ai_agent_pending")
-    background = tmux_option(pane, "@ai_agent_background")
-    running = tmux_option(pane, "@ai_agent_running")
-    unread = tmux_option(pane, "@ai_agent_unread")
-
-    if pending:
-        prefix = "⏸"
-    elif background == "1":
-        prefix = "◒"
-    elif running == "1":
-        prefix = "●"
-    elif unread == "1":
-        prefix = "◉"
-    else:
-        prefix = "○"
-
-    desired_name = f"{prefix} {base_name}"
-    if current_name != desired_name:
-        tmux_run("rename-window", "-t", window_id, desired_name)
-
-
 def apply_edit_file(path: str) -> str:
     panes = load_panes()
     ranked, pending_reasons, attributes = parse_edit_file(path, panes)
@@ -318,7 +267,6 @@ def apply_edit_file(path: str) -> str:
                 tmux_run("set-option", "-pq", "-t", pane, "@ai_agent_unread", "0")
             else:
                 tmux_run("set-option", "-pqu", "-t", pane, "@ai_agent_pending")
-            sync_ai_window_name(pane)
             changed = True
 
         new_attribute = attributes[pane]

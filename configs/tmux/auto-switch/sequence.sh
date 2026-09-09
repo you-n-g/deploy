@@ -152,7 +152,7 @@ pane_label() {
   attribute="$(tmux show -pv -t "$pane" @ai_agent_attribute 2>/dev/null || true)"
   clean_attribute="$(printf '%s' "$attribute" | strip_tmux_format)"
   label="$(compact_ai_label "$session_name" "$window_name" "$clean_attribute")"
-  label="${label} [${session_name}:$(_strip_ai_window_state_prefix "$window_name")]"
+  label="${label} [${session_name}:${window_name}]"
   printf '%s%s' "$(status_prefix "$unread" "$running" "$background" "$pending")" "$label"
 }
 

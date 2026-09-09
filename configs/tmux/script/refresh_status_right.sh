@@ -53,16 +53,19 @@ case "$theme" in
     ;;
 esac
 
-style_window_index() {
+decorate_window_status() {
   option_name="$1"
   option_value="$(tmux show-options -gqv "$option_name")"
   styled_index='#{?#{m/r:(^| )#{pane_id}( |$),#{@auto_switch_ranked_panes}},#[bold]#[underscore]#I#[nobold]#[nounderscore],#I}'
-  option_value="${option_value// #I / ${styled_index} }"
+  has_ai_state='#{||:#{!=:#{@ai_agent_running},},#{||:#{!=:#{@ai_agent_background},},#{||:#{!=:#{@ai_agent_unread},},#{||:#{!=:#{@ai_agent_pending},},#{!=:#{@ai_agent_attribute},}}}}}'
+  state_symbol="#{?#{!=:#{@ai_agent_pending},},⏸,#{?#{==:#{@ai_agent_background},1},◒,#{?#{==:#{@ai_agent_running},1},●,#{?#{==:#{@ai_agent_unread},1},◉,○}}}}"
+  state_suffix="#{?${has_ai_state},${state_symbol},}"
+  option_value="${option_value// #I / ${styled_index} ${state_suffix}}"
   tmux set-option -g "$option_name" "$option_value"
 }
 
-style_window_index window-status-format
-style_window_index window-status-current-format
+decorate_window_status window-status-format
+decorate_window_status window-status-current-format
 
 status_right="${status_right}#[fg=green]#(${SCRIPT_DIR}/print_resource_status.sh)#[default]"
 status_right="${status_right} #[fg=yellow]#(df -h ${mount_path} 2>/dev/null | awk 'NR==2 {print \"${display_path} \" \$5 \" \" \$4}')#[default]"

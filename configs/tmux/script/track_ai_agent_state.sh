@@ -7,8 +7,8 @@ set -eu
 # Pane options:
 # - @ai_agent_running:
 #   "1" means the AI pane is currently processing a foreground turn. "0" means
-#   it has stopped. This drives the busy marker in window names/status lines and
-#   is set by the running/background/idle/init states.
+#   it has stopped. This drives the busy marker in status lines and is set by
+#   the running/background/idle/init states.
 # - @ai_agent_background:
 #   "1" means Claude/Codex has paused the foreground turn but still has
 #   background work active. When set, it takes precedence over running/unread in
@@ -52,12 +52,12 @@ set -eu
 #
 # tmux formats read by this script:
 # - #{pane_id}: stable pane id used as the canonical pane target.
-# - #{window_id}: stable window id used for renaming and visibility checks.
+# - #{window_id}: stable window id used for visibility checks.
 # - #{session_name}: current session name, used to find a same-session
 #   orchestrator.
 # - #{window_index} / #{pane_index}: user-facing target numbers used in
 #   notification text and logs.
-# - #{window_name} / #W: current tmux window name, including any AI state prefix.
+# - #{window_name} / #W: current tmux window name.
 # - #{window_activity}: tmux's last activity timestamp for the window.
 # - #{window_active}: whether the window is active in its session.
 # - #{session_attached}: whether the session has an attached client.
@@ -83,7 +83,7 @@ if ! pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')" || [ -z "$pa
   exit 1
 fi
 
-# Not an AI window, so it gets no AI state: no marker, no rename, no place in
+# Not an AI window, so it gets no AI state: no marker and no place in
 # any list. The states that go through is_live_ai_pane below would catch this
 # too, but init/running/background/idle do not, and those are exactly the ones a
 # brokered session fires. See _pane_hosts_ai_service.
@@ -92,7 +92,6 @@ if _pane_hosts_ai_service "$(tmux display-message -p -t "$pane_id" '#{pane_pid}'
 fi
 
 window_id="$(tmux display-message -p -t "$pane_id" '#{window_id}')"
-sync_window_name=1
 state_source="${AI_AGENT_STATE_SOURCE:-}"
 pending_reason="${AI_AGENT_PENDING_REASON:-}"
 if [ "$state" = "pending" ]; then
@@ -242,43 +241,6 @@ has_pending_watch_target_wakeup() {
   return 1
 }
 
-sync_ai_window_name() {
-  local current_name base_name running background unread pending prefix desired_name
-
-  current_name="$(tmux display-message -p -t "$window_id" '#W')"
-  base_name="$current_name"
-  while :; do
-    case "$base_name" in
-      "● "*) base_name="${base_name#● }" ;;
-      "⏵ "*) base_name="${base_name#⏵ }" ;;
-      "◒ "*) base_name="${base_name#◒ }" ;;
-      "⏸ "*) base_name="${base_name#⏸ }" ;;
-      "◉ "*) base_name="${base_name#◉ }" ;;
-      "○ "*) base_name="${base_name#○ }" ;;
-      *) break ;;
-    esac
-  done
-
-  running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
-  background="$(tmux show -pv -t "$pane_id" @ai_agent_background 2>/dev/null || true)"
-  unread="$(tmux show -pv -t "$pane_id" @ai_agent_unread 2>/dev/null || true)"
-  pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
-  if [ -n "$pending" ]; then
-    prefix="⏸"
-  elif [ "$background" = "1" ]; then
-    prefix="◒"
-  elif [ "$running" = "1" ]; then
-    prefix="●"
-  elif [ "$unread" = "1" ]; then
-    prefix="◉"
-  else
-    prefix="○"
-  fi
-
-  desired_name="${prefix} ${base_name}"
-  [ "$current_name" = "$desired_name" ] || tmux rename-window -t "$window_id" "$desired_name"
-}
-
 # 一个 TMA 停下来之后 orchestrator 该做什么，是随项目变的：这个 repo 要更新
 # mindmap，那个 repo 可能要跑测试或者回写某个看板。所以项目可以在
 # .tma/idle-notify.md 里写一段，追加到下面那条通用提示后面。
@@ -338,7 +300,7 @@ submit_to_tui_pane() {
 }
 
 notify_orchestrator_on_idle() {
-  local session_name pane_target source_window_name source_base_name orchestrator_window_id orchestrator_pane_id
+  local session_name pane_target source_window_name orchestrator_window_id orchestrator_pane_id
   local prompt_text project_note buffer_name activity notified_activity
 
   # Only supplemental TUI-observed idle edges should ask the orchestrator to
@@ -349,17 +311,16 @@ notify_orchestrator_on_idle() {
   session_name="$(tmux display-message -p -t "$pane_id" '#{session_name}')"
   pane_target="$(tmux display-message -p -t "$pane_id" '#{session_name}:#{window_index}.#{pane_index}')"
   source_window_name="$(tmux display-message -p -t "$window_id" '#W')"
-  source_base_name="$(_strip_ai_window_state_prefix "$source_window_name")"
   activity="$(tmux display-message -p -t "$pane_id" '#{window_activity}')"
   notified_activity="$(tmux show -pv -t "$pane_id" @ai_agent_orchestrator_idle_notified_activity 2>/dev/null || true)"
 
-  [ "$source_base_name" != "orchestrator" ] || return 0
+  [ "$source_window_name" != "orchestrator" ] || return 0
   [ "$activity" != "$notified_activity" ] || return 0
 
   orchestrator_window_id=""
   while IFS='	' read -r window_row_id window_row_name; do
     [ -n "$window_row_id" ] || continue
-    if [ "$(_strip_ai_window_state_prefix "$window_row_name")" = "orchestrator" ]; then
+    if [ "$window_row_name" = "orchestrator" ]; then
       orchestrator_window_id="$window_row_id"
       break
     fi
@@ -376,7 +337,7 @@ notify_orchestrator_on_idle() {
   # Stop hook 也不触发，于是一个本来还要继续干活的 TMA 就永久停在半路。让
   # orchestrator 先分辨是哪一种，是后者就替它续上。
   # 保持单行：paste-buffer 没开 -p，多行文本会把换行直接送进 TUI。
-  prompt_text="请关注这个 TMA：${pane_target}（${source_base_name}）已经停下来并有新的更新。根据 project-mindmap 这个skill看是否需要汇总信息。另外先 capture 这个 pane 确认它是怎么停下来的：如果是被上游 LLM-API 错误打断的（屏幕上有 API Error / Connection lost mid-response / 连接重置 / 请求超时这类，也就是上游不出错它就会继续干下去），那它并没有把活做完，请直接向它发送「继续」让它接着原来的工作，不要按任务已完成来汇总。"
+  prompt_text="请关注这个 TMA：${pane_target}（${source_window_name}）已经停下来并有新的更新。根据 project-mindmap 这个skill看是否需要汇总信息。另外先 capture 这个 pane 确认它是怎么停下来的：如果是被上游 LLM-API 错误打断的（屏幕上有 API Error / Connection lost mid-response / 连接重置 / 请求超时这类，也就是上游不出错它就会继续干下去），那它并没有把活做完，请直接向它发送「继续」让它接着原来的工作，不要按任务已完成来汇总。"
   project_note="$(project_idle_note "$(tmux display-message -p -t "$orchestrator_pane_id" '#{pane_current_path}')")"
   [ -z "$project_note" ] || prompt_text="$prompt_text $project_note"
   buffer_name="tma-idle-notify-${pane_id#%}"
@@ -453,7 +414,6 @@ case "$state" in
       if has_ai_agent_state; then
         _clear_ai_pane_state "$pane_id"
       fi
-      sync_window_name=0
     fi
     ;;
   unread)
@@ -463,7 +423,6 @@ case "$state" in
       if has_ai_agent_state; then
         _clear_ai_pane_state "$pane_id"
       fi
-      sync_window_name=0
     fi
     ;;
   pending)
@@ -481,7 +440,6 @@ case "$state" in
       if has_ai_agent_state; then
         _clear_ai_pane_state "$pane_id"
       fi
-      sync_window_name=0
     fi
     ;;
   *)
@@ -490,7 +448,4 @@ case "$state" in
     ;;
 esac
 
-if [ "$sync_window_name" = "1" ]; then
-  sync_ai_window_name
-fi
 "$SCRIPT_DIR/refresh_status_lines.sh" "$pane_id"
