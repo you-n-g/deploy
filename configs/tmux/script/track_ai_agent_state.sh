@@ -289,12 +289,10 @@ submit_to_tui_pane() {
     sleep 2
     tmux send-keys -t "$pane" Enter
     sleep 2
-
-    # A TUI that accepted the message reports itself running. Still idle means
-    # the Enter did not land, so spend one more.
-    if [ "$(tmux show -pv -t "$pane" @ai_agent_running 2>/dev/null || true)" != "1" ]; then
-      tmux send-keys -t "$pane" Enter
-    fi
+    # Retry once regardless of @ai_agent_running. A busy TUI was already marked
+    # running before submission, so that option cannot prove the first Enter
+    # landed. If it did land, the composer is empty and this Enter is harmless.
+    tmux send-keys -t "$pane" Enter
     tmux delete-buffer -b "$buffer" 2>/dev/null || true
   ) 9>"$lock_file"
 }
