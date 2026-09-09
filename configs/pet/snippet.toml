@@ -754,3 +754,9 @@
   Output = ""
   Tag = []
   command = "vim .tma/idle-notify.md"
+
+[[Snippets]]
+  Description = "prompt: fork and continue"
+  Output = ""
+  Tag = []
+  command = "你是从刚刚任务fork出来的一个新的Thread，所以你先不用理会刚刚的任务了，但是基于刚刚任务的context我们继续。"
