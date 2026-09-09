@@ -287,32 +287,6 @@ _format_relative_age() {
     printf -v "$out_var" '%s' "$formatted"
 }
 
-_strip_ai_window_state_prefix() {
-    local name="$1"
-    local out_var="${2:-}"
-
-    # Coupled with configs/tmux/script/track_ai_agent_state.sh, which prefixes
-    # AI window names with these state markers. The fzf list renders status in
-    # its own column, so strip the window-name prefix for display.
-    while :; do
-        case "$name" in
-            "● "*) name="${name#● }" ;;
-            "⏵ "*) name="${name#⏵ }" ;;
-            "◒ "*) name="${name#◒ }" ;;
-            "⏸ "*) name="${name#⏸ }" ;;
-            "◉ "*) name="${name#◉ }" ;;
-            "○ "*) name="${name#○ }" ;;
-            *) break ;;
-        esac
-    done
-
-    if [[ -n "$out_var" ]]; then
-        printf -v "$out_var" '%s' "$name"
-    else
-        printf '%s\n' "$name"
-    fi
-}
-
 _ai_pending_reason_label() {
     local pending="$1"
     local out_var="$2"
@@ -375,7 +349,6 @@ _tmuxg_toggle_orchestrator_visibility() {
 
 _tmuxg_filter_orchestrator_rows() {
     local last_visit sess_win wname pane_id pane_pid wact_raw unread running background pending pane_path attribute
-    local display_wname
 
     if _tmuxg_show_orchestrator_enabled; then
         cat
@@ -383,8 +356,7 @@ _tmuxg_filter_orchestrator_rows() {
     fi
 
     while IFS=$'\t' read -r last_visit sess_win wname pane_id pane_pid wact_raw unread running background pending pane_path attribute; do
-        _strip_ai_window_state_prefix "$wname" display_wname
-        [[ "$display_wname" == "orchestrator" ]] && continue
+        [[ "$wname" == "orchestrator" ]] && continue
         printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
             "$last_visit" "$sess_win" "$wname" "$pane_id" "$pane_pid" "$wact_raw" "$unread" "$running" "$background" "$pending" "$pane_path" "$attribute"
     done
@@ -444,19 +416,12 @@ _tmuxg_filter_blacklisted_session_rows() {
 
 _clear_ai_pane_state() {
     local pane_id="${1:?usage: _clear_ai_pane_state PANE_ID}"
-    local window_id current_name desired_name
 
     tmux set-option -pqu -t "$pane_id" @ai_agent_running 2>/dev/null || true
     tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
     tmux set-option -pqu -t "$pane_id" @ai_agent_unread 2>/dev/null || true
     tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
     tmux set-option -pqu -t "$pane_id" @ai_agent_attribute 2>/dev/null || true
-
-    window_id="$(tmux display-message -p -t "$pane_id" '#{window_id}' 2>/dev/null || true)"
-    [[ -n "$window_id" ]] || return 0
-    current_name="$(tmux display-message -p -t "$window_id" '#W')"
-    desired_name="$(_strip_ai_window_state_prefix "$current_name")"
-    [[ "$current_name" == "$desired_name" ]] || tmux rename-window -t "$window_id" "$desired_name"
 }
 
 _ai_fzf_reset_session_colors() {
@@ -778,7 +743,7 @@ _ai_pane_fzf_list() {
 
         local attribute_info=""
         [[ -n "$attribute" ]] && attribute_info="  ${attribute}"
-        _strip_ai_window_state_prefix "$wname" display_wname
+        display_wname="$wname"
         if $is_ranked; then
             display_wname=$'\033[1;91m'"${display_wname}"$'\033[0m'
         fi

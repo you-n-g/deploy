@@ -66,8 +66,7 @@ printf -v CMD 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$WINDOW_NAME" "$_ai_cmd"
 if tmux has-session -t "$SESSION" 2>/dev/null; then
     EXISTING_WINDOW_ID=""
     while IFS=$'\t' read -r window_id window_name; do
-        base_name="$(_strip_ai_window_state_prefix "$window_name")"
-        if [ "$window_name" = "$WINDOW_NAME" ] || [ "$base_name" = "$WINDOW_NAME" ]; then
+        if [ "$window_name" = "$WINDOW_NAME" ]; then
             EXISTING_WINDOW_ID="$window_id"
             break
         fi

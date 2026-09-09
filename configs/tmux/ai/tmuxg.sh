@@ -32,15 +32,14 @@ done
 [[ "$QUIET" == true ]] && trap 'exit 0' EXIT
 
 _create_new_ai_window() {
-    local tool workdir cmd base_window_name initial_window_name
+    local tool workdir cmd window_name
     tool=$(tmux show-environment -g TMUX_AI_TOOL 2>/dev/null | cut -d= -f2)
     [ -z "$tool" ] && tool=codex
     workdir=$(tmux display-message -p '#{pane_current_path}')
-    base_window_name="${WINDOW_NAME:-${workdir##*/}}"
-    initial_window_name="○ $base_window_name"
+    window_name="${WINDOW_NAME:-${workdir##*/}}"
 
-    printf -v cmd 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$base_window_name" "${tool}r"
-    tmux new-window -n "$initial_window_name" -c "$workdir" "$cmd"
+    printf -v cmd 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$window_name" "${tool}r"
+    tmux new-window -n "$window_name" -c "$workdir" "$cmd"
 }
 
 _switch_to_window() {
@@ -73,8 +72,7 @@ if [[ -n "$WINDOW_NAME" ]]; then
     SESSION=$(tmux display-message -p '#{session_name}')
     TARGET=""
     while IFS=$'\t' read -r window_name window_id; do
-        base_name="$(_strip_ai_window_state_prefix "$window_name")"
-        if [[ "$window_name" == "$WINDOW_NAME" || "$base_name" == "$WINDOW_NAME" ]]; then
+        if [[ "$window_name" == "$WINDOW_NAME" ]]; then
             TARGET="$window_id"
             break
         fi
