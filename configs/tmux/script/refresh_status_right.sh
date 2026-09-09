@@ -53,6 +53,17 @@ case "$theme" in
     ;;
 esac
 
+style_window_index() {
+  option_name="$1"
+  option_value="$(tmux show-options -gqv "$option_name")"
+  styled_index='#{?#{m/r:(^| )#{pane_id}( |$),#{@auto_switch_ranked_panes}},#[bold]#[underscore]#I#[nobold]#[nounderscore],#I}'
+  option_value="${option_value// #I / ${styled_index} }"
+  tmux set-option -g "$option_name" "$option_value"
+}
+
+style_window_index window-status-format
+style_window_index window-status-current-format
+
 status_right="${status_right}#[fg=green]#(${SCRIPT_DIR}/print_resource_status.sh)#[default]"
 status_right="${status_right} #[fg=yellow]#(df -h ${mount_path} 2>/dev/null | awk 'NR==2 {print \"${display_path} \" \$5 \" \" \$4}')#[default]"
 status_right="${status_right} #[fg=cyan]🤖 #(${SCRIPT_DIR}/print_ai_status.sh)#[default]"
