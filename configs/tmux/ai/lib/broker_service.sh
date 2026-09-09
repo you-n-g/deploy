@@ -4,10 +4,10 @@
 # cc-connect is one. It is a long-running node daemon, and the Claude sessions it
 # serves are its own children -- so the pane it was started in looks like it
 # holds a live AI process, and those sessions inherit its TMUX_PANE and fire
-# their hooks against that pane. Left alone the pane gets renamed `● cc-connect`,
-# parked with unread markers nobody will ever switch to and clear, and offered in
-# every AI window picker. A pane running a broker is not an AI window, however
-# many claude processes sit underneath it.
+# their hooks against that pane. Left alone the pane gets AI state attached to
+# it, appears with unread markers nobody will ever switch to and clear, and is
+# offered in every AI window picker. A pane running a broker is not an AI window,
+# however many claude processes sit underneath it.
 #
 # The whole exclusion lives here so it stays pluggable: sourcing this file adds
 # it, dropping the source line from ai/lib.sh removes it, and supporting another
