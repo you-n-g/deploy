@@ -9,6 +9,12 @@ from typing import Dict, List, Set, Tuple
 
 
 FIELD_SEP = "\t"
+# Everything after a line that is exactly this is free-form note text, kept
+# verbatim -- including lines that start with '#', which are comments anywhere
+# above it. The note travels with the sequence: it lives in NOTE_OPTION while
+# the sequence is active, and sequence.sh folds it into the saved snapshot.
+NOTE_SEPARATOR = "---"
+NOTE_OPTION = "@auto_switch_ranked_panes_note"
 PANE_FORMAT = FIELD_SEP.join(
     [
         "#{pane_id}",
@@ -32,6 +38,44 @@ def tmux_output(*args: str) -> str:
 
 def tmux_run(*args: str) -> None:
     subprocess.run(["tmux", *args], check=True)
+
+
+def read_note() -> str:
+    result = subprocess.run(
+        ["tmux", "show-option", "-gqv", NOTE_OPTION],
+        stdout=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    return result.stdout.strip("\n")
+
+
+def write_note(note: str) -> None:
+    note = note.strip("\n")
+    if note:
+        tmux_run("set-option", "-gq", NOTE_OPTION, note)
+    else:
+        subprocess.run(["tmux", "set-option", "-guq", NOTE_OPTION])
+
+
+def encode_note(note: str) -> str:
+    # The saved-snapshot option is one snapshot per line, so a note has to
+    # survive as a single field: escape first, then the newlines it contains.
+    return note.strip("\n").replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
+
+
+def decode_note(encoded: str) -> str:
+    out = []
+    index = 0
+    while index < len(encoded):
+        char = encoded[index]
+        if char != "\\" or index + 1 >= len(encoded):
+            out.append(char)
+            index += 1
+            continue
+        nxt = encoded[index + 1]
+        out.append({"n": "\n", "t": "\t", "\\": "\\"}.get(nxt, "\\" + nxt))
+        index += 2
+    return "".join(out)
 
 
 def strip_tmux_format(text: str) -> str:
@@ -163,7 +207,7 @@ def edit_row(row: Dict[str, str], session_name: str) -> Dict[str, str]:
     }
 
 
-def write_edit_file(ranked: str, output_path: str) -> None:
+def write_edit_file(ranked: str, output_path: str, note: str) -> None:
     panes = load_panes()
     session_names = load_session_names(ranked.split())
     rows: List[Dict[str, str]] = []
@@ -203,6 +247,10 @@ def write_edit_file(ranked: str, output_path: str) -> None:
         file.write("# Session column is the live Codex/Claude display name and is informational only.\n")
         file.write('# Pending column updates @ai_agent_pending; empty clears it, "/" means no reason was provided.\n')
         file.write("# Earlier columns are informational only. Long lines intentionally do not wrap in vim.\n")
+        file.write(f'# Everything below the "{NOTE_SEPARATOR}" line is a free-form note saved with this sequence.\n')
+        file.write(f"{NOTE_SEPARATOR}\n")
+        if note:
+            file.write(note.strip("\n") + "\n")
 
 
 def parse_edit_comment(comment: str, line_no: int) -> Tuple[str, str]:
@@ -213,14 +261,24 @@ def parse_edit_comment(comment: str, line_no: int) -> Tuple[str, str]:
     return pending.strip(), attribute.strip()
 
 
-def parse_edit_file(path: str, panes: Dict[str, Dict[str, str]]) -> Tuple[List[str], Dict[str, str], Dict[str, str]]:
+def parse_edit_file(
+    path: str, panes: Dict[str, Dict[str, str]]
+) -> Tuple[List[str], Dict[str, str], Dict[str, str], str]:
     ranked: List[str] = []
     pending_reasons: Dict[str, str] = {}
     attributes: Dict[str, str] = {}
+    note_lines: List[str] = []
     seen: Set[str] = set()
+    in_note = False
     with open(path, encoding="utf-8") as file:
         for line_no, line in enumerate(file, start=1):
             line = line.rstrip("\n")
+            if in_note:
+                note_lines.append(line)
+                continue
+            if line.strip() == NOTE_SEPARATOR:
+                in_note = True
+                continue
             before_hash, hash_found, after_hash = line.partition("#")
             before_hash = before_hash.strip()
             if not before_hash:
@@ -247,12 +305,13 @@ def parse_edit_file(path: str, panes: Dict[str, Dict[str, str]]) -> Tuple[List[s
             pending_reasons[resolved] = pending_reason(pending)
             attributes[resolved] = attribute
 
-    return ranked, pending_reasons, attributes
+    return ranked, pending_reasons, attributes, "\n".join(note_lines).strip("\n")
 
 
 def apply_edit_file(path: str) -> str:
     panes = load_panes()
-    ranked, pending_reasons, attributes = parse_edit_file(path, panes)
+    ranked, pending_reasons, attributes, note = parse_edit_file(path, panes)
+    write_note(note)
     refresh_script = Path.home() / "deploy/configs/tmux/script/refresh_status_lines.sh"
 
     for pane in ranked:
@@ -300,17 +359,31 @@ def main() -> None:
     write_parser = subparsers.add_parser("write")
     write_parser.add_argument("ranked")
     write_parser.add_argument("output")
+    # Previewing a saved snapshot has to show that snapshot's note, not the
+    # note of the sequence that happens to be active.
+    write_parser.add_argument("--note", default=None)
 
     apply_parser = subparsers.add_parser("apply")
     apply_parser.add_argument("path")
+
+    encode_parser = subparsers.add_parser("encode-note")
+    encode_parser.add_argument("note")
+
+    decode_parser = subparsers.add_parser("decode-note")
+    decode_parser.add_argument("encoded")
 
     args = parser.parse_args()
     if args.command == "normalize":
         print(normalize_sequence(args.ranked), end="")
     elif args.command == "write":
-        write_edit_file(args.ranked, args.output)
+        note = read_note() if args.note is None else args.note
+        write_edit_file(args.ranked, args.output, note)
     elif args.command == "apply":
         print(apply_edit_file(args.path), end="")
+    elif args.command == "encode-note":
+        print(encode_note(args.note), end="")
+    elif args.command == "decode-note":
+        print(decode_note(args.encoded), end="")
     else:
         raise SystemExit(f"unknown command: {args.command}")
 
