@@ -96,7 +96,13 @@ case "$event" in
     AI_AGENT_STATE_SOURCE="$source_kind:init" exec "$TRACK_STATE" init "$target"
     ;;
   running)
-    AI_AGENT_STATE_SOURCE="$source_kind:running" exec "$TRACK_STATE" running "$target"
+    # UserPromptSubmit is the one event that carries the submitted text, so it
+    # is where the prompt log gets its rows. Read it here rather than letting
+    # the tracker read stdin: the tracker has a dozen callers that hand it no
+    # JSON at all, and a blocking read on this path would stall the pane.
+    read_hook_input
+    AI_AGENT_PROMPT="$(printf '%s' "$hook_input" | jq -r '.prompt // empty')" \
+      AI_AGENT_STATE_SOURCE="$source_kind:running" exec "$TRACK_STATE" running "$target"
     ;;
   pretool)
     # UserPromptSubmit is not the only way a foreground turn starts. A Stop hook

@@ -70,6 +70,13 @@ set -eu
 # - AI_AGENT_STATE_LOG:
 #   Optional path for debug logs. If unset, logs go to
 #   ~/.cache/tmux-ai-agent-state.log.
+# - AI_AGENT_PROMPT:
+#   The text the user or another agent submitted, set by the UserPromptSubmit
+#   hooks of both agents. Non-empty means this invocation starts a turn with a
+#   known prompt, and log_ai_agent_prompt records it. No other caller sets it.
+# - AI_AGENT_PROMPT_LOG:
+#   Optional path for the prompt log. If unset, rows go to
+#   ~/.cache/tmux-ai-prompts.jsonl.
 
 state="${1:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending TARGET [PENDING_REASON]}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -134,6 +141,79 @@ log_ai_agent_state() {
   printf '%s%s state=%s pane=%s window_id=%s window_name=%q activity=%s active=%s command=%q pid=%s running=%q background=%q unread=%q pending=%q notified_activity=%q\n' \
     "$ts" "$source_part" "$state" "$pane_target" "$window_id" "$window_name" "$window_activity" "$window_active" "$pane_command" "$pane_pid" \
     "$running" "$background" "$unread" "$pending" "$notified_activity" >> "$log_file"
+}
+
+trim_spaces() {
+  local text="$1"
+
+  text="${text#"${text%%[![:space:]]*}"}"
+  text="${text%"${text##*[![:space:]]}"}"
+  printf '%s' "$text"
+}
+
+# Records the prompt that started this turn, tagged with who sent it.
+#
+# tmux scrollback rolls off, so this file is the only durable record of what a
+# pane was actually asked -- including the messages agents send each other that
+# never reach the sender's .tma/msg.md, and the ones the user types, which that
+# file deliberately leaves out.
+#
+# Rows are appended as JSON lines under a lock: a prompt is easily longer than
+# the size a write stays atomic at, and several panes can be submitted at once.
+#
+# A TMA message carries a "⟦TMA⟧ sender → recipient" line. It is normally the
+# first line, but a message whose body is a slash command puts it last, because
+# a leading signature would keep the TUI from recognising the command. Both
+# ends are checked; a prompt with neither is the user typing.
+log_ai_agent_prompt() {
+  local log_file log_dir ts window_name
+  local first_line last_line signature rest sender from to row
+
+  [ -n "${AI_AGENT_PROMPT:-}" ] || return 0
+
+  sender="user"
+  from=""
+  to=""
+  first_line="${AI_AGENT_PROMPT%%$'\n'*}"
+  last_line="${AI_AGENT_PROMPT##*$'\n'}"
+  for signature in "$first_line" "$last_line"; do
+    case "$signature" in
+      '⟦TMA⟧'*)
+        sender="tma"
+        rest="${signature#⟦TMA⟧}"
+        # An arrow is what makes the line a routable signature. Without one the
+        # row still says tma, but there is nothing to split into from/to.
+        case "$rest" in
+          *→*)
+            from="$(trim_spaces "${rest%%→*}")"
+            to="$(trim_spaces "${rest#*→}")"
+            ;;
+        esac
+        break
+        ;;
+    esac
+  done
+
+  log_file="${AI_AGENT_PROMPT_LOG:-$HOME/.cache/tmux-ai-prompts.jsonl}"
+  log_dir="$(dirname "$log_file")"
+  mkdir -p "$log_dir"
+
+  ts="$(date '+%Y-%m-%dT%H:%M:%S%z')"
+  window_name="$(tmux display-message -p -t "$window_id" '#W')"
+  row="$(jq -cn \
+    --arg time "$ts" \
+    --arg pane "$pane_id" \
+    --arg window "$window_name" \
+    --arg sender "$sender" \
+    --arg from "$from" \
+    --arg to "$to" \
+    --arg prompt "$AI_AGENT_PROMPT" \
+    '{time: $time, pane: $pane, window: $window, sender: $sender}
+      + (if $from == "" then {} else {from: $from} end)
+      + (if $to == "" then {} else {to: $to} end)
+      + {prompt: $prompt}')"
+
+  { flock 9; printf '%s\n' "$row" >&9; } 9>>"$log_file"
 }
 
 ensure_ai_agent_attribute() {
@@ -344,6 +424,7 @@ notify_orchestrator_on_idle() {
 }
 
 log_ai_agent_state
+log_ai_agent_prompt
 
 case "$state" in
   init)

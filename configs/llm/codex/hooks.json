@@ -28,10 +28,11 @@
     ],
     "UserPromptSubmit": [
       {
+        "_comment": "The only event carrying the submitted text, so it feeds the prompt log. Codex names the field `prompt`, same as Claude does, so both sides hand the tracker the same AI_AGENT_PROMPT. Extracted here rather than in the tracker because the tracker has a dozen callers that pipe it no JSON, and a blocking read on this path would stall the pane. The jq filter avoids spaces so it needs no quoting inside the bash -lc string.",
         "hooks": [
           {
             "type": "command",
-            "command": "bash -lc 'AI_AGENT_STATE_SOURCE=codex-hook:user-prompt-submit exec \"$HOME/deploy/configs/tmux/script/track_ai_agent_state.sh\" running'",
+            "command": "bash -lc 'AI_AGENT_PROMPT=\"$(jq -r .prompt//empty)\" AI_AGENT_STATE_SOURCE=codex-hook:user-prompt-submit exec \"$HOME/deploy/configs/tmux/script/track_ai_agent_state.sh\" running'",
             "timeout": 5
           }
         ]
