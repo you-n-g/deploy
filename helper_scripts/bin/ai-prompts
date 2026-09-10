@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""Read the prompt log written by configs/tmux/script/track_ai_agent_state.sh.
+
+Every UserPromptSubmit on either agent appends one JSON row there, so this is
+the durable record of what each pane was asked -- by the user and by other TMA
+agents -- after tmux scrollback has rolled off.
+
+Three subcommands, shaped for driving an fzf picker:
+
+  list        one line per row, newest first, tab-separated as `id<TAB>display`
+  show ID     one row with its metadata, for the preview pane
+  get ID...   the prompts themselves, oldest first, for pasting into a buffer
+
+Kept to Python 3.6 syntax: the preview runs this on every cursor move, so it
+has to start on whatever interpreter the host's `python3` happens to be.
+"""
+
+import argparse
+import json
+import os
+import sys
+
+DEFAULT_LOG = os.path.join(os.path.expanduser("~"), ".cache", "tmux-ai-prompts.jsonl")
+
+
+def load_rows():
+    path = os.environ.get("AI_AGENT_PROMPT_LOG", DEFAULT_LOG)
+    if not os.path.exists(path):
+        sys.exit("ai-prompts: no prompt log at {}".format(path))
+
+    rows = []
+    with open(path, encoding="utf-8") as handle:
+        for lineno, line in enumerate(handle, start=1):
+            line = line.strip()
+            if not line:
+                continue
+            row = json.loads(line)
+            # The line number is the id: rows are only ever appended, so it is
+            # stable for as long as the picker is open.
+            row["id"] = lineno
+            rows.append(row)
+    return rows
+
+
+def rows_by_id(ids):
+    known = {row["id"]: row for row in load_rows()}
+    missing = [i for i in ids if i not in known]
+    if missing:
+        sys.exit("ai-prompts: no such row(s): {}".format(", ".join(map(str, missing))))
+    return [known[i] for i in ids]
+
+
+def stamp(row):
+    # "2026-09-09T21:44:15-0500" -> "09-09 21:44". Sliced rather than parsed:
+    # the writer controls the format and only the readable part is wanted.
+    return "{} {}".format(row["time"][5:10], row["time"][11:16])
+
+
+def origin(row):
+    if row["sender"] != "tma":
+        return "user"
+    sender = row.get("from")
+    return "tma {}".format(sender) if sender else "tma"
+
+
+def cmd_list():
+    for row in reversed(load_rows()):
+        print("{}\t{}  {:<14.14}  {:<24.24}  {}".format(
+            row["id"],
+            stamp(row),
+            row.get("window", ""),
+            origin(row),
+            " ".join(row["prompt"].split()),
+        ))
+
+
+def cmd_show(row_id):
+    row = rows_by_id([row_id])[0]
+    route = "{} → {}".format(row["from"], row["to"]) if row.get("from") else origin(row)
+    print("{}  {}  {}".format(row["time"], row.get("window", ""), row["pane"]))
+    print(route)
+    print()
+    print(row["prompt"])
+
+
+def cmd_get(ids):
+    # Oldest first, whatever order they were picked in: the result reads as a
+    # transcript, not as a selection history.
+    print("\n\n".join(row["prompt"] for row in rows_by_id(sorted(ids))))
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    sub = parser.add_subparsers(dest="command")
+    sub.add_parser("list", help="one line per prompt, newest first")
+    show = sub.add_parser("show", help="one prompt with metadata")
+    show.add_argument("id", type=int)
+    get = sub.add_parser("get", help="prompt text only, oldest first")
+    get.add_argument("ids", type=int, nargs="+")
+
+    args = parser.parse_args()
+    if args.command == "list":
+        cmd_list()
+    elif args.command == "show":
+        cmd_show(args.id)
+    elif args.command == "get":
+        cmd_get(args.ids)
+    else:
+        parser.error("a subcommand is required")
+
+
+if __name__ == "__main__":
+    main()
