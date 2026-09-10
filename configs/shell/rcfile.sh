@@ -390,6 +390,14 @@ function codexr() {
     local provider
     provider=$(_codex_default_provider)
 
+    # TMUX_AI_MODEL names the model without naming the tool, so a launcher that
+    # resolves the tool from TMUX_AI_TOOL can set one variable and have it land
+    # correctly on whichever wrapper runs. Prepended rather than appended: in
+    # exec mode the trailing argument is the prompt.
+    if [[ -n "${TMUX_AI_MODEL:-}" ]]; then
+        set -- -m "$TMUX_AI_MODEL" "$@"
+    fi
+
     case "$provider" in
         lb8121)
             codexs8121 "$@"
@@ -670,6 +678,12 @@ function claudeyolo() {
 }
 
 function clauder() {
+    # Same TMUX_AI_MODEL contract as codexr. Claude takes its model through
+    # CLAUDE_MODEL rather than an argument: claudeauto/claudeyolo already pass
+    # --model, and a second one on the command line makes the CLI error out.
+    # zsh scopes this local to the callee too, so no export is needed.
+    local CLAUDE_MODEL="${TMUX_AI_MODEL:-$CLAUDE_MODEL}"
+
     if [[ "$(uname)" == "Linux" ]]; then
         claudeyolo "$@"
     else
