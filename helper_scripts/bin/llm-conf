@@ -30,13 +30,17 @@ from textual.widgets import (
 from textual.widgets.option_list import Option
 
 PROVIDER_VARIABLE = "CODEXR_PROVIDER"
+# The tmux environment has no pane scope, so a per-pane override rides on a
+# pane-local user option instead. codexr reads it ahead of the environment.
+PROVIDER_PANE_OPTION = "@codexr_provider"
 AI_TOOL_VARIABLE = "TMUX_AI_TOOL"
 STATIC_CHOICES = (
-    ("lb8121", "lb8121 — shared 8121 endpoint (default)"),
-    ("openai", "openai — official OpenAI login"),
+    ("lb8121", "lb8121 — shared 8121 endpoint"),
+    ("openai", "openai — official OpenAI login (default)"),
     ("xyz", "xyz — XYZ normally, Azure inside Obsidian"),
 )
 SCOPES = (
+    ("pane", "Current pane"),
     ("session", "Current session"),
     ("global", "Global tmux server"),
 )
@@ -97,10 +101,14 @@ def run_tmux(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]
     return result
 
 
-def current_session() -> str:
+def current_pane() -> str:
     pane = os.environ.get("TMUX_PANE")
     if not os.environ.get("TMUX") or not pane:
         raise ToolError("must run inside a tmux pane")
+    return pane
+
+
+def current_session(pane: str) -> str:
     return run_tmux("display-message", "-p", "-t", pane, "#S").stdout.strip()
 
 
@@ -114,7 +122,20 @@ def read_variable(variable: str, *scope: str) -> str | None:
     return None
 
 
-def set_provider(scope: str, session: str, value: str) -> None:
+def read_pane_option(pane: str, option: str) -> str | None:
+    # -q keeps an unset option quiet, so an empty result means "not set".
+    result = run_tmux("show-option", "-pqv", "-t", pane, option, check=False)
+    return result.stdout.strip() or None
+
+
+def set_provider(scope: str, session: str, pane: str, value: str) -> None:
+    if scope == "pane":
+        if value == "inherit":
+            run_tmux("set-option", "-pu", "-t", pane, PROVIDER_PANE_OPTION)
+        else:
+            run_tmux("set-option", "-p", "-t", pane, PROVIDER_PANE_OPTION, value)
+        return
+
     target = ["-g"] if scope == "global" else ["-t", session]
     if value == "inherit":
         run_tmux("set-environment", *target, "-r", PROVIDER_VARIABLE)
@@ -143,10 +164,13 @@ class ProviderApp(App[None]):
         ("left,escape,q", "quit", "Quit"),
     ]
 
-    def __init__(self, session: str, choices: tuple[tuple[str, str], ...]) -> None:
+    def __init__(
+        self, pane: str, session: str, choices: tuple[tuple[str, str], ...]
+    ) -> None:
         super().__init__()
+        self.pane = pane
         self.session = session
-        self.scope = "session"
+        self.scope = "pane"
         self.choices = choices
         self.provider_values = tuple(value for value, _ in choices)
         self.ai_tool_values = tuple(value for value, _ in AI_TOOL_CHOICES)
@@ -184,17 +208,22 @@ class ProviderApp(App[None]):
         self.query_one("#providers", OptionList).focus()
         self.set_interval(1, self.refresh_status)
 
-    def values(self) -> tuple[str | None, str | None, str | None, str]:
+    def values(self) -> tuple[str | None, str | None, str | None, str | None, str]:
+        pane_value = read_pane_option(self.pane, PROVIDER_PANE_OPTION)
         session_value = read_variable(PROVIDER_VARIABLE, "-t", self.session)
         global_value = read_variable(PROVIDER_VARIABLE, "-g")
         shell_value = os.environ.get(PROVIDER_VARIABLE)
-        effective = session_value or global_value or shell_value or "lb8121"
-        return session_value, global_value, shell_value, effective
+        effective = (
+            pane_value or session_value or global_value or shell_value or "openai"
+        )
+        return pane_value, session_value, global_value, shell_value, effective
 
     def refresh_status(self) -> None:
-        session_value, global_value, shell_value, effective = self.values()
+        pane_value, session_value, global_value, shell_value, effective = self.values()
         source = (
-            "session"
+            "pane"
+            if pane_value
+            else "session"
             if session_value
             else "global"
             if global_value
@@ -208,10 +237,11 @@ class ProviderApp(App[None]):
             else ""
         )
         self.query_one("#provider-status", Static).update(
-            f"Session: {self.session}\n"
+            f"Session: {self.session}    Pane: {self.pane}\n"
+            f"Pane override: {pane_value or '<inherit>'}\n"
             f"Session override: {session_value or '<inherit>'}\n"
             f"Global value: {global_value or '<unset>'}\n"
-            f"Effective: {effective} ({source})\n"
+            f"Effective: {effective} ({source}) — applies to the next codexr here\n"
             f"Apply to: {self.scope}"
             f"{unsupported}"
         )
@@ -228,10 +258,11 @@ class ProviderApp(App[None]):
         )
 
     def sync_highlight(self) -> None:
-        session_value, global_value, _, _ = self.values()
+        pane_value, session_value, global_value, _, _ = self.values()
         target = (
-            session_value if self.scope == "session" else global_value
-        ) or "inherit"
+            {"pane": pane_value, "session": session_value}.get(self.scope, global_value)
+            or "inherit"
+        )
         self.query_one("#providers", OptionList).highlighted = (
             self.provider_values.index(target)
             if target in self.provider_values
@@ -246,13 +277,14 @@ class ProviderApp(App[None]):
 
     def apply(self, value: str) -> None:
         try:
-            set_provider(self.scope, self.session, value)
+            set_provider(self.scope, self.session, self.pane, value)
         except ToolError as error:
             self.notify(str(error), severity="error")
             return
         self.refresh_status()
         self.sync_highlight()
-        self.notify(f"{self.scope} {PROVIDER_VARIABLE} → {value}")
+        name = PROVIDER_PANE_OPTION if self.scope == "pane" else PROVIDER_VARIABLE
+        self.notify(f"{self.scope} {name} → {value}")
 
     def apply_ai_tool(self, value: str) -> None:
         try:
@@ -287,7 +319,7 @@ class ProviderApp(App[None]):
         self.sync_highlight()
 
     def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
-        self.scope = event.pressed.id or "session"
+        self.scope = event.pressed.id or "pane"
         self.refresh_status()
         self.sync_highlight()
 
@@ -302,7 +334,8 @@ def main() -> int:
     if sys.argv[1:] in (["-h"], ["--help"]):
         print("llm-conf: configure Codex provider and the global tmux AI tool")
         return 0
-    ProviderApp(current_session(), provider_choices()).run()
+    pane = current_pane()
+    ProviderApp(pane, current_session(pane), provider_choices()).run()
     return 0
 
 
