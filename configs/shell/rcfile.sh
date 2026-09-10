@@ -458,17 +458,36 @@ _tmux_environment_value() {
     return 1
 }
 
+# Read a pane-local user option. The tmux environment has no pane scope -- only
+# session and global -- so a per-pane override has to ride on a user option, the
+# same carrier the AI state trackers use for @ai_agent_*.
+_tmux_pane_option_value() {
+    local name="$1"
+    local value
+
+    [[ -n "${TMUX:-}" && -n "${TMUX_PANE:-}" ]] || return 1
+
+    # -q keeps an unset option quiet, so an empty result means "not set".
+    value="$(tmux show-option -pqv -t "$TMUX_PANE" "$name" 2>/dev/null)" || return 1
+    [[ -n "$value" ]] || return 1
+
+    printf '%s\n' "$value"
+}
+
 _codex_default_provider() {
     local provider
 
-    provider="$(_tmux_environment_value CODEXR_PROVIDER)" || provider="${CODEXR_PROVIDER:-}"
+    # Most specific scope wins: pane, then session, then global, then the shell.
+    provider="$(_tmux_pane_option_value @codexr_provider)" \
+        || provider="$(_tmux_environment_value CODEXR_PROVIDER)" \
+        || provider="${CODEXR_PROVIDER:-}"
 
     if [[ -n "$provider" ]]; then
         echo "$provider"
         return
     fi
 
-    echo "lb8121"
+    echo "openai"
 }
 
 _codex_env() {
