@@ -337,10 +337,9 @@ function _myp_run() {
 
 # Unified runner with tmux rename; args: proxy_mode cmd...
 # Explicit AI window names win; otherwise use the current directory name.
-# Start with the idle marker; the state tracker replaces it as state changes.
 # An explicit name (automatic-rename=0) may be user-owned, so leave it alone.
 function _with_tmux_rename() {
-    local title="○ ${TMUX_AI_WINDOW_NAME:-${PWD:t}}"
+    local title="${TMUX_AI_WINDOW_NAME:-${PWD:t}}"
     local proxy_mode="$1"
     shift
     if [ -n "$TMUX" ] && [ -z "${TMUX_AI_DISABLE_RENAME:-}" ]; then
