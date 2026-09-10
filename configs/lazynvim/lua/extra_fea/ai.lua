@@ -286,11 +286,45 @@ function M.setup()
   vim.keymap.set({ "n", "v" }, "<Localleader>ct", function() M.send_current_tmux_target_to_ai() end, { desc = "Send current tmux target to AI/Tmux" })
   vim.keymap.set({ "n", "v" }, "<Localleader>cl", function() M.send_to_last_pane() end, { desc = "Send to last tmux pane in current session (Raw, line/visual)" })
   vim.keymap.set({ "n", "v" }, "<Localleader>cL", function() M.send_to_last_pane(nil, "enter") end, { desc = "Send to last tmux pane (Raw, no switch)" })
-  -- NOTE: this does not work in navigate-note, because the number leading command is defined by other shortcut.
+  -- Reads the prompt log the tmux state tracker appends to, not the agents'
+  -- own session files: it already has every pane's prompts in one place, in
+  -- time order, so there is nothing to merge and nothing to guess about which
+  -- session was the "latest" one.
   vim.keymap.set({ "n" }, "<Localleader>ch", function()
-    local count = vim.v.count1
-    vim.cmd("r !ai-hist -n " .. count)
-  end, { desc = "Insert last n AI history below" })
+    require("fzf-lua").fzf_exec("ai-prompts list", {
+      prompt = "AI prompt> ",
+      fzf_opts = {
+        ["--multi"] = true,
+        -- Column 1 is the row id, hidden from the display but still present in
+        -- what fzf returns, which is how the selection maps back to a row.
+        ["--delimiter"] = "\t",
+        ["--with-nth"] = "2..",
+        ["--header"] = "Tab: select | Enter: insert below, oldest first | newest at top",
+        ["--preview"] = "ai-prompts show {1}",
+      },
+      winopts = { preview = { hidden = false } },
+      actions = {
+        ["default"] = function(selected)
+          if not selected or not selected[1] then
+            return
+          end
+          local ids = {}
+          for _, line in ipairs(selected) do
+            local id = line:match("^(%d+)")
+            if not id then
+              error("ai-prompts: selected row has no id: " .. line)
+            end
+            table.insert(ids, id)
+          end
+          local out = vim.fn.systemlist("ai-prompts get " .. table.concat(ids, " "))
+          if vim.v.shell_error ~= 0 then
+            error("ai-prompts get failed: " .. table.concat(out, "\n"))
+          end
+          vim.api.nvim_put(out, "l", true, true)
+        end,
+      },
+    })
+  end, { desc = "Pick AI prompts (fzf, multi-select) and insert below" })
   vim.keymap.set({ "n" }, "<Localleader>cH", ":r !ai-hist -n ", { desc = "Insert all AI history below" })
 
   for i = 1, 4 do
