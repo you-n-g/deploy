@@ -54,6 +54,11 @@ Usage:
 Manage the auto-switch pane sequence stored in @auto_switch_ranked_panes.
 Saved ranked pane sequences are stored as newline-separated snapshots in
 @auto_switch_saved_ranked_panes.
+
+The active sequence's free-form note lives in @auto_switch_ranked_panes_note
+and is edited below the "---" line in `edit`. A saved snapshot carries its own
+note in a trailing tab-separated "note=" field, so saving and loading move the
+note with the sequence.
 USAGE
 }
 
@@ -63,6 +68,7 @@ shift
 
 ranked_option="@auto_switch_ranked_panes"
 saved_option="@auto_switch_saved_ranked_panes"
+note_option="@auto_switch_ranked_panes_note"
 target_pane=""
 edit_focus_target=""
 saved_index=""
@@ -176,15 +182,80 @@ saved_ranked_panes() {
   tmux show-option -gqv "$saved_option" 2>/dev/null || true
 }
 
+# The note that belongs to the active sequence. Multi-line, stored raw: unlike
+# a saved row this option holds one value, so newlines need no escaping.
+current_note() {
+  tmux show-option -gqv "$note_option" 2>/dev/null || true
+}
+
+set_current_note() {
+  local note="$1"
+
+  if [[ -n "$note" ]]; then
+    tmux set-option -gq "$note_option" "$note"
+  else
+    tmux set-option -guq "$note_option" 2>/dev/null || true
+  fi
+}
+
+encode_note() {
+  run_sequence_edit encode-note "$1"
+}
+
+decode_note() {
+  run_sequence_edit decode-note "$1"
+}
+
+# A saved row is "panes" or "panes<TAB>note=<escaped>". The legacy three-field
+# "id<TAB>name<TAB>panes" shape is still read: the note field is recognised by
+# its "note=" prefix, so the two cannot be confused.
+saved_row_has_note() {
+  local row="$1"
+
+  [[ "$row" == *$'\t'note=* ]] || return 1
+  [[ "${row#*$'\t'}" == note=* ]]
+}
+
 saved_sequence_from_row() {
   local row="$1" id name panes
 
-  if [[ "$row" == *$'\t'* ]]; then
+  if saved_row_has_note "$row"; then
+    printf '%s\n' "${row%%$'\t'*}"
+  elif [[ "$row" == *$'\t'* ]]; then
     IFS=$'\t' read -r id name panes <<< "$row"
     printf '%s\n' "$panes"
   else
     printf '%s\n' "$row"
   fi
+}
+
+saved_note_from_row() {
+  local row="$1" encoded
+
+  saved_row_has_note "$row" || return 0
+  encoded="${row#*$'\t'note=}"
+  [[ -n "$encoded" ]] || return 0
+  decode_note "$encoded"
+}
+
+saved_row_build() {
+  local panes="$1" note="$2"
+
+  if [[ -n "$note" ]]; then
+    printf '%s\t%s\n' "$panes" "note=$(encode_note "$note")"
+  else
+    printf '%s\n' "$panes"
+  fi
+}
+
+# Raw rows, so callers that rebuild the option keep each row's note attached.
+saved_rows() {
+  local row
+
+  while IFS= read -r row; do
+    [[ -n "$row" ]] || continue
+    printf '%s\n' "$row"
+  done <<< "$(saved_ranked_panes)"
 }
 
 saved_sequences() {
@@ -220,15 +291,14 @@ set_saved_sequences() {
 }
 
 append_saved_sequence() {
-  local new_sequence="$1" rows="" sequence
+  local new_sequence="$1" note="${2-}" rows="" row
 
   [[ -n "$new_sequence" ]] || return 0
-  while IFS= read -r sequence; do
-    [[ -n "$sequence" ]] || continue
-    [[ "$sequence" == "$new_sequence" ]] && continue
-    rows="${rows:+$rows$'\n'}$sequence"
-  done <<< "$(saved_sequences)"
-  rows="${rows:+$rows$'\n'}$new_sequence"
+  while IFS= read -r row; do
+    [[ "$(saved_sequence_from_row "$row")" == "$new_sequence" ]] && continue
+    rows="${rows:+$rows$'\n'}$row"
+  done <<< "$(saved_rows)"
+  rows="${rows:+$rows$'\n'}$(saved_row_build "$new_sequence" "$note")"
   set_saved_sequences "$rows"
 }
 
@@ -237,12 +307,29 @@ new_ranked_panes() {
 
   ranked="$(current_ranked_sequence)"
   if [[ -n "$ranked" ]]; then
-    append_saved_sequence "$ranked"
+    append_saved_sequence "$ranked" "$(current_note)"
     saved_text="; saved previous list"
   fi
 
   tmux set-option -gq "$ranked_option" ""
+  set_current_note ""
   message="started new empty auto-switch ranked panes${saved_text}"
+}
+
+saved_note_by_index() {
+  local wanted="$1" index=0 row
+
+  case "$wanted" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
+  while IFS= read -r row; do
+    index=$((index + 1))
+    if [[ "$index" == "$wanted" ]]; then
+      saved_note_from_row "$row"
+      return 0
+    fi
+  done <<< "$(saved_rows)"
+  return 1
 }
 
 saved_sequence_by_index() {
@@ -263,54 +350,60 @@ saved_sequence_by_index() {
 }
 
 delete_saved_sequence() {
-  local wanted="$1" index=0 sequence rows="" deleted=0
+  local wanted="$1" index=0 row rows="" deleted=0
 
   [[ "$wanted" != "__new__" ]] || return 0
   case "$wanted" in
     ''|*[!0-9]*) echo "saved ranked panes does not exist: $wanted" >&2; exit 1 ;;
   esac
 
-  while IFS= read -r sequence; do
-    [[ -n "$sequence" ]] || continue
+  while IFS= read -r row; do
     index=$((index + 1))
     if [[ "$index" == "$wanted" ]]; then
       deleted=1
       continue
     fi
-    rows="${rows:+$rows$'\n'}$sequence"
-  done <<< "$(saved_sequences)"
+    rows="${rows:+$rows$'\n'}$row"
+  done <<< "$(saved_rows)"
 
   [[ "$deleted" == "1" ]] || { echo "saved ranked panes does not exist: $wanted" >&2; exit 1; }
   set_saved_sequences "$rows"
 }
 
 load_saved_sequence() {
-  local wanted="$1" index=0 sequence selected="" selected_normalized current_normalized rows=""
+  local wanted="$1" index=0 row sequence found=0 selected="" selected_note=""
+  local selected_normalized current_normalized current_note_text rows=""
 
   case "$wanted" in
     ''|*[!0-9]*) echo "saved ranked panes does not exist: $wanted" >&2; exit 1 ;;
   esac
 
   current_normalized="$(current_ranked_sequence)"
-  while IFS= read -r sequence; do
-    [[ -n "$sequence" ]] || continue
+  current_note_text="$(current_note)"
+  while IFS= read -r row; do
     index=$((index + 1))
+    sequence="$(saved_sequence_from_row "$row")"
     if [[ "$index" == "$wanted" ]]; then
+      found=1
       selected="$sequence"
+      selected_note="$(saved_note_from_row "$row")"
       continue
     fi
     [[ -n "$current_normalized" && "$(normalize_existing_sequence "$sequence")" == "$current_normalized" ]] && continue
-    rows="${rows:+$rows$'\n'}$sequence"
-  done <<< "$(saved_sequences)"
+    rows="${rows:+$rows$'\n'}$row"
+  done <<< "$(saved_rows)"
 
-  [[ -n "$selected" ]] || { echo "saved ranked panes does not exist: $wanted" >&2; exit 1; }
+  [[ "$found" == "1" ]] || { echo "saved ranked panes does not exist: $wanted" >&2; exit 1; }
   selected_normalized="$(normalize_existing_sequence "$selected")"
+  # The sequence being replaced goes back to the saved list with its own note,
+  # so loading is a swap rather than a way to lose what you were looking at.
   if [[ -n "$current_normalized" && "$current_normalized" != "$selected_normalized" ]]; then
-    rows="${rows:+$rows$'\n'}$current_normalized"
+    rows="${rows:+$rows$'\n'}$(saved_row_build "$current_normalized" "$current_note_text")"
   fi
 
   set_saved_sequences "$rows"
   tmux set-option -gq "$ranked_option" "$selected_normalized"
+  set_current_note "$selected_note"
   message="loaded saved ranked panes #$wanted: $(format_sequence "$selected_normalized")"
 }
 
@@ -360,9 +453,16 @@ edit_focus_line() {
   first_edit_pane_line "$file" "$ranked"
 }
 
+# With a third argument the note is pinned to it; without one the helper reads
+# the active sequence's note out of the option.
 write_edit_file() {
   local file="$1" ranked="$2"
-  run_sequence_edit write "$ranked" "$file"
+
+  if [[ $# -ge 3 ]]; then
+    run_sequence_edit write "$ranked" "$file" --note "$3"
+  else
+    run_sequence_edit write "$ranked" "$file"
+  fi
 }
 
 apply_edit_file() {
@@ -413,6 +513,11 @@ edit_sequence() {
 setlocal filetype=conf nowrap cursorline
 syntax match AutoSwitchMeta /#.*$/ contains=AutoSwitchSeparator
 syntax match AutoSwitchSeparator /|/ containedin=ALL
+" The note body is free text, so stop the '#' comment match at the separator
+" and let the divider itself stand out -- it is the one line that changes what
+" the rest of the buffer means.
+syntax match AutoSwitchNoteSep /^---$/
+highlight AutoSwitchNoteSep ctermfg=45 cterm=bold guifg=#00d7ff gui=bold
 " vim runs with -u NONE here, so the stock CursorLine (a thin underline) is all
 " there is to mark where the cursor sits on a wide, densely coloured table. A
 " solid background band reads at a glance; cterm=NONE drops the underline.
@@ -690,7 +795,7 @@ preview_saved() {
 
   tmp="$(mktemp "${TMPDIR:-/tmp}/auto-switch-saved-preview.XXXXXX")"
   trap 'rm -f "$tmp"' RETURN
-  write_edit_file "$tmp" "$live"
+  write_edit_file "$tmp" "$live" "$(saved_note_by_index "$index" || true)"
   cat "$tmp"
 }
 
