@@ -7,7 +7,7 @@ Usage:
   switch-next.sh [--skip-pane TARGET]
 
 Read a ranked pane list from a tmux global option, switch the user's tmux
-client(s) to the first currently usable AI pane.
+client(s) to the first currently usable pane (AI or ordinary).
 
 The ranked list option is whitespace-separated pane ids. Default:
   @auto_switch_ranked_panes
@@ -77,7 +77,7 @@ for candidate in $ranked; do
 done
 
 if [[ -z "$target" ]]; then
-  tmux display-message "auto-switch: no usable AI pane in ranked list"
+  tmux display-message "auto-switch: no usable pane in ranked list"
   exit 0
 fi
 
