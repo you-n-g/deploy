@@ -420,7 +420,6 @@ _clear_ai_pane_state() {
     tmux set-option -pqu -t "$pane_id" @ai_agent_running 2>/dev/null || true
     tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
     tmux set-option -pqu -t "$pane_id" @ai_agent_unread 2>/dev/null || true
-    tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
     tmux set-option -pqu -t "$pane_id" @ai_agent_attribute 2>/dev/null || true
 }
 

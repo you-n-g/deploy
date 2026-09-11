@@ -23,6 +23,7 @@ set -eu
 #   "/" is the default user-triggered pending marker when no reason was given.
 #   It is cleared when that pane starts or resumes a non-pending running turn,
 #   and that transition publishes a running event for auto-switch waiters.
+#   toggle-pending clears it back to idle on a second invocation.
 # - @ai_agent_attribute:
 #   A short generated description of the pane's current task. It is generated
 #   lazily once and kept stable across later prompts until init/reset clears it.
@@ -78,11 +79,11 @@ set -eu
 #   Optional path for the prompt log. If unset, rows go to
 #   ~/.cache/tmux-ai-prompts.jsonl.
 
-state="${1:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending TARGET [PENDING_REASON]}"
+state="${1:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending|toggle-pending TARGET [PENDING_REASON]}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../ai/lib.sh"
 
-target="${2:-${TMUX_PANE:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending TARGET [PENDING_REASON]}}"
+target="${2:-${TMUX_PANE:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending|toggle-pending TARGET [PENDING_REASON]}}"
 if ! pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')" || [ -z "$pane_id" ]; then
   if [ "$state" = "visit" ]; then
     exit 0
@@ -101,7 +102,7 @@ fi
 window_id="$(tmux display-message -p -t "$pane_id" '#{window_id}')"
 state_source="${AI_AGENT_STATE_SOURCE:-}"
 pending_reason="${AI_AGENT_PENDING_REASON:-}"
-if [ "$state" = "pending" ]; then
+if [ "$state" = "pending" ] || [ "$state" = "toggle-pending" ]; then
   if [ -z "$pending_reason" ]; then
     if [ "$#" -ge 3 ]; then
       pending_reason="${*:3}"
@@ -230,7 +231,6 @@ has_ai_agent_state() {
   [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null)" ] \
     || [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_background 2>/dev/null)" ] \
     || [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_unread 2>/dev/null)" ] \
-    || [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null)" ] \
     || [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_attribute 2>/dev/null)" ]
 }
 
@@ -504,20 +504,20 @@ case "$state" in
       fi
     fi
     ;;
-  pending)
-    if is_live_ai_pane; then
-      was_running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
-      was_pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
-      tmux set-option -pq -t "$pane_id" @ai_agent_running 0
-      tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
+  pending|toggle-pending)
+    was_running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
+    was_pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
+    tmux set-option -pq -t "$pane_id" @ai_agent_running 0
+    tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
+    tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
+    if [ "$state" = "toggle-pending" ] && [ -n "$was_pending" ]; then
+      # Manual unpark returns to idle without the completion notifications
+      # or submission event that would move the user away from this pane.
+      tmux set-option -pqu -t "$pane_id" @ai_agent_pending
+    else
       tmux set-option -pq -t "$pane_id" @ai_agent_pending "$pending_reason"
-      tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
       if [ "$was_running" != "1" ] && [ -z "$was_pending" ]; then
         emit_ai_agent_event pending
-      fi
-    else
-      if has_ai_agent_state; then
-        _clear_ai_pane_state "$pane_id"
       fi
     fi
     ;;

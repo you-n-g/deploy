@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-source "$HOME/deploy/configs/tmux/ai/lib.sh"
 source "$HOME/deploy/configs/tmux/script/ai_label.sh"
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -52,6 +51,7 @@ Usage:
   sequence.sh show
 
 Manage the auto-switch pane sequence stored in @auto_switch_ranked_panes.
+Both AI panes and ordinary panes (shell, SSH, editor, etc.) can be added.
 Saved ranked pane sequences are stored as newline-separated snapshots in
 @auto_switch_saved_ranked_panes.
 
@@ -106,24 +106,10 @@ esac
 [[ $# -eq 0 ]] || { echo "Unknown argument: $1" >&2; usage; exit 2; }
 
 resolve_pane() {
-  tmux display-message -p -t "$1" '#{pane_id}' 2>/dev/null
-}
-
-require_ai_pane() {
-  local pane="$1" pane_pid pane_target pane_command
-
-  pane_pid="$(tmux display-message -p -t "$pane" '#{pane_pid}' 2>/dev/null || true)"
-  [[ -n "$pane_pid" ]] || { echo "pane does not resolve: $pane" >&2; exit 1; }
-  _has_ai_proc "$pane_pid" && return 0
-
-  pane_target="$(tmux display-message -p -t "$pane" '#{session_name}:#{window_index}.#{pane_index}' 2>/dev/null || true)"
-  pane_command="$(tmux display-message -p -t "$pane" '#{pane_current_command}' 2>/dev/null || true)"
-  {
-    echo "pane is not a live local AI pane: ${pane_target:-$pane} ($pane)"
-    echo "current command: ${pane_command:-unknown}"
-    echo "prefix + M-a only appends panes whose local process tree contains codex, claude, or gemini; SSH/shell panes are not added directly."
-  } >&2
-  exit 1
+  local pane
+  pane="$(tmux display-message -p -t "$1" '#{pane_id}' 2>/dev/null)" || return 1
+  [[ -n "$pane" ]] || return 1
+  printf '%s\n' "$pane"
 }
 
 normalize_existing_sequence() {
@@ -844,14 +830,14 @@ select_saved() {
 
 case "$command_name" in
   reset-current)
-    target_pane="$(resolve_pane "$target_pane")" || { echo "pane does not resolve: $target_pane" >&2; exit 1; }
-    require_ai_pane "$target_pane"
+    pane="$(resolve_pane "$target_pane")" || { echo "pane does not resolve: $target_pane" >&2; exit 1; }
+    target_pane="$pane"
     ranked="$target_pane"
     tmux set-option -gq "$ranked_option" "$ranked"
     ;;
   append-current)
-    target_pane="$(resolve_pane "$target_pane")" || { echo "pane does not resolve: $target_pane" >&2; exit 1; }
-    require_ai_pane "$target_pane"
+    pane="$(resolve_pane "$target_pane")" || { echo "pane does not resolve: $target_pane" >&2; exit 1; }
+    target_pane="$pane"
     ranked="$(normalize_existing_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
     case " $ranked " in
       *" $target_pane "*) ;;
@@ -860,8 +846,8 @@ case "$command_name" in
     tmux set-option -gq "$ranked_option" "$ranked"
     ;;
   prepend-current)
-    target_pane="$(resolve_pane "$target_pane")" || { echo "pane does not resolve: $target_pane" >&2; exit 1; }
-    require_ai_pane "$target_pane"
+    pane="$(resolve_pane "$target_pane")" || { echo "pane does not resolve: $target_pane" >&2; exit 1; }
+    target_pane="$pane"
     ranked="$(normalize_existing_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
     reordered="$target_pane"
     for pane in $ranked; do

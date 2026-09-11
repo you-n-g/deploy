@@ -240,6 +240,8 @@ def write_edit_file(ranked: str, output_path: str, note: str) -> None:
         file.write("\n")
         file.write('# Edit auto-switch order. Keep one pane id before "#"; edit Attribute and Pending columns.\n')
         file.write("# Reorder lines to change priority. Delete a line to remove that pane from the sequence.\n")
+        file.write("# Add any AI or ordinary pane with prefix + M-a, or insert its pane id (e.g. %12) on a new line.\n")
+        file.write("# A pane-id-only line preserves its existing Attribute and Pending values.\n")
         file.write("# Vim shortcut: normal-mode q saves and exits.\n")
         file.write("# Vim shortcut: normal-mode Enter saves, exits, and switches to the pane on the current line.\n")
         file.write("# Vim shortcut: normal-mode Tab / Shift-Tab jump to the next / previous non-pending pane line.\n")
@@ -292,8 +294,6 @@ def parse_edit_file(
             resolved = resolve_pane(pane, panes)
             if not resolved:
                 raise SystemExit(f"line {line_no} pane does not resolve: {pane}")
-            if not hash_found:
-                raise SystemExit(f"line {line_no} missing #: {line}")
             if resolved in seen:
                 raise SystemExit(f"line {line_no} duplicate pane: {resolved}")
             if resolved not in panes:
@@ -301,7 +301,11 @@ def parse_edit_file(
 
             seen.add(resolved)
             ranked.append(resolved)
-            pending, attribute = parse_edit_comment(after_hash, line_no)
+            if hash_found:
+                pending, attribute = parse_edit_comment(after_hash, line_no)
+            else:
+                pending = panes[resolved]["pending"]
+                attribute = panes[resolved]["attribute"]
             pending_reasons[resolved] = pending_reason(pending)
             attributes[resolved] = attribute
 
