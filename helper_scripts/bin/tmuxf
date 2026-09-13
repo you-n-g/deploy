@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import subprocess
 import sys
+from typing import List
 
 
 def tmux_output(*args: str) -> str:
@@ -8,11 +9,11 @@ def tmux_output(*args: str) -> str:
         ["tmux", *args],
         check=True,
         stdout=subprocess.PIPE,
-        text=True,
+        universal_newlines=True,
     ).stdout
 
 
-rows: list[str] = []
+rows: List[str] = []
 panes = tmux_output(
     "list-panes",
     "-a",
@@ -44,7 +45,7 @@ try:
         input="\n".join(rows),
         check=True,
         stdout=subprocess.PIPE,
-        text=True,
+        universal_newlines=True,
     ).stdout.rstrip("\n")
 except subprocess.CalledProcessError as exc:
     sys.exit(exc.returncode)
