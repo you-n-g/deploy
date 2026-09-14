@@ -144,19 +144,49 @@ condition_still_satisfied() {
   [[ "$running" != "1" ]]
 }
 
+wait_for_submission() {
+  local running poll
+
+  # TUI input handling and the running hook can lag behind send-keys.
+  for ((poll = 0; poll < 10; poll++)); do
+    interruptible_sleep 1
+    running="$(tmux show -pv -t "$pane" @ai_agent_running 2>/dev/null)" \
+      || { echo "watcher $pane is missing @ai_agent_running" >&2; return 2; }
+    case "$running" in
+      1) return 0 ;;
+      0) ;;
+      *) echo "watcher $pane has invalid @ai_agent_running: $running" >&2; return 2 ;;
+    esac
+  done
+  return 1
+}
+
 submit_message() {
-  local running
+  local attempt result message
 
   tmux load-buffer -b "$buffer" "$file"
   tmux paste-buffer -b "$buffer" -t "$pane"
   interruptible_sleep 2
-  tmux send-keys -t "$pane" Enter
-  interruptible_sleep 2
 
-  running="$(tmux show -pv -t "$pane" @ai_agent_running 2>/dev/null || true)"
-  if [[ "$running" == "0" ]]; then
+  for attempt in 1 2; do
     tmux send-keys -t "$pane" Enter
-  fi
+    printf '%s watcher=%s Enter attempt=%s\n' "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$pane" "$attempt" >&2
+    result=0
+    wait_for_submission || result=$?
+    case "$result" in
+      0)
+        printf '%s watcher=%s submission confirmed\n' "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$pane" >&2
+        return 0
+        ;;
+      1) ;;
+      *) return "$result" ;;
+    esac
+  done
+
+  message="watch-target: watcher $pane did not start after two Enter attempts; check its composer"
+  echo "$message" >&2
+  tmux display-message "$message"
+  return 1
 }
 
 while :; do
