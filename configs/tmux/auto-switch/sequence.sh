@@ -6,6 +6,9 @@ source "$HOME/deploy/configs/tmux/script/ai_label.sh"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 sequence_edit_helper="$script_dir/sequence_edit.py"
 
+# Keep editor/preview scratch files on local /tmp. TMPDIR may point into a
+# shared home filesystem whose file-count quota can prevent the popup opening.
+
 # sequence_edit.py uses typing syntax that needs Python >=3.9, but the host's
 # system python3 is 3.6. Run it via uv pinned to Python 3.11. uv comes from
 # `module add uv-latest` (configs/shell/modules.sh) and its bin propagates into
@@ -478,9 +481,9 @@ edit_sequence() {
   local tmp selected_file vim_script vim_selected_file vim_script_file editor editor_name focus_line focus_pane vim_focus_match selected_pane resolved_selected_pane
   local -a editor_argv
 
-  tmp="$(mktemp "${TMPDIR:-/tmp}/auto-switch-sequence.XXXXXX")"
-  selected_file="$(mktemp "${TMPDIR:-/tmp}/auto-switch-selected.XXXXXX")"
-  vim_script="$(mktemp "${TMPDIR:-/tmp}/auto-switch-edit.XXXXXX.vim")"
+  tmp="$(mktemp "/tmp/auto-switch-sequence.XXXXXX")"
+  selected_file="$(mktemp "/tmp/auto-switch-selected.XXXXXX")"
+  vim_script="$(mktemp "/tmp/auto-switch-edit.XXXXXX.vim")"
   trap 'rm -f "$tmp" "$selected_file" "$vim_script"' RETURN
 
   # current_ranked_sequence already returns the normalized sequence, and
@@ -767,7 +770,7 @@ preview_saved() {
       echo "current active list is already empty"
       return 0
     fi
-    tmp="$(mktemp "${TMPDIR:-/tmp}/auto-switch-saved-preview.XXXXXX")"
+    tmp="$(mktemp "/tmp/auto-switch-saved-preview.XXXXXX")"
     trap 'rm -f "$tmp"' RETURN
     write_edit_file "$tmp" "$live"
     cat "$tmp"
@@ -779,7 +782,7 @@ preview_saved() {
 
   printf 'saved sequence: #%s\n\n' "$index"
 
-  tmp="$(mktemp "${TMPDIR:-/tmp}/auto-switch-saved-preview.XXXXXX")"
+  tmp="$(mktemp "/tmp/auto-switch-saved-preview.XXXXXX")"
   trap 'rm -f "$tmp"' RETURN
   write_edit_file "$tmp" "$live" "$(saved_note_by_index "$index" || true)"
   cat "$tmp"
