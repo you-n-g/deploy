@@ -1,6 +1,8 @@
 #!/bin/bash
 # Select and switch to a tmux pane running an AI agent.
 # Usage: tmuxg [-q] [-A] [--auto-switch-list] [--create-if-missing] [--force-new] [--window-name NAME]
+#              [--tool TOOL] [--model MODEL] [--reasoning-effort EFFORT]
+# Tool/model/effort overrides apply only when creating a new window.
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source "$SCRIPT_DIR/lib.sh"
@@ -11,6 +13,9 @@ AUTO_SWITCH_LIST=false
 CREATE_IF_MISSING=false
 FORCE_NEW=false
 WINDOW_NAME=""
+TOOL=""
+MODEL=""
+REASONING_EFFORT=""
 while [[ "$1" == -* ]]; do
     case "$1" in
         -q) QUIET=true; shift ;;
@@ -18,12 +23,17 @@ while [[ "$1" == -* ]]; do
         --auto-switch-list) AUTO_SWITCH_LIST=true; ALL_SESSIONS=true; shift ;;
         --create-if-missing) CREATE_IF_MISSING=true; shift ;;
         --force-new) FORCE_NEW=true; shift ;;
-        --window-name)
-            if [[ -z "$2" ]]; then
-                echo "--window-name requires a name" >&2
+        --window-name|--tool|--model|--reasoning-effort)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                echo "$1 requires a value" >&2
                 exit 2
             fi
-            WINDOW_NAME="$2"
+            case "$1" in
+                --window-name) WINDOW_NAME="$2" ;;
+                --tool) TOOL="$2" ;;
+                --model) MODEL="$2" ;;
+                --reasoning-effort) REASONING_EFFORT="$2" ;;
+            esac
             shift 2
             ;;
         *)  shift ;;
@@ -32,13 +42,36 @@ done
 [[ "$QUIET" == true ]] && trap 'exit 0' EXIT
 
 _create_new_ai_window() {
-    local tool workdir cmd window_name
-    tool=$(tmux show-environment -g TMUX_AI_TOOL 2>/dev/null | cut -d= -f2)
+    local tool workdir cmd window_name launch
+    tool="$TOOL"
+    if [[ -z "$tool" ]]; then
+        tool=$(tmux show-environment -g TMUX_AI_TOOL 2>/dev/null | cut -d= -f2)
+    fi
     [ -z "$tool" ] && tool=codex
     workdir=$(tmux display-message -p '#{pane_current_path}')
     window_name="${WINDOW_NAME:-${workdir##*/}}"
 
-    printf -v cmd 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$window_name" "${tool}r"
+    # Apply explicit model selection after zsh loads its environment, so shell
+    # defaults cannot overwrite the caller's selection.
+    launch='
+        tool="$1"
+        model="$2"
+        effort="$3"
+        args=()
+        if [[ -n "$model" ]]; then
+            export TMUX_AI_MODEL="$model"
+        fi
+        if [[ -n "$effort" ]]; then
+            case "$tool" in
+                codex) args+=(-c "model_reasoning_effort=\"$effort\"") ;;
+                claude) args+=(--effort "$effort") ;;
+                *) echo "reasoning effort is unsupported for tool: $tool" >&2; exit 1 ;;
+            esac
+        fi
+        "${tool}r" "${args[@]}"
+    '
+    printf -v cmd 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q -- %q %q %q' \
+        "$window_name" "$launch" "$tool" "$MODEL" "$REASONING_EFFORT"
     tmux new-window -n "$window_name" -c "$workdir" "$cmd"
 }
 
