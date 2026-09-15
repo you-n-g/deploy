@@ -73,6 +73,6 @@ status_right="${status_right} #[fg=cyan]🤖 #(${SCRIPT_DIR}/print_ai_status.sh)
 # Keep the current-window hint, target-state symbol, and mode symbol in one clickable
 # range. Desktop tmux clients report this as sb_a/right; mobile clients may not
 # report status ranges at all, so debug MouseDown1Status before changing this.
-status_right="${status_right} #[range=user|sb_a]#[fg=colour203]#(${SCRIPT_DIR}/print_current_window_hint.sh)#[fg=colour201]#(${SCRIPT_DIR}/../auto-switch/print-waiting-hint.sh)#[fg=green]#{@auto_switch_status_symbol} #[norange default]"
+status_right="${status_right} #[range=user|sb_a]#[fg=colour201]#(${SCRIPT_DIR}/../auto-switch/print-waiting-hint.sh)#[fg=green]#{@auto_switch_status_symbol} #[fg=colour203]#(${SCRIPT_DIR}/print_current_window_hint.sh) #[norange default]"
 
 tmux set-option -g status-right "$status_right"
