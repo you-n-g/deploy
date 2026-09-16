@@ -5,8 +5,8 @@
 # window if needed, then switch to it.
 # - If the session exists, reuse its first pane path as workdir.
 # - If the session does not exist, create it first.
-# - Inside tmux, switch the current client.
-# - Outside tmux, attach to the target session/window.
+# - Inside tmux or without a terminal, switch an existing client.
+# - Outside tmux with a terminal, attach to the target session/window.
 #
 # Usage: ensure_global_ai_window.sh [-q] [--cmd CMD] [--window-name NAME] [session_name]
 # -q: quiet mode — always exit 0 (suppress non-zero exit codes).
@@ -80,7 +80,9 @@ else
     NEW_WINDOW_ID="$(tmux new-session -d -P -F '#{window_id}' -s "$SESSION" -n "$WINDOW_NAME" -c "$WORKDIR" "$CMD")"
 fi
 
-if [ -n "${TMUX:-}" ]; then
+# Background callers may omit TMUX, but attach-session still needs a terminal.
+# Use the existing client for non-interactive invocations, as tmuxg does.
+if [[ -n "${TMUX:-}" || ! -t 0 ]]; then
     tmux switch-client -t "$SESSION"
     tmux select-window -t "$NEW_WINDOW_ID"
 else
