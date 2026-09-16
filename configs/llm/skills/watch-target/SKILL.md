@@ -161,7 +161,9 @@ AI window 目标正在等待输入、而用户要求等它开始运行时，使�
   --message '<下一次唤醒时要提交给 Agent 的检查指令>'
 ```
 
-脚本会通过 `tmux run-shell -b`、`tmux load-buffer`、`tmux paste-buffer`、等待 2 秒、再 `tmux send-keys Enter` 提交消息。最后一步必须是键盘事件 `Enter`，并且要验证消息确实触发了 watcher；不要改成只 `paste-buffer`，不要在 paste 后立刻 Enter，也不要改成 `send-keys ... C-m`，因为 Codex/Claude TUI 中可能只把文本留在输入框里，没有真正提交。
+脚本将完整 `--message` 保留为本次唤醒的任务文件，只向 composer 发送带 TMA 署名的短文件引用；watcher 收到后先完整读取文件，再执行其中指令。任务文件在提交后仍保留，不能随临时 buffer 一起删除。长文本直接 paste 时，TUI 可能在两次回车之后还没处理完，单纯增加固定等待时间不能保证提交。
+
+短引用通过独立 tmux buffer 和 `paste-buffer -p -d` 发送，显式标记粘贴边界；等待 2 秒，再 `send-keys Enter` 并验证 watcher 开始执行。不要把完整任务重新拼回 composer，也不要在 paste 后立刻 Enter。
 
 `schedule-wakeup.sh` 是唯一唤醒入口，但必须用 `--mode` 把规则分清楚：默认 `timer` 只负责固定时间 one-shot 唤醒；`--mode ai-idle` 轮询单个 AI window 的 `@ai_agent_running`、停下或关闭后立即唤醒；`--mode ai-running` 轮询单个 AI window 的 `@ai_agent_running`、开始运行或关闭后立即唤醒。不要在默认 timer 模式里混入 AI Agent 状态判断，也不要把候选排序、多目标选择、pending 处理塞进 wakeup 脚本；这些属于调用方 skill。
 
@@ -172,6 +174,8 @@ AI window 目标正在等待输入、而用户要求等它开始运行时，使�
 取消自己创建的 watcher 也必须保持静默。`schedule-wakeup.sh` 的后台 job 应在收到 `TERM` / `INT` / `HUP` 时清理临时 message 文件并正常退出，避免 tmux 把整条 `run-shell` command 作为 “terminated by signal ...” 错误刷到用户屏幕上。
 
 自唤醒提交必须验证“消息已提交”，不能只验证“消息已粘贴”。Codex/Claude TUI 处理大段 paste 可能有延迟；无论是 timer 还是 AI idle 条件 watcher，都不要在 `paste-buffer` 后立刻发送最后一个回车。应在 paste 后等待 2 秒，再用单独的 `tmux send-keys -t '<watcher-pane>' Enter` 发送键盘事件；随后检查 watcher pane 的 `@ai_agent_running` 或 capture 内容。如果消息仍停留在输入区（例如只显示 `[Pasted Content ...]` / `› <message>`，且 `@ai_agent_running` 仍为 `0`），再等待 2 秒后补发一次 `Enter`，并重新验证。若验证仍失败，必须明确报告自唤醒没有正常触发。
+
+提交失败时，脚本保留原始任务、发送文本、各阶段 pane/进程/状态快照和命令返回码，日志中的 `diagnostics=` 指向该目录。仍 idle 的 watcher 会清除 background 并标记为提交失败的 pending，避免看起来还在后台监控。
 
 安排新 wakeup 前不需要手动检查旧 timer/condition watcher；统一交给 `schedule-wakeup.sh` 清理同一 watcher pane 的旧 wakeup。不要清理其它 watcher pane 的 sleep/monitor 进程。
 
