@@ -40,7 +40,10 @@ estimate_non_window_width() {
 
   left_width="$(format_width '#{E:status-left}')"
   host_width="$(tmux display-message -p -t "${session}:" '#h' 2>/dev/null | visible_width)"
-  echo $((left_width + host_width + fixed_right_width))
+  # Reserve the maximum fraction label (8/8), waiting marker and leading space, so
+  # navigating between clients/positions does not change the line-count threshold.
+  history_width=5
+  echo $((left_width + host_width + fixed_right_width + history_width))
 }
 
 non_window_width="$(tmux show-options -gqv @status-window-second-line-reserve 2>/dev/null || true)"
