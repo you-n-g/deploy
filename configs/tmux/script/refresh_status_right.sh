@@ -69,6 +69,9 @@ decorate_window_status window-status-current-format
 
 status_right="${status_right}#[fg=green]#(${SCRIPT_DIR}/print_resource_status.sh)#[default]"
 status_right="${status_right} #[fg=yellow]#(df -h ${mount_path} 2>/dev/null | awk 'NR==2 {print \"${display_path} \" \$5 \" \" \$4}')#[default]"
+# General pane history belongs before the AI status group. Each client evaluates
+# its own history position.
+status_right="${status_right} #[norange]#[fg=colour214]#{E:@jump-history-status}#{E:@jump-history-waiting}#[default]"
 status_right="${status_right} #[fg=cyan]🤖 #(${SCRIPT_DIR}/print_ai_status.sh)#[default]"
 # Keep the current-window hint, target-state symbol, and mode symbol in one clickable
 # range. Desktop tmux clients report this as sb_a/right; mobile clients may not
