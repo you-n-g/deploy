@@ -25,7 +25,7 @@ path_append_if_missing "$HOME/.local/bin"
 export PATH
 
 # Optional per-machine overrides (git-ignored). Use this to set local-only env
-# vars such as `export CLAUDE_MODEL=claude-opus-4-8` without touching tracked
+# vars such as `export CLAUDE_DEFAULT_MODEL=claude-opus-4-8` without touching tracked
 # files. Absent on machines that don't need it -> no-op.
 # For a newly created orchestrator (prefix + O), env.local can set:
 #   export TMUX_ORCHESTRATOR_TOOL=codex

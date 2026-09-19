@@ -663,26 +663,59 @@ _claude_env() {
     "$@"
 }
 
-# Default Claude model; override per-machine in configs/shell/env.local
-# (e.g. `export CLAUDE_MODEL=claude-opus-4-8`).
-: "${CLAUDE_MODEL:=claude-opus-4-7}"
+# Two variables, two meanings:
+#   CLAUDE_DEFAULT_MODEL -- the per-machine default, set in
+#                           configs/shell/env.local. Nothing else sets it.
+#   CLAUDE_MODEL         -- the model actually handed to `claude --model`,
+#                           resolved by clauder from overrides + the default.
+# No built-in fallback for the default: a machine without env.local should
+# fail loudly rather than silently run some stale model baked in here.
+_claude_default_model() {
+    if [[ -z "${CLAUDE_DEFAULT_MODEL:-}" ]]; then
+        echo "CLAUDE_DEFAULT_MODEL is unset; export it in configs/shell/env.local" \
+            "(it replaced the old CLAUDE_MODEL default)" >&2
+        return 1
+    fi
+    printf '%s\n' "$CLAUDE_DEFAULT_MODEL"
+}
 
 function claudeauto() {
+    local model
+    model="${CLAUDE_MODEL:-$(_claude_default_model)}" || return 1
     _start_ai_tui_output_tracker
-    _claude_env _with_tmux_rename "$MYPROXY_CLAUDE" claude --model "$CLAUDE_MODEL" --enable-auto-mode "$@"
+    _claude_env _with_tmux_rename "$MYPROXY_CLAUDE" claude --model "$model" --enable-auto-mode "$@"
 }
 
 function claudeyolo() {
+    local model
+    model="${CLAUDE_MODEL:-$(_claude_default_model)}" || return 1
     _start_ai_tui_output_tracker
-    IS_SANDBOX=1 _claude_env _with_tmux_rename "$MYPROXY_CLAUDE" claude --model "$CLAUDE_MODEL" --dangerously-skip-permissions "$@"
+    IS_SANDBOX=1 _claude_env _with_tmux_rename "$MYPROXY_CLAUDE" claude --model "$model" --dangerously-skip-permissions "$@"
 }
 
 function clauder() {
-    # Same TMUX_AI_MODEL contract as codexr. Claude takes its model through
-    # CLAUDE_MODEL rather than an argument: claudeauto/claudeyolo already pass
-    # --model, and a second one on the command line makes the CLI error out.
-    # zsh scopes this local to the callee too, so no export is needed.
-    local CLAUDE_MODEL="${TMUX_AI_MODEL:-$CLAUDE_MODEL}"
+    # Claude takes its model through CLAUDE_MODEL rather than an argument:
+    # claudeauto/claudeyolo already pass --model, and a second one on the
+    # command line makes the CLI error out. zsh scopes the local to the
+    # callee too, so no export is needed.
+    #
+    # An explicit selection beats every configured default, the same way
+    # `claude --model` beats settings.json: the launcher's TMUX_AI_MODEL
+    # (same contract as codexr, which applies it unconditionally) wins
+    # outright. Below that, most specific scope wins, mirroring
+    # _codex_default_provider: the llm-conf pane override, then the llm-conf
+    # session/global override, then the shell default from env.local.
+    local model
+    model="${TMUX_AI_MODEL:-}"
+    [[ -n "$model" ]] || model="$(_tmux_pane_option_value @claude_model)" || model=""
+    # The tmux carrier is TMUX_CLAUDE_MODEL, not CLAUDE_DEFAULT_MODEL: the
+    # tmux global environment is a snapshot of the server-starting shell, so
+    # a variable that shells export would shadow env.local edits forever.
+    if [[ -z "$model" ]]; then
+        model="$(_tmux_environment_value TMUX_CLAUDE_MODEL)" \
+            || model="$(_claude_default_model)" || return 1
+    fi
+    local CLAUDE_MODEL="$model"
 
     if [[ "$(uname)" == "Linux" ]]; then
         claudeyolo "$@"

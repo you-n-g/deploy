@@ -34,6 +34,26 @@ PROVIDER_VARIABLE = "CODEXR_PROVIDER"
 # pane-local user option instead. codexr reads it ahead of the environment.
 PROVIDER_PANE_OPTION = "@codexr_provider"
 AI_TOOL_VARIABLE = "TMUX_AI_TOOL"
+# Not CLAUDE_DEFAULT_MODEL itself: the tmux global environment is a snapshot
+# of the server-starting shell, so a variable that shells export (env.local
+# does) would shadow later env.local edits forever. clauder falls back to the
+# shell's CLAUDE_DEFAULT_MODEL when no TMUX_CLAUDE_MODEL override is set.
+CLAUDE_MODEL_VARIABLE = "TMUX_CLAUDE_MODEL"
+CLAUDE_DEFAULT_VARIABLE = "CLAUDE_DEFAULT_MODEL"
+# Same carrier as @codexr_provider: the tmux environment has no pane scope,
+# so the per-pane model override rides on a pane-local user option. clauder
+# reads it ahead of the tmux environment; only an explicit launcher
+# TMUX_AI_MODEL outranks it.
+CLAUDE_MODEL_PANE_OPTION = "@claude_model"
+# Gateway model names (see /v1/models on models.llm.jt). The [1m] suffix is
+# Claude Code's notation for the 1M context window.
+CLAUDE_MODEL_CHOICES = (
+    ("Claude Fable 5.1 CAVEAT[1m]", "Fable 5.1 — 1M context"),
+    ("claude-fable-5[1m]", "Fable 5 — 1M context"),
+    ("claude-opus-5[1m]", "Opus 5 — 1M context"),
+    ("Claude Sonnet 5", "Sonnet 5"),
+    ("inherit", "inherit — remove the selected-scope override"),
+)
 STATIC_CHOICES = (
     ("lb8121", "lb8121 — shared 8121 endpoint"),
     ("openai", "openai — official OpenAI login (default)"),
@@ -143,6 +163,21 @@ def set_provider(scope: str, session: str, pane: str, value: str) -> None:
         run_tmux("set-environment", *target, PROVIDER_VARIABLE, value)
 
 
+def set_claude_model(scope: str, session: str, pane: str, value: str) -> None:
+    if scope == "pane":
+        if value == "inherit":
+            run_tmux("set-option", "-pu", "-t", pane, CLAUDE_MODEL_PANE_OPTION)
+        else:
+            run_tmux("set-option", "-p", "-t", pane, CLAUDE_MODEL_PANE_OPTION, value)
+        return
+
+    target = ["-g"] if scope == "global" else ["-t", session]
+    if value == "inherit":
+        run_tmux("set-environment", *target, "-r", CLAUDE_MODEL_VARIABLE)
+    else:
+        run_tmux("set-environment", *target, CLAUDE_MODEL_VARIABLE, value)
+
+
 def set_ai_tool(value: str) -> None:
     run_tmux("set-environment", "-g", AI_TOOL_VARIABLE, value)
 
@@ -152,14 +187,15 @@ class ProviderApp(App[None]):
     CSS = """
     TabbedContent { height: 1fr; }
     .status { margin: 1 2; padding: 1 2; border: round $accent; }
-    #scope { margin: 0 2 1 2; height: 3; layout: horizontal; border: round $secondary; }
-    #scope RadioButton { width: 1fr; }
+    #scope, #claude-scope { margin: 0 2 1 2; height: 3; layout: horizontal; border: round $secondary; }
+    #scope RadioButton, #claude-scope RadioButton { width: 1fr; }
     .choices { margin: 0 2 1 2; height: auto; border: round $primary; }
     """
     BINDINGS: ClassVar[list[tuple[str, str, str]]] = [
         ("right", "apply", "Apply"),
         ("1", "show_tab('provider-tab')", "Provider"),
-        ("2", "show_tab('ai-tool-tab')", "AI tool"),
+        ("2", "show_tab('claude-tab')", "Claude"),
+        ("3", "show_tab('ai-tool-tab')", "AI tool"),
         ("r", "refresh", "Refresh"),
         ("left,escape,q", "quit", "Quit"),
     ]
@@ -171,8 +207,10 @@ class ProviderApp(App[None]):
         self.pane = pane
         self.session = session
         self.scope = "pane"
+        self.claude_scope = "pane"
         self.choices = choices
         self.provider_values = tuple(value for value, _ in choices)
+        self.claude_model_values = tuple(value for value, _ in CLAUDE_MODEL_CHOICES)
         self.ai_tool_values = tuple(value for value, _ in AI_TOOL_CHOICES)
 
     def compose(self) -> ComposeResult:
@@ -191,6 +229,25 @@ class ProviderApp(App[None]):
                 yield OptionList(
                     *(Option(label, id=value) for value, label in self.choices),
                     id="providers",
+                    classes="choices",
+                )
+            with TabPane("Claude Model", id="claude-tab"):
+                yield Static(id="claude-status", classes="status")
+                yield RadioSet(
+                    *(
+                        RadioButton(
+                            label,
+                            value=value == self.claude_scope,
+                            id=f"claude-{value}",
+                        )
+                        for value, label in SCOPES
+                    ),
+                    id="claude-scope",
+                    compact=True,
+                )
+                yield OptionList(
+                    *(Option(label, id=value) for value, label in CLAUDE_MODEL_CHOICES),
+                    id="claude-models",
                     classes="choices",
                 )
             with TabPane("AI Tool", id="ai-tool-tab"):
@@ -217,6 +274,46 @@ class ProviderApp(App[None]):
             pane_value or session_value or global_value or shell_value or "openai"
         )
         return pane_value, session_value, global_value, shell_value, effective
+
+    def claude_values(
+        self,
+    ) -> tuple[str | None, str | None, str | None, str | None, str | None, str, str]:
+        # Mirrors clauder's resolution order: the launcher's TMUX_AI_MODEL
+        # (explicit selection, wins outright), then pane option, session env,
+        # global env, then the per-machine default from env.local.
+        pane_value = read_pane_option(self.pane, CLAUDE_MODEL_PANE_OPTION)
+        launcher_value = os.environ.get("TMUX_AI_MODEL")
+        session_value = read_variable(CLAUDE_MODEL_VARIABLE, "-t", self.session)
+        global_value = read_variable(CLAUDE_MODEL_VARIABLE, "-g")
+        default_value = os.environ.get(CLAUDE_DEFAULT_VARIABLE)
+        effective = (
+            launcher_value
+            or pane_value
+            or session_value
+            or global_value
+            or default_value
+            or "<unset>"
+        )
+        source = (
+            "launcher"
+            if launcher_value
+            else "pane"
+            if pane_value
+            else "session"
+            if session_value
+            else "global"
+            if global_value
+            else "default"
+        )
+        return (
+            pane_value,
+            launcher_value,
+            session_value,
+            global_value,
+            default_value,
+            effective,
+            source,
+        )
 
     def refresh_status(self) -> None:
         pane_value, session_value, global_value, shell_value, effective = self.values()
@@ -245,6 +342,34 @@ class ProviderApp(App[None]):
             f"Apply to: {self.scope}"
             f"{unsupported}"
         )
+        (
+            claude_pane,
+            claude_launcher,
+            claude_session,
+            claude_global,
+            claude_default,
+            claude_effective,
+            claude_source,
+        ) = self.claude_values()
+        # The launcher value is this shell's environment, not a tmux scope:
+        # llm-conf cannot set or clear it, so it is shown as a warning only
+        # when present rather than as a fifth scope row.
+        launcher_warning = (
+            f"\nWARNING: this shell was launched with TMUX_AI_MODEL={claude_launcher};"
+            " it overrides every setting above (unset it in the shell to change)"
+            if claude_launcher
+            else ""
+        )
+        self.query_one("#claude-status", Static).update(
+            f"Session: {self.session}    Pane: {self.pane}\n"
+            f"Pane override: {claude_pane or '<inherit>'}\n"
+            f"Session override: {claude_session or '<inherit>'}\n"
+            f"Global value: {claude_global or '<unset>'}\n"
+            f"Default ({CLAUDE_DEFAULT_VARIABLE} in env.local): {claude_default or '<unset>'}\n"
+            f"Effective: {claude_effective} ({claude_source}) — applies to the next clauder here\n"
+            f"Apply to: {self.claude_scope}"
+            f"{launcher_warning}"
+        )
         ai_tool = read_variable(AI_TOOL_VARIABLE, "-g")
         unsupported_ai_tool = (
             f"\nUnsupported value: {ai_tool} — choose a listed tool"
@@ -268,6 +393,18 @@ class ProviderApp(App[None]):
             if target in self.provider_values
             else None
         )
+        claude_pane, _, claude_session, claude_global, _, _, _ = self.claude_values()
+        claude_target = (
+            {"pane": claude_pane, "session": claude_session}.get(
+                self.claude_scope, claude_global
+            )
+            or "inherit"
+        )
+        self.query_one("#claude-models", OptionList).highlighted = (
+            self.claude_model_values.index(claude_target)
+            if claude_target in self.claude_model_values
+            else None
+        )
         ai_tool = read_variable(AI_TOOL_VARIABLE, "-g")
         self.query_one("#ai-tools", OptionList).highlighted = (
             self.ai_tool_values.index(ai_tool)
@@ -286,6 +423,21 @@ class ProviderApp(App[None]):
         name = PROVIDER_PANE_OPTION if self.scope == "pane" else PROVIDER_VARIABLE
         self.notify(f"{self.scope} {name} → {value}")
 
+    def apply_claude(self, value: str) -> None:
+        try:
+            set_claude_model(self.claude_scope, self.session, self.pane, value)
+        except ToolError as error:
+            self.notify(str(error), severity="error")
+            return
+        self.refresh_status()
+        self.sync_highlight()
+        name = (
+            CLAUDE_MODEL_PANE_OPTION
+            if self.claude_scope == "pane"
+            else CLAUDE_MODEL_VARIABLE
+        )
+        self.notify(f"{self.claude_scope} {name} → {value}")
+
     def apply_ai_tool(self, value: str) -> None:
         try:
             set_ai_tool(value)
@@ -296,36 +448,47 @@ class ProviderApp(App[None]):
         self.sync_highlight()
         self.notify(f"global {AI_TOOL_VARIABLE} → {value}")
 
+    OPTION_LISTS: ClassVar[dict[str, str]] = {
+        "provider-tab": "#providers",
+        "claude-tab": "#claude-models",
+        "ai-tool-tab": "#ai-tools",
+    }
+
     def action_apply(self) -> None:
         active_tab = self.query_one(TabbedContent).active
-        options = self.query_one(
-            "#providers" if active_tab == "provider-tab" else "#ai-tools", OptionList
-        )
+        options = self.query_one(self.OPTION_LISTS[active_tab], OptionList)
         if options.highlighted is not None:
             value = options.get_option_at_index(options.highlighted).id
             if active_tab == "provider-tab":
                 self.apply(value)
+            elif active_tab == "claude-tab":
+                self.apply_claude(value)
             else:
                 self.apply_ai_tool(value)
 
     def action_show_tab(self, tab_id: str) -> None:
         self.query_one(TabbedContent).active = tab_id
-        self.query_one(
-            "#providers" if tab_id == "provider-tab" else "#ai-tools", OptionList
-        ).focus()
+        self.query_one(self.OPTION_LISTS[tab_id], OptionList).focus()
 
     def action_refresh(self) -> None:
         self.refresh_status()
         self.sync_highlight()
 
     def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
-        self.scope = event.pressed.id or "pane"
+        if event.radio_set.id == "claude-scope":
+            self.claude_scope = (event.pressed.id or "claude-pane").removeprefix(
+                "claude-"
+            )
+        else:
+            self.scope = event.pressed.id or "pane"
         self.refresh_status()
         self.sync_highlight()
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         if event.option_list.id == "providers":
             self.apply(event.option.id)
+        elif event.option_list.id == "claude-models":
+            self.apply_claude(event.option.id)
         else:
             self.apply_ai_tool(event.option.id)
 
