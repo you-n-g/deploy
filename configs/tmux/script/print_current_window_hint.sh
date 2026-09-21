@@ -78,6 +78,9 @@ pending="$(tmux show -pv -t "$current_pane" @ai_agent_pending 2>/dev/null || tru
 
 clean_hint="$(printf '%s' "$hint" | strip_tmux_format)"
 if [ -n "$clean_hint" ] || [ -n "$rank_label" ]; then
+  # Separator from the mode symbol lives here so nothing is printed when the
+  # hint is empty.
+  printf ' '
   if [ "$in_auto_switch" = "1" ]; then
     printf '#[fg=colour124,bold]'
   fi
