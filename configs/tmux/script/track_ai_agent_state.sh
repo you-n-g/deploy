@@ -316,7 +316,10 @@ has_pending_watch_target_wakeup() {
     case " $command " in
       *" --pane $pane_id "*) return 0 ;;
     esac
-  done < <(ps -axo pid=,command=)
+  # -ww: Claude Code runs hooks with COLUMNS set to the pane width, and ps
+  # truncates command lines to COLUMNS even when piped. The --pane argument
+  # sits ~200 chars in, so without -ww a 124-column pane never matches.
+  done < <(ps -axwwo pid=,command=)
 
   return 1
 }
