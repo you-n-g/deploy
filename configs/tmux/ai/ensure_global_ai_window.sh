@@ -74,7 +74,10 @@ if tmux has-session -t "$SESSION" 2>/dev/null; then
     if [ -n "$EXISTING_WINDOW_ID" ]; then
         NEW_WINDOW_ID="$EXISTING_WINDOW_ID"
     else
-        NEW_WINDOW_ID="$(tmux new-window -P -F '#{window_id}' -t "$SESSION" -n "$WINDOW_NAME" -c "$WORKDIR" "$CMD")"
+        # Trailing colon forces session lookup. Without it tmux first tries the
+        # caller's current session for a window whose name starts with "$SESSION"
+        # (e.g. "learn" matches "learn-ai4ai") and then fails with "index in use".
+        NEW_WINDOW_ID="$(tmux new-window -P -F '#{window_id}' -t "${SESSION}:" -n "$WINDOW_NAME" -c "$WORKDIR" "$CMD")"
     fi
 else
     NEW_WINDOW_ID="$(tmux new-session -d -P -F '#{window_id}' -s "$SESSION" -n "$WINDOW_NAME" -c "$WORKDIR" "$CMD")"
