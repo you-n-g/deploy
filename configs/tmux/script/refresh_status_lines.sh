@@ -38,7 +38,10 @@ estimate_non_window_width() {
       ;;
   esac
 
-  left_width="$(format_width '#{E:status-left}')"
+  # status-left is "<AI group><session segment>", and the AI group is already
+  # part of @status-non-window-fixed-right-width, so count only the session
+  # segment (" #S " plus its separator glyph) here.
+  left_width="$(tmux display-message -p -t "${session}:" ' #S  ' 2>/dev/null | visible_width)"
   host_width="$(tmux display-message -p -t "${session}:" '#h' 2>/dev/null | visible_width)"
   # Reserve the maximum fraction label (8/8), waiting marker and leading space, so
   # navigating between clients/positions does not change the line-count threshold.
