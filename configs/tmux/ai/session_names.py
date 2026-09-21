@@ -14,24 +14,48 @@ SESSION_ID_RE = re.compile(r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12
 Process = Tuple[int, str, str]
 
 
-def process_snapshot() -> Tuple[Dict[int, Process], DefaultDict[int, List[int]]]:
+def read_process(pid: int) -> Optional[Process]:
+    try:
+        line = Path(f"/proc/{pid}/stat").read_text()
+    except FileNotFoundError:
+        return None
+    _pid_text, rest = line.split(" (", 1)
+    comm, fields_text = rest.rsplit(") ", 1)
+    fields = fields_text.split()
+    ppid = int(fields[1])
+    start_time = fields[19]
+    return (ppid, comm, start_time)
+
+
+def process_snapshot(
+    roots: Iterable[int],
+) -> Tuple[Dict[int, Process], DefaultDict[int, List[int]]]:
+    # Only the pane subtrees are needed, and a shared HPC node runs ~10k
+    # processes, so walk down from each pane root via /proc/<pid>/task/<pid>/
+    # children instead of scanning all of /proc: that scan alone cost ~0.35s
+    # of every `prefix A`. The children file needs CONFIG_PROC_CHILDREN, which
+    # lib.sh's _find_ai_pid already relies on here.
     processes: Dict[int, Process] = {}
     children: DefaultDict[int, List[int]] = defaultdict(list)
-    for stat_path in Path("/proc").glob("[0-9]*/stat"):
-        try:
-            line = stat_path.read_text()
-        except FileNotFoundError:
+    queue = deque(roots)
+    while queue:
+        pid = queue.popleft()
+        if pid in processes:
             continue
-        pid_text, rest = line.split(" (", 1)
-        comm, fields_text = rest.rsplit(") ", 1)
-        fields = fields_text.split()
-        pid = int(pid_text)
-        ppid = int(fields[1])
-        start_time = fields[19]
-        processes[pid] = (ppid, comm, start_time)
-        children[ppid].append(pid)
-    for child_pids in children.values():
-        child_pids.sort()
+        process = read_process(pid)
+        if process is None:
+            continue
+        processes[pid] = process
+        children_path = Path(f"/proc/{pid}/task/{pid}/children")
+        try:
+            child_text = children_path.read_text()
+        except FileNotFoundError:
+            if not children_path.parent.exists():
+                continue  # exited between stat and children
+            raise RuntimeError(f"{children_path} is missing; kernel lacks CONFIG_PROC_CHILDREN")
+        child_pids = sorted(int(item) for item in child_text.split())
+        children[pid].extend(child_pids)
+        queue.extend(child_pids)
     return processes, children
 
 
@@ -142,7 +166,7 @@ def claude_name(pid: int, pane_id: str, process: Process) -> str:
 
 def session_names(pane_ids: List[str]) -> Dict[str, str]:
     roots = pane_roots(pane_ids)
-    processes, children = process_snapshot()
+    processes, children = process_snapshot(roots.values())
     agents = {
         pane_id: ai_process(pane_pid, processes, children)
         for pane_id, pane_pid in roots.items()
