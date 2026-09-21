@@ -58,4 +58,6 @@ done
 [ -n "$best_pane" ] || exit 0
 [ "$best_pane" = "$current_pane" ] && exit 0
 
-printf ' %s' "$best_symbol"
+# No padding: the caller already separates this from the agent counts, and the
+# mode symbol that follows is visually distinct enough to sit right next to it.
+printf '%s' "$best_symbol"
