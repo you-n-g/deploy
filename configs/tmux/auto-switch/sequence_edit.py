@@ -245,6 +245,7 @@ def write_edit_file(ranked: str, output_path: str, note: str) -> None:
         file.write("# Vim shortcut: normal-mode q saves and exits.\n")
         file.write("# Vim shortcut: normal-mode Enter saves, exits, and switches to the pane on the current line.\n")
         file.write("# Vim shortcut: normal-mode Tab / Shift-Tab jump to the next / previous non-pending pane line.\n")
+        file.write("# Vim shortcut: normal-mode Alt-j / Alt-k move the current pane line down / up.\n")
         file.write('# Attribute column updates @ai_agent_attribute; write "no attribute" to clear.\n')
         file.write("# Session column is the live Codex/Claude display name and is informational only.\n")
         file.write('# Pending column updates @ai_agent_pending; empty clears it, "/" means no reason was provided.\n')

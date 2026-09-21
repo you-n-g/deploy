@@ -648,6 +648,34 @@ endfunction
 
 nnoremap <buffer> <Tab> :call <SID>AutoSwitchHop(1)<CR>
 nnoremap <buffer> <S-Tab> :call <SID>AutoSwitchHop(-1)<CR>
+
+" Alt-j / Alt-k drag the pane row under the cursor one step down / up, so the
+" priority order can be adjusted without dd/p. Both ends of the move must be
+" pane rows: the rows form one block at the top of the file, and a pane line
+" pushed into the header comments or past the note divider would be parsed
+" differently or lost.
+function! s:AutoSwitchMoveLine(direction) abort
+  let l:lnum = line('.')
+  let l:target = l:lnum + a:direction
+  if !s:AutoSwitchIsPaneLine(l:lnum) || l:target < 1 || l:target > line('$')
+        \\ || !s:AutoSwitchIsPaneLine(l:target)
+    echohl WarningMsg
+    echo 'Pane lines can only be reordered among themselves'
+    echohl None
+    return
+  endif
+  execute 'move ' . (a:direction > 0 ? '+1' : '-2')
+endfunction
+
+" tmux hands Alt-j to the popup as ESC j. Terminal vim does not know that
+" byte pair is a Meta key until told; nvim decodes it on its own.
+if !has('nvim')
+  execute "set <M-j>=\\ej"
+  execute "set <M-k>=\\ek"
+  set ttimeout ttimeoutlen=50
+endif
+nnoremap <buffer> <silent> <M-j> :call <SID>AutoSwitchMoveLine(1)<CR>
+nnoremap <buffer> <silent> <M-k> :call <SID>AutoSwitchMoveLine(-1)<CR>
 VIM
   vim_script_file="${vim_script//\'/''}"
 
