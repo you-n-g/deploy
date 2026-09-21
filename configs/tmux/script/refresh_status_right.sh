@@ -44,12 +44,16 @@ if [ "$status_length" -lt 158 ]; then
   tmux set-option -g status-right-length 158
 fi
 
+# The session segment mirrors tmux-gruvbox-{light,dark}.conf's status-left; the
+# AI group is prepended to it below.
 case "$theme" in
   light)
     status_right='#[bg=colour243,fg=colour237,nobold,noitalics,nounderscore]#[bg=colour237,fg=colour255] #h '
+    session_segment='#[bg=colour243,fg=colour255] #S #[bg=colour252,fg=colour243,nobold,noitalics,nounderscore]'
     ;;
   *)
     status_right='#[bg=colour239,fg=colour248,nobold,noitalics,nounderscore]#[bg=colour248,fg=colour237] #h '
+    session_segment='#[bg=colour241,fg=colour248] #S #[bg=colour237,fg=colour241,nobold,noitalics,nounderscore]'
     ;;
 esac
 
@@ -72,10 +76,25 @@ status_right="${status_right} #[fg=yellow]#(df -h ${mount_path} 2>/dev/null | aw
 # General pane history belongs before the AI status group. Each client evaluates
 # its own history position.
 status_right="${status_right} #[norange]#[fg=colour214]#{E:@jump-history-status}#{E:@jump-history-waiting}#[default]"
-status_right="${status_right} #[fg=cyan]🤖 #(${SCRIPT_DIR}/print_ai_status.sh)#[default]"
-# Keep the current-window hint, target-state symbol, and mode symbol in one clickable
-# range. Desktop tmux clients report this as sb_a/right; mobile clients may not
-# report status ranges at all, so debug MouseDown1Status before changing this.
-status_right="${status_right} #[range=user|sb_a]#[fg=colour201]#(${SCRIPT_DIR}/../auto-switch/print-waiting-hint.sh)#[fg=green]#{@auto_switch_status_symbol} #[fg=colour203]#(${SCRIPT_DIR}/print_current_window_hint.sh) #[norange default]"
-
 tmux set-option -g status-right "$status_right"
+
+# The AI group -- agent counts, auto-switch hint/mode symbol, and the current
+# window's attribute/rank -- is what gets watched all day, so it sits at the far
+# left, ahead of the session name, instead of at the tail of status-right.
+ai_group="#[fg=cyan]🤖 #(${SCRIPT_DIR}/print_ai_status.sh)#[default]"
+# Keep the current-window hint, target-state symbol, and mode symbol in one clickable
+# range. Desktop tmux clients report this as sb_a; mobile clients may not
+# report status ranges at all, so debug MouseDown1Status before changing this.
+ai_group="${ai_group} #[range=user|sb_a]#[fg=colour201]#(${SCRIPT_DIR}/../auto-switch/print-waiting-hint.sh)#[fg=green]#{@auto_switch_status_symbol} #[fg=colour203]#(${SCRIPT_DIR}/print_current_window_hint.sh) #[norange default]"
+
+tmux set-option -g status-left "${ai_group}${session_segment}"
+
+status_left_length="$(tmux show-options -gqv status-left-length 2>/dev/null || true)"
+case "$status_left_length" in
+  ''|*[!0-9]*)
+    status_left_length=0
+    ;;
+esac
+if [ "$status_left_length" -lt 120 ]; then
+  tmux set-option -g status-left-length 120
+fi
