@@ -85,10 +85,14 @@ ai_group="#[fg=cyan]🤖 #(${SCRIPT_DIR}/print_ai_status.sh)#[default]"
 # Keep the current-window hint, target-state symbol, and mode symbol in one clickable
 # range. Desktop tmux clients report this as sb_a; mobile clients may not
 # report status ranges at all, so debug MouseDown1Status before changing this.
-# The hint script prints its own leading space, so an empty hint leaves no gap.
-ai_group="${ai_group} #[range=user|sb_a]#[fg=colour201]#(${SCRIPT_DIR}/../auto-switch/print-waiting-hint.sh)#[fg=green]#{@auto_switch_status_symbol}#[fg=colour203]#(${SCRIPT_DIR}/print_current_window_hint.sh)#[norange default]"
+# The waiting-hint and window-hint scripts print their own leading space, so
+# an empty one leaves no gap: "3 ↻" vs "3 ● ↻" (the mode symbol carries its
+# own leading space too).
+ai_group="${ai_group}#[range=user|sb_a]#[fg=colour201]#(${SCRIPT_DIR}/../auto-switch/print-waiting-hint.sh)#[fg=green]#{@auto_switch_status_symbol}#[fg=colour203]#(${SCRIPT_DIR}/print_current_window_hint.sh)#[norange default]"
 
-tmux set-option -g status-left "${ai_group}${session_segment}"
+# One cell in the plain status background between the AI group and the session
+# block, so the block keeps the theme's own one-cell pad.
+tmux set-option -g status-left "${ai_group} ${session_segment}"
 
 status_left_length="$(tmux show-options -gqv status-left-length 2>/dev/null || true)"
 case "$status_left_length" in
