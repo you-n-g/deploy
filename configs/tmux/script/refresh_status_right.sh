@@ -59,17 +59,25 @@ esac
 
 decorate_window_status() {
   option_name="$1"
+  # The window name keeps this fg unless the pane is the next auto-switch target;
+  # colour223 is the theme's normal name fg, colour239 the current-window one.
+  name_fg="$2"
   option_value="$(tmux show-options -gqv "$option_name")"
   styled_index='#{?#{m/r:(^| )#{pane_id}( |$),#{@auto_switch_ranked_panes}},#[bold]#[underscore]#I#[nobold]#[nounderscore],#I}'
   has_ai_state='#{||:#{!=:#{@ai_agent_running},},#{||:#{!=:#{@ai_agent_background},},#{||:#{!=:#{@ai_agent_unread},},#{||:#{!=:#{@ai_agent_pending},},#{!=:#{@ai_agent_attribute},}}}}}'
   state_symbol="#{?#{!=:#{@ai_agent_pending},},⏸,#{?#{==:#{@ai_agent_background},1},◒,#{?#{==:#{@ai_agent_running},1},●,#{?#{==:#{@ai_agent_unread},1},◉,○}}}}"
   state_suffix="#{?${has_ai_state},${state_symbol},}"
   option_value="${option_value// #I / ${styled_index} ${state_suffix}}"
+  # The next auto-switch target's name turns green; every other name keeps the
+  # theme fg. @auto_switch_next_pane is refreshed by refresh-next-pane.sh.
+  is_next='#{&&:#{!=:#{@auto_switch_next_pane},},#{==:#{pane_id},#{@auto_switch_next_pane}}}'
+  styled_name="#{?${is_next},#[fg=green],}#W#{?${is_next},#[fg=${name_fg}],}"
+  option_value="${option_value//#W/${styled_name}}"
   tmux set-option -g "$option_name" "$option_value"
 }
 
-decorate_window_status window-status-format
-decorate_window_status window-status-current-format
+decorate_window_status window-status-format colour223
+decorate_window_status window-status-current-format colour239
 
 status_right="${status_right}#[fg=green]#(${SCRIPT_DIR}/print_resource_status.sh)#[default]"
 status_right="${status_right} #[fg=yellow]#(df -h ${mount_path} 2>/dev/null | awk 'NR==2 {print \"${display_path} \" \$5 \" \" \$4}')#[default]"

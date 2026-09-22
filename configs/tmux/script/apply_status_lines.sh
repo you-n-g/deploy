@@ -101,7 +101,12 @@ expanded_buttons="$(
 tmux set-option -g @status-buttons-compact "$compact_buttons"
 tmux set-option -g @status-buttons-full "$expanded_buttons"
 left_buttons="#{?#{==:#{@status-buttons-expanded},1},#{E:@status-buttons-full},#{E:@status-buttons-compact}}"
-window_format="#[list=on align=left]#{W:#[range=window|#{window_index}]#[bg=#{?#{==:#{e|m:#{window_index},2},0},${window_bg_even},${window_bg_odd}}]#[fg=#{?#{==:#{e|m:#{window_index},2},0},${window_fg_even},${window_fg_odd}}]#[bold]#I#[nobold]#[underscore]#W${pending_badge}#[fg=#{?#{==:#{e|m:#{window_index},2},0},${window_fg_even},${window_fg_odd}}]#{window_flags}#[nounderscore]#[norange list=on default],#[range=window|#{window_index} list=focus]#[bg=${window_active_bg}]#[fg=${window_active_fg}]#[bold]#I#[nobold]#[underscore]#W${pending_badge}#[fg=${window_active_fg}]#{window_flags}#[nounderscore]#[norange list=on default]}"
+# The next auto-switch target's name turns green, the same green as the ↻
+# auto-switch mode symbol. Each occurrence is immediately followed by an explicit
+# #[fg=...] before the window flags, so the green does not bleed past the name.
+# @auto_switch_next_pane is kept current by refresh-next-pane.sh.
+next_name="#{?#{&&:#{!=:#{@auto_switch_next_pane},},#{==:#{pane_id},#{@auto_switch_next_pane}}},#[fg=green],}#W"
+window_format="#[list=on align=left]#{W:#[range=window|#{window_index}]#[bg=#{?#{==:#{e|m:#{window_index},2},0},${window_bg_even},${window_bg_odd}}]#[fg=#{?#{==:#{e|m:#{window_index},2},0},${window_fg_even},${window_fg_odd}}]#[bold]#I#[nobold]#[underscore]${next_name}${pending_badge}#[fg=#{?#{==:#{e|m:#{window_index},2},0},${window_fg_even},${window_fg_odd}}]#{window_flags}#[nounderscore]#[norange list=on default],#[range=window|#{window_index} list=focus]#[bg=${window_active_bg}]#[fg=${window_active_fg}]#[bold]#I#[nobold]#[underscore]${next_name}${pending_badge}#[fg=${window_active_fg}]#{window_flags}#[nounderscore]#[norange list=on default]}"
 ai_summary="#[align=left]#(${HOME}/deploy/configs/tmux/script/print_ai_window_summary.sh)"
 
 tmux set-option -g status-format[1] "#{?#{==:#{@status-buttons-expanded},1},#[align=left]#{E:@status-buttons-full},#[align=left]${left_buttons}#[default]${window_format}}"
