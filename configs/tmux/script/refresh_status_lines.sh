@@ -85,5 +85,10 @@ else
   tmux set-option -t "${session}:" status on >/dev/null
 fi
 
+# Recompute which pane the window list should mark green as the next auto-switch
+# target. This runs on the same triggers that change it: agent state changes
+# (track_ai_agent_state.sh calls here) and window/session events.
+"$SCRIPT_DIR/../auto-switch/refresh-next-pane.sh" 2>/dev/null || true
+
 "$SCRIPT_DIR/refresh_terminal_title.sh"
 tmux refresh-client -S 2>/dev/null || true
