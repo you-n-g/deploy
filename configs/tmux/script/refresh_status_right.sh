@@ -81,10 +81,13 @@ decorate_window_status window-status-current-format colour239
 
 status_right="${status_right}#[fg=green]#(${SCRIPT_DIR}/print_resource_status.sh)#[default]"
 status_right="${status_right} #[fg=yellow]#(df -h ${mount_path} 2>/dev/null | awk 'NR==2 {print \"${display_path} \" \$5 \" \" \$4}')#[default]"
-# General pane history belongs before the AI status group. Each client evaluates
-# its own history position.
-status_right="${status_right} #[norange]#[fg=colour214]#{E:@jump-history-status}#{E:@jump-history-waiting}#[default]"
 tmux set-option -g status-right "$status_right"
+
+# The pane-history count leads status-left: the bottom-left corner is the easiest
+# spot to notice. Each client evaluates its own history position, and its colour
+# flips green under prefix. @jump-history-waiting supplies the fg, so it comes
+# before the count.
+history_segment="#[norange]#{E:@jump-history-waiting}#{E:@jump-history-status}#[nobold]#[default]"
 
 # The AI group -- agent counts, auto-switch hint/mode symbol, and the current
 # window's attribute/rank -- is what gets watched all day, so it sits at the far
@@ -98,9 +101,9 @@ ai_group="#[fg=cyan]🤖 #(${SCRIPT_DIR}/print_ai_status.sh)#[default]"
 # own leading space too).
 ai_group="${ai_group}#[range=user|sb_a]#[fg=colour201]#(${SCRIPT_DIR}/../auto-switch/print-waiting-hint.sh)#[fg=green]#{@auto_switch_status_symbol}#[fg=colour203]#(${SCRIPT_DIR}/print_current_window_hint.sh)#[norange default]"
 
-# One cell in the plain status background between the AI group and the session
-# block, so the block keeps the theme's own one-cell pad.
-tmux set-option -g status-left "${ai_group} ${session_segment}"
+# Count first (bottom-left), then the AI group, then one plain-background cell
+# before the session block so the block keeps the theme's own one-cell pad.
+tmux set-option -g status-left "${history_segment} ${ai_group} ${session_segment}"
 
 status_left_length="$(tmux show-options -gqv status-left-length 2>/dev/null || true)"
 case "$status_left_length" in
