@@ -667,6 +667,36 @@ function! s:AutoSwitchMoveLine(direction) abort
   execute 'move ' . (a:direction > 0 ? '+1' : '-2')
 endfunction
 
+" Visual-mode twin: drag the whole selected block. Every selected line and the
+" line it moves onto must be pane rows, same as the single-line rule, so a
+" selection cannot carry a comment or the note divider into the block or push a
+" pane row out of it. The moved block stays selected so the drag can repeat.
+function! s:AutoSwitchMoveRange(direction) abort
+  let l:top = line("'<")
+  let l:bot = line("'>")
+  let l:target = a:direction > 0 ? l:bot + a:direction : l:top + a:direction
+  let l:ok = l:target >= 1 && l:target <= line('$')
+  for l:lnum in range(l:top, l:bot)
+    let l:ok = l:ok && s:AutoSwitchIsPaneLine(l:lnum)
+  endfor
+  let l:ok = l:ok && s:AutoSwitchIsPaneLine(l:target)
+  if !l:ok
+    echohl WarningMsg
+    echo 'Pane lines can only be reordered among themselves'
+    echohl None
+    normal! gv
+    return
+  endif
+  if a:direction > 0
+    execute l:top . ',' . l:bot . "move '>+1"
+  else
+    execute l:top . ',' . l:bot . "move '<-2"
+  endif
+  call cursor(l:top + a:direction, 1)
+  normal! V
+  call cursor(l:bot + a:direction, 1)
+endfunction
+
 " tmux hands Alt-j to the popup as ESC j. Terminal vim does not know that
 " byte pair is a Meta key until told; nvim decodes it on its own.
 if !has('nvim')
@@ -676,6 +706,8 @@ if !has('nvim')
 endif
 nnoremap <buffer> <silent> <M-j> :call <SID>AutoSwitchMoveLine(1)<CR>
 nnoremap <buffer> <silent> <M-k> :call <SID>AutoSwitchMoveLine(-1)<CR>
+xnoremap <buffer> <silent> <M-j> :<C-u>call <SID>AutoSwitchMoveRange(1)<CR>
+xnoremap <buffer> <silent> <M-k> :<C-u>call <SID>AutoSwitchMoveRange(-1)<CR>
 VIM
   vim_script_file="${vim_script//\'/''}"
 
