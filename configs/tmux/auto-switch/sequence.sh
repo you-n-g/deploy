@@ -499,6 +499,9 @@ edit_sequence() {
   fi
   vim_selected_file="${selected_file//\'/''}"
   cat > "$vim_script" <<VIM
+" Case-insensitive / search: vim runs with -u NONE here, so nothing sets this
+" otherwise. No smartcase -- searches stay insensitive even with a capital.
+set ignorecase
 setlocal filetype=conf nowrap cursorline
 syntax match AutoSwitchMeta /#.*$/ contains=AutoSwitchSeparator
 syntax match AutoSwitchSeparator /|/ containedin=ALL
