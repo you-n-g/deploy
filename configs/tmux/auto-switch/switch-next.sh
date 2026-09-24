@@ -91,3 +91,29 @@ done < <(tmux list-clients -F '#{client_name}	#{client_readonly}	#{client_contro
 
 tmux select-window -t "$target_window_id"
 tmux select-pane -t "$target"
+
+# Smooth-switch preview: float the pane we came from over the one we landed on
+# for a couple of seconds, refreshed live, then it self-closes. Uses new-pane -d
+# (a floating pane) rather than display-popup so keyboard focus stays on the
+# target -- a popup is modal and would lock the keyboard for those seconds.
+# Only when a real switch happened (a skip pane, differing from target, alive).
+if [[ -n "$skip_pane_id" && "$skip_pane_id" != "$target" ]] \
+  && tmux display-message -p -t "$skip_pane_id" '#{pane_id}' >/dev/null 2>&1; then
+  script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+  # A rapid re-switch would otherwise stack previews; drop any still floating.
+  while IFS= read -r stale; do
+    [[ -n "$stale" ]] && tmux kill-pane -t "$stale" 2>/dev/null || true
+  done < <(tmux list-panes -a -F '#{pane_id} #{@auto_switch_preview}' | awk '$2=="1"{print $1}')
+  # Size (-x/-y) and position (-X/-Y) are both set at creation, so it lands in a
+  # fixed spot: floating panes otherwise cascade their position per window with
+  # no way to move them afterwards. ~45% of the window, pinned to the top-right.
+  win_w="$(tmux display-message -p -t "$target" '#{window_width}' 2>/dev/null || echo 0)"
+  win_h="$(tmux display-message -p -t "$target" '#{window_height}' 2>/dev/null || echo 0)"
+  if (( win_w > 0 && win_h > 0 )); then
+    pw=$(( win_w * 45 / 100 )); ph=$(( win_h * 45 / 100 ))
+    px=$(( win_w - pw - 1 )); py=1
+    fp="$(tmux new-pane -d -t "$target" -x "$pw" -y "$ph" -X "$px" -Y "$py" \
+      -P -F '#{pane_id}' "$script_dir/preview-prev-pane.sh $skip_pane_id 2" 2>/dev/null || true)"
+    [[ -n "$fp" ]] && tmux set-option -p -t "$fp" @auto_switch_preview 1 2>/dev/null || true
+  fi
+fi
