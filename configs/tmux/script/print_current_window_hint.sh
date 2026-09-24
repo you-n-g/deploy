@@ -105,5 +105,15 @@ if [ -n "$clean_hint" ] || [ -n "$rank_label" ]; then
 fi
 
 if [ -n "$pending" ]; then
-  printf '#[fg=colour201,bold] ⏸#[nobold,fg=colour203]'
+  printf '#[fg=colour201,bold] ⏸#[nobold]'
+  # "/" is the placeholder for "pending, no reason given"; anything else is a
+  # real reason, shown in the pending symbol's colour right after it.
+  if [ "$pending" != "/" ]; then
+    clean_pending="$(printf '%s' "$pending" | strip_tmux_format)"
+    if [ -n "$clean_pending" ]; then
+      printf ' '
+      ai_display_prefix "$clean_pending" 20
+    fi
+  fi
+  printf '#[fg=colour203]'
 fi
