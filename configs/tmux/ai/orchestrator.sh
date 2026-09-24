@@ -5,15 +5,10 @@ set -e
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../shell/env.sh"
 
-args=(--window-name orchestrator)
-if [[ -n "${TMUX_ORCHESTRATOR_TOOL:-}" ]]; then
-    args+=(--tool "$TMUX_ORCHESTRATOR_TOOL")
-fi
-if [[ -n "${TMUX_ORCHESTRATOR_MODEL:-}" ]]; then
-    args+=(--model "$TMUX_ORCHESTRATOR_MODEL")
-fi
-if [[ -n "${TMUX_ORCHESTRATOR_REASONING_EFFORT:-}" ]]; then
-    args+=(--reasoning-effort "$TMUX_ORCHESTRATOR_REASONING_EFFORT")
-fi
-
-exec "$SCRIPT_DIR/tmuxg.sh" "${args[@]}" "$@"
+# The orchestrator follows the normal AI tool/model like any other window:
+# tmuxg.sh defaults --tool to TMUX_AI_TOOL and the model to the tool's usual
+# default. Only reasoning effort is pinned low -- it coordinates rather than
+# doing deep work -- and tmuxg maps that to each tool (claude --effort,
+# codex model_reasoning_effort). Override per invocation by passing another
+# --reasoning-effort in "$@".
+exec "$SCRIPT_DIR/tmuxg.sh" --window-name orchestrator --reasoning-effort low "$@"

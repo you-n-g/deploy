@@ -29,12 +29,6 @@ export PATH
 # files. Absent on machines that don't need it -> no-op.
 # clauder requires `export CLAUDER_PROVIDER=<name>` here: the name of a
 # settings file under ~/.claude/providers/ (see _clauder_provider_file).
-# For a newly created orchestrator (prefix + O), env.local can set:
-#   export TMUX_ORCHESTRATOR_TOOL=codex
-#   export TMUX_ORCHESTRATOR_MODEL=gpt-6-astra
-#   export TMUX_ORCHESTRATOR_REASONING_EFFORT=low
-# The orchestrator entry point passes these as generic tmuxg launch options.
-# Unset values inherit the normal tool/model/effort defaults.
 if [ -f "$HOME/deploy/configs/shell/env.local" ]; then
     . "$HOME/deploy/configs/shell/env.local"
 fi
