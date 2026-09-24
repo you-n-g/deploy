@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
@@ -33,6 +34,14 @@ PROVIDER_VARIABLE = "CODEXR_PROVIDER"
 # The tmux environment has no pane scope, so a per-pane override rides on a
 # pane-local user option instead. codexr reads it ahead of the environment.
 PROVIDER_PANE_OPTION = "@codexr_provider"
+# clauder's provider: the name of a settings file under CLAUDER_PROVIDER_DIR
+# that clauder layers on ~/.claude/settings.json via `claude --settings`.
+# Same three scopes as codexr, same carriers.
+CLAUDER_PROVIDER_VARIABLE = "CLAUDER_PROVIDER"
+CLAUDER_PROVIDER_PANE_OPTION = "@clauder_provider"
+CLAUDER_PROVIDER_DIR = Path(
+    os.environ.get("CLAUDER_PROVIDER_DIR", Path.home() / ".claude/providers")
+)
 AI_TOOL_VARIABLE = "TMUX_AI_TOOL"
 # Not CLAUDE_DEFAULT_MODEL itself: the tmux global environment is a snapshot
 # of the server-starting shell, so a variable that shells export (env.local
@@ -49,6 +58,7 @@ CLAUDE_MODEL_PANE_OPTION = "@claude_model"
 # Claude Code's notation for the 1M context window.
 CLAUDE_MODEL_CHOICES = (
     ("Claude Fable 5.1 CAVEAT[1m]", "Fable 5.1 — 1M context"),
+    ("claude-opus-5-5[1m]", "Opus 5.5 — 1M context (TrueFoundry name; needs claude >= 2.1.280)"),
     ("claude-fable-5[1m]", "Fable 5 — 1M context"),
     ("claude-opus-5[1m]", "Opus 5 — 1M context"),
     ("Claude Sonnet 5", "Sonnet 5"),
@@ -110,6 +120,29 @@ def provider_choices() -> tuple[tuple[str, str], ...]:
     return tuple(choices)
 
 
+def clauder_provider_choices() -> tuple[tuple[str, str], ...]:
+    # One choice per settings file; the label shows where it points and its
+    # default model so the gateway-specific model names are visible here.
+    if not CLAUDER_PROVIDER_DIR.is_dir():
+        raise ToolError(f"clauder provider directory missing: {CLAUDER_PROVIDER_DIR}")
+    choices: list[tuple[str, str]] = []
+    for path in sorted(CLAUDER_PROVIDER_DIR.glob("*.json")):
+        provider_id = path.stem
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", provider_id):
+            raise ToolError(f"unsupported provider file name: {path}")
+        try:
+            settings = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError) as error:
+            raise ToolError(f"cannot read {path}: {error}") from error
+        base_url = settings.get("env", {}).get("ANTHROPIC_BASE_URL", "<no base url>")
+        model = settings.get("model") or "<no default model>"
+        choices.append((provider_id, f"{provider_id} — {base_url}  model {model}"))
+    if not choices:
+        raise ToolError(f"no provider settings files in {CLAUDER_PROVIDER_DIR}")
+    choices.append(("inherit", "inherit — remove the selected-scope override"))
+    return tuple(choices)
+
+
 def run_tmux(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     result = subprocess.run(
         ["tmux", *args], capture_output=True, text=True, check=False
@@ -148,34 +181,47 @@ def read_pane_option(pane: str, option: str) -> str | None:
     return result.stdout.strip() or None
 
 
-def set_provider(scope: str, session: str, pane: str, value: str) -> None:
+def set_scoped(
+    scope: str,
+    session: str,
+    pane: str,
+    value: str,
+    pane_option: str,
+    variable: str,
+) -> None:
     if scope == "pane":
         if value == "inherit":
-            run_tmux("set-option", "-pu", "-t", pane, PROVIDER_PANE_OPTION)
+            run_tmux("set-option", "-pu", "-t", pane, pane_option)
         else:
-            run_tmux("set-option", "-p", "-t", pane, PROVIDER_PANE_OPTION, value)
+            run_tmux("set-option", "-p", "-t", pane, pane_option, value)
         return
 
     target = ["-g"] if scope == "global" else ["-t", session]
     if value == "inherit":
-        run_tmux("set-environment", *target, "-r", PROVIDER_VARIABLE)
+        run_tmux("set-environment", *target, "-r", variable)
     else:
-        run_tmux("set-environment", *target, PROVIDER_VARIABLE, value)
+        run_tmux("set-environment", *target, variable, value)
+
+
+def set_provider(scope: str, session: str, pane: str, value: str) -> None:
+    set_scoped(scope, session, pane, value, PROVIDER_PANE_OPTION, PROVIDER_VARIABLE)
+
+
+def set_clauder_provider(scope: str, session: str, pane: str, value: str) -> None:
+    set_scoped(
+        scope,
+        session,
+        pane,
+        value,
+        CLAUDER_PROVIDER_PANE_OPTION,
+        CLAUDER_PROVIDER_VARIABLE,
+    )
 
 
 def set_claude_model(scope: str, session: str, pane: str, value: str) -> None:
-    if scope == "pane":
-        if value == "inherit":
-            run_tmux("set-option", "-pu", "-t", pane, CLAUDE_MODEL_PANE_OPTION)
-        else:
-            run_tmux("set-option", "-p", "-t", pane, CLAUDE_MODEL_PANE_OPTION, value)
-        return
-
-    target = ["-g"] if scope == "global" else ["-t", session]
-    if value == "inherit":
-        run_tmux("set-environment", *target, "-r", CLAUDE_MODEL_VARIABLE)
-    else:
-        run_tmux("set-environment", *target, CLAUDE_MODEL_VARIABLE, value)
+    set_scoped(
+        scope, session, pane, value, CLAUDE_MODEL_PANE_OPTION, CLAUDE_MODEL_VARIABLE
+    )
 
 
 def set_ai_tool(value: str) -> None:
@@ -187,29 +233,37 @@ class ProviderApp(App[None]):
     CSS = """
     TabbedContent { height: 1fr; }
     .status { margin: 1 2; padding: 1 2; border: round $accent; }
-    #scope, #claude-scope { margin: 0 2 1 2; height: 3; layout: horizontal; border: round $secondary; }
-    #scope RadioButton, #claude-scope RadioButton { width: 1fr; }
+    #scope, #clauder-scope, #claude-scope { margin: 0 2 1 2; height: 3; layout: horizontal; border: round $secondary; }
+    #scope RadioButton, #clauder-scope RadioButton, #claude-scope RadioButton { width: 1fr; }
     .choices { margin: 0 2 1 2; height: auto; border: round $primary; }
     """
     BINDINGS: ClassVar[list[tuple[str, str, str]]] = [
         ("right", "apply", "Apply"),
-        ("1", "show_tab('provider-tab')", "Provider"),
-        ("2", "show_tab('claude-tab')", "Claude"),
-        ("3", "show_tab('ai-tool-tab')", "AI tool"),
+        ("1", "show_tab('provider-tab')", "Codex provider"),
+        ("2", "show_tab('clauder-tab')", "Claude provider"),
+        ("3", "show_tab('claude-tab')", "Claude model"),
+        ("4", "show_tab('ai-tool-tab')", "AI tool"),
         ("r", "refresh", "Refresh"),
         ("left,escape,q", "quit", "Quit"),
     ]
 
     def __init__(
-        self, pane: str, session: str, choices: tuple[tuple[str, str], ...]
+        self,
+        pane: str,
+        session: str,
+        choices: tuple[tuple[str, str], ...],
+        clauder_choices: tuple[tuple[str, str], ...],
     ) -> None:
         super().__init__()
         self.pane = pane
         self.session = session
         self.scope = "pane"
+        self.clauder_scope = "pane"
         self.claude_scope = "pane"
         self.choices = choices
+        self.clauder_choices = clauder_choices
         self.provider_values = tuple(value for value, _ in choices)
+        self.clauder_provider_values = tuple(value for value, _ in clauder_choices)
         self.claude_model_values = tuple(value for value, _ in CLAUDE_MODEL_CHOICES)
         self.ai_tool_values = tuple(value for value, _ in AI_TOOL_CHOICES)
 
@@ -229,6 +283,25 @@ class ProviderApp(App[None]):
                 yield OptionList(
                     *(Option(label, id=value) for value, label in self.choices),
                     id="providers",
+                    classes="choices",
+                )
+            with TabPane("Claude Provider", id="clauder-tab"):
+                yield Static(id="clauder-status", classes="status")
+                yield RadioSet(
+                    *(
+                        RadioButton(
+                            label,
+                            value=value == self.clauder_scope,
+                            id=f"clauder-{value}",
+                        )
+                        for value, label in SCOPES
+                    ),
+                    id="clauder-scope",
+                    compact=True,
+                )
+                yield OptionList(
+                    *(Option(label, id=value) for value, label in self.clauder_choices),
+                    id="clauder-providers",
                     classes="choices",
                 )
             with TabPane("Claude Model", id="claude-tab"):
@@ -275,6 +348,37 @@ class ProviderApp(App[None]):
         )
         return pane_value, session_value, global_value, shell_value, effective
 
+    def clauder_values(
+        self,
+    ) -> tuple[str | None, str | None, str | None, str | None, str, str]:
+        # Mirrors _clauder_default_provider: pane, session, global, then the
+        # shell's CLAUDER_PROVIDER from env.local. No built-in default --
+        # clauder refuses to start without one.
+        pane_value = read_pane_option(self.pane, CLAUDER_PROVIDER_PANE_OPTION)
+        session_value = read_variable(CLAUDER_PROVIDER_VARIABLE, "-t", self.session)
+        global_value = read_variable(CLAUDER_PROVIDER_VARIABLE, "-g")
+        shell_value = os.environ.get(CLAUDER_PROVIDER_VARIABLE)
+        effective = pane_value or session_value or global_value or shell_value or "<unset>"
+        source = (
+            "pane"
+            if pane_value
+            else "session"
+            if session_value
+            else "global"
+            if global_value
+            else "shell"
+        )
+        return pane_value, session_value, global_value, shell_value, effective, source
+
+    def clauder_provider_model(self) -> str | None:
+        # The effective provider file's top-level "model"; None when the
+        # provider is unset/unknown or the file has none.
+        provider = self.clauder_values()[4]
+        path = CLAUDER_PROVIDER_DIR / f"{provider}.json"
+        if provider not in self.clauder_provider_values or not path.is_file():
+            return None
+        return json.loads(path.read_text()).get("model") or None
+
     def claude_values(
         self,
     ) -> tuple[str | None, str | None, str | None, str | None, str | None, str, str]:
@@ -285,12 +389,14 @@ class ProviderApp(App[None]):
         launcher_value = os.environ.get("TMUX_AI_MODEL")
         session_value = read_variable(CLAUDE_MODEL_VARIABLE, "-t", self.session)
         global_value = read_variable(CLAUDE_MODEL_VARIABLE, "-g")
+        provider_value = self.clauder_provider_model()
         default_value = os.environ.get(CLAUDE_DEFAULT_VARIABLE)
         effective = (
             launcher_value
             or pane_value
             or session_value
             or global_value
+            or provider_value
             or default_value
             or "<unset>"
         )
@@ -303,6 +409,8 @@ class ProviderApp(App[None]):
             if session_value
             else "global"
             if global_value
+            else "provider file"
+            if provider_value
             else "default"
         )
         return (
@@ -343,6 +451,29 @@ class ProviderApp(App[None]):
             f"{unsupported}"
         )
         (
+            clauder_pane,
+            clauder_session,
+            clauder_global,
+            clauder_shell,
+            clauder_effective,
+            clauder_source,
+        ) = self.clauder_values()
+        unsupported_clauder = (
+            f"\nUnsupported value: {clauder_effective} — no such file in {CLAUDER_PROVIDER_DIR}"
+            if clauder_effective not in self.clauder_provider_values
+            else ""
+        )
+        self.query_one("#clauder-status", Static).update(
+            f"Session: {self.session}    Pane: {self.pane}\n"
+            f"Pane override: {clauder_pane or '<inherit>'}\n"
+            f"Session override: {clauder_session or '<inherit>'}\n"
+            f"Global value: {clauder_global or '<unset>'}\n"
+            f"Shell default ({CLAUDER_PROVIDER_VARIABLE} in env.local): {clauder_shell or '<unset>'}\n"
+            f"Effective: {clauder_effective} ({clauder_source}) — applies to the next clauder here\n"
+            f"Apply to: {self.clauder_scope}"
+            f"{unsupported_clauder}"
+        )
+        (
             claude_pane,
             claude_launcher,
             claude_session,
@@ -367,7 +498,9 @@ class ProviderApp(App[None]):
             f"Global value: {claude_global or '<unset>'}\n"
             f"Default ({CLAUDE_DEFAULT_VARIABLE} in env.local): {claude_default or '<unset>'}\n"
             f"Effective: {claude_effective} ({claude_source}) — applies to the next clauder here\n"
-            f"Apply to: {self.claude_scope}"
+            f"Apply to: {self.claude_scope}\n"
+            "Model names are gateway-specific; with no override clauder uses the\n"
+            "provider file's \"model\" before the env.local default."
             f"{launcher_warning}"
         )
         ai_tool = read_variable(AI_TOOL_VARIABLE, "-g")
@@ -391,6 +524,18 @@ class ProviderApp(App[None]):
         self.query_one("#providers", OptionList).highlighted = (
             self.provider_values.index(target)
             if target in self.provider_values
+            else None
+        )
+        clauder_pane, clauder_session, clauder_global, _, _, _ = self.clauder_values()
+        clauder_target = (
+            {"pane": clauder_pane, "session": clauder_session}.get(
+                self.clauder_scope, clauder_global
+            )
+            or "inherit"
+        )
+        self.query_one("#clauder-providers", OptionList).highlighted = (
+            self.clauder_provider_values.index(clauder_target)
+            if clauder_target in self.clauder_provider_values
             else None
         )
         claude_pane, _, claude_session, claude_global, _, _, _ = self.claude_values()
@@ -423,6 +568,21 @@ class ProviderApp(App[None]):
         name = PROVIDER_PANE_OPTION if self.scope == "pane" else PROVIDER_VARIABLE
         self.notify(f"{self.scope} {name} → {value}")
 
+    def apply_clauder(self, value: str) -> None:
+        try:
+            set_clauder_provider(self.clauder_scope, self.session, self.pane, value)
+        except ToolError as error:
+            self.notify(str(error), severity="error")
+            return
+        self.refresh_status()
+        self.sync_highlight()
+        name = (
+            CLAUDER_PROVIDER_PANE_OPTION
+            if self.clauder_scope == "pane"
+            else CLAUDER_PROVIDER_VARIABLE
+        )
+        self.notify(f"{self.clauder_scope} {name} → {value}")
+
     def apply_claude(self, value: str) -> None:
         try:
             set_claude_model(self.claude_scope, self.session, self.pane, value)
@@ -450,6 +610,7 @@ class ProviderApp(App[None]):
 
     OPTION_LISTS: ClassVar[dict[str, str]] = {
         "provider-tab": "#providers",
+        "clauder-tab": "#clauder-providers",
         "claude-tab": "#claude-models",
         "ai-tool-tab": "#ai-tools",
     }
@@ -461,6 +622,8 @@ class ProviderApp(App[None]):
             value = options.get_option_at_index(options.highlighted).id
             if active_tab == "provider-tab":
                 self.apply(value)
+            elif active_tab == "clauder-tab":
+                self.apply_clauder(value)
             elif active_tab == "claude-tab":
                 self.apply_claude(value)
             else:
@@ -475,7 +638,11 @@ class ProviderApp(App[None]):
         self.sync_highlight()
 
     def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
-        if event.radio_set.id == "claude-scope":
+        if event.radio_set.id == "clauder-scope":
+            self.clauder_scope = (event.pressed.id or "clauder-pane").removeprefix(
+                "clauder-"
+            )
+        elif event.radio_set.id == "claude-scope":
             self.claude_scope = (event.pressed.id or "claude-pane").removeprefix(
                 "claude-"
             )
@@ -487,6 +654,8 @@ class ProviderApp(App[None]):
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         if event.option_list.id == "providers":
             self.apply(event.option.id)
+        elif event.option_list.id == "clauder-providers":
+            self.apply_clauder(event.option.id)
         elif event.option_list.id == "claude-models":
             self.apply_claude(event.option.id)
         else:
@@ -495,10 +664,15 @@ class ProviderApp(App[None]):
 
 def main() -> int:
     if sys.argv[1:] in (["-h"], ["--help"]):
-        print("llm-conf: configure Codex provider and the global tmux AI tool")
+        print(
+            "llm-conf: configure the Codex provider, the Claude provider and"
+            " model, and the global tmux AI tool"
+        )
         return 0
     pane = current_pane()
-    ProviderApp(pane, current_session(pane), provider_choices()).run()
+    ProviderApp(
+        pane, current_session(pane), provider_choices(), clauder_provider_choices()
+    ).run()
     return 0
 
 

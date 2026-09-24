@@ -656,11 +656,64 @@ function v() {
     "$HOME/deploy/helper_scripts/bin/v" "$@"
 }
 
+# The gateway (ANTHROPIC_BASE_URL / ANTHROPIC_AUTH_TOKEN / model names) is not
+# set here: settings.json's env block outranks the process environment, so
+# exporting them from the shell never took effect. It now comes from the
+# provider settings file selected by clauder, see _clauder_provider_file.
 _claude_env() {
-    ANTHROPIC_BASE_URL=$(get-cred xyz_base gpt.gpg) \
-    ANTHROPIC_AUTH_TOKEN=$(get-cred xyz_key gpt.gpg) \
     CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1 \
     "$@"
+}
+
+# A Claude Code "provider" is a settings fragment layered on top of
+# ~/.claude/settings.json through `claude --settings`: one JSON file per
+# provider under ~/.claude/providers (git-ignored, it holds the token) with
+# the gateway env block and optionally a top-level "model" default. Adding a
+# provider is adding a file; settings.json itself carries no gateway config, so
+# nothing leaks from one provider into another.
+#
+# Same three scopes as _codex_default_provider, most specific wins: the
+# llm-conf pane override, the llm-conf session/global override, then the shell
+# default from env.local. Override per shell with CLAUDER_PROVIDER=xyz clauder.
+_clauder_provider_dir() {
+    printf '%s\n' "${CLAUDER_PROVIDER_DIR:-$HOME/.claude/providers}"
+}
+
+_clauder_default_provider() {
+    local provider
+    provider="$(_tmux_pane_option_value @clauder_provider)" \
+        || provider="$(_tmux_environment_value CLAUDER_PROVIDER)" \
+        || provider="${CLAUDER_PROVIDER:-}"
+
+    if [[ -z "$provider" ]]; then
+        echo "CLAUDER_PROVIDER is unset; export it in configs/shell/env.local" \
+            "(a file name under $(_clauder_provider_dir), without .json)" >&2
+        return 1
+    fi
+    printf '%s\n' "$provider"
+}
+
+_clauder_provider_file() {
+    local provider="$1" file
+    case "$provider" in
+        *[!A-Za-z0-9_-]*)
+            echo "clauder: unsupported provider id: $provider" >&2
+            return 1
+            ;;
+    esac
+    file="$(_clauder_provider_dir)/$provider.json"
+    if [[ ! -f "$file" ]]; then
+        echo "clauder: no settings for provider '$provider': $file" >&2
+        return 1
+    fi
+    printf '%s\n' "$file"
+}
+
+# The provider file's top-level "model", empty when it has none. Model names
+# are gateway-specific (LiteLLM serves "...[1m]" aliases, TrueFoundry does
+# not), so the provider is the right place for the default.
+_clauder_provider_model() {
+    python3 -c 'import json, sys; print(json.load(open(sys.argv[1])).get("model", ""))' "$1"
 }
 
 # Two variables, two meanings:
@@ -679,32 +732,50 @@ _claude_default_model() {
     printf '%s\n' "$CLAUDE_DEFAULT_MODEL"
 }
 
+# CLAUDE_BIN picks the binary (env.local); default is whatever `claude` is on
+# PATH, normally the prism module. A native `claude update` install lands in
+# ~/.local/bin, which PATH appends, so it only wins when pointed at here.
+#
+# --settings for the provider file clauder resolved; nothing when called
+# directly, which then runs on ~/.claude/settings.json alone (no gateway).
+_claude_settings_args() {
+    reply=()
+    [[ -n "${CLAUDE_SETTINGS_FILE:-}" ]] && reply=(--settings "$CLAUDE_SETTINGS_FILE")
+}
+
 function claudeauto() {
     local model
     model="${CLAUDE_MODEL:-$(_claude_default_model)}" || return 1
+    _claude_settings_args
     _start_ai_tui_output_tracker
-    _claude_env _with_tmux_rename "$MYPROXY_CLAUDE" claude --model "$model" --enable-auto-mode "$@"
+    _claude_env _with_tmux_rename "$MYPROXY_CLAUDE" "${CLAUDE_BIN:-claude}" "${reply[@]}" --model "$model" --enable-auto-mode "$@"
 }
 
 function claudeyolo() {
     local model
     model="${CLAUDE_MODEL:-$(_claude_default_model)}" || return 1
+    _claude_settings_args
     _start_ai_tui_output_tracker
-    IS_SANDBOX=1 _claude_env _with_tmux_rename "$MYPROXY_CLAUDE" claude --model "$model" --dangerously-skip-permissions "$@"
+    IS_SANDBOX=1 _claude_env _with_tmux_rename "$MYPROXY_CLAUDE" "${CLAUDE_BIN:-claude}" "${reply[@]}" --model "$model" --dangerously-skip-permissions "$@"
 }
 
 function clauder() {
-    # Claude takes its model through CLAUDE_MODEL rather than an argument:
-    # claudeauto/claudeyolo already pass --model, and a second one on the
-    # command line makes the CLI error out. zsh scopes the local to the
-    # callee too, so no export is needed.
-    #
+    # Claude takes its model and provider through CLAUDE_MODEL /
+    # CLAUDE_SETTINGS_FILE rather than arguments: claudeauto/claudeyolo
+    # already pass --model, and a second one on the command line makes the
+    # CLI error out. zsh scopes the local to the callee too, so no export is
+    # needed.
+    local provider settings_file
+    provider="$(_clauder_default_provider)" || return 1
+    settings_file="$(_clauder_provider_file "$provider")" || return 1
+
     # An explicit selection beats every configured default, the same way
     # `claude --model` beats settings.json: the launcher's TMUX_AI_MODEL
     # (same contract as codexr, which applies it unconditionally) wins
     # outright. Below that, most specific scope wins, mirroring
     # _codex_default_provider: the llm-conf pane override, then the llm-conf
-    # session/global override, then the shell default from env.local.
+    # session/global override, then the provider file's own default, then the
+    # shell default from env.local.
     local model
     model="${TMUX_AI_MODEL:-}"
     [[ -n "$model" ]] || model="$(_tmux_pane_option_value @claude_model)" || model=""
@@ -713,9 +784,11 @@ function clauder() {
     # a variable that shells export would shadow env.local edits forever.
     if [[ -z "$model" ]]; then
         model="$(_tmux_environment_value TMUX_CLAUDE_MODEL)" \
-            || model="$(_claude_default_model)" || return 1
+            || model="$(_clauder_provider_model "$settings_file")"
+        [[ -n "$model" ]] || model="$(_claude_default_model)" || return 1
     fi
     local CLAUDE_MODEL="$model"
+    local CLAUDE_SETTINGS_FILE="$settings_file"
 
     if [[ "$(uname)" == "Linux" ]]; then
         claudeyolo "$@"

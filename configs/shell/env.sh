@@ -27,6 +27,8 @@ export PATH
 # Optional per-machine overrides (git-ignored). Use this to set local-only env
 # vars such as `export CLAUDE_DEFAULT_MODEL=claude-opus-4-8` without touching tracked
 # files. Absent on machines that don't need it -> no-op.
+# clauder requires `export CLAUDER_PROVIDER=<name>` here: the name of a
+# settings file under ~/.claude/providers/ (see _clauder_provider_file).
 # For a newly created orchestrator (prefix + O), env.local can set:
 #   export TMUX_ORCHESTRATOR_TOOL=codex
 #   export TMUX_ORCHESTRATOR_MODEL=gpt-6-astra
