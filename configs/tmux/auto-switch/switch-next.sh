@@ -113,7 +113,7 @@ if [[ -n "$skip_pane_id" && "$skip_pane_id" != "$target" ]] \
     pw=$(( win_w * 45 / 100 )); ph=$(( win_h * 45 / 100 ))
     px=$(( win_w - pw - 1 )); py=1
     fp="$(tmux new-pane -d -t "$target" -x "$pw" -y "$ph" -X "$px" -Y "$py" \
-      -P -F '#{pane_id}' "$script_dir/preview-prev-pane.sh $skip_pane_id 2" 2>/dev/null || true)"
+      -P -F '#{pane_id}' "$script_dir/preview-prev-pane.sh $skip_pane_id 4" 2>/dev/null || true)"
     [[ -n "$fp" ]] && tmux set-option -p -t "$fp" @auto_switch_preview 1 2>/dev/null || true
   fi
 fi
