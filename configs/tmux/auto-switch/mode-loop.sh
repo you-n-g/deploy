@@ -97,5 +97,8 @@ while [[ "$(tmux show-option -gqv @auto_switch_mode_token 2>/dev/null || true)" 
   [[ -n "$submitted_pane" ]] || continue
   [[ "$(tmux show-option -gqv @auto_switch_mode_token 2>/dev/null || true)" == "$token" ]] || exit 0
 
-  "$switch_script" >/dev/null 2>&1 || true
+  # Pass the pane being left as --skip-pane: switch-next skips it when picking
+  # the target and floats a preview of it, same as a manual prefix+a. Without
+  # this the continuous path never triggers the preview.
+  "$switch_script" --skip-pane "$submitted_pane" >/dev/null 2>&1 || true
 done
