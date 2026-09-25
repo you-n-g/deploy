@@ -58,6 +58,22 @@ fi
 
 command -v nvim >/dev/null 2>&1 || { echo "open_current_tasks.sh: nvim not found" >&2; exit 1; }
 
+# The full LazyVim config takes ~750 ms to start on this GPFS home (lazy spec
+# loading alone ~430 ms); a viewer does not need any of it. Start nvim with no
+# user config and put only navigate-note on the runtimepath: ~10 ms.
+# The colorscheme is the same tokyonight-moon the full config uses; it costs
+# ~4 ms because tokyonight caches its highlight table.
+LAZY_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/nvim/lazy"
+NAV_NOTE_DIR="$LAZY_DIR/navigate-note.nvim"
+THEME_DIR="$LAZY_DIR/tokyonight.nvim"
+RENDER_MD_DIR="$LAZY_DIR/render-markdown.nvim"
+[[ -f "$NAV_NOTE_DIR/lua/navigate-note/init.lua" ]] \
+  || { echo "open_current_tasks.sh: navigate-note.nvim not found at $NAV_NOTE_DIR" >&2; exit 1; }
+[[ -f "$THEME_DIR/colors/tokyonight-moon.lua" ]] \
+  || { echo "open_current_tasks.sh: tokyonight.nvim not found at $THEME_DIR" >&2; exit 1; }
+[[ -f "$RENDER_MD_DIR/lua/render-markdown/init.lua" ]] \
+  || { echo "open_current_tasks.sh: render-markdown.nvim not found at $RENDER_MD_DIR" >&2; exit 1; }
+
 # Full width, top half: every entry is one long line, so give it the whole
 # width. tmux rejects left + width >= window_width ("size or position too
 # large"), so leave one column each side. Size and position must be given at
@@ -85,17 +101,22 @@ own_line="$(grep -n -m1 -F \
 # separate Ex commands.
 AUTO_CLOSE_LUA='vim.api.nvim_create_autocmd("FocusLost", { callback = function() local out = vim.fn.system({ "tmux", "display-message", "-p", "-t", vim.env.TMUX_PANE, "#{&&:#{pane_active},#{&&:#{window_active},#{session_attached}}}" }) if vim.trim(out) ~= "1" then vim.cmd("silent! wall | qa!") end end })'
 
+# -u NONE implies --noplugin, so render-markdown's plugin/ entry (which
+# registers its FileType attach) is sourced explicitly before the file loads.
 # navigate-note only enters nav-mode for files named nav.md (BufWinEnter autocmd
-# in its NavMode group). Force-load the plugin, then fire that autocmd as if the
-# buffer were nav.md so <tab>/<s-tab>/1-9/<m-cr> work on the tmux links here.
-# :silent drops its "Enter/Entered nav-mode" prints, which would otherwise block
-# on a hit-enter prompt at startup.
-# DISABLE_VIM_LSP is honoured by lua/plugins/nvim-lspconfig.lua: no diagnostics in a read-mostly viewer.
-fp="$(tmux new-pane -t "$PANE_ID" -c "$REPO_ROOT" -e DISABLE_VIM_LSP=1 \
+# in its NavMode group). After setup(), fire that autocmd as if the buffer were
+# nav.md so <tab>/<s-tab>/1-9/<m-cr> work on the tmux links here. :silent drops
+# its "Enter/Entered nav-mode" prints, which would otherwise block on a
+# hit-enter prompt at startup. -i NONE skips shada read/write on GPFS.
+fp="$(tmux new-pane -t "$PANE_ID" -c "$REPO_ROOT" \
   -x "$pw" -y "$ph" -X "$px" -Y "$py" -P -F '#{pane_id}' \
-  nvim \
-    '+lua require("lazy").load({ plugins = { "navigate-note.nvim" } })' \
+  nvim -u NONE -i NONE \
+    --cmd "set runtimepath^=$NAV_NOTE_DIR,$THEME_DIR,$RENDER_MD_DIR" \
+    --cmd 'filetype plugin on | syntax on | runtime plugin/render-markdown.lua' \
+    '+set termguicolors | colorscheme tokyonight-moon' \
+    '+lua require("navigate-note").setup({ enable_block = true })' \
     '+silent doautocmd NavMode BufWinEnter nav.md' \
+    '+nnoremap <buffer> q <Cmd>silent! wall <Bar> qa!<CR>' \
     "+lua $AUTO_CLOSE_LUA" \
     "+${own_line:-1}" \
     "$FILE")"
