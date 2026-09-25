@@ -170,7 +170,20 @@ end
 local function open_tmux_link_with_navigate_note()
   local current_line = vim.api.nvim_get_current_line()
   local ok_utils, nav_utils = pcall(require, "navigate-note.utils")
-  if not ok_utils or not nav_utils.is_tmux(current_line) then
+  if not ok_utils then
+    return false
+  end
+
+  -- Only switch to tmux when the cursor sits ON a tmux link, not merely when the
+  -- line contains one. navigate-note's is_tmux/get_link_at_cursor fall back to
+  -- the first link on the line, so a line with a [[tmux://...]] link elsewhere
+  -- would hijack gf even with the cursor on a plain file path. Require the
+  -- cursor column to land inside the matched link's span.
+  local cursor_col = vim.api.nvim_win_get_cursor(0)[2] + 1
+  local link = nav_utils.get_link_at_cursor(current_line, cursor_col)
+  if not (link and link.file == "tmux"
+      and link.start_pos and link.end_pos
+      and link.start_pos <= cursor_col and cursor_col <= link.end_pos) then
     return false
   end
 
