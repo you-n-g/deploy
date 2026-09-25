@@ -26,8 +26,11 @@ trap 'printf "\033[?25h\033[?7h"' EXIT  # restore cursor + autowrap on exit
 for (( i = 0; i < frames; i++ )); do
   # -e keeps colours; -N preserves trailing spaces so a line's background (e.g. a
   # full-width grey bar) reaches the edge as in the real window instead of being
-  # trimmed. A vanished pane ends the preview early.
-  frame="$(tmux capture-pane -e -N -p -t "$pane" 2>/dev/null)" || break
+  # trimmed. capture-pane leaves a line's SGR (e.g. a grey background) active at
+  # the newline, which would bleed onto the next line here (unlike the real pane,
+  # where each cell is independent), so reset SGR at every line end. A vanished
+  # pane ends the preview early.
+  frame="$(tmux capture-pane -e -N -p -t "$pane" 2>/dev/null | sed $'s/$/\033[0m/')" || break
   printf '\033[H\033[J%s' "$frame"
   sleep "$interval"
 done
