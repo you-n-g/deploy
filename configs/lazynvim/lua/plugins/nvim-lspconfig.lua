@@ -2,6 +2,9 @@ return {
   -- I don't like the autoformat feature of nvim-lspconfig. It will change the code and produce unexpected git commits.
   {
     "neovim/nvim-lspconfig",
+    -- Skip LSP per process by exporting `DISABLE_VIM_LSP=1`
+    -- (e.g. the tasks/CURRENT.md tmux popup), where diagnostics only add noise.
+    enabled = vim.env.DISABLE_VIM_LSP ~= "1",
     -- opts = { servers = {ruff_lsp = {}} },  -- ruff_lsp will not git docs
     keys = {
       -- The default config only cover <c-f> & <c-b>; <c-b> conflicts with tmux
