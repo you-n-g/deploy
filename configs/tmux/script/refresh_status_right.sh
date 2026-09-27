@@ -2,6 +2,13 @@
 
 set -eu
 
+# Bash 5.2+ can treat & in parameter-substitution replacements as the matched
+# text. Older Bash versions do not have this option. Keep the historical
+# replacement semantics on every platform because tmux formats contain &&.
+if shopt -q patsub_replacement 2>/dev/null; then
+  shopt -u patsub_replacement
+fi
+
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # Wait for TPM/theme plugins to finish populating status-right first.
@@ -63,6 +70,12 @@ decorate_window_status() {
   # colour223 is the theme's normal name fg, colour239 the current-window one.
   name_fg="$2"
   option_value="$(tmux show-options -gqv "$option_name")"
+  # This script can run once from tmux.conf and again after TPM finishes.  Do
+  # not decorate the result of an earlier run: replacing its embedded #W again
+  # recursively expands the format and eventually makes every name green.
+  if [[ "$option_value" == *'@auto_switch_next_pane'* ]]; then
+    return 0
+  fi
   styled_index='#{?#{m/r:(^| )#{pane_id}( |$),#{@auto_switch_ranked_panes}},#[bold]#[underscore]#I#[nobold]#[nounderscore],#I}'
   has_ai_state='#{||:#{!=:#{@ai_agent_running},},#{||:#{!=:#{@ai_agent_background},},#{||:#{!=:#{@ai_agent_unread},},#{||:#{!=:#{@ai_agent_pending},},#{!=:#{@ai_agent_attribute},}}}}}'
   state_symbol="#{?#{!=:#{@ai_agent_pending},},⏸,#{?#{==:#{@ai_agent_background},1},◒,#{?#{==:#{@ai_agent_running},1},●,#{?#{==:#{@ai_agent_unread},1},◉,○}}}}"
