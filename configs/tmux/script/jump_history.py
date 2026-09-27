@@ -33,9 +33,16 @@ class History:
             ["tmux", "-S", self.socket, *args], universal_newlines=True
         ).rstrip("\n")
 
+    def leave(self, state, position, limit):
+        """Remember panes left behind, most recent first, for `previous`."""
+        recent = [position] + [p for p in state.get("recent", []) if p != position]
+        state["recent"] = recent[:limit]
+
     def observe(self, state, position, limit):
         entries = state["entries"]
         if not entries or entries[state["index"]] != position:
+            if entries:
+                self.leave(state, entries[state["index"]], limit)
             del entries[state["index"] + 1:]
             entries.append(position)
             state["index"] = len(entries) - 1
@@ -88,6 +95,22 @@ class History:
                 raise ValueError("jump-history: client is no longer attached: " + client)
             identity, current = clients[client]
             state = histories[identity]
+        if action == "previous":
+            # The most recently left pane, whether left by a plain switch or a
+            # back/forward jump. Closed panes (e.g. a temporary floating pane)
+            # are skipped. Resolve by pane id: it may have moved to another
+            # session since.
+            live = set(self.tmux("list-panes", "-a", "-F", "#{pane_id}").splitlines())
+            current_pane = current.split(":.", 1)[1]
+            for position in state.get("recent", []):
+                pane = position.split(":.", 1)[1]
+                if pane in live and pane != current_pane:
+                    print(self.tmux("display-message", "-p", "-t", pane,
+                                    "#{session_name}:#{window_index}.#{pane_index}"))
+                    break
+            else:
+                raise ValueError("jump-history: no open previously visited pane for client " + client)
+        elif action != "record":
             step = -1 if action == "back" else 1
             live = set(self.tmux(
                 "list-panes", "-a", "-F", "#{session_id}:.#{pane_id}"
@@ -100,6 +123,7 @@ class History:
                 if target in live and target != current:
                     self.switch(client, current, target)
                     state["index"] = index
+                    self.leave(state, current, limit)
                     break
                 index += step
             else:
@@ -123,11 +147,11 @@ class History:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--socket", required=True)
-    parser.add_argument("action", choices=("record", "back", "forward"))
+    parser.add_argument("action", choices=("record", "back", "forward", "previous"))
     parser.add_argument("client", nargs="?")
     args = parser.parse_args()
     if args.action != "record" and not args.client:
-        parser.error("back/forward requires a tmux client name")
+        parser.error(args.action + " requires a tmux client name")
     History(args.socket).run(args.action, args.client)
 
 
