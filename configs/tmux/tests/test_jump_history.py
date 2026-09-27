@@ -17,6 +17,7 @@ import unittest
 
 TMUX_DIR = Path(__file__).resolve().parents[1]
 SCRIPT = str(TMUX_DIR / "script/jump_history.py")
+INSERT_SCRIPT = str(TMUX_DIR / "script/insert_previous_target.sh")
 
 
 class JumpHistoryTest(unittest.TestCase):
@@ -47,7 +48,7 @@ class JumpHistoryTest(unittest.TestCase):
         # Load the actual feature config, resolving paths to this checkout.
         config = (TMUX_DIR / "jump-history.conf").read_text().replace(
             "~/deploy/configs/tmux/script/jump_history.py", SCRIPT
-        )
+        ).replace("~/deploy/configs/tmux/script/insert_previous_target.sh", INSERT_SCRIPT)
         subprocess.run(["tmux", "-S", self.socket, "source-file", "-"],
                        input=config, universal_newlines=True, check=True)
         self.client = self.attach("one")
@@ -127,13 +128,66 @@ class JumpHistoryTest(unittest.TestCase):
         self.jump("back", self.a)
         self.jump("back", self.a)
         self.jump("forward", self.b)
-        self.assertEqual(self.state(self.client), {"entries": [self.a, self.b, self.c], "index": 1})
+        self.assertEqual(self.state(self.client),
+                         {"entries": [self.a, self.b, self.c], "index": 1,
+                          "recent": [self.a, self.b, self.c]})
         self.assertEqual(self.status(self.client), "2/3")
         d = self.tmux("new-window", "-d", "-t", "one:", "-P", "-F", "#{session_id}:.#{pane_id}")
         self.visit(d)
         self.wait_for(lambda: self.status(self.client) == "3/3")
         self.assertEqual(self.state(self.client)["entries"], [self.a, self.b, d])
         self.jump("forward", d)
+
+    def target(self, position):
+        return self.tmux("display-message", "-p", "-t", position.split(":.")[1],
+                         "#{session_name}:#{window_index}.#{pane_index}")
+
+    def previous(self, client=None):
+        return subprocess.check_output(
+            ["python3", SCRIPT, "--socket", self.socket, "previous", client or self.client],
+            universal_newlines=True,
+        ).strip()
+
+    def test_previous_follows_visits_and_jumps(self):
+        result = subprocess.run(
+            ["python3", SCRIPT, "--socket", self.socket, "previous", self.client],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("no open previously visited pane", result.stderr)
+        self.visit(self.b)
+        self.visit(self.c)
+        self.assertEqual(self.previous(), self.target(self.b))
+        # A back jump is a visit too: the pane left behind becomes previous.
+        self.jump("back", self.b)
+        self.assertEqual(self.previous(), self.target(self.c))
+        self.jump("back", self.a)
+        self.assertEqual(self.previous(), self.target(self.b))
+        self.visit(self.c)
+        self.assertEqual(self.previous(), self.target(self.a))
+        # A closed previous pane (e.g. a temporary floating pane) falls back to
+        # the one left before it; the current pane itself never counts.
+        self.tmux("kill-pane", "-t", self.a)
+        self.assertEqual(self.previous(), self.target(self.b))
+        self.tmux("kill-pane", "-t", self.b)
+        result = subprocess.run(
+            ["python3", SCRIPT, "--socket", self.socket, "previous", self.client],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("no open previously visited pane", result.stderr)
+
+    def test_insert_previous_target_types_without_enter(self):
+        self.visit(self.c)
+        self.visit(self.b)
+        pane = self.b.split(":.")[1]
+        subprocess.check_call([INSERT_SCRIPT, self.socket, self.client, pane])
+        expected = "请capture我的Tmux的这个pane[" + self.target(self.c) + "]的内容"
+        self.wait_for(lambda: expected in self.tmux("capture-pane", "-p", "-t", pane))
+        # No Enter: the text stays on the prompt line, so the shell never runs it.
+        self.assertNotIn("not found", self.tmux("capture-pane", "-p", "-t", pane))
+        self.assertRegex(self.tmux("list-keys", "-T", "prefix"),
+                         r"C-l\s+run-shell .*insert_previous_target.sh ")
 
     def test_capacity_and_repeated_visits(self):
         self.tmux("set-option", "-g", "@jump-history-limit", "3")
