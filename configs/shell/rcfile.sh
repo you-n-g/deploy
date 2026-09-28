@@ -405,6 +405,9 @@ function codexr() {
         litellm)
             codexlm "$@"
             ;;
+        azure)
+            codexa "$@"
+            ;;
         openai)
             codexo "$@"
             ;;
@@ -501,7 +504,7 @@ _codex_default_provider() {
 _codex_env() {
     (
         export NODE_TLS_REJECT_UNAUTHORIZED=0
-        export AZURE_OPENAI_API_KEY="$(get-cred key gpt.gpg)"
+        export AZURE_OPENAI_API_KEY="${AZURE_OPENAI_API_KEY:-$(get-cred key gpt.gpg)}"
         export XYZ_API_KEY="$(get-cred xyz_key gpt.gpg)"
 
         if [[ "$(uname)" == "Linux" ]]; then
@@ -567,8 +570,23 @@ _codex_run_api() {
 }
 
 function codexa() {
-    # run my azure codex
-    _codex_run_api "$@"
+    local base_url api_key
+    base_url="$(get-cred base gpt.gpg)" || return
+    api_key="$(get-cred key gpt.gpg)" || return
+    if [[ -z "$base_url" || -z "$api_key" ]]; then
+        echo "codexa: Azure endpoint or API key is empty in keys/gpt.gpg" >&2
+        return 1
+    fi
+    base_url="${base_url%/}"
+    [[ "$base_url" == */openai/v1 ]] || base_url="${base_url}/openai/v1"
+
+    AZURE_OPENAI_API_KEY="$api_key" _codex_run_api \
+        -c 'model_provider="azure"' \
+        -c 'model_providers.azure.name="Azure OpenAI"' \
+        -c "model_providers.azure.base_url=\"$base_url\"" \
+        -c 'model_providers.azure.wire_api="responses"' \
+        -c 'model_providers.azure.env_key="AZURE_OPENAI_API_KEY"' \
+        "$@"
 }
 
 function codexo() {

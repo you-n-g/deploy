@@ -66,6 +66,7 @@ CLAUDE_MODEL_CHOICES = (
 )
 STATIC_CHOICES = (
     ("lb8121", "lb8121 — shared 8121 endpoint"),
+    ("azure", "azure — Azure OpenAI from keys/gpt.gpg"),
     ("openai", "openai — official OpenAI login (default)"),
     ("xyz", "xyz — XYZ normally, Azure inside Obsidian"),
 )
