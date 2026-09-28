@@ -10,9 +10,19 @@ set -euo pipefail
 # With a title, the first line shows it (reverse video) and the rest shows the
 # bottom of the pane, where its newest output is -- used by the task-done toast.
 #
-# usage: preview-prev-pane.sh <pane-id> [seconds] [title]
+# -k closes it early on any keystroke, which still goes to the pane as usual:
+# it watches #{client_activity}, which only key/mouse input moves. That is in
+# whole seconds, so a key in the same second the preview opened goes unnoticed
+# until the next one.
+#
+# usage: preview-prev-pane.sh [-k] <pane-id> [seconds] [title]
 
-pane="${1:?usage: preview-prev-pane.sh <pane-id> [seconds] [title]}"
+dismiss_on_key=0
+if [[ "${1:-}" == "-k" ]]; then
+  dismiss_on_key=1
+  shift
+fi
+pane="${1:?usage: preview-prev-pane.sh [-k] <pane-id> [seconds] [title]}"
 seconds="${2:-2}"
 title="${3:-}"
 interval="0.5"
@@ -26,6 +36,11 @@ printf '\033[?25l'                      # hide cursor while animating
 printf '\033[?7l'                       # no autowrap: clip long lines to the
                                         # popup width instead of wrapping them
 trap 'printf "\033[?25h\033[?7h"' EXIT  # restore cursor + autowrap on exit
+
+last_input() {
+  tmux list-clients -F '#{client_activity}' | sort -n | tail -n 1
+}
+start_input="$(last_input)"
 
 for (( i = 0; i < frames; i++ )); do
   # -e keeps colours; -N preserves trailing spaces so a line's background (e.g. a
@@ -48,5 +63,14 @@ for (( i = 0; i < frames; i++ )); do
   else
     printf '\033[H\033[J%s' "$frame"
   fi
-  sleep "$interval"
+  if (( dismiss_on_key )); then
+    # Same frame rate, but look for input every 0.1s so a keystroke closes the
+    # preview promptly.
+    for (( step = 0; step < 5; step++ )); do
+      sleep 0.1
+      (( $(last_input) == start_input )) || exit 0
+    done
+  else
+    sleep "$interval"
+  fi
 done
