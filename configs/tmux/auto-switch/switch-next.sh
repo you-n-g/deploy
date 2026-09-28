@@ -117,6 +117,9 @@ if [[ -n "$skip_pane_id" && "$skip_pane_id" != "$target" ]] \
     px=$(( win_w - pw - 1 )); py=1
     fp="$(tmux new-pane -d -t "$target" -x "$pw" -y "$ph" -X "$px" -Y "$py" \
       -P -F '#{pane_id}' "$script_dir/preview-prev-pane.sh $skip_pane_id 4" 2>/dev/null || true)"
-    [[ -n "$fp" ]] && tmux set-option -p -t "$fp" @auto_switch_preview 1 2>/dev/null || true
+    # A cyan border (the global one is grey) sets the preview apart from the
+    # panes it floats over.
+    [[ -n "$fp" ]] && tmux set-option -p -t "$fp" @auto_switch_preview 1 \; \
+      set-option -p -t "$fp" pane-border-style 'fg=colour45,bold' 2>/dev/null || true
   fi
 fi
