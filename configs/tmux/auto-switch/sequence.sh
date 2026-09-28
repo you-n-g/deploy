@@ -24,7 +24,7 @@ sequence_edit_helper="$script_dir/sequence_edit.py"
 # SEQUENCE_EDIT_PYTHON overrides all of that with a plain interpreter path, set
 # per machine in configs/shell/env.local. On hosts where uv lives on cvmfs (a
 # 64MB binary behind a FUSE/GCS mount with an LRU cache), every eviction turns
-# `prefix A` into a multi-second stall re-fetching it at ~5MB/s, while a local
+# `prefix C-a` into a multi-second stall re-fetching it at ~5MB/s, while a local
 # python3.11 starts in 10ms. The helper imports nothing outside the stdlib, so
 # uv is only ever supplying an interpreter >=3.9 here.
 run_sequence_edit() {
@@ -488,7 +488,7 @@ edit_sequence() {
 
   # current_ranked_sequence already returns the normalized sequence, and
   # normalize is idempotent — re-normalizing here only bought another helper
-  # process on the `prefix A` path.
+  # process on the `prefix C-a` path.
   ranked="$(current_ranked_sequence)"
   write_edit_file "$tmp" "$ranked"
   focus_line="$(edit_focus_line "$tmp" "$ranked" "$edit_focus_target")"
