@@ -700,17 +700,44 @@ function! s:AutoSwitchMoveRange(direction) abort
   call cursor(l:bot + a:direction, 1)
 endfunction
 
+" Alt-a / Alt-e send the pane row under the cursor to the top / bottom of the
+" pane block, for bigger reorders than Alt-j / Alt-k. The cursor keeps its line
+" number, so walking down the list and pushing rows away keeps going from the
+" row that slid into place.
+function! s:AutoSwitchMoveToEdge(direction) abort
+  let l:lnum = line('.')
+  if !s:AutoSwitchIsPaneLine(l:lnum)
+    echohl WarningMsg
+    echo 'Pane lines can only be reordered among themselves'
+    echohl None
+    return
+  endif
+  let l:edge = l:lnum
+  while s:AutoSwitchIsPaneLine(l:edge + a:direction)
+    let l:edge += a:direction
+  endwhile
+  if l:edge == l:lnum
+    return
+  endif
+  execute 'move ' . (a:direction > 0 ? l:edge : l:edge - 1)
+  call cursor(l:lnum, 1)
+endfunction
+
 " tmux hands Alt-j to the popup as ESC j. Terminal vim does not know that
 " byte pair is a Meta key until told; nvim decodes it on its own.
 if !has('nvim')
   execute "set <M-j>=\\ej"
   execute "set <M-k>=\\ek"
+  execute "set <M-a>=\\ea"
+  execute "set <M-e>=\\ee"
   set ttimeout ttimeoutlen=50
 endif
 nnoremap <buffer> <silent> <M-j> :call <SID>AutoSwitchMoveLine(1)<CR>
 nnoremap <buffer> <silent> <M-k> :call <SID>AutoSwitchMoveLine(-1)<CR>
 xnoremap <buffer> <silent> <M-j> :<C-u>call <SID>AutoSwitchMoveRange(1)<CR>
 xnoremap <buffer> <silent> <M-k> :<C-u>call <SID>AutoSwitchMoveRange(-1)<CR>
+nnoremap <buffer> <silent> <M-a> :call <SID>AutoSwitchMoveToEdge(-1)<CR>
+nnoremap <buffer> <silent> <M-e> :call <SID>AutoSwitchMoveToEdge(1)<CR>
 VIM
   vim_script_file="${vim_script//\'/''}"
 
