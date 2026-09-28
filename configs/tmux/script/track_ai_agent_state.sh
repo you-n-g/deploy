@@ -395,13 +395,13 @@ notify_orchestrator_on_idle() {
   activity="$(tmux display-message -p -t "$pane_id" '#{window_activity}')"
   notified_activity="$(tmux show -pv -t "$pane_id" @ai_agent_orchestrator_idle_notified_activity 2>/dev/null || true)"
 
-  [ "$source_window_name" != "orchestrator" ] || return 0
+  ! _ai_window_is_orchestrator "$source_window_name" || return 0
   [ "$activity" != "$notified_activity" ] || return 0
 
   orchestrator_window_id=""
   while IFS='	' read -r window_row_id window_row_name; do
     [ -n "$window_row_id" ] || continue
-    if [ "$window_row_name" = "orchestrator" ]; then
+    if _ai_window_is_orchestrator "$window_row_name"; then
       orchestrator_window_id="$window_row_id"
       break
     fi
@@ -538,7 +538,10 @@ esac
 "$SCRIPT_DIR/refresh_status_lines.sh" "$pane_id"
 
 # Last, so the state and status lines above are already settled if it fails.
-# No attached client means nobody to show it to.
-if [ "$show_done_toast" = "1" ] && host_pane="$(current_user_pane)"; then
+# No attached client means nobody to show it to. The orchestrator window only
+# toasts while the orchestrator switch has it shown.
+if [ "$show_done_toast" = "1" ] \
+  && _ai_window_participates "$(tmux display-message -p -t "$window_id" '#W')" \
+  && host_pane="$(current_user_pane)"; then
   "$SCRIPT_DIR/show_done_toast.sh" "$pane_id" "$host_pane"
 fi

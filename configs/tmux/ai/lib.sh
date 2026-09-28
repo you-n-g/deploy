@@ -301,6 +301,20 @@ _ai_pending_reason_label() {
     printf -v "$out_var" '%s' "$label"
 }
 
+# The orchestrator window is the one named "orchestrator". Whether it takes part
+# in AI listings and notifications (pickers, status counts, terminal title,
+# window summary, task-done toast) is decided by one switch,
+# _tmuxg_show_orchestrator_enabled below. Ask _ai_window_participates for one
+# window; in a loop over rows, read the switch once and ask
+# _ai_window_is_orchestrator per row.
+_ai_window_is_orchestrator() {
+    [[ "$1" == "orchestrator" ]]
+}
+
+_ai_window_participates() {
+    ! _ai_window_is_orchestrator "$1" || _tmuxg_show_orchestrator_enabled
+}
+
 _tmuxg_show_orchestrator_enabled() {
     local value
 
@@ -356,7 +370,7 @@ _tmuxg_filter_orchestrator_rows() {
     fi
 
     while IFS=$'\t' read -r last_visit sess_win wname pane_id pane_pid wact_raw unread running background pending pane_path attribute; do
-        [[ "$wname" == "orchestrator" ]] && continue
+        _ai_window_is_orchestrator "$wname" && continue
         printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
             "$last_visit" "$sess_win" "$wname" "$pane_id" "$pane_pid" "$wact_raw" "$unread" "$running" "$background" "$pending" "$pane_path" "$attribute"
     done
