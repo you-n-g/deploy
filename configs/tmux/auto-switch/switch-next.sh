@@ -106,11 +106,14 @@ if [[ -n "$skip_pane_id" && "$skip_pane_id" != "$target" ]] \
   done < <(tmux list-panes -a -F '#{pane_id} #{@auto_switch_preview}' | awk '$2=="1"{print $1}')
   # Size (-x/-y) and position (-X/-Y) are both set at creation, so it lands in a
   # fixed spot: floating panes otherwise cascade their position per window with
-  # no way to move them afterwards. ~45% of the window, pinned to the top-right.
+  # no way to move them afterwards. Pinned to the top-right, 45% of the window
+  # high. Width is the previewed pane's own width (capped to the window, leaving
+  # room for the border) so its lines show whole instead of clipped.
   win_w="$(tmux display-message -p -t "$target" '#{window_width}' 2>/dev/null || echo 0)"
   win_h="$(tmux display-message -p -t "$target" '#{window_height}' 2>/dev/null || echo 0)"
-  if (( win_w > 0 && win_h > 0 )); then
-    pw=$(( win_w * 45 / 100 )); ph=$(( win_h * 45 / 100 ))
+  src_w="$(tmux display-message -p -t "$skip_pane_id" '#{pane_width}' 2>/dev/null || echo 0)"
+  if (( win_w > 0 && win_h > 0 && src_w > 0 )); then
+    pw=$(( src_w < win_w - 2 ? src_w : win_w - 2 )); ph=$(( win_h * 45 / 100 ))
     px=$(( win_w - pw - 1 )); py=1
     fp="$(tmux new-pane -d -t "$target" -x "$pw" -y "$ph" -X "$px" -Y "$py" \
       -P -F '#{pane_id}' "$script_dir/preview-prev-pane.sh $skip_pane_id 4" 2>/dev/null || true)"
