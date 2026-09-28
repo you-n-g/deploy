@@ -73,6 +73,7 @@ def _load_claude_model_choices() -> tuple[tuple[str, str], ...]:
 CLAUDE_MODEL_CHOICES = _load_claude_model_choices()
 STATIC_CHOICES = (
     ("lb8121", "lb8121 — shared 8121 endpoint"),
+    ("azure", "azure — Azure OpenAI from keys/gpt.gpg"),
     ("openai", "openai — official OpenAI login (default)"),
     ("xyz", "xyz — XYZ normally, Azure inside Obsidian"),
 )
