@@ -115,8 +115,13 @@ if [[ -n "$skip_pane_id" && "$skip_pane_id" != "$target" ]] \
   if (( win_w > 0 && win_h > 0 && src_w > 0 )); then
     pw=$(( src_w < win_w - 2 ? src_w : win_w - 2 )); ph=$(( win_h * 45 / 100 ))
     px=$(( win_w - pw - 1 )); py=1
+    # Name the previewed pane on its first line: a border title would need the
+    # window-wide pane-border-status, which re-lays out every pane under it.
+    title="$(tmux display-message -p -t "$skip_pane_id" \
+      '↩ 上一个  #{session_name}:#{window_index}.#{pane_index}  #{window_name}')"
+    printf -v preview_cmd '%q ' "$script_dir/preview-prev-pane.sh" "$skip_pane_id" 4 "$title"
     fp="$(tmux new-pane -d -t "$target" -x "$pw" -y "$ph" -X "$px" -Y "$py" \
-      -P -F '#{pane_id}' "$script_dir/preview-prev-pane.sh $skip_pane_id 4" 2>/dev/null || true)"
+      -P -F '#{pane_id}' "$preview_cmd" 2>/dev/null || true)"
     # A cyan border (the global one is grey) sets the preview apart from the
     # panes it floats over.
     [[ -n "$fp" ]] && tmux set-option -p -t "$fp" @auto_switch_preview 1 \; \
