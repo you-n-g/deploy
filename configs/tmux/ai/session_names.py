@@ -33,7 +33,7 @@ def process_snapshot(
     # Only the pane subtrees are needed, and a shared HPC node runs ~10k
     # processes, so walk down from each pane root via /proc/<pid>/task/<pid>/
     # children instead of scanning all of /proc: that scan alone cost ~0.35s
-    # of every `prefix A`. The children file needs CONFIG_PROC_CHILDREN, which
+    # of every `prefix C-a`. The children file needs CONFIG_PROC_CHILDREN, which
     # lib.sh's _find_ai_pid already relies on here.
     processes: Dict[int, Process] = {}
     children: DefaultDict[int, List[int]] = defaultdict(list)
