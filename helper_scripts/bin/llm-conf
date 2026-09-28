@@ -138,8 +138,6 @@ def clauder_provider_choices() -> tuple[tuple[str, str], ...]:
         base_url = settings.get("env", {}).get("ANTHROPIC_BASE_URL", "<no base url>")
         model = settings.get("model") or "<no default model>"
         choices.append((provider_id, f"{provider_id} — {base_url}  model {model}"))
-    if not choices:
-        raise ToolError(f"no provider settings files in {CLAUDER_PROVIDER_DIR}")
     choices.append(("inherit", "inherit — remove the selected-scope override"))
     return tuple(choices)
 
