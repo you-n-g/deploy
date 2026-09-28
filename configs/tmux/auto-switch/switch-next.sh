@@ -119,7 +119,8 @@ if [[ -n "$skip_pane_id" && "$skip_pane_id" != "$target" ]] \
     # window-wide pane-border-status, which re-lays out every pane under it.
     title="$(tmux display-message -p -t "$skip_pane_id" \
       '↩ 上一个  #{session_name}:#{window_index}.#{pane_index}  #{window_name}')"
-    printf -v preview_cmd '%q ' "$script_dir/preview-prev-pane.sh" "$skip_pane_id" 4 "$title"
+    # -k: any keystroke closes it early (and still reaches the pane).
+    printf -v preview_cmd '%q ' "$script_dir/preview-prev-pane.sh" -k "$skip_pane_id" 4 "$title"
     fp="$(tmux new-pane -d -t "$target" -x "$pw" -y "$ph" -X "$px" -Y "$py" \
       -P -F '#{pane_id}' "$preview_cmd" 2>/dev/null || true)"
     # A cyan border (the global one is grey) sets the preview apart from the
