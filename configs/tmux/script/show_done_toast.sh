@@ -17,6 +17,9 @@ while read -r pane tag; do
   [[ "$tag" == "1" ]] && tmux kill-pane -t "$pane"
 done < <(tmux list-panes -a -F '#{pane_id} #{@ai_done_toast}')
 
+# prefix + M-n jumps here after the toast is gone.
+tmux set-option -g @last_done_toast_pane "$done_pane"
+
 title="$(tmux display-message -p -t "$done_pane" \
   '✓ 完成  #{session_name}:#{window_index}.#{pane_index}  #{window_name}#{?@ai_agent_attribute, — #{@ai_agent_attribute},}')"
 read -r win_w win_h < <(tmux display-message -p -t "$host_pane" '#{window_width} #{window_height}')
