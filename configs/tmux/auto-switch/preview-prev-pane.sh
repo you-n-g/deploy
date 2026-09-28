@@ -32,9 +32,15 @@ for (( i = 0; i < frames; i++ )); do
   # full-width grey bar) reaches the edge as in the real window instead of being
   # trimmed. capture-pane leaves a line's SGR (e.g. a grey background) active at
   # the newline, which would bleed onto the next line here (unlike the real pane,
-  # where each cell is independent), so reset SGR at every line end. A vanished
+  # where each cell is independent), so reset SGR at every line end. Trailing
+  # blank lines (a fresh TUI fills only the top of a tall pane) are dropped so
+  # the bottom of the preview is the newest content, not empty rows. A vanished
   # pane ends the preview early.
-  frame="$(tmux capture-pane -e -N -p -t "$pane" 2>/dev/null | sed $'s/$/\033[0m/')" || break
+  frame="$(tmux capture-pane -e -N -p -t "$pane" 2>/dev/null \
+    | awk '{ line[NR] = $0; s = $0; gsub(/\033\[[0-9;:]*[A-Za-z]/, "", s)
+             if (s ~ /[^[:space:]]/) last = NR }
+           END { for (i = 1; i <= last; i++) print line[i] }' \
+    | sed $'s/$/\033[0m/')" || break
   if [[ -n "$title" ]]; then
     rows="$(tmux display-message -p -t "$TMUX_PANE" '#{pane_height}')"
     frame="$(printf '%s\n' "$frame" | tail -n "$(( rows - 1 ))")"
