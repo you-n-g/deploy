@@ -429,6 +429,7 @@ notify_orchestrator_on_idle() {
 log_ai_agent_state
 log_ai_agent_prompt
 
+show_done_toast=0
 case "$state" in
   init)
     # Codex/Claude SessionStart can fire for resume/compact/status-bridge style
@@ -483,6 +484,10 @@ case "$state" in
       if is_window_visible; then
         tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
       else
+        # A turn finishing out of sight: toast it once, on the unread edge, so
+        # a second idle signal for the same turn does not pop it again.
+        [ "$(tmux show -pv -t "$pane_id" @ai_agent_unread 2>/dev/null || true)" = "1" ] \
+          || show_done_toast=1
         tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
       fi
       ensure_ai_agent_attribute
@@ -531,3 +536,9 @@ case "$state" in
 esac
 
 "$SCRIPT_DIR/refresh_status_lines.sh" "$pane_id"
+
+# Last, so the state and status lines above are already settled if it fails.
+# No attached client means nobody to show it to.
+if [ "$show_done_toast" = "1" ] && host_pane="$(current_user_pane)"; then
+  "$SCRIPT_DIR/show_done_toast.sh" "$pane_id" "$host_pane"
+fi
