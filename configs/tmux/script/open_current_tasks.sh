@@ -92,6 +92,21 @@ own_line="$(grep -n -m1 -F \
   -e "tmux://$SESSION:${target_index%%.*}]]" \
   "$FILE" | cut -d: -f1 || true)"
 
+# Make the current TMA stand out, not just the cursor line, at two strengths:
+# the invoking pane's own entries (bright, ▶) and the rest of its window --
+# sibling panes or a window-only link (faint, ▷). "SESSION:W." cannot match
+# window W0..W9x, so fixed strings are enough.
+pane_lines="$(grep -n -F -e "tmux://$SESSION:$target_index]]" "$FILE" \
+  | cut -d: -f1 | paste -sd, - || true)"
+window_lines="$(grep -n -F \
+  -e "tmux://$SESSION:${target_index%%.*}." \
+  -e "tmux://$SESSION:${target_index%%.*}]]" \
+  "$FILE" | grep -v -F -e "tmux://$SESSION:$target_index]]" \
+  | cut -d: -f1 | paste -sd, - || true)"
+# Extmarks follow the text, so the marks stay on their entries if lines are
+# edited above them. Set after the colorscheme so its groups are not reset.
+HIGHLIGHT_LUA="local ns = vim.api.nvim_create_namespace('current_tma') vim.api.nvim_set_hl(0, 'CurrentTmaPane', { bg = '#3d5a80', bold = true }) vim.api.nvim_set_hl(0, 'CurrentTmaWindow', { bg = '#283347' }) local function mark(lines, group, sign, sign_group) for _, l in ipairs(lines) do vim.api.nvim_buf_set_extmark(0, ns, l - 1, 0, { line_hl_group = group, sign_text = sign, sign_hl_group = sign_group }) end end mark({ $pane_lines }, 'CurrentTmaPane', '▶', 'DiagnosticWarn') mark({ $window_lines }, 'CurrentTmaWindow', '▷', 'Comment')"
+
 # Close the viewer as soon as the user moves elsewhere inside tmux (other pane,
 # window or session), so stale viewers never pile up. tmux forwards focus
 # (focus-events on), but FocusLost also fires when the outer terminal loses
@@ -118,6 +133,7 @@ fp="$(tmux new-pane -t "$PANE_ID" -c "$REPO_ROOT" \
     '+silent doautocmd NavMode BufWinEnter nav.md' \
     '+nnoremap <buffer> q <Cmd>silent! wall <Bar> qa!<CR>' \
     "+lua $AUTO_CLOSE_LUA" \
+    "+lua $HIGHLIGHT_LUA" \
     "+${own_line:-1}" \
     "$FILE")"
 tmux set-option -p -t "$fp" @current_tasks 1
