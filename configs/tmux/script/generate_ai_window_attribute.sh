@@ -72,6 +72,25 @@ Pane ID: ${pane_id}
 tmux -S '${tmux_socket}' capture-pane -ept '${pane_id}'
 EOF
 
+# llm-conf keeps the provider/model choice in tmux: a pane option, then the
+# session and the global environment. The agent below runs with TMUX unset (so
+# it does not act on the described pane), which hides those from codexr/clauder
+# and leaves them on env.local's shell defaults. Look them up here for the
+# described pane, in the same order the wrappers use. Empty = nothing set in
+# tmux, and the wrapper's own default applies.
+tmux_setting() {
+  local option="$1" variable="$2" value
+
+  value="$(tmux show-option -pqv -t "$pane_id" "$option")"
+  if [ -z "$value" ]; then
+    # show-environment fails for a variable that is not set at that scope.
+    value="$(tmux show-environment -t "$pane_id" "$variable" 2>/dev/null || true)"
+    case "$value" in "$variable="*) ;; *) value="$(tmux show-environment -g "$variable" 2>/dev/null || true)" ;; esac
+    case "$value" in "$variable="*) value="${value#*=}" ;; *) value="" ;; esac
+  fi
+  printf '%s\n' "$value"
+}
+
 # Run through interactive zsh so rcfile's codexr/clauder wrapper owns
 # provider/profile selection. The prompt is fed on stdin and the attribute is
 # collected in $output_file. The shell's own stdout is discarded: an interactive
@@ -83,17 +102,26 @@ run_agent() {
     # stdin and prints the answer, so redirect that inside the shell to keep the
     # banner out (codex does the same thing via its own `-o`). The AI_ATTRIBUTE_*
     # reasoning and verbosity knobs are codex-only, so they don't apply here.
+    # The llm-conf choices are set inside the shell, after its rc has loaded
+    # env.local, which would otherwise overwrite them. TMUX_AI_MODEL is
+    # clauder's top-priority model source.
     # shellcheck disable=SC2016
     env -u TMUX -u TMUX_PANE zsh -ic \
-      'cd -- "$2" || exit 1; clauder -p --output-format text > "$1"' \
-      -- "$output_file" "$agent_cwd" < "$prompt_file" >/dev/null 2>"$error_file"
+      'cd -- "$2" || exit 1; if [[ -n "$3" ]]; then export CLAUDER_PROVIDER="$3"; fi; if [[ -n "$4" ]]; then export TMUX_AI_MODEL="$4"; fi; clauder -p --output-format text > "$1"' \
+      -- "$output_file" "$agent_cwd" \
+      "$(tmux_setting @clauder_provider CLAUDER_PROVIDER)" \
+      "$(tmux_setting @claude_model TMUX_CLAUDE_MODEL)" \
+      < "$prompt_file" >/dev/null 2>"$error_file"
   else
     # AI_ATTRIBUTE_* are opt-in overrides; unset means use the same defaults as
-    # interactive codexr.
+    # interactive codexr. The llm-conf provider is set inside the shell, as for
+    # clauder above.
     # shellcheck disable=SC2016
     env -u TMUX -u TMUX_PANE zsh -ic \
-      'args=(--disable hooks exec --skip-git-repo-check -C "$2" -o "$1"); if [[ -n "$3" ]]; then args+=(-c "model_reasoning_effort=\"$3\""); fi; if [[ -n "$4" ]]; then args+=(-c "model_verbosity=\"$4\""); fi; args+=(-); codexr "${args[@]}"' \
-      -- "$output_file" "$agent_cwd" "$ai_attribute_reasoning_effort" "$ai_attribute_verbosity" < "$prompt_file" >/dev/null 2>"$error_file"
+      'if [[ -n "$5" ]]; then export CODEXR_PROVIDER="$5"; fi; args=(--disable hooks exec --skip-git-repo-check -C "$2" -o "$1"); if [[ -n "$3" ]]; then args+=(-c "model_reasoning_effort=\"$3\""); fi; if [[ -n "$4" ]]; then args+=(-c "model_verbosity=\"$4\""); fi; args+=(-); codexr "${args[@]}"' \
+      -- "$output_file" "$agent_cwd" "$ai_attribute_reasoning_effort" "$ai_attribute_verbosity" \
+      "$(tmux_setting @codexr_provider CODEXR_PROVIDER)" \
+      < "$prompt_file" >/dev/null 2>"$error_file"
   fi
 }
 
