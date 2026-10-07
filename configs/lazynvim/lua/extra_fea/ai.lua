@@ -1,7 +1,15 @@
 --[[
-create a shortcuts like <localleader>c to send the select content or current line to tmux session.
-try to find if we have an AI window in current session, if so, send the content to AI.
-otherwise, wait input for user to input the session name..
+<localleader>c<what><where>: send <what> to <where> (a tmux AI pane).
+  what:  r  raw current line / visual selection
+         e  explain: the block with its @file (the "focus" template)
+         E  the block with a template picked from a list
+         p  @path of this file
+         t  a request to capture this editor's tmux pane
+  where: a  the AI pane of this session (picked when there are several; asks for
+            a target when there is none)
+         l  the AI pane visited last, in any session
+  A lowercase <where> pastes and switches there; uppercase pastes, presses
+  Enter and stays here. E.g. \cel sends the block to the last AI pane.
 --]]
 local M = {}
 local utils = require("navigate-note.utils")
@@ -205,67 +213,70 @@ local function pick_template(callback)
   end
 end
 
-local function resolve_and_send(template, raw_content, send)
-  if template == nil or template == "" then
-    send(raw_content)
-    return
-  end
-  if type(template) == "string" then
-    local fn = templates[template]
-    if not fn then
-      print("Unknown template: " .. template)
-      return
-    end
-    send(fn(raw_content))
-    return
-  end
-  pick_template(function(fn)
-    if not fn then return end
-    send(fn(raw_content))
-  end)
-end
+local contents = {
+  r = {
+    group = "raw：当前行/选中原文",
+    short = "raw",
+    get = function(callback) callback(get_current_or_visual_content()) end,
+  },
+  e = {
+    group = "explain：@文件 + 代码块",
+    short = "explain",
+    get = function(callback) callback(templates.focus(get_current_or_visual_content())) end,
+  },
+  E = {
+    group = "挑模板：代码块套模板",
+    short = "模板",
+    get = function(callback)
+      local content = get_current_or_visual_content()
+      pick_template(function(fn)
+        if fn then callback(fn(content)) end
+      end)
+    end,
+  },
+  p = {
+    group = "path：当前文件 @路径",
+    short = "@path",
+    get = function(callback) callback("@" .. get_relative_path()) end,
+  },
+  t = {
+    group = "tmux：请 AI capture 本 pane",
+    short = "capture 本 pane",
+    get = function(callback)
+      local tmux_target = get_current_tmux_target_path()
+      if not tmux_target then
+        print("No current tmux target found")
+        return
+      end
+      callback(string.format("请capture我的Tmux的这个pane[%s]的内容", tmux_target))
+    end,
+  },
+}
 
-function M.send_path_to_ai()
-  local relative_path = get_relative_path()
-  get_target_tmux(function(target_session, target_window, target_pane)
-    tmux.send_to_tmux("@" .. relative_path, target_session, target_window, target_pane)
-  end)
-end
+local destinations = {
+  a = { desc = "本 session 的 AI", resolve = get_target_tmux },
+  l = {
+    desc = "最近访问的 AI",
+    resolve = function(callback)
+      local session, window, pane = get_last_visited_ai_pane()
+      if not session then
+        print("No last visited AI pane found")
+        return
+      end
+      callback(session, window, pane)
+    end,
+  },
+}
 
-function M.send_current_tmux_target_to_ai()
-  local tmux_target = get_current_tmux_target_path()
-  if not tmux_target then
-    print("No current tmux target found")
-    return
-  end
-
-  get_target_tmux(function(target_session, target_window, target_pane)
-    tmux.send_to_tmux(string.format("请capture我的Tmux的这个pane[%s]的内容", tmux_target), target_session, target_window, target_pane)
-  end)
-end
-
-function M.send_to_ai(template, post_action)
-  local content = get_current_or_visual_content()
-  resolve_and_send(template, content, function(final_content)
-    get_target_tmux(function(target_session, target_window, target_pane)
-      tmux.send_to_tmux(final_content, target_session, target_window, target_pane, post_action)
+-- The content is read first, while a visual selection is still active; the
+-- destination may then prompt or pick asynchronously.
+function M.send(what, where, post_action)
+  contents[what].get(function(content)
+    destinations[where].resolve(function(session, window, pane)
+      tmux.send_to_tmux(content, session, window, pane, post_action)
     end)
   end)
 end
-
-function M.send_to_last_pane(template, post_action)
-  local session, window, pane = get_last_visited_ai_pane()
-  if not session then
-    print("No last visited AI pane found")
-    return
-  end
-  local content = get_current_or_visual_content()
-  resolve_and_send(template, content, function(final_content)
-    tmux.send_to_tmux(final_content, session, window, pane, post_action)
-  end)
-end
-
-M.send_to_last_window = M.send_to_last_pane
 
 function M.send_literal_to_ai(content, post_action)
   get_target_tmux(function(target_session, target_window, target_pane)
@@ -275,17 +286,20 @@ end
 
 
 function M.setup()
-  vim.keymap.set({ "n", "v" }, "<Localleader>c", function() end, { desc = "Send to AI/Tmux" })
-  -- when it contains chinese, "<Localleader>cc" does not work. But  "<Localleader>ce" works
-  vim.keymap.set({ "n", "v" }, "<Localleader>c<Localleader>", function() M.send_literal_to_ai("", "enter") end, { desc = "Send Enter to AI/Tmux" })
-  vim.keymap.set({ "n", "v" }, "<Localleader>cc", function() M.send_to_ai() end, { desc = "Send to AI/Tmux (Raw)" })
-  vim.keymap.set({ "n", "v" }, "<Localleader>cC", function() M.send_to_ai(nil, "enter") end, { desc = "Send to AI/Tmux (Raw, no switch)" })
-  vim.keymap.set({ "n", "v" }, "<Localleader>ce", function() M.send_to_ai("focus") end, { desc = "Send to AI/Tmux (focus template)" })
-  vim.keymap.set({ "n", "v" }, "<Localleader>cE", function() M.send_to_ai(true) end, { desc = "Send to AI/Tmux (pick template)" })
-  vim.keymap.set({ "n", "v" }, "<Localleader>cp", function() M.send_path_to_ai() end, { desc = "Send Path to AI/Tmux" })
-  vim.keymap.set({ "n", "v" }, "<Localleader>ct", function() M.send_current_tmux_target_to_ai() end, { desc = "Send current tmux target to AI/Tmux" })
-  vim.keymap.set({ "n", "v" }, "<Localleader>cl", function() M.send_to_last_pane() end, { desc = "Send to last tmux pane in current session (Raw, line/visual)" })
-  vim.keymap.set({ "n", "v" }, "<Localleader>cL", function() M.send_to_last_pane(nil, "enter") end, { desc = "Send to last tmux pane (Raw, no switch)" })
+  vim.keymap.set({ "n", "v" }, "<Localleader>c<Localleader>", function() M.send_literal_to_ai("", "enter") end, { desc = "给本 session 的 AI 发回车" })
+  -- <Localleader>c<what><where>, see the header. Uppercase <where> submits.
+  -- Name the \c<what> groups for which-key, which otherwise only shows
+  -- "+4 keymaps" there.
+  local groups = { { "<Localleader>c", group = "发送到 AI", mode = { "n", "v" } } }
+  for what, content in pairs(contents) do
+    table.insert(groups, { "<Localleader>c" .. what, group = content.group, mode = { "n", "v" } })
+    for where, destination in pairs(destinations) do
+      local desc = content.short .. " → " .. destination.desc
+      vim.keymap.set({ "n", "v" }, "<Localleader>c" .. what .. where, function() M.send(what, where) end, { desc = desc .. "，跳过去" })
+      vim.keymap.set({ "n", "v" }, "<Localleader>c" .. what .. where:upper(), function() M.send(what, where, "enter") end, { desc = desc .. "，⏎ 提交，留在这里" })
+    end
+  end
+  require("which-key").add(groups)
   -- Reads the prompt log the tmux state tracker appends to, not the agents'
   -- own session files: it already has every pane's prompts in one place, in
   -- time order, so there is nothing to merge and nothing to guess about which
@@ -324,11 +338,11 @@ function M.setup()
         end,
       },
     })
-  end, { desc = "Pick AI prompts (fzf, multi-select) and insert below" })
-  vim.keymap.set({ "n" }, "<Localleader>cH", ":r !ai-hist -n ", { desc = "Insert all AI history below" })
+  end, { desc = "挑历史 prompt 插入到下方（fzf 多选）" })
+  vim.keymap.set({ "n" }, "<Localleader>cH", ":r !ai-hist -n ", { desc = "插入全部 AI 历史到下方" })
 
   for i = 1, 4 do
-    vim.keymap.set({ "n", "v" }, "<Localleader>c" .. i, function() M.send_literal_to_ai(tostring(i), "enter") end, { desc = "Send " .. i .. " to AI" })
+    vim.keymap.set({ "n", "v" }, "<Localleader>c" .. i, function() M.send_literal_to_ai(tostring(i), "enter") end, { desc = "给本 session 的 AI 发 " .. i .. " 并回车" })
   end
 end
 
