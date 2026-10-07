@@ -8,6 +8,8 @@
   where: a  the AI pane of this session (picked when there are several; asks for
             a target when there is none)
          l  the AI pane visited last, in any session
+         f  the floating AI pane of this window, created (and waited for)
+            when there is none
   A lowercase <where> pastes and switches there; uppercase pastes, presses
   Enter and stays here. E.g. \cel sends the block to the last AI pane.
 --]]
@@ -264,6 +266,28 @@ local destinations = {
         return
       end
       callback(session, window, pane)
+    end,
+  },
+  f = {
+    desc = "本窗口的浮动 AI（没有就新建）",
+    resolve = function(callback)
+      local host = vim.env.TMUX_PANE
+      if not host or host == "" then
+        print("Not inside a tmux pane")
+        return
+      end
+      -- Async: creating the pane waits seconds for the agent to start.
+      local script = vim.fn.expand("~/deploy/configs/tmux/ai/ensure_float_ai_pane.sh")
+      vim.system({ script, host }, { text = true }, function(res)
+        vim.schedule(function()
+          if res.code ~= 0 then
+            vim.notify("Floating AI pane failed: " .. vim.trim(res.stderr or ""), vim.log.levels.ERROR)
+            return
+          end
+          local target = vim.trim(vim.fn.system({ "tmux", "display-message", "-p", "-t", vim.trim(res.stdout), "#S\t#I\t#P" }))
+          callback(target:match("^([^\t]+)\t([^\t]+)\t(.+)$"))
+        end)
+      end)
     end,
   },
 }
