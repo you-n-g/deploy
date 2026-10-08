@@ -131,6 +131,11 @@ async def send_loop(host: str, port: int, batch: bool) -> None:
             ws = await websockets.connect(url, open_timeout=60)
             await ws.send(msg)
 
+    async def flush_pending() -> None:
+        await send_message(" ".join(pending))
+        pending.clear()
+        update_prompt()
+
     prompt_task = asyncio.create_task(read_message())
     try:
         print("type text, Ctrl-G edits in $EDITOR, Enter sends; Ctrl-D exits")
@@ -139,26 +144,20 @@ async def send_loop(host: str, port: int, batch: bool) -> None:
                 if pending:
                     done, _ = await asyncio.wait({prompt_task}, timeout=max(0, deadline - loop.time()))
                     if not done:
-                        if loop.time() < deadline:
-                            continue
                         if session and session.default_buffer.text:
                             deadline = loop.time() + BATCH_DELAY
-                            continue
-                        await send_message(" ".join(pending))
-                        pending.clear()
-                        update_prompt()
+                        elif loop.time() >= deadline:
+                            await flush_pending()
                         continue
                 msg = await prompt_task
             except EOFError:
                 if pending:
-                    await send_message(" ".join(pending))
+                    await flush_pending()
                 return
             prompt_task = asyncio.create_task(read_message())
             if not msg.strip():
                 if pending:
-                    await send_message(" ".join(pending))
-                    pending.clear()
-                    update_prompt()
+                    await flush_pending()
                 continue
             if batch:
                 pending.append(msg)
