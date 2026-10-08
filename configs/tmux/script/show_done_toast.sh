@@ -26,7 +26,16 @@ read -r win_w win_h < <(tmux display-message -p -t "$host_pane" '#{window_width}
 pw=$(( win_w * 45 / 100 )); ph=$(( win_h * 45 / 100 ))
 px=$(( win_w - pw - 1 )); py=1
 printf -v cmd '%q ' "$preview" "$done_pane" 5 "$title"
-toast="$(tmux new-pane -d -t "$host_pane" -x "$pw" -y "$ph" -X "$px" -Y "$py" -P -F '#{pane_id}' "$cmd")"
+# A zoomed window gets no float (new_float_pane.sh exits 3; unzooming would
+# break the view the user chose), so the title goes to the status line instead.
+rc=0
+toast="$("$(dirname -- "${BASH_SOURCE[0]}")/new_float_pane.sh" --skip-if-zoomed "$host_pane" \
+  -d -x "$pw" -y "$ph" -X "$px" -Y "$py" "$cmd")" || rc=$?
+case "$rc" in
+  0) ;;
+  3) tmux display-message -d 5000 -t "$host_pane" "$title  (prefix M-n 跳转)"; exit 0 ;;
+  *) exit "$rc" ;;
+esac
 # Green border: apart from the grey pane borders and the cyan switch preview.
 tmux set-option -p -t "$toast" @ai_done_toast 1 \; \
   set-option -p -t "$toast" pane-border-style 'fg=colour46,bold'

@@ -45,3 +45,9 @@ set -g @jump-history-limit 9
 ```sh
 python3 -m unittest discover -s configs/tmux/tests -v
 ```
+
+# 浮窗与 zoom
+
+tmux 3.7b 有个 bug：在 zoom 状态的 window 里用 `new-pane` 建的 floating pane，之后无论是进程退出、`kill-pane`，还是取消 zoom 后再关闭，server 都会在 `layout_destroy_cell` 里段错误退出，所有 session 一起没了。先建浮窗再 zoom 不会触发。
+
+所有浮窗都经 `script/new_float_pane.sh` 创建，它是唯一调用 `tmux new-pane` 的地方（`tests/test_float_panes.py` 会拒绝别处的直接调用）：默认先取消 zoom 再建；后台弹出的（完成 toast、auto-switch 切换预览）加 `--skip-if-zoomed`，zoom 时不建、退出码 3，toast 改成状态栏消息。tmux 修复前不要绕过它。

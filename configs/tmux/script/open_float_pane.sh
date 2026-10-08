@@ -27,4 +27,6 @@ read -r win_w win_h < <(tmux display-message -p -t "$target" '#{window_width} #{
 printf -v cmd '%q ' "$@"
 cmd="$cmd; rc=\$?; if [ \$rc -ne 0 ]; then printf '\\nexited with %s, press Enter to close' \$rc; read -r _; fi"
 # One column/row of border on each side.
-tmux new-pane -t "$target" -x "$(( win_w - 2 ))" -y "$(( win_h - 2 ))" -X 1 -Y 1 "$cmd" "${mark[@]}"
+# Its output is the new pane id; run-shell would show it in a view pane.
+"$(dirname -- "${BASH_SOURCE[0]}")/new_float_pane.sh" "$target" \
+  -x "$(( win_w - 2 ))" -y "$(( win_h - 2 ))" -X 1 -Y 1 "$cmd" "${mark[@]}" >/dev/null
