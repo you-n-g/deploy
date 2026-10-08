@@ -20,7 +20,7 @@ import websockets
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 443
 RECEIVER = "__msg_bridge_receiver__"
-BATCH_DELAY = 0.25
+BATCH_DELAY = 0.5
 app = typer.Typer(add_completion=False, help="Tiny sender / bridge / receiver for tmux message input")
 
 
@@ -138,7 +138,7 @@ async def send_loop(host: str, port: int, batch: bool) -> None:
 
     prompt_task = asyncio.create_task(read_message())
     try:
-        print("type text, Ctrl-G edits in $EDITOR, Enter sends; Ctrl-D exits")
+        print(f"type text, Ctrl-G edits in $EDITOR, Enter {'queues' if batch else 'sends'}; Ctrl-D exits")
         while True:
             try:
                 if pending:
@@ -157,7 +157,7 @@ async def send_loop(host: str, port: int, batch: bool) -> None:
             prompt_task = asyncio.create_task(read_message())
             if not msg.strip():
                 if pending:
-                    await flush_pending()
+                    deadline = loop.time() + BATCH_DELAY
                 continue
             if batch:
                 pending.append(msg)
@@ -224,11 +224,11 @@ def b(
     asyncio.run(bridge_loop(host, port))
 
 
-@app.command("s", help="send one-line messages, batching input within 250 ms by default")
+@app.command("s", help="send one-line messages after 500 ms of empty input by default")
 def s(
     host: Annotated[str, typer.Option("--host", "-H")] = DEFAULT_HOST,
     port: Annotated[int, typer.Option("--port", "-P")] = DEFAULT_PORT,
-    batch: Annotated[bool, typer.Option("--batch/--no-batch", help="Join messages entered within 250 ms into one line")] = True,
+    batch: Annotated[bool, typer.Option("--batch/--no-batch", help="Join messages after 500 ms of empty input")] = True,
 ) -> None:
     asyncio.run(send_loop(host, port, batch))
 
