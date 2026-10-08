@@ -9,7 +9,8 @@ import subprocess
 
 STATE_OPTION = "@jump-history-state"
 STATUS_OPTION = "@jump-history-status"
-CLIENT_FORMAT = "#{client_name}\t#{client_pid}:#{client_created}\t#{session_id}:.#{pane_id}"
+CLIENT_FORMAT = ("#{client_name}\t#{client_pid}:#{client_created}\t#{session_id}:.#{pane_id}"
+                 "\t#{@jump-history-skip}")
 
 
 def status_format(histories):
@@ -78,9 +79,12 @@ class History:
         raw = self.tmux("show-option", "-gqv", STATE_OPTION)
         histories = json.loads(raw) if raw else {}
         clients = {}
+        skipped = set()
         for row in self.tmux("list-clients", "-F", CLIENT_FORMAT).splitlines():
-            name, identity, position = row.split("\t")
+            name, identity, position, skip = row.split("\t")
             clients[name] = (identity, position)
+            if skip == "1":
+                skipped.add(position)
 
         # Disconnected clients have no history. PID + creation time avoids
         # giving a newly attached terminal the history of a reused TTY name.
@@ -88,7 +92,10 @@ class History:
         histories = {key: value for key, value in histories.items() if key in active}
         for identity, position in clients.values():
             state = histories.setdefault(identity, {"entries": [], "index": -1})
-            self.observe(state, position, limit)
+            # A pane marked @jump-history-skip (the prefix+C-a sequence editor)
+            # is a transient overlay; recording it would push real visits out.
+            if position not in skipped:
+                self.observe(state, position, limit)
 
         if action != "record":
             if client not in clients:
@@ -129,7 +136,8 @@ class History:
                 if target in live and target != current:
                     self.switch(client, current, target)
                     state["index"] = index
-                    self.leave(state, current, limit)
+                    if current not in skipped:
+                        self.leave(state, current, limit)
                     break
                 index += step
             else:

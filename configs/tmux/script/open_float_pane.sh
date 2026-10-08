@@ -6,15 +6,25 @@
 # dropped, while a floating pane is a real pane and gets the translated Escape.
 # A failed command holds the pane open so its error stays readable, like -EE.
 #
-# usage: open_float_pane.sh TARGET_PANE COMMAND [ARG...]
+# --skip-jump-history marks the pane @jump-history-skip so prefix+C-[ / C-]
+# never record it. The mark is set in the same tmux command as new-pane, so it
+# is already there when the pane-changed hook's jump_history.py reads it.
+#
+# usage: open_float_pane.sh [--skip-jump-history] TARGET_PANE COMMAND [ARG...]
 set -euo pipefail
 
-target="${1:?usage: open_float_pane.sh TARGET_PANE COMMAND [ARG...]}"
+usage="usage: open_float_pane.sh [--skip-jump-history] TARGET_PANE COMMAND [ARG...]"
+mark=()
+if [[ "${1:-}" == "--skip-jump-history" ]]; then
+  mark=(';' set-option -p @jump-history-skip 1)
+  shift
+fi
+target="${1:?$usage}"
 shift
-(( $# > 0 )) || { echo "usage: open_float_pane.sh TARGET_PANE COMMAND [ARG...]" >&2; exit 2; }
+(( $# > 0 )) || { echo "$usage" >&2; exit 2; }
 
 read -r win_w win_h < <(tmux display-message -p -t "$target" '#{window_width} #{window_height}')
 printf -v cmd '%q ' "$@"
 cmd="$cmd; rc=\$?; if [ \$rc -ne 0 ]; then printf '\\nexited with %s, press Enter to close' \$rc; read -r _; fi"
 # One column/row of border on each side.
-tmux new-pane -t "$target" -x "$(( win_w - 2 ))" -y "$(( win_h - 2 ))" -X 1 -Y 1 "$cmd"
+tmux new-pane -t "$target" -x "$(( win_w - 2 ))" -y "$(( win_h - 2 ))" -X 1 -Y 1 "$cmd" "${mark[@]}"
