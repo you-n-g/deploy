@@ -15,6 +15,9 @@ FIELD_SEP = "\t"
 # the sequence is active, and sequence.sh folds it into the saved snapshot.
 NOTE_SEPARATOR = "---"
 NOTE_OPTION = "@auto_switch_ranked_panes_note"
+# The note lives only in tmux memory; this disk copy is just so it can be
+# recovered by hand after a tmux crash. Nothing reads it back.
+NOTE_BACKUP = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "tmux/auto-switch-note.md"
 PANE_FORMAT = FIELD_SEP.join(
     [
         "#{pane_id}",
@@ -55,6 +58,19 @@ def write_note(note: str) -> None:
         tmux_run("set-option", "-gq", NOTE_OPTION, note)
     else:
         subprocess.run(["tmux", "set-option", "-guq", NOTE_OPTION])
+
+
+def backup_note(note: str) -> None:
+    """Keep the last non-empty note on disk. An empty note is not written: after
+    a crash the fresh tmux has none, and saving the editor then must not wipe
+    the copy that is there to recover it."""
+    note = note.strip("\n")
+    if not note:
+        return
+    NOTE_BACKUP.parent.mkdir(parents=True, exist_ok=True)
+    tmp = NOTE_BACKUP.with_name(NOTE_BACKUP.name + ".tmp")
+    tmp.write_text(note + "\n")
+    os.replace(tmp, NOTE_BACKUP)
 
 
 def encode_note(note: str) -> str:
@@ -318,6 +334,7 @@ def apply_edit_file(path: str) -> str:
     panes = load_panes()
     ranked, pending_reasons, attributes, note = parse_edit_file(path, panes)
     write_note(note)
+    backup_note(note)
     refresh_script = Path.home() / "deploy/configs/tmux/script/refresh_status_lines.sh"
 
     for pane in ranked:
