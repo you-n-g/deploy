@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Move PANE into the window of the client's previously visited pane in another
-# window -- the same "previous" as prefix + C-l and C-[ (jump_history.py), so
+# window -- the same "previous" as prefix + t p and C-[ (jump_history.py), so
 # one rule covers both same-session and cross-session joins. ORIENTATION picks
 # the split: side-by-side or stacked. The moved pane ends up focused.
 #
