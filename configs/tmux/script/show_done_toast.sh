@@ -26,14 +26,15 @@ read -r win_w win_h < <(tmux display-message -p -t "$host_pane" '#{window_width}
 pw=$(( win_w * 45 / 100 )); ph=$(( win_h * 45 / 100 ))
 px=$(( win_w - pw - 1 )); py=1
 printf -v cmd '%q ' "$preview" "$done_pane" 5 "$title"
-# A zoomed window gets no float (new_float_pane.sh exits 3; unzooming would
-# break the view the user chose), so the title goes to the status line instead.
+# A zoomed window gets no float (unzooming would break the view the user
+# chose): new_float_pane.sh shows the title on the status line and exits 3.
 rc=0
-toast="$("$(dirname -- "${BASH_SOURCE[0]}")/new_float_pane.sh" --skip-if-zoomed "$host_pane" \
+toast="$("$(dirname -- "${BASH_SOURCE[0]}")/new_float_pane.sh" \
+  --zoomed-message "$title  (prefix M-n 跳转)" "$host_pane" \
   -d -x "$pw" -y "$ph" -X "$px" -Y "$py" "$cmd")" || rc=$?
 case "$rc" in
   0) ;;
-  3) tmux display-message -d 5000 -t "$host_pane" "$title  (prefix M-n 跳转)"; exit 0 ;;
+  3) exit 0 ;;
   *) exit "$rc" ;;
 esac
 # Green border: apart from the grey pane borders and the cyan switch preview.

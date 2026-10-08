@@ -85,6 +85,13 @@ class NewFloatPaneTest(unittest.TestCase):
         self.assertEqual(self.floats(), [])
         self.assertTrue(self.zoomed())
 
+    def test_zoomed_message_creates_nothing_and_shows_the_text(self):
+        result = self.run_script("--zoomed-message", "hello zoom", self.base, "-d", "-x", "30",
+                                 "-y", "8", "-X", "1", "-Y", "1", "sleep 5")
+        self.assertEqual(result.returncode, 3)
+        self.assertEqual(self.floats(), [])
+        self.assertTrue(self.zoomed())
+
     def test_unzoomed_window_gets_the_float(self):
         self.tmux("resize-pane", "-Z", "-t", self.base)
         result = self.run_script("--skip-if-zoomed", self.base, "-d", "-x", "30", "-y", "8",
