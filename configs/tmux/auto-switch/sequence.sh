@@ -71,7 +71,6 @@ shift
 
 ranked_option="@auto_switch_ranked_panes"
 saved_option="@auto_switch_saved_ranked_panes"
-note_option="@auto_switch_ranked_panes_note"
 target_pane=""
 edit_focus_target=""
 saved_index=""
@@ -172,19 +171,17 @@ saved_ranked_panes() {
 }
 
 # The note that belongs to the active sequence. Multi-line, stored raw: unlike
-# a saved row this option holds one value, so newlines need no escaping.
+# a saved row this option holds one value, so newlines need no escaping. Read
+# through the helper, which falls back to the note's disk copy when the option
+# is empty after a tmux crash.
 current_note() {
-  tmux show-option -gqv "$note_option" 2>/dev/null || true
+  run_sequence_edit note
 }
 
+# Goes through the helper so the note's disk copy (what the editor falls back to
+# after a tmux crash) changes with it.
 set_current_note() {
-  local note="$1"
-
-  if [[ -n "$note" ]]; then
-    tmux set-option -gq "$note_option" "$note"
-  else
-    tmux set-option -guq "$note_option" 2>/dev/null || true
-  fi
+  run_sequence_edit set-note "$1"
 }
 
 encode_note() {

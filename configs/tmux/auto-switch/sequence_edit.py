@@ -15,8 +15,8 @@ FIELD_SEP = "\t"
 # the sequence is active, and sequence.sh folds it into the saved snapshot.
 NOTE_SEPARATOR = "---"
 NOTE_OPTION = "@auto_switch_ranked_panes_note"
-# The note lives only in tmux memory; this disk copy is just so it can be
-# recovered by hand after a tmux crash. Nothing reads it back.
+# A disk mirror of NOTE_OPTION, so the note survives a tmux crash: whenever the
+# option is empty (as it is in a fresh tmux), the editor loads this copy.
 NOTE_BACKUP = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "tmux/auto-switch-note.md"
 PANE_FORMAT = FIELD_SEP.join(
     [
@@ -52,25 +52,30 @@ def read_note() -> str:
     return result.stdout.strip("\n")
 
 
+def active_note() -> str:
+    """The active sequence's note. An empty option falls back to the disk copy:
+    after a tmux crash the option is gone but the copy still holds the note."""
+    note = read_note()
+    if not note and NOTE_BACKUP.exists():
+        note = NOTE_BACKUP.read_text().strip("\n")
+    return note
+
+
 def write_note(note: str) -> None:
+    """Set the option and its disk copy together, so the copy only ever holds the
+    note that is active. Clearing the note removes the copy too; otherwise the
+    next editor open would bring a deliberately dropped note back."""
     note = note.strip("\n")
     if note:
         tmux_run("set-option", "-gq", NOTE_OPTION, note)
+        NOTE_BACKUP.parent.mkdir(parents=True, exist_ok=True)
+        tmp = NOTE_BACKUP.with_name(NOTE_BACKUP.name + ".tmp")
+        tmp.write_text(note + "\n")
+        os.replace(tmp, NOTE_BACKUP)
     else:
         subprocess.run(["tmux", "set-option", "-guq", NOTE_OPTION])
-
-
-def backup_note(note: str) -> None:
-    """Keep the last non-empty note on disk. An empty note is not written: after
-    a crash the fresh tmux has none, and saving the editor then must not wipe
-    the copy that is there to recover it."""
-    note = note.strip("\n")
-    if not note:
-        return
-    NOTE_BACKUP.parent.mkdir(parents=True, exist_ok=True)
-    tmp = NOTE_BACKUP.with_name(NOTE_BACKUP.name + ".tmp")
-    tmp.write_text(note + "\n")
-    os.replace(tmp, NOTE_BACKUP)
+        if NOTE_BACKUP.exists():
+            NOTE_BACKUP.unlink()
 
 
 def encode_note(note: str) -> str:
@@ -334,7 +339,6 @@ def apply_edit_file(path: str) -> str:
     panes = load_panes()
     ranked, pending_reasons, attributes, note = parse_edit_file(path, panes)
     write_note(note)
-    backup_note(note)
     refresh_script = Path.home() / "deploy/configs/tmux/script/refresh_status_lines.sh"
 
     for pane in ranked:
@@ -386,6 +390,11 @@ def main() -> None:
     # note of the sequence that happens to be active.
     write_parser.add_argument("--note", default=None)
 
+    subparsers.add_parser("note")
+
+    set_note_parser = subparsers.add_parser("set-note")
+    set_note_parser.add_argument("note")
+
     apply_parser = subparsers.add_parser("apply")
     apply_parser.add_argument("path")
 
@@ -399,8 +408,12 @@ def main() -> None:
     if args.command == "normalize":
         print(normalize_sequence(args.ranked), end="")
     elif args.command == "write":
-        note = read_note() if args.note is None else args.note
+        note = active_note() if args.note is None else args.note
         write_edit_file(args.ranked, args.output, note)
+    elif args.command == "note":
+        print(active_note(), end="")
+    elif args.command == "set-note":
+        write_note(args.note)
     elif args.command == "apply":
         print(apply_edit_file(args.path), end="")
     elif args.command == "encode-note":
