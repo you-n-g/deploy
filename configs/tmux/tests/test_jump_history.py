@@ -19,6 +19,7 @@ TMUX_DIR = Path(__file__).resolve().parents[1]
 SCRIPT = str(TMUX_DIR / "script/jump_history.py")
 INSERT_SCRIPT = str(TMUX_DIR / "script/insert_previous_target.sh")
 JOIN_SCRIPT = str(TMUX_DIR / "script/join_previous.sh")
+FLOAT_SCRIPT = str(TMUX_DIR / "script/open_float_pane.sh")
 
 
 class JumpHistoryTest(unittest.TestCase):
@@ -255,6 +256,27 @@ class JumpHistoryTest(unittest.TestCase):
         # must be observed, even without a switch-client command.
         self.tmux("select-pane", "-t", self.b)
         self.wait_for(lambda: self.state(self.client).get("entries") == [self.a, self.b])
+
+    def open_float(self, *flags):
+        subprocess.check_call([FLOAT_SCRIPT, *flags, self.a, "/bin/sh"],
+                              env=dict(os.environ, TMUX=self.socket + ",0,0"))
+        floating = self.tmux("list-panes", "-s", "-t", "one:", "-f", "#{pane_floating_flag}",
+                             "-F", "#{session_id}:.#{pane_id}")
+        self.wait_for(lambda: self.current(self.client) == floating)
+        return floating
+
+    def test_marked_floating_pane_does_not_record(self):
+        floating = self.open_float("--skip-jump-history")
+        subprocess.check_call(["python3", SCRIPT, "--socket", self.socket, "record"])
+        self.assertEqual(self.state(self.client)["entries"], [self.a])
+        self.tmux("kill-pane", "-t", floating)
+        self.visit(self.b)
+        self.assertEqual(self.state(self.client)["entries"], [self.a, self.b])
+        self.assertNotIn(floating, self.state(self.client).get("recent", []))
+
+    def test_unmarked_floating_pane_records(self):
+        floating = self.open_float()
+        self.wait_for(lambda: self.state(self.client).get("entries") == [self.a, floating])
 
     def test_clients_have_independent_cursors(self):
         self.tmux("new-session", "-d", "-s", "two", "/bin/sh")
