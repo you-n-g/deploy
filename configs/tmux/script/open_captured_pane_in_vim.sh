@@ -1,8 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SESSION="${1:?usage: open_captured_pane_in_vim.sh SESSION SOURCE_PANE WORKDIR}"
-SOURCE_PANE="${2:?usage: open_captured_pane_in_vim.sh SESSION SOURCE_PANE WORKDIR}"
+# Where the capture opens:
+#   (default)  a new tab in the session's Vim window (ensure_vim_window.sh)
+#   --float    a new nvim in a floating pane over the source pane's window
+#   --split    a new nvim in a split beside the source pane
+# A new nvim exits with its buffer, so :q closes the pane. --float / --split
+# open nothing new when the source pane's window already has a Vim (split or
+# floating, other than the source pane): the capture goes there as a new tab.
+usage="usage: open_captured_pane_in_vim.sh [--float|--split] SESSION SOURCE_PANE WORKDIR"
+MODE="existing"
+case "${1:-}" in
+  --float) MODE="float"; shift ;;
+  --split) MODE="split"; shift ;;
+esac
+SESSION="${1:?$usage}"
+SOURCE_PANE="${2:?$usage}"
 WORKDIR="${3:-$HOME}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -74,7 +87,7 @@ nvim_server_for_pid() {
 
       case "$socket_path" in
         */fzf-lua.*) ;;
-        */nvim.[0-9]*|*/nvim.sock)
+        */nvim.[0-9]*|*/nvim.sock|*/nvim-capture.*.sock)
           printf '%s\n' "$socket_path"
           return 0
           ;;
@@ -92,7 +105,7 @@ nvim_server_for_pid() {
 
     case "$socket_path" in
       */fzf-lua.*) ;;
-      */nvim.[0-9]*|*/nvim.sock)
+      */nvim.[0-9]*|*/nvim.sock|*/nvim-capture.*.sock)
         printf '%s\n' "$socket_path"
         return 0
         ;;
@@ -100,29 +113,68 @@ nvim_server_for_pid() {
   done < <(lsof -a -p "$pid" -U -Fn 2>/dev/null)
 }
 
-# Prefer a Vim already sharing a window with the pane being captured: that is
-# the one the user is looking at, and reusing it keeps the capture next to its
-# source instead of throwing the view to some other window.
-source_window="$(tmux display-message -p -t "$SOURCE_PANE" '#{window_id}')"
-vim_pane="$("$SCRIPT_DIR/ensure_vim_window.sh" --print-pane --prefer-window "$source_window" "$SESSION" "$WORKDIR")"
-[[ -n "$vim_pane" ]] || { tmux display-message "open pane in Vim: failed to locate Vim pane"; exit 1; }
+vim_pane=""
+if [[ "$MODE" != "existing" ]]; then
+  while IFS= read -r pane; do
+    [[ "$pane" != "$SOURCE_PANE" ]] || continue
+    if [[ -n "$(find_nvim_pids_for_pane "$pane")" ]]; then
+      vim_pane="$pane"
+      MODE="window-vim"
+      break
+    fi
+  done < <(tmux list-panes -t "$SOURCE_PANE" -F '#{pane_id}')
+fi
 
-remote_expr="$("$SCRIPT_DIR/capture_pane_to_nvim_expr.py" "$SOURCE_PANE")" || {
+# Capture before any pane is opened: a split narrows the source pane, and
+# capture-pane would then return its lines re-wrapped to the new width.
+here_flag=()
+[[ "$MODE" == "existing" || "$MODE" == "window-vim" ]] || here_flag=(--here)
+remote_expr="$("$SCRIPT_DIR/capture_pane_to_nvim_expr.py" "${here_flag[@]}" "$SOURCE_PANE")" || {
   tmux display-message "open pane in Vim: failed to capture pane"
   exit 1
 }
 
 nvim_pid=""
 nvim_server=""
-for _ in {1..50}; do
-  while IFS= read -r nvim_pid; do
-    nvim_server="$(nvim_server_for_pid "$nvim_pid" || true)"
-    if [[ -n "$nvim_server" && -S "$nvim_server" ]]; then
-      break 2
-    fi
-  done < <(find_nvim_pids_for_pane "$vim_pane" || true)
-  sleep 0.1
-done
+if [[ "$MODE" == "existing" || "$MODE" == "window-vim" ]]; then
+  if [[ "$MODE" == "existing" ]]; then
+    # Prefer a Vim already sharing a window with the pane being captured: that
+    # is the one the user is looking at, and reusing it keeps the capture next
+    # to its source instead of throwing the view to some other window.
+    source_window="$(tmux display-message -p -t "$SOURCE_PANE" '#{window_id}')"
+    vim_pane="$("$SCRIPT_DIR/ensure_vim_window.sh" --print-pane --prefer-window "$source_window" "$SESSION" "$WORKDIR")"
+    [[ -n "$vim_pane" ]] || { tmux display-message "open pane in Vim: failed to locate Vim pane"; exit 1; }
+  fi
+
+  for _ in {1..50}; do
+    while IFS= read -r nvim_pid; do
+      nvim_server="$(nvim_server_for_pid "$nvim_pid" || true)"
+      if [[ -n "$nvim_server" && -S "$nvim_server" ]]; then
+        break 2
+      fi
+    done < <(find_nvim_pids_for_pane "$vim_pane" || true)
+    sleep 0.1
+  done
+else
+  # A nvim we start ourselves listens where we tell it, so there is no process
+  # scan; the new pane already has focus. nvim_server_for_pid knows this socket
+  # name, so a later --float / --split in this window can reuse it.
+  nvim_server="$(mktemp -u /tmp/nvim-capture.XXXXXX).sock"
+  if [[ "$MODE" == "float" ]]; then
+    # A centred overlay at 80% x 70% of the window, so the source pane stays
+    # visible around it for comparison.
+    read -r win_w win_h < <(tmux display-message -p -t "$SOURCE_PANE" '#{window_width} #{window_height}')
+    fw=$(( win_w * 80 / 100 )); fh=$(( win_h * 70 / 100 ))
+    tmux new-pane -t "$SOURCE_PANE" -x "$fw" -y "$fh" -X "$(( (win_w - fw) / 2 ))" -Y "$(( (win_h - fh) / 2 ))" \
+      -c "$WORKDIR" nvim --listen "$nvim_server"
+  else
+    tmux split-window -h -t "$SOURCE_PANE" -c "$WORKDIR" nvim --listen "$nvim_server"
+  fi
+  for _ in {1..50}; do
+    [[ -S "$nvim_server" ]] && break
+    sleep 0.1
+  done
+fi
 
 [[ -n "$nvim_server" && -S "$nvim_server" ]] || {
   tmux display-message "open pane in Vim: failed to find nvim RPC server"
@@ -134,5 +186,7 @@ if ! nvim --server "$nvim_server" --remote-expr "$remote_expr" >/dev/null; then
   exit 1
 fi
 
-tmux select-window -t "$vim_pane"
-tmux select-pane -t "$vim_pane"
+if [[ -n "$vim_pane" ]]; then
+  tmux select-window -t "$vim_pane"
+  tmux select-pane -t "$vim_pane"
+fi
