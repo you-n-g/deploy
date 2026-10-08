@@ -20,6 +20,7 @@ import websockets
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 443
 RECEIVER = "__msg_bridge_receiver__"
+BATCH_DELAY = 0.25
 app = typer.Typer(add_completion=False, help="Tiny sender / bridge / receiver for tmux message input")
 
 
@@ -84,7 +85,7 @@ def client_endpoint(host: str, port: int) -> tuple[str, int, str]:
     return resolved_host, port, ws_url(resolved_host, port)
 
 
-async def send_loop(host: str, port: int) -> None:
+async def send_loop(host: str, port: int, batch: bool) -> None:
     _, _, url = client_endpoint(host, port)
     session = None
     if sys.stdin.isatty():
@@ -99,23 +100,50 @@ async def send_loop(host: str, port: int) -> None:
             event.app.current_buffer.open_in_editor()
 
         session = PromptSession(history=InMemoryHistory(), key_bindings=bindings)
+
+    async def read_message() -> str:
+        return await session.prompt_async("> ") if session else await asyncio.to_thread(input, "> ")
+
     ws = await websockets.connect(url, open_timeout=60)
+
+    async def send_message(msg: str) -> None:
+        nonlocal ws
+        try:
+            await ws.send(msg)
+        except websockets.ConnectionClosed:
+            print("connection lost; reconnecting and retrying this message...", flush=True)
+            ws = await websockets.connect(url, open_timeout=60)
+            await ws.send(msg)
+
+    prompt_task = asyncio.create_task(read_message())
+    pending: list[str] = []
+    deadline = 0.0
     try:
         print("type text, Ctrl-G edits in $EDITOR, Enter sends; Ctrl-D exits")
         while True:
             try:
-                msg = await session.prompt_async("> ") if session else await asyncio.to_thread(input, "> ")
+                if pending:
+                    done, _ = await asyncio.wait({prompt_task}, timeout=max(0, deadline - asyncio.get_running_loop().time()))
+                    if not done:
+                        await send_message(" ".join(pending))
+                        pending.clear()
+                        continue
+                msg = await prompt_task
             except EOFError:
+                if pending:
+                    await send_message(" ".join(pending))
                 return
+            prompt_task = asyncio.create_task(read_message())
             if not msg.strip():
                 continue
-            try:
-                await ws.send(msg)
-            except websockets.ConnectionClosed:
-                print("connection lost; reconnecting and retrying this message...", flush=True)
-                ws = await websockets.connect(url, open_timeout=60)
-                await ws.send(msg)
+            if batch:
+                if not pending:
+                    deadline = asyncio.get_running_loop().time() + BATCH_DELAY
+                pending.append(msg)
+            else:
+                await send_message(msg)
     finally:
+        prompt_task.cancel()
         await ws.close()
 
 
@@ -173,12 +201,13 @@ def b(
     asyncio.run(bridge_loop(host, port))
 
 
-@app.command("s", help="send one-line messages")
+@app.command("s", help="send one-line messages, batching input within 250 ms by default")
 def s(
     host: Annotated[str, typer.Option("--host", "-H")] = DEFAULT_HOST,
     port: Annotated[int, typer.Option("--port", "-P")] = DEFAULT_PORT,
+    batch: Annotated[bool, typer.Option("--batch/--no-batch", help="Join messages entered within 250 ms into one line")] = True,
 ) -> None:
-    asyncio.run(send_loop(host, port))
+    asyncio.run(send_loop(host, port, batch))
 
 
 @app.command("r", help="receive messages and inject into tmux")
