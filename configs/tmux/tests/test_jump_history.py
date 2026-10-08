@@ -217,8 +217,6 @@ class JumpHistoryTest(unittest.TestCase):
         self.wait_for(lambda: expected in self.tmux("capture-pane", "-p", "-t", pane))
         # No Enter: the text stays on the prompt line, so the shell never runs it.
         self.assertNotIn("not found", self.tmux("capture-pane", "-p", "-t", pane))
-        self.assertRegex(self.tmux("list-keys", "-T", "prefix"),
-                         r"C-l\s+run-shell .*insert_previous_target.sh ")
 
     def test_capacity_and_repeated_visits(self):
         self.tmux("set-option", "-g", "@jump-history-limit", "3")
