@@ -18,6 +18,7 @@ import unittest
 TMUX_DIR = Path(__file__).resolve().parents[1]
 SCRIPT = str(TMUX_DIR / "script/jump_history.py")
 INSERT_SCRIPT = str(TMUX_DIR / "script/insert_previous_target.sh")
+JOIN_SCRIPT = str(TMUX_DIR / "script/join_previous.sh")
 
 
 class JumpHistoryTest(unittest.TestCase):
@@ -176,6 +177,36 @@ class JumpHistoryTest(unittest.TestCase):
         )
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("no open previously visited pane", result.stderr)
+
+    def test_previous_other_window_skips_the_current_window(self):
+        # a and b share a window; c is in another one.
+        self.visit(self.a)
+        self.visit(self.b)
+        result = subprocess.run(
+            ["python3", SCRIPT, "--socket", self.socket, "--other-window", "previous", self.client],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("in another window", result.stderr)
+        self.visit(self.c)
+        self.visit(self.a)
+        self.visit(self.b)
+        self.assertEqual(self.previous(), self.target(self.a))
+        other = subprocess.check_output(
+            ["python3", SCRIPT, "--socket", self.socket, "--other-window", "previous", self.client],
+            universal_newlines=True,
+        ).strip()
+        self.assertEqual(other, self.target(self.c))
+
+    def test_join_previous_moves_pane_into_previous_window(self):
+        self.visit(self.c)
+        self.visit(self.b)
+        b_pane, c_pane = self.b.split(":.")[1], self.c.split(":.")[1]
+        subprocess.check_call([JOIN_SCRIPT, self.socket, self.client, b_pane, "side-by-side"])
+        window = lambda pane: self.tmux("display-message", "-p", "-t", pane, "#{window_id}")
+        self.assertEqual(window(b_pane), window(c_pane))
+        self.assertEqual(self.tmux("display-message", "-p", "-t", b_pane, "#{pane_active}"), "1")
+        self.wait_for(lambda: self.current(self.client).endswith(":." + b_pane))
 
     def test_insert_previous_target_types_without_enter(self):
         self.visit(self.c)

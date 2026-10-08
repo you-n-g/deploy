@@ -63,14 +63,14 @@ class History:
             command.extend([";", "switch-client", "-c", client, "-T", "prefix"])
         self.tmux(*command)
 
-    def run(self, action, client):
+    def run(self, action, client, other_window=False):
         # The socket directory is private to this user. All hook/key processes
         # share this lock; state itself dies with the tmux server.
         with open(self.socket + ".jump-history.lock", "a") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
-            self.update(action, client)
+            self.update(action, client, other_window)
 
-    def update(self, action, client):
+    def update(self, action, client, other_window=False):
         limit_text = self.tmux("show-option", "-gqv", "@jump-history-limit")
         if not limit_text.isdecimal() or not 2 <= int(limit_text) <= 9:
             raise ValueError("@jump-history-limit must be an integer between 2 and 9")
@@ -99,17 +99,23 @@ class History:
             # The most recently left pane, whether left by a plain switch or a
             # back/forward jump. Closed panes (e.g. a temporary floating pane)
             # are skipped. Resolve by pane id: it may have moved to another
-            # session since.
-            live = set(self.tmux("list-panes", "-a", "-F", "#{pane_id}").splitlines())
+            # session since. With other_window, panes sharing the current
+            # pane's window are skipped too (a join target must be elsewhere).
+            live = dict(row.split(" ") for row in self.tmux(
+                "list-panes", "-a", "-F", "#{pane_id} #{window_id}").splitlines())
             current_pane = current.split(":.", 1)[1]
+            current_window = live[current_pane]
             for position in state.get("recent", []):
                 pane = position.split(":.", 1)[1]
-                if pane in live and pane != current_pane:
+                if pane in live and pane != current_pane \
+                        and not (other_window and live[pane] == current_window):
                     print(self.tmux("display-message", "-p", "-t", pane,
                                     "#{session_name}:#{window_index}.#{pane_index}"))
                     break
             else:
-                raise ValueError("jump-history: no open previously visited pane for client " + client)
+                where = " in another window" if other_window else ""
+                raise ValueError("jump-history: no open previously visited pane" + where
+                                 + " for client " + client)
         elif action != "record":
             step = -1 if action == "back" else 1
             live = set(self.tmux(
@@ -149,10 +155,13 @@ def main():
     parser.add_argument("--socket", required=True)
     parser.add_argument("action", choices=("record", "back", "forward", "previous"))
     parser.add_argument("client", nargs="?")
+    parser.add_argument("--other-window", action="store_true",
+                        help="previous: skip panes in the current pane's window; give it "
+                             "before the action (Python 3.6 argparse cannot intermix)")
     args = parser.parse_args()
     if args.action != "record" and not args.client:
         parser.error(args.action + " requires a tmux client name")
-    History(args.socket).run(args.action, args.client)
+    History(args.socket).run(args.action, args.client, args.other_window)
 
 
 if __name__ == "__main__":
