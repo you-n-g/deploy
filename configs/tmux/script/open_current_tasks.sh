@@ -126,8 +126,8 @@ AUTO_CLOSE_LUA='vim.api.nvim_create_autocmd("FocusLost", { callback = function()
 # nav.md so <tab>/<s-tab>/1-9/<m-cr> work on the tmux links here. :silent drops
 # its "Enter/Entered nav-mode" prints, which would otherwise block on a
 # hit-enter prompt at startup. -i NONE skips shada read/write on GPFS.
-fp="$(tmux new-pane -t "$PANE_ID" -c "$REPO_ROOT" \
-  -x "$pw" -y "$ph" -X "$px" -Y "$py" -P -F '#{pane_id}' \
+fp="$("$(dirname -- "${BASH_SOURCE[0]}")/new_float_pane.sh" "$PANE_ID" -c "$REPO_ROOT" \
+  -x "$pw" -y "$ph" -X "$px" -Y "$py" \
   nvim -u NONE -i NONE \
     --cmd "set runtimepath^=$NAV_NOTE_DIR,$THEME_DIR,$RENDER_MD_DIR" \
     --cmd 'filetype plugin on | syntax on | runtime plugin/render-markdown.lua' \

@@ -165,8 +165,9 @@ else
     # visible around it for comparison.
     read -r win_w win_h < <(tmux display-message -p -t "$SOURCE_PANE" '#{window_width} #{window_height}')
     fw=$(( win_w * 80 / 100 )); fh=$(( win_h * 70 / 100 ))
-    tmux new-pane -t "$SOURCE_PANE" -x "$fw" -y "$fh" -X "$(( (win_w - fw) / 2 ))" -Y "$(( (win_h - fh) / 2 ))" \
-      -c "$WORKDIR" nvim --listen "$nvim_server"
+    "$SCRIPT_DIR/new_float_pane.sh" "$SOURCE_PANE" \
+      -x "$fw" -y "$fh" -X "$(( (win_w - fw) / 2 ))" -Y "$(( (win_h - fh) / 2 ))" \
+      -c "$WORKDIR" nvim --listen "$nvim_server" >/dev/null
   else
     tmux split-window -h -t "$SOURCE_PANE" -c "$WORKDIR" nvim --listen "$nvim_server"
   fi

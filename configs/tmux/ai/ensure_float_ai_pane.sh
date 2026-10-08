@@ -34,7 +34,8 @@ px=$(( win_w - pw - 1 )); py=1
 # Interactive zsh so rcfile's wrapper picks provider/model; no window rename,
 # since the window belongs to the pane the AI floats over.
 printf -v cmd 'TMUX_AI_DISABLE_RENAME=1 zsh -ic %q' "$tool_cmd"
-pane="$(tmux new-pane -d -t "$host" -x "$pw" -y "$ph" -X "$px" -Y "$py" -c "$path" -P -F '#{pane_id}' "$cmd")"
+pane="$("$(dirname -- "${BASH_SOURCE[0]}")/../script/new_float_pane.sh" "$host" \
+  -d -x "$pw" -y "$ph" -X "$px" -Y "$py" -c "$path" "$cmd")"
 tmux set-option -p -t "$pane" @float_ai 1
 
 for (( i = 0; i < start_timeout_tenths; i++ )); do

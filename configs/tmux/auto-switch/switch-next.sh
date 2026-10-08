@@ -121,8 +121,9 @@ if [[ -n "$skip_pane_id" && "$skip_pane_id" != "$target" ]] \
       '↩ 上一个  #{session_name}:#{window_index}.#{pane_index}  #{window_name}')"
     # -k: any keystroke closes it early (and still reaches the pane).
     printf -v preview_cmd '%q ' "$script_dir/preview-prev-pane.sh" -k "$skip_pane_id" 4 "$title"
-    fp="$(tmux new-pane -d -t "$target" -x "$pw" -y "$ph" -X "$px" -Y "$py" \
-      -P -F '#{pane_id}' "$preview_cmd" 2>/dev/null || true)"
+    # --skip-if-zoomed: no preview over a zoomed window (fp stays empty).
+    fp="$("$script_dir/../script/new_float_pane.sh" --skip-if-zoomed "$target" \
+      -d -x "$pw" -y "$ph" -X "$px" -Y "$py" "$preview_cmd" 2>/dev/null || true)"
     # A cyan border (the global one is grey) sets the preview apart from the
     # panes it floats over.
     [[ -n "$fp" ]] && tmux set-option -p -t "$fp" @auto_switch_preview 1 \; \
