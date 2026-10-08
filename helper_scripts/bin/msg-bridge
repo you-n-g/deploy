@@ -87,6 +87,9 @@ def client_endpoint(host: str, port: int) -> tuple[str, int, str]:
 
 async def send_loop(host: str, port: int, batch: bool) -> None:
     _, _, url = client_endpoint(host, port)
+    pending: list[str] = []
+    deadline = 0.0
+    loop = asyncio.get_running_loop()
     session = None
     if sys.stdin.isatty():
         from prompt_toolkit.key_binding import KeyBindings
@@ -101,8 +104,21 @@ async def send_loop(host: str, port: int, batch: bool) -> None:
 
         session = PromptSession(history=InMemoryHistory(), key_bindings=bindings)
 
+        def on_text_changed(_buffer) -> None:
+            nonlocal deadline
+            if pending:
+                deadline = loop.time() + BATCH_DELAY
+
+        session.default_buffer.on_text_changed += on_text_changed
+
     async def read_message() -> str:
-        return await session.prompt_async("> ") if session else await asyncio.to_thread(input, "> ")
+        if session:
+            return await session.prompt_async(lambda: "[waiting] " if pending else "> ")
+        return await asyncio.to_thread(input, "> ")
+
+    def update_prompt() -> None:
+        if session:
+            session.app.invalidate()
 
     ws = await websockets.connect(url, open_timeout=60)
 
@@ -116,17 +132,21 @@ async def send_loop(host: str, port: int, batch: bool) -> None:
             await ws.send(msg)
 
     prompt_task = asyncio.create_task(read_message())
-    pending: list[str] = []
-    deadline = 0.0
     try:
         print("type text, Ctrl-G edits in $EDITOR, Enter sends; Ctrl-D exits")
         while True:
             try:
                 if pending:
-                    done, _ = await asyncio.wait({prompt_task}, timeout=max(0, deadline - asyncio.get_running_loop().time()))
+                    done, _ = await asyncio.wait({prompt_task}, timeout=max(0, deadline - loop.time()))
                     if not done:
+                        if loop.time() < deadline:
+                            continue
+                        if session and session.default_buffer.text:
+                            deadline = loop.time() + BATCH_DELAY
+                            continue
                         await send_message(" ".join(pending))
                         pending.clear()
+                        update_prompt()
                         continue
                 msg = await prompt_task
             except EOFError:
@@ -135,11 +155,15 @@ async def send_loop(host: str, port: int, batch: bool) -> None:
                 return
             prompt_task = asyncio.create_task(read_message())
             if not msg.strip():
+                if pending:
+                    await send_message(" ".join(pending))
+                    pending.clear()
+                    update_prompt()
                 continue
             if batch:
-                if not pending:
-                    deadline = asyncio.get_running_loop().time() + BATCH_DELAY
                 pending.append(msg)
+                deadline = loop.time() + BATCH_DELAY
+                update_prompt()
             else:
                 await send_message(msg)
     finally:
