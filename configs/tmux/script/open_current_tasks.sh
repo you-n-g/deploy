@@ -84,24 +84,27 @@ pw=$(( win_w - 2 )); ph=$(( win_h / 2 ))
 px=1; py=0
 
 # Land the cursor on the invoking pane's own entry when it is a listed TMA
-# Agent. Entries link as [[tmux://session:window_index.pane_index]]; a
-# window-only link also counts. First match wins; no match keeps line 1.
+# Agent. Entries link as [[tmux://session:window_index.pane_index]] or, with an
+# alias, [[tmux://session:window_index.pane_index|label]], so a target ends at
+# "]]" or "|"; a window-only link also counts. First match wins; no match keeps
+# line 1.
 target_index="$(tmux display-message -p -t "$PANE_ID" '#{window_index}.#{pane_index}')"
+pane_link="tmux://$SESSION:$target_index"
+window_link="tmux://$SESSION:${target_index%%.*}"
 own_line="$(grep -n -m1 -F \
-  -e "tmux://$SESSION:$target_index]]" \
-  -e "tmux://$SESSION:${target_index%%.*}]]" \
+  -e "$pane_link]]" -e "$pane_link|" \
+  -e "$window_link]]" -e "$window_link|" \
   "$FILE" | cut -d: -f1 || true)"
 
 # Make the current TMA stand out, not just the cursor line, at two strengths:
 # the invoking pane's own entries (bright, ▶) and the rest of its window --
 # sibling panes or a window-only link (faint, ▷). "SESSION:W." cannot match
 # window W0..W9x, so fixed strings are enough.
-pane_lines="$(grep -n -F -e "tmux://$SESSION:$target_index]]" "$FILE" \
+pane_lines="$(grep -n -F -e "$pane_link]]" -e "$pane_link|" "$FILE" \
   | cut -d: -f1 | paste -sd, - || true)"
 window_lines="$(grep -n -F \
-  -e "tmux://$SESSION:${target_index%%.*}." \
-  -e "tmux://$SESSION:${target_index%%.*}]]" \
-  "$FILE" | grep -v -F -e "tmux://$SESSION:$target_index]]" \
+  -e "$window_link." -e "$window_link]]" -e "$window_link|" \
+  "$FILE" | grep -v -F -e "$pane_link]]" -e "$pane_link|" \
   | cut -d: -f1 | paste -sd, - || true)"
 # Extmarks follow the text, so the marks stay on their entries if lines are
 # edited above them. Set after the colorscheme so its groups are not reset.
