@@ -24,9 +24,14 @@ set -eu
 #   It is cleared when that pane starts or resumes a non-pending running turn,
 #   and that transition publishes a running event for auto-switch waiters.
 #   toggle-pending clears it back to idle on a second invocation.
-#   A reason starting "等 %<pane id>" waits on that AI pane: when it goes idle,
-#   release_pending_on clears this pane's pending (state pending-released).
-#   pend_until_idle.sh writes such reasons; typing one by hand works the same.
+#   A reason starting "等 %<pane id>" waits for that AI pane to go idle, one
+#   starting "等完成 %<pane id>" for it to be marked done; release_waiters then
+#   clears this pane's pending (toggle-pending). pend_until.sh writes
+#   such reasons; typing one by hand works the same.
+# - @ai_agent_done:
+#   "1" when the user (or an agent) marked the pane's task done. Idle is not
+#   done: a long task goes idle many times on the way. Set by done /
+#   toggle-done, cleared when the pane starts its next running turn.
 # - @ai_agent_attribute:
 #   A short generated description of the pane's current task. It is generated
 #   lazily once and kept stable across later prompts until init/reset clears it.
@@ -82,11 +87,11 @@ set -eu
 #   Optional path for the prompt log. If unset, rows go to
 #   ~/.cache/tmux-ai-prompts.jsonl.
 
-state="${1:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending|toggle-pending|pending-released TARGET [PENDING_REASON]}"
+state="${1:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending|toggle-pending|done|toggle-done TARGET [PENDING_REASON]}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../ai/lib.sh"
 
-target="${2:-${TMUX_PANE:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending|toggle-pending|pending-released TARGET [PENDING_REASON]}}"
+target="${2:-${TMUX_PANE:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending|toggle-pending|done|toggle-done TARGET [PENDING_REASON]}}"
 if ! pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')" || [ -z "$pane_id" ]; then
   if [ "$state" = "visit" ]; then
     exit 0
@@ -433,18 +438,22 @@ log_ai_agent_state
 log_ai_agent_prompt
 
 show_done_toast=0
-# Panes whose pending reason reads "等 <this pane id>" are released when this
-# pane goes idle. The reason is the whole record: one rewritten or cleared by
-# any route no longer matches. Each goes through this script again, so it is
-# logged and refreshed.
-release_pending_on() {
-  local dep reason
+# Release the panes waiting on this one. idle releases reasons "等 <this pane
+# id>"; done releases those and "等完成 <this pane id>" too, since a pane marked
+# done has stopped. The reason is the whole record: one rewritten or cleared by
+# any route no longer matches, so a matching pane is pending and toggle-pending
+# clears it. That toggle counts as the released pane going idle and releases
+# its own waiters in turn: a chain A->B->C unwinds at once when C is done. A
+# cycle ends too, since every step clears one pending.
+release_waiters() {
+  local kind="$1" dep reason
   while IFS=$'\t' read -r dep reason; do
     case "$reason" in
-      "等 $pane_id"|"等 $pane_id "*)
-        AI_AGENT_STATE_SOURCE="pending-on:$pane_id" "$SCRIPT_DIR/track_ai_agent_state.sh" pending-released "$dep"
-        ;;
+      "等 $pane_id"|"等 $pane_id "*) ;;
+      "等完成 $pane_id"|"等完成 $pane_id "*) [ "$kind" = "done" ] || continue ;;
+      *) continue ;;
     esac
+    AI_AGENT_STATE_SOURCE="$kind-of:$pane_id" "$SCRIPT_DIR/track_ai_agent_state.sh" toggle-pending "$dep"
   done < <(tmux list-panes -a -F $'#{pane_id}\t#{@ai_agent_pending}')
 }
 
@@ -470,6 +479,7 @@ case "$state" in
     was_pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
     tmux set-option -pq -t "$pane_id" @ai_agent_running 1
     tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
+    tmux set-option -pqu -t "$pane_id" @ai_agent_done 2>/dev/null || true
     tmux set-option -pqu -t "$pane_id" @ai_agent_orchestrator_idle_notified_activity 2>/dev/null || true
     # User preference: generate a pane attribute only once and keep it stable
     # across later prompts. Do not reset it on UserPromptSubmit.
@@ -510,7 +520,7 @@ case "$state" in
       fi
       ensure_ai_agent_attribute
       notify_orchestrator_on_idle
-      release_pending_on
+      release_waiters idle
     fi
     ;;
   visit)
@@ -538,9 +548,13 @@ case "$state" in
     tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
     tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
     if [ "$state" = "toggle-pending" ] && [ -n "$was_pending" ]; then
-      # Manual unpark returns to idle without the completion notifications
-      # or submission event that would move the user away from this pane.
+      # Unpark returns to idle without the completion notifications or
+      # submission event that would move the user away from this pane. Out of
+      # sight (released by release_waiters) it is marked unread so it gets
+      # noticed, and as an idle edge it releases the panes waiting on it.
       tmux set-option -pqu -t "$pane_id" @ai_agent_pending
+      is_window_visible || tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
+      release_waiters idle
     else
       tmux set-option -pq -t "$pane_id" @ai_agent_pending "$pending_reason"
       if [ "$was_running" != "1" ] && [ -z "$was_pending" ]; then
@@ -548,12 +562,13 @@ case "$state" in
       fi
     fi
     ;;
-  pending-released)
-    # The pane this one waited on went idle. Back to idle, and unread when out
-    # of sight, so the user and auto-switch notice it can go on.
-    if [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)" ]; then
-      tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
-      is_window_visible || tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
+  done|toggle-done)
+    if [ "$state" = "toggle-done" ] \
+      && [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_done 2>/dev/null || true)" ]; then
+      tmux set-option -pqu -t "$pane_id" @ai_agent_done
+    else
+      tmux set-option -pq -t "$pane_id" @ai_agent_done 1
+      release_waiters done
     fi
     ;;
   *)
