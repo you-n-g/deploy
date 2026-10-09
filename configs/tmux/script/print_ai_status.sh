@@ -18,7 +18,7 @@ show_orchestrator=0
 if _tmuxg_show_orchestrator_enabled; then
   show_orchestrator=1
 fi
-while IFS='|' read -r session_name pane_id window_name pane_unread pane_running pane_background _pane_pending _attribute; do
+while IFS='|' read -r session_name pane_id window_name pane_unread pane_running pane_background _pane_pending pane_done _attribute; do
   [ -n "$session_name" ] || continue
   _tmuxg_session_is_blacklisted "$session_name" "$blacklist_regexes" && continue
   [ -n "$pane_id" ] || continue
@@ -30,6 +30,8 @@ while IFS='|' read -r session_name pane_id window_name pane_unread pane_running 
     background=$((background + 1))
   elif [ "$pane_running" = "1" ]; then
     running=$((running + 1))
+  elif [ "$pane_done" = "1" ]; then
+    : # done outranks unread, as in the status symbols, so it is not waiting
   elif [ "$pane_unread" = "1" ]; then
     waiting=$((waiting + 1))
     case "$ranked" in
@@ -37,7 +39,7 @@ while IFS='|' read -r session_name pane_id window_name pane_unread pane_running 
       *) waiting_out=$((waiting_out + 1)) ;;
     esac
   fi
-done < <(tmux list-panes -a -F '#{session_name}|#{pane_id}|#{window_name}|#{@ai_agent_unread}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_pending}|#{@ai_agent_attribute}' 2>/dev/null)
+done < <(tmux list-panes -a -F '#{session_name}|#{pane_id}|#{window_name}|#{@ai_agent_unread}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_pending}|#{@ai_agent_done}|#{@ai_agent_attribute}' 2>/dev/null)
 
 # The !N unread count encodes where the unread panes are: all in the auto-switch
 # list -> red (what I watch), all outside -> the group's cyan (least urgent),

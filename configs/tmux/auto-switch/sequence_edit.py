@@ -30,6 +30,7 @@ PANE_FORMAT = FIELD_SEP.join(
         "#{@ai_agent_running}",
         "#{@ai_agent_background}",
         "#{@ai_agent_pending}",
+        "#{@ai_agent_done}",
         "#{@ai_agent_attribute}",
     ]
 )
@@ -119,13 +120,15 @@ def pad_display(text: str, width: int) -> str:
     return text + " " * max(0, width - display_width(text))
 
 
-def state_label(unread: str, running: str, background: str, pending: str) -> str:
+def state_label(unread: str, running: str, background: str, pending: str, done: str) -> str:
     if pending:
         return "pending"
     if background == "1":
         return "background"
     if running == "1":
         return "running"
+    if done == "1":
+        return "done"
     if unread == "1":
         return "unread"
     return "idle"
@@ -141,8 +144,8 @@ def load_panes() -> Dict[str, Dict[str, str]]:
     rows: Dict[str, Dict[str, str]] = {}
     output = tmux_output("list-panes", "-a", "-F", PANE_FORMAT)
     for line in output.splitlines():
-        parts = line.split(FIELD_SEP, 10)
-        if len(parts) != 11 or not parts[0]:
+        parts = line.split(FIELD_SEP, 11)
+        if len(parts) != 12 or not parts[0]:
             continue
         (
             pane_id,
@@ -155,6 +158,7 @@ def load_panes() -> Dict[str, Dict[str, str]]:
             running,
             background,
             pending,
+            done,
             attribute,
         ) = parts
         rows[pane_id] = {
@@ -168,6 +172,7 @@ def load_panes() -> Dict[str, Dict[str, str]]:
             "running": running,
             "background": background,
             "pending": pending,
+            "done": done,
             "attribute": attribute,
         }
     return rows
@@ -215,7 +220,7 @@ def normalize_sequence(ranked: str) -> str:
 def edit_row(row: Dict[str, str], session_name: str) -> Dict[str, str]:
     window_name = row["window_name"]
     target = f"{row['session_name']}:{window_name}.{row['pane_index']}"
-    state = state_label(row["unread"], row["running"], row["background"], row["pending"])
+    state = state_label(row["unread"], row["running"], row["background"], row["pending"], row["done"])
     attribute = strip_tmux_format(row["attribute"]) or "no attribute"
     return {
         "pane_id": row["pane_id"],
