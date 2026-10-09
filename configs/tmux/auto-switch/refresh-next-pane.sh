@@ -3,9 +3,10 @@ set -euo pipefail
 
 # Write @auto_switch_next_pane: the pane `prefix + a` (switch-next.sh) would jump
 # to, i.e. the first pane in @auto_switch_ranked_panes that is usable right now
-# (not running, not background, no pending) other than the one you are on. The
-# window-status formats colour this pane's name green so the next target stands
-# out from the rest of the ranked list, which only gets a bold/underscored index.
+# (not running, not background, no pending, not done) other than the one you
+# are on. The window-status formats colour this pane's name green so the next
+# target stands out from the rest of the ranked list, which only gets a
+# bold/underscored index.
 #
 # switch-next.sh skips the caller's current pane (`--skip-pane #{pane_id}`), so if
 # you are already on the top-priority pane the second one is the target. This
@@ -30,13 +31,14 @@ while IFS= read -r pane; do
 done < <(tmux list-panes -a -F '#{?#{&&:#{session_attached},#{&&:#{window_active},#{pane_active}}},#{pane_id},}' 2>/dev/null || true)
 
 # One snapshot of the state that decides usability, keyed by pane id.
-declare -A running background pending
-while IFS='|' read -r pane r b p; do
+declare -A running background pending done
+while IFS='|' read -r pane r b p d; do
   [[ -n "$pane" ]] || continue
   running[$pane]="$r"
   background[$pane]="$b"
   pending[$pane]="$p"
-done < <(tmux list-panes -a -F '#{pane_id}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_pending}' 2>/dev/null || true)
+  done[$pane]="$d"
+done < <(tmux list-panes -a -F '#{pane_id}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_pending}|#{@ai_agent_done}' 2>/dev/null || true)
 
 next=""
 for candidate in $ranked; do
@@ -45,7 +47,8 @@ for candidate in $ranked; do
   [[ "$skip" == *" $candidate "* ]] && continue
   if [[ "${running[$candidate]}" != "1" \
     && "${background[$candidate]}" != "1" \
-    && -z "${pending[$candidate]}" ]]; then
+    && -z "${pending[$candidate]}" \
+    && -z "${done[$candidate]}" ]]; then
     next="$candidate"
     break
   fi

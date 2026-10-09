@@ -10,14 +10,14 @@ ranked="$(tmux show-option -gqv @auto_switch_ranked_panes 2>/dev/null || true)"
 current_pane="$(tmux display-message -p '#{pane_id}' 2>/dev/null || true)"
 [ -n "$current_pane" ] || exit 0
 
-pane_rows="$(tmux list-panes -a -F '#{pane_id}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_unread}|#{@ai_agent_pending}' 2>/dev/null || true)"
+pane_rows="$(tmux list-panes -a -F '#{pane_id}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_unread}|#{@ai_agent_pending}|#{@ai_agent_done}' 2>/dev/null || true)"
 
 lookup_pane_state() {
-  local wanted="$1" pane running background unread pending
+  local wanted="$1" pane running background unread pending done
 
-  while IFS='|' read -r pane running background unread pending; do
+  while IFS='|' read -r pane running background unread pending done; do
     [ "$pane" = "$wanted" ] || continue
-    printf '%s|%s|%s|%s\n' "$running" "$background" "$unread" "$pending"
+    printf '%s|%s|%s|%s|%s\n' "$running" "$background" "$unread" "$pending" "$done"
     return 0
   done <<< "$pane_rows"
 
@@ -45,10 +45,11 @@ best_symbol=""
 for candidate in $ranked; do
   row="$(lookup_pane_state "$candidate" || true)"
   [ -n "$row" ] || continue
-  IFS='|' read -r running background unread pending <<< "$row"
+  IFS='|' read -r running background unread pending done <<< "$row"
   if [ "$running" != "1" ] \
     && [ "$background" != "1" ] \
-    && [ -z "$pending" ]; then
+    && [ -z "$pending" ] \
+    && [ -z "$done" ]; then
     best_pane="$candidate"
     best_symbol="$(state_symbol "$running" "$background" "$unread" "$pending")"
     break

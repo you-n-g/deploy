@@ -287,6 +287,13 @@ _format_relative_age() {
     printf -v "$out_var" '%s' "$formatted"
 }
 
+# Pane ids marked done (@ai_agent_done), one per line. _ai_pane_rows has no
+# column for it: its readers split positionally and the last column takes the
+# rest of the line, so callers look panes up in this set instead.
+_ai_done_pane_ids() {
+    tmux list-panes -a -F '#{?@ai_agent_done,#{pane_id},}' 2>/dev/null | grep . || true
+}
+
 _ai_pending_reason_label() {
     local pending="$1"
     local out_var="$2"
@@ -654,6 +661,7 @@ _ai_pane_rows() {
 #
 # Status symbols:
 #   ▶/➲/▷ (cyan) current pane (▶ = running, ➲ = background, ▷ = idle)
+#   ✓   (green)  done -- the pane was marked done (current pane too)
 #   ●   (yellow) running
 #   ◒   (yellow) Claude background work
 #   ⏸   (magenta) pending — intentionally waiting on something
@@ -678,6 +686,8 @@ _ai_pane_fzf_list() {
         switcher_pane_id="$(tmux display-message -p -t "$switcher_pane_id" '#{pane_id}' 2>/dev/null || true)"
     fi
     ranked_pane_ids="$(_ai_ranked_pane_id_set)"
+    local done_pane_ids
+    done_pane_ids=" $(_ai_done_pane_ids | tr '\n' ' ') "
 
     _ai_fzf_reset_session_colors
 
@@ -695,6 +705,9 @@ _ai_pane_fzf_list() {
         local is_pending=false
         [[ -n "$pending_flag" && "$pending_flag" != "0" ]] && is_pending=true
 
+        local is_done=false
+        [[ "$done_pane_ids" == *" $wid "* ]] && is_done=true
+
         if [[ "$sess_win" == "$current_target" ]]; then
             sort_key=0
             if $is_pending; then
@@ -703,6 +716,8 @@ _ai_pane_fzf_list() {
                 status=$'\033[36m➲\033[0m '
             elif $is_busy; then
                 status=$'\033[36m▶\033[0m '
+            elif $is_done; then
+                status=$'\033[32m✓\033[0m '
             else
                 status=$'\033[36m▷\033[0m '
             fi
@@ -715,6 +730,9 @@ _ai_pane_fzf_list() {
         elif $is_busy; then
             sort_key=05
             status=$'\033[33m●\033[0m '
+        elif $is_done; then
+            sort_key=09
+            status=$'\033[32m✓\033[0m '
         elif (( is_unread )); then
             sort_key=08
             status=$'\033[33m◉\033[0m '
@@ -744,6 +762,8 @@ _ai_pane_fzf_list() {
             state_tags+=" [background]"
         elif $is_busy; then
             state_tags+=" [running]"
+        elif $is_done; then
+            state_tags+=$' \033[32m[done]\033[0m'
         elif (( is_unread )); then
             state_tags+=$' \033[33m[unread]\033[0m'
         else

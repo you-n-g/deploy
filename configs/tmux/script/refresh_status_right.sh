@@ -77,8 +77,8 @@ decorate_window_status() {
     return 0
   fi
   styled_index='#{?#{m/r:(^| )#{pane_id}( |$),#{@auto_switch_ranked_panes}},#[bold]#[underscore]#I#[nobold]#[nounderscore],#I}'
-  has_ai_state='#{||:#{!=:#{@ai_agent_running},},#{||:#{!=:#{@ai_agent_background},},#{||:#{!=:#{@ai_agent_unread},},#{||:#{!=:#{@ai_agent_pending},},#{!=:#{@ai_agent_attribute},}}}}}'
-  state_symbol="#{?#{!=:#{@ai_agent_pending},},⏸,#{?#{==:#{@ai_agent_background},1},◒,#{?#{==:#{@ai_agent_running},1},●,#{?#{==:#{@ai_agent_unread},1},◉,○}}}}"
+  has_ai_state='#{||:#{!=:#{@ai_agent_running},},#{||:#{!=:#{@ai_agent_background},},#{||:#{!=:#{@ai_agent_unread},},#{||:#{!=:#{@ai_agent_pending},},#{||:#{!=:#{@ai_agent_done},},#{!=:#{@ai_agent_attribute},}}}}}}'
+  state_symbol="#{?#{!=:#{@ai_agent_pending},},⏸,#{?#{==:#{@ai_agent_background},1},◒,#{?#{==:#{@ai_agent_running},1},●,#{?#{==:#{@ai_agent_done},1},✓,#{?#{==:#{@ai_agent_unread},1},◉,○}}}}}"
   state_suffix="#{?${has_ai_state},${state_symbol},}"
   option_value="${option_value// #I / ${styled_index} ${state_suffix}}"
   # The next auto-switch target's name turns green; every other name keeps the

@@ -12,6 +12,7 @@ ai_title_status_prefix() {
   local running="$3"
   local background="$4"
   local pending="$5"
+  local done="$6"
 
   if [ "$is_current" = "1" ]; then
     if [ -n "$pending" ] && [ "$pending" != "0" ]; then
@@ -20,6 +21,8 @@ ai_title_status_prefix() {
       printf '➲ '
     elif [ "$running" = "1" ]; then
       printf '▶ '
+    elif [ "$done" = "1" ]; then
+      printf '✓ '
     else
       printf '▷ '
     fi
@@ -32,6 +35,8 @@ ai_title_status_prefix() {
     printf '◒ '
   elif [ "$running" = "1" ]; then
     printf '● '
+  elif [ "$done" = "1" ]; then
+    printf '✓ '
   elif [ "$unread" = "1" ]; then
     printf '◉ '
   else
@@ -66,10 +71,13 @@ format_title_item() {
   [ "$pane_target" = "$current_target" ] && is_current=1
   marker=""
   [ -n "$marked_pane_id" ] && [ "$pane_id" = "$marked_pane_id" ] && marker="◆"
-  printf '%s%s%s' "$(ai_title_status_prefix "$is_current" "$unread" "$running" "$background" "$pending")" "$label" "$marker"
+  done=0
+  [[ "$done_pane_ids" == *" $pane_id "* ]] && done=1
+  printf '%s%s%s' "$(ai_title_status_prefix "$is_current" "$unread" "$running" "$background" "$pending" "$done")" "$label" "$marker"
 }
 
 current_target="$(tmux display-message -p '#{session_name}:#{window_index}.#{pane_index}' 2>/dev/null || true)"
+done_pane_ids=" $(_ai_done_pane_ids | tr '\n' ' ') "
 marked_pane_id="$(tmux display-message -p -t '{marked}' '#{pane_id}' 2>/dev/null || true)"
 
 max_items="$(tmux show-options -gqv @status-ai-window-summary-count 2>/dev/null || true)"

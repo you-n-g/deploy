@@ -119,13 +119,15 @@ normalize_existing_sequence() {
 }
 
 status_prefix() {
-  local unread="$1" running="$2" background="$3" pending="$4"
+  local unread="$1" running="$2" background="$3" pending="$4" done="$5"
   if [[ -n "$pending" ]]; then
     printf '⏸ '
   elif [[ "$background" == "1" ]]; then
     printf '◒ '
   elif [[ "$running" == "1" ]]; then
     printf '● '
+  elif [[ "$done" == "1" ]]; then
+    printf '✓ '
   elif [[ "$unread" == "1" ]]; then
     printf '◉ '
   else
@@ -135,7 +137,7 @@ status_prefix() {
 
 pane_label() {
   local pane="$1"
-  local session_name window_name unread running background pending attribute clean_attribute label
+  local session_name window_name unread running background pending done attribute clean_attribute label
 
   session_name="$(tmux display-message -p -t "$pane" '#{session_name}' 2>/dev/null || true)"
   window_name="$(tmux display-message -p -t "$pane" '#{window_name}' 2>/dev/null || true)"
@@ -143,27 +145,12 @@ pane_label() {
   running="$(tmux show -pv -t "$pane" @ai_agent_running 2>/dev/null || true)"
   background="$(tmux show -pv -t "$pane" @ai_agent_background 2>/dev/null || true)"
   pending="$(tmux show -pv -t "$pane" @ai_agent_pending 2>/dev/null || true)"
+  done="$(tmux show -pv -t "$pane" @ai_agent_done 2>/dev/null || true)"
   attribute="$(tmux show -pv -t "$pane" @ai_agent_attribute 2>/dev/null || true)"
   clean_attribute="$(printf '%s' "$attribute" | strip_tmux_format)"
   label="$(compact_ai_label "$session_name" "$window_name" "$clean_attribute")"
   label="${label} [${session_name}:${window_name}]"
-  printf '%s%s' "$(status_prefix "$unread" "$running" "$background" "$pending")" "$label"
-}
-
-state_label() {
-  local unread="$1" running="$2" background="$3" pending="$4"
-
-  if [[ -n "$pending" ]]; then
-    printf 'pending'
-  elif [[ "$background" == "1" ]]; then
-    printf 'background'
-  elif [[ "$running" == "1" ]]; then
-    printf 'running'
-  elif [[ "$unread" == "1" ]]; then
-    printf 'unread'
-  else
-    printf 'idle'
-  fi
+  printf '%s%s' "$(status_prefix "$unread" "$running" "$background" "$pending" "$done")" "$label"
 }
 
 saved_ranked_panes() {
@@ -518,6 +505,7 @@ highlight AutoSwitchStateBackground ctermfg=109 cterm=NONE guifg=#87afaf gui=NON
 highlight AutoSwitchStatePending ctermfg=139 cterm=NONE guifg=#af87af gui=NONE
 highlight AutoSwitchStateUnread ctermfg=143 cterm=NONE guifg=#afaf5f gui=NONE
 highlight AutoSwitchStateIdle ctermfg=245 cterm=NONE guifg=#8a8a8a gui=NONE
+highlight AutoSwitchStateDone ctermfg=108 cterm=NONE guifg=#87af87 gui=NONE
 " Keep the zebra striping deliberately faint: it should separate adjacent pane
 " rows without competing with state, session, cursor, or current-pane colors.
 highlight AutoSwitchRowOdd ctermbg=233 guibg=#121212
@@ -582,6 +570,7 @@ call matchadd('AutoSwitchStateBackground', '|\\s*\\zsbackground\\ze\\s*|', 40)
 call matchadd('AutoSwitchStatePending', '|\\s*\\zspending[^|]*\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateUnread', '|\\s*\\zsunread\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateIdle', '|\\s*\\zsidle\\ze\\s*|', 40)
+call matchadd('AutoSwitchStateDone', '|\\s*\\zsdone\\ze\\s*|', 40)
 let s:auto_switch_session_groups = [
       \\ 'AutoSwitchSession31', 'AutoSwitchSession32', 'AutoSwitchSession33',
       \\ 'AutoSwitchSession34', 'AutoSwitchSession35', 'AutoSwitchSession36',
@@ -603,7 +592,8 @@ for s:auto_switch_line in getline(1, '$')
         \\ '^%[0-9]\\+\\s\\+#\\s\\+\\zs\\V' . s:auto_switch_literal_session . '\\m\\ze:', 35)
 endfor
 for s:auto_switch_colour in ['AutoSwitchStateRunning', 'AutoSwitchStateBackground',
-      \ 'AutoSwitchStatePending', 'AutoSwitchStateUnread', 'AutoSwitchStateIdle']
+      \ 'AutoSwitchStatePending', 'AutoSwitchStateUnread', 'AutoSwitchStateIdle',
+      \ 'AutoSwitchStateDone']
       \ + s:auto_switch_session_groups
   let s:auto_switch_colour_id = synIDtrans(hlID(s:auto_switch_colour))
   execute 'highlight' s:auto_switch_colour . 'Active'
