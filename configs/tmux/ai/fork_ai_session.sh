@@ -2,7 +2,7 @@
 # Fork an AI session into a new tmux window and switch to it.
 # Supports Claude Code (clauder) and Codex (codexr).
 #
-# Usage: fork_ai_session.sh [-q] [--target PANE] [--suffix SUFFIX] [--disable-tmux-rename] [window_name]
+# Usage: fork_ai_session.sh [-q] [--target PANE] [--suffix SUFFIX] [--disable-tmux-rename] [--join-back] [window_name]
 #   window_name  — name of a window in the CURRENT session whose AI pane to
 #                  fork. When omitted, fork the AI in the current pane.
 #   --target     — tmux pane target that defines "current" for this fork.
@@ -10,18 +10,25 @@
 #                  forked window (default: -fork).
 #   --disable-tmux-rename
 #                — set TMUX_AI_DISABLE_RENAME=1 for the forked TUI wrapper.
+#   --join-back  — join the forked pane into the source pane's window instead
+#                  of leaving it in a window of its own. Both panes are named
+#                  by id: run-shell children have no pane of their own, so a
+#                  relative target such as ":!." resolves against whatever
+#                  session tmux deems current and can pick an unrelated pane.
 #   -q           — quiet mode (always exit 0, suppress status-bar flash).
 
 QUIET=false
 SOURCE_TARGET=""
 SUFFIX="-fork"
 DISABLE_TMUX_RENAME=false
+JOIN_BACK=false
 while [[ "$1" == -* ]]; do
     case "$1" in
         -q) QUIET=true; shift ;;
         --target) SOURCE_TARGET="$2"; shift 2 ;;
         --suffix) SUFFIX="$2"; shift 2 ;;
         --disable-tmux-rename) DISABLE_TMUX_RENAME=true; shift ;;
+        --join-back) JOIN_BACK=true; shift ;;
         *)  shift ;;
     esac
 done
@@ -252,4 +259,9 @@ win_id=$(tmux new-window -d -P -F '#{window_id}' -t "$source_session:" -n "$fork
 # Block TUI escape-sequence renames. Wrapper-driven renames are controlled by
 # TMUX_AI_WINDOW_NAME or disabled with TMUX_AI_DISABLE_RENAME.
 tmux set-window-option -t "$win_id" allow-rename off
-tmux select-window -t "$win_id"
+if [[ "$JOIN_BACK" == true ]]; then
+    fork_pane_id=$(tmux display-message -p -t "$win_id" '#{pane_id}')
+    "$SCRIPT_DIR/../script/smart_join_pane.sh" "$source_pane_id" "$fork_pane_id"
+else
+    tmux select-window -t "$win_id"
+fi
