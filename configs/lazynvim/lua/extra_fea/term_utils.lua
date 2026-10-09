@@ -95,6 +95,24 @@ function M.normalize_path_for_edit(path)
   return vim.fn.expand(path)
 end
 
+-- A relative path that is not there from the cwd may be meant relative to the
+-- file being edited (`./x.md`, `../notes/y.md`, or a bare `sibling.md` inside a
+-- note). Try that before giving up; terminal buffers have no such directory.
+local function resolve_relative_to_buffer(path)
+  if path == "" or path:sub(1, 1) == "/" or vim.uv.fs_stat(path) then
+    return path
+  end
+  local name = vim.api.nvim_buf_get_name(0)
+  if vim.bo.buftype ~= "" or name == "" then
+    return path
+  end
+  local candidate = vim.fs.normalize(vim.fs.joinpath(vim.fs.dirname(name), path))
+  if vim.uv.fs_stat(candidate) then
+    return candidate
+  end
+  return path
+end
+
 local function strip_non_ascii_edges(value)
   -- 'isfname' makes <cfile> absorb adjacent UTF-8 Chinese text and punctuation.
   -- Keep non-ASCII characters inside the path; only trim prose attached at its edges.
@@ -372,7 +390,7 @@ function M.open_file_with_line_in_normal()
   end
 
   local extracted_file, start_line, end_line, match_start, match_end = extract_file_line_ref()
-  local file = M.normalize_path_for_edit(extracted_file)
+  local file = resolve_relative_to_buffer(M.normalize_path_for_edit(extracted_file))
   if file == "" then
     vim.cmd("normal! gf")
     return
@@ -384,7 +402,8 @@ function M.open_file_with_line_in_normal()
     return
   end
 
-  -- If the file doesn't exist on disk, fall back to fzf-lua file search
+  -- If the file exists neither from the cwd nor from this file's directory,
+  -- fall back to fzf-lua file search
   if vim.fn.filereadable(file) == 0 then
     local ok_fzf, fzf = pcall(require, "fzf-lua")
     if ok_fzf then
