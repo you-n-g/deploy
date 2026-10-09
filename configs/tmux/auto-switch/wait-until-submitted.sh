@@ -6,8 +6,9 @@ usage() {
 Usage:
   wait-until-submitted.sh <mode-token>
 
-Wait for the tmux AI state event stream. When an AI pane publishes a running or
-pending event while it is the user's current pane, print that pane id and exit.
+Wait for the tmux AI state event stream. When an AI pane publishes a running,
+pending or done event while it is the user's current pane, print that pane id
+and exit.
 The running event also covers pending -> running transitions.
 
 Exit quietly when <mode-token> no longer matches @auto_switch_mode_token.
@@ -76,7 +77,7 @@ while :; do
   event_state="$(tmux show-option -gqv @ai_agent_event_state 2>/dev/null || true)"
   event_client_pane="$(tmux show-option -gqv @ai_agent_event_client_pane 2>/dev/null || true)"
   case "$event_state" in
-    running|pending) ;;
+    running|pending|done) ;;
     *) continue ;;
   esac
 

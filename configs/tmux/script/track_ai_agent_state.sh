@@ -48,8 +48,8 @@ set -eu
 # - @ai_agent_event_pane:
 #   Pane id, such as %12, for the most recent published AI-agent event.
 # - @ai_agent_event_state:
-#   Event state name for the most recent published event, currently running or
-#   pending.
+#   Event state name for the most recent published event: running, pending or
+#   done.
 # - @ai_agent_event_time:
 #   Unix timestamp for the most recent published event.
 # - @ai_agent_event_source:
@@ -567,7 +567,11 @@ case "$state" in
       && [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_done 2>/dev/null || true)" ]; then
       tmux set-option -pqu -t "$pane_id" @ai_agent_done
     else
+      was_done="$(tmux show -pv -t "$pane_id" @ai_agent_done 2>/dev/null || true)"
       tmux set-option -pq -t "$pane_id" @ai_agent_done 1
+      # Like setting pending, marking done hands the pane off: the auto-switch
+      # loop (wait-until-submitted.sh) moves on to the next pane.
+      [ -n "$was_done" ] || emit_ai_agent_event done
       release_waiters done
     fi
     ;;
