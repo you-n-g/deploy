@@ -533,24 +533,35 @@ for s:auto_switch_row in range(1, line('$'))
         \ '\%' . s:auto_switch_row . 'l^%[0-9]\+.*$', 5)
 endfor
 " A match background is drawn over Vim's regular CursorLine regardless of the
-" latter's highlight definition. Mirror the active row with a priority-90 match:
-" above row/session/state colors, but below the priority-100 current-pane mark.
-let s:auto_switch_active_row_match = -1
+" latter's highlight definition, so the active row gets a priority-90 match,
+" below the priority-100 current-pane mark. Vim shows only the highest-priority
+" match at a position, so that background alone would wipe the state and
+" session colours off the row. Each coloured match is therefore repeated for
+" the active row at priority 95 in an *Active variant: same foreground, on the
+" active row's background (defined after the session colours below).
+let s:auto_switch_active_row_matches = []
 function! s:AutoSwitchRefreshActiveRow() abort
-  if s:auto_switch_active_row_match > 0
-    call matchdelete(s:auto_switch_active_row_match)
-    let s:auto_switch_active_row_match = -1
+  for l:id in s:auto_switch_active_row_matches
+    silent! call matchdelete(l:id)
+  endfor
+  let s:auto_switch_active_row_matches = []
+  if getline('.') !~# '^%[0-9]\+\s'
+    return
   endif
-  if getline('.') =~# '^%[0-9]\+\s'
-    let s:auto_switch_active_row_match = matchadd(
-          \ 'AutoSwitchActiveRow', '\%' . line('.') . 'l^.*$', 90)
-  endif
+  let l:row = '\%' . line('.') . 'l'
+  for l:match in getmatches()
+    if l:match.group =~# '^AutoSwitch\%(State\|Session\)' && l:match.group !~# 'Active$'
+      call add(s:auto_switch_active_row_matches, matchadd(
+            \ l:match.group . 'Active', l:row . '\%(' . l:match.pattern . '\)', 95))
+    endif
+  endfor
+  call add(s:auto_switch_active_row_matches, matchadd(
+        \ 'AutoSwitchActiveRow', l:row . '^.*$', 90))
 endfunction
 augroup AutoSwitchActiveRow
   autocmd! * <buffer>
   autocmd CursorMoved,CursorMovedI <buffer> call <SID>AutoSwitchRefreshActiveRow()
 augroup END
-call s:AutoSwitchRefreshActiveRow()
 " Match the AI-window switcher's ANSI session palette. ctermfg uses the
 " corresponding xterm palette indexes; guifg keeps the same normal/bright split.
 highlight AutoSwitchSession31 ctermfg=1 cterm=NONE guifg=#cd0000 gui=NONE
@@ -591,6 +602,16 @@ for s:auto_switch_line in getline(1, '$')
   call matchadd(s:auto_switch_group,
         \\ '^%[0-9]\\+\\s\\+#\\s\\+\\zs\\V' . s:auto_switch_literal_session . '\\m\\ze:', 35)
 endfor
+for s:auto_switch_colour in ['AutoSwitchStateRunning', 'AutoSwitchStateBackground',
+      \ 'AutoSwitchStatePending', 'AutoSwitchStateUnread', 'AutoSwitchStateIdle']
+      \ + s:auto_switch_session_groups
+  let s:auto_switch_colour_id = synIDtrans(hlID(s:auto_switch_colour))
+  execute 'highlight' s:auto_switch_colour . 'Active'
+        \ 'cterm=NONE gui=NONE ctermbg=238 guibg=#444444'
+        \ 'ctermfg=' . synIDattr(s:auto_switch_colour_id, 'fg', 'cterm')
+        \ 'guifg=' . synIDattr(s:auto_switch_colour_id, 'fg#', 'gui')
+endfor
+call s:AutoSwitchRefreshActiveRow()
 $vim_focus_match
 nnoremap <buffer> q :wq<CR>
 let g:auto_switch_selected_pane_file = '$vim_selected_file'
