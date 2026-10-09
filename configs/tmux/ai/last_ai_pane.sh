@@ -16,6 +16,11 @@
 #
 # The exclusion is by pane id rather than by "session:window.pane" because the
 # latter shifts whenever windows are renumbered.
+#
+# Only panes that carry @last_visit count. _ai_pane_rows sorts an unvisited
+# pane by its window_activity instead, and a Claude TUI redraws often enough to
+# keep that a few seconds old -- so every pane not yet visited since a restore
+# would outrank the pane the user really came from a minute ago.
 
 set -euo pipefail
 
@@ -35,7 +40,11 @@ exclude_id="$(tmux display-message -p -t "${exclude:-}" '#{pane_id}' 2>/dev/null
 # $2 is "session:index.pane" and $4 is the pane id; see _ai_pane_rows for the
 # full column list. Rows arrive sorted by last_visit desc, so the first row that
 # is not the excluded pane is the answer.
-row="$(_ai_pane_rows -a | awk -F $'\t' -v skip="$exclude_id" '$4 != skip && !found { print; found = 1 }')"
+visited="$(tmux list-panes -a -F '#{pane_id} #{@last_visit}' | awk 'NF == 2 { print $1 }')"
+row="$(_ai_pane_rows -a | awk -F $'\t' -v skip="$exclude_id" '
+    FNR == NR { visited[$1] = 1; next }
+    $4 != skip && ($4 in visited) && !found { print; found = 1 }
+' <(printf '%s\n' "$visited") -)"
 [[ -n "$row" ]] || exit 1
 
 printf '%s\n' "$(printf '%s' "$row" | cut -f2)"
