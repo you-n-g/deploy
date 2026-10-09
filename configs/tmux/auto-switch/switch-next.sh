@@ -98,9 +98,12 @@ tmux select-pane -t "$target"
 # for a couple of seconds, refreshed live, then it self-closes. Uses new-pane -d
 # (a floating pane) rather than display-popup so keyboard focus stays on the
 # target -- a popup is modal and would lock the keyboard for those seconds.
-# Only when a real switch happened (a skip pane, differing from target, alive).
+# Only when a real switch happened (a skip pane, differing from target, alive)
+# to another window: a pane left behind in the same window is still on screen
+# (a split, or a floating pane over it), so a preview would only cover it.
 if [[ -n "$skip_pane_id" && "$skip_pane_id" != "$target" ]] \
-  && tmux display-message -p -t "$skip_pane_id" '#{pane_id}' >/dev/null 2>&1; then
+  && skip_window_id="$(tmux display-message -p -t "$skip_pane_id" '#{window_id}' 2>/dev/null)" \
+  && [[ "$skip_window_id" != "$target_window_id" ]]; then
   script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
   # A rapid re-switch would otherwise stack previews; drop any still floating.
   while IFS= read -r stale; do
