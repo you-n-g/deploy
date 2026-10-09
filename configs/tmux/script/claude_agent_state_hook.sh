@@ -118,6 +118,14 @@ case "$event" in
     if [ "$(tmux show -pv -t "$target" @ai_agent_running 2>/dev/null || true)" = "1" ]; then
       exit 0
     fi
+    # A subagent's tool call (an Agent or Workflow left running in the
+    # background) reports here too, with agent_id set. It is not the main turn
+    # resuming: marking running would wipe the background state the Stop hook
+    # just set, and with no busy TUI the output tracker flips it to idle.
+    read_hook_input
+    if [ -n "$(printf '%s' "$hook_input" | jq -r '.agent_id // empty')" ]; then
+      exit 0
+    fi
     AI_AGENT_STATE_SOURCE="$source_kind:pretool-running" exec "$TRACK_STATE" running "$target"
     ;;
   stop)
