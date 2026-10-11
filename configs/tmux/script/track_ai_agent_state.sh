@@ -83,6 +83,10 @@ set -eu
 #   The text the user or another agent submitted, set by the UserPromptSubmit
 #   hooks of both agents. Non-empty means this invocation starts a turn with a
 #   known prompt, and log_ai_agent_prompt records it. No other caller sets it.
+# - AI_AGENT_SESSION_ID / AI_AGENT_CWD:
+#   The agent's session id and working directory, set beside AI_AGENT_PROMPT by
+#   the same hooks from their JSON input; recorded in the prompt log row. An
+#   unset AI_AGENT_CWD falls back to the pane's current path.
 # - AI_AGENT_PROMPT_LOG:
 #   Optional path for the prompt log. If unset, rows go to
 #   ~/.cache/tmux-ai-prompts.jsonl.
@@ -175,7 +179,7 @@ trim_spaces() {
 # a leading signature would keep the TUI from recognising the command. Both
 # ends are checked; a prompt with neither is the user typing.
 log_ai_agent_prompt() {
-  local log_file log_dir ts window_name
+  local log_file log_dir ts session_name window_name target cwd
   local first_line last_line signature rest sender from to row
 
   [ -n "${AI_AGENT_PROMPT:-}" ] || return 0
@@ -208,16 +212,27 @@ log_ai_agent_prompt() {
   mkdir -p "$log_dir"
 
   ts="$(date '+%Y-%m-%dT%H:%M:%S%z')"
+  session_name="$(tmux display-message -p -t "$pane_id" '#S')"
   window_name="$(tmux display-message -p -t "$window_id" '#W')"
+  target="$(tmux display-message -p -t "$pane_id" '#{session_name}:#{window_index}.#{pane_index}')"
+  cwd="${AI_AGENT_CWD:-$(tmux display-message -p -t "$pane_id" '#{pane_current_path}')}"
   row="$(jq -cn \
     --arg time "$ts" \
     --arg pane "$pane_id" \
+    --arg target "$target" \
+    --arg window_id "$window_id" \
+    --arg session "$session_name" \
     --arg window "$window_name" \
+    --arg cwd "$cwd" \
+    --arg ai_session_id "${AI_AGENT_SESSION_ID:-}" \
+    --arg source "$state_source" \
     --arg sender "$sender" \
     --arg from "$from" \
     --arg to "$to" \
     --arg prompt "$AI_AGENT_PROMPT" \
-    '{time: $time, pane: $pane, window: $window, sender: $sender}
+    '{time: $time, pane: $pane, target: $target, window_id: $window_id, session: $session, window: $window, cwd: $cwd}
+      + (if $ai_session_id == "" then {} else {ai_session_id: $ai_session_id} end)
+      + {source: $source, sender: $sender}
       + (if $from == "" then {} else {from: $from} end)
       + (if $to == "" then {} else {to: $to} end)
       + {prompt: $prompt}')"

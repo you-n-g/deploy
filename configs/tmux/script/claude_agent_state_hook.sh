@@ -64,6 +64,24 @@ if [ -z "$target" ]; then
   # so a background session nobody is watching still reports nothing.
   read_hook_input
   session_id="$(printf '%s' "$hook_input" | jq -r '.session_id // empty')"
+
+  # cc-connect (the Feishu bridge) runs its agents outside tmux and sets
+  # CC_PROJECT. Its prompts are typed by the user too, so they go into the
+  # prompt log -- the same file and row shape track_ai_agent_state.sh writes --
+  # with the project as session and source "cc-connect"; no pane state.
+  if [ "$event" = "running" ] && [ -n "${CC_PROJECT:-}" ]; then
+    row="$(printf '%s' "$hook_input" | jq -c \
+      --arg time "$(date '+%Y-%m-%dT%H:%M:%S%z')" \
+      --arg session "$CC_PROJECT" \
+      '{time: $time, session: $session, window: "cc-connect", cwd: (.cwd // ""),
+        ai_session_id: (.session_id // ""), source: "cc-connect", sender: "user",
+        prompt: (.prompt // "")}')"
+    log_file="${AI_AGENT_PROMPT_LOG:-$HOME/.cache/tmux-ai-prompts.jsonl}"
+    mkdir -p "$(dirname "$log_file")"
+    { flock 9; printf '%s\n' "$row" >&9; } 9>>"$log_file"
+    exit 0
+  fi
+
   target="$(_parked_pane_for_session "$session_id")" || exit 0
   source_kind="claude-job"
 fi
@@ -102,6 +120,8 @@ case "$event" in
     # JSON at all, and a blocking read on this path would stall the pane.
     read_hook_input
     AI_AGENT_PROMPT="$(printf '%s' "$hook_input" | jq -r '.prompt // empty')" \
+      AI_AGENT_SESSION_ID="$(printf '%s' "$hook_input" | jq -r '.session_id // empty')" \
+      AI_AGENT_CWD="$(printf '%s' "$hook_input" | jq -r '.cwd // empty')" \
       AI_AGENT_STATE_SOURCE="$source_kind:running" exec "$TRACK_STATE" running "$target"
     ;;
   pretool)
