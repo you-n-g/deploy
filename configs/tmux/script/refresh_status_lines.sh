@@ -46,7 +46,10 @@ estimate_non_window_width() {
   # Reserve the maximum fraction label (8/8), waiting marker and leading space, so
   # navigating between clients/positions does not change the line-count threshold.
   history_width=5
-  echo $((left_width + host_width + fixed_right_width + history_width))
+  # The prompt progress ("LM ██████████ 123/52 "), when it is on.
+  lm_width=0
+  [ -z "$(tmux show-options -gqv @lm_progress 2>/dev/null)" ] || lm_width=21
+  echo $((left_width + host_width + fixed_right_width + history_width + lm_width))
 }
 
 non_window_width="$(tmux show-options -gqv @status-window-second-line-reserve 2>/dev/null || true)"

@@ -81,6 +81,17 @@ AI_TOOL_CHOICES = (
     ("claude", "claude — launch Claude Code with clauder"),
 )
 
+# status-left shows today's prompt progress (messages typed to agents against
+# a usual day) while this global tmux option is set; off by default.
+LM_PROGRESS_OPTION = "@lm_progress"
+LM_PROGRESS_CHOICES = (
+    ("on", "on — show today's prompt progress at the bottom-left"),
+    ("off", "off — hide it (default)"),
+)
+REFRESH_STATUS_LINES = (
+    Path(__file__).resolve().parents[2] / "configs/tmux/script/refresh_status_lines.sh"
+)
+
 
 class ToolError(RuntimeError):
     pass
@@ -174,6 +185,10 @@ def read_variable(variable: str, *scope: str) -> str | None:
     return None
 
 
+def read_global_option(option: str) -> str | None:
+    return run_tmux("show-option", "-gqv", option).stdout.strip() or None
+
+
 def read_pane_option(pane: str, option: str) -> str | None:
     # -q keeps an unset option quiet, so an empty result means "not set".
     result = run_tmux("show-option", "-pqv", "-t", pane, option, check=False)
@@ -227,6 +242,16 @@ def set_ai_tool(value: str) -> None:
     run_tmux("set-environment", "-g", AI_TOOL_VARIABLE, value)
 
 
+def set_lm_progress(value: str) -> None:
+    if value == "on":
+        run_tmux("set-option", "-g", LM_PROGRESS_OPTION, "1")
+    else:
+        run_tmux("set-option", "-gu", LM_PROGRESS_OPTION)
+    # The bar widens status-left; this re-decides the status line count and
+    # redraws the status line.
+    subprocess.run([str(REFRESH_STATUS_LINES)], check=True)
+
+
 class ProviderApp(App[None]):
     TITLE = "Tmux AI settings"
     CSS = """
@@ -242,6 +267,7 @@ class ProviderApp(App[None]):
         ("2", "show_tab('clauder-tab')", "Claude provider"),
         ("3", "show_tab('claude-tab')", "Claude model"),
         ("4", "show_tab('ai-tool-tab')", "AI tool"),
+        ("5", "show_tab('lm-progress-tab')", "LM progress"),
         ("r", "refresh", "Refresh"),
         ("left,escape,q", "quit", "Quit"),
     ]
@@ -327,6 +353,13 @@ class ProviderApp(App[None]):
                 yield OptionList(
                     *(Option(label, id=value) for value, label in AI_TOOL_CHOICES),
                     id="ai-tools",
+                    classes="choices",
+                )
+            with TabPane("LM Progress", id="lm-progress-tab"):
+                yield Static(id="lm-progress-status", classes="status")
+                yield OptionList(
+                    *(Option(label, id=value) for value, label in LM_PROGRESS_CHOICES),
+                    id="lm-progress",
                     classes="choices",
                 )
         yield Footer()
@@ -513,6 +546,14 @@ class ProviderApp(App[None]):
             "Applies to newly launched TMA agents"
             f"{unsupported_ai_tool}"
         )
+        self.query_one("#lm-progress-status", Static).update(
+            f"Prompt progress at the bottom-left: {self.lm_progress()}\n"
+            "Messages you typed to agents today / a usual whole day (the dashboard's\n"
+            "Prompts page counts), refreshed every 30 seconds"
+        )
+
+    def lm_progress(self) -> str:
+        return "on" if read_global_option(LM_PROGRESS_OPTION) else "off"
 
     def sync_highlight(self) -> None:
         pane_value, session_value, global_value, _, _ = self.values()
@@ -555,6 +596,9 @@ class ProviderApp(App[None]):
             if ai_tool in self.ai_tool_values
             else None
         )
+        self.query_one("#lm-progress", OptionList).highlighted = [
+            value for value, _ in LM_PROGRESS_CHOICES
+        ].index(self.lm_progress())
 
     def apply(self, value: str) -> None:
         try:
@@ -607,11 +651,22 @@ class ProviderApp(App[None]):
         self.sync_highlight()
         self.notify(f"global {AI_TOOL_VARIABLE} → {value}")
 
+    def apply_lm_progress(self, value: str) -> None:
+        try:
+            set_lm_progress(value)
+        except (ToolError, subprocess.CalledProcessError) as error:
+            self.notify(str(error), severity="error")
+            return
+        self.refresh_status()
+        self.sync_highlight()
+        self.notify(f"prompt progress → {value}")
+
     OPTION_LISTS: ClassVar[dict[str, str]] = {
         "provider-tab": "#providers",
         "clauder-tab": "#clauder-providers",
         "claude-tab": "#claude-models",
         "ai-tool-tab": "#ai-tools",
+        "lm-progress-tab": "#lm-progress",
     }
 
     def action_apply(self) -> None:
@@ -625,6 +680,8 @@ class ProviderApp(App[None]):
                 self.apply_clauder(value)
             elif active_tab == "claude-tab":
                 self.apply_claude(value)
+            elif active_tab == "lm-progress-tab":
+                self.apply_lm_progress(value)
             else:
                 self.apply_ai_tool(value)
 
@@ -657,6 +714,8 @@ class ProviderApp(App[None]):
             self.apply_clauder(event.option.id)
         elif event.option_list.id == "claude-models":
             self.apply_claude(event.option.id)
+        elif event.option_list.id == "lm-progress":
+            self.apply_lm_progress(event.option.id)
         else:
             self.apply_ai_tool(event.option.id)
 
@@ -665,7 +724,7 @@ def main() -> int:
     if sys.argv[1:] in (["-h"], ["--help"]):
         print(
             "llm-conf: configure the Codex provider, the Claude provider and"
-            " model, and the global tmux AI tool"
+            " model, the global tmux AI tool, and the prompt progress bar"
         )
         return 0
     pane = current_pane()

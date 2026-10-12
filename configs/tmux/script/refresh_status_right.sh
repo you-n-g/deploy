@@ -119,9 +119,15 @@ ai_group="#[fg=cyan]🤖 #(${SCRIPT_DIR}/print_ai_status.sh)#[default]"
 # own leading space too).
 ai_group="${ai_group}#[range=user|sb_a]#[fg=colour201]#(${SCRIPT_DIR}/../auto-switch/print-waiting-hint.sh)#[fg=green]#{@auto_switch_status_symbol}#[fg=colour203]#(${SCRIPT_DIR}/print_current_window_hint.sh)#[norange default]"
 
-# Count first (bottom-left), then the AI group, then one plain-background cell
-# before the session block so the block keeps the theme's own one-cell pad.
-tmux set-option -g status-left "${history_segment} ${ai_group} ${session_segment}"
+# Today's prompt progress against a usual day, off unless the global
+# @lm_progress option is set (llm-conf toggles it). tmux expands only the
+# chosen branch, so the job does not run while it is off.
+lm_segment="#{?@lm_progress,#(${SCRIPT_DIR}/print_lm_progress.sh) ,}"
+
+# Count first (bottom-left), then the prompt progress and the AI group, then
+# one plain-background cell before the session block so the block keeps the
+# theme's own one-cell pad.
+tmux set-option -g status-left "${history_segment} ${lm_segment}${ai_group} ${session_segment}"
 
 status_left_length="$(tmux show-options -gqv status-left-length 2>/dev/null || true)"
 case "$status_left_length" in
