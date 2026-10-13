@@ -4,9 +4,10 @@
 # modal and swallows every prefix key until it closes, while a floating pane is a
 # real pane, so window switching and navigate-note's tmux links keep working.
 #
-# CURRENT.md is written by the session's orchestrator Agent into its repo, so the
-# orchestrator window's cwd decides which repo to look in. Sessions without an
-# orchestrator window use the invoking pane's cwd instead.
+# CURRENT.md is written by the session's orchestrator Agent into its repo (or a
+# file named by .tma/tasks-file, see below), so the orchestrator window's cwd
+# decides which project to look in. Sessions without an orchestrator window use
+# the invoking pane's cwd instead.
 #
 # usage: open_current_tasks.sh SESSION WINDOW_ID PANE_ID WORKDIR   (from a tmux binding)
 set -euo pipefail
@@ -45,15 +46,45 @@ else
   LOOKUP_DIR="$WORKDIR"
 fi
 
-if ! REPO_ROOT="$(git -C "$LOOKUP_DIR" rev-parse --show-toplevel 2>/dev/null)"; then
-  echo "open_current_tasks.sh: $SOURCE is not inside a git repository" >&2
-  exit 1
-fi
+# A project whose tasks file is not <git root>/tasks/CURRENT.md -- e.g. a notes
+# vault that is not a git repo, or a plan kept under a subdirectory -- names it
+# in .tma/tasks-file: one line, a path relative to the directory holding .tma
+# (absolute also works). Search upward from the lookup dir, stopping at the git
+# root (or / outside a repo); the first hit wins. Both sides are physical paths
+# (show-toplevel resolves symlinks, so does pwd -P), so the stop test matches.
+find_tasks_pointer() {
+  local dir stop
+  stop="$(git -C "$1" rev-parse --show-toplevel 2>/dev/null || true)"
+  dir="$(cd "$1" && pwd -P)"
+  while :; do
+    if [[ -f "$dir/.tma/tasks-file" ]]; then
+      printf '%s\n' "$dir"
+      return 0
+    fi
+    [[ "$dir" == "${stop:-/}" || "$dir" == / ]] && return 1
+    dir="$(dirname "$dir")"
+  done
+}
 
-FILE="$REPO_ROOT/tasks/CURRENT.md"
-if [[ ! -f "$FILE" ]]; then
-  echo "open_current_tasks.sh: $FILE does not exist (looked via $SOURCE); run project-mindmap in current mode first" >&2
-  exit 1
+if POINTER_ROOT="$(find_tasks_pointer "$LOOKUP_DIR")"; then
+  REPO_ROOT="$POINTER_ROOT"
+  rel="$(grep -m1 -v '^[[:space:]]*$' "$POINTER_ROOT/.tma/tasks-file" || true)"
+  [[ -n "$rel" ]] || { echo "open_current_tasks.sh: $POINTER_ROOT/.tma/tasks-file is empty" >&2; exit 1; }
+  [[ "$rel" == /* ]] && FILE="$rel" || FILE="$POINTER_ROOT/$rel"
+  if [[ ! -f "$FILE" ]]; then
+    echo "open_current_tasks.sh: $FILE does not exist (named by $POINTER_ROOT/.tma/tasks-file)" >&2
+    exit 1
+  fi
+else
+  if ! REPO_ROOT="$(git -C "$LOOKUP_DIR" rev-parse --show-toplevel 2>/dev/null)"; then
+    echo "open_current_tasks.sh: $SOURCE is not inside a git repository and has no .tma/tasks-file" >&2
+    exit 1
+  fi
+  FILE="$REPO_ROOT/tasks/CURRENT.md"
+  if [[ ! -f "$FILE" ]]; then
+    echo "open_current_tasks.sh: $FILE does not exist (looked via $SOURCE); run project-mindmap in current mode first" >&2
+    exit 1
+  fi
 fi
 
 command -v nvim >/dev/null 2>&1 || { echo "open_current_tasks.sh: nvim not found" >&2; exit 1; }
