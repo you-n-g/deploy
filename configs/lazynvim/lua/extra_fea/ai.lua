@@ -8,6 +8,8 @@
   where: a  the AI pane of this session (picked when there are several; asks for
             a target when there is none)
          l  the AI pane visited last, in any session
+         n  the nearest AI pane: in this window, else the session window
+            closest by index
          f  the floating AI pane of this window, created (and waited for)
             when there is none
   A lowercase <where> pastes and switches there; uppercase pastes, presses
@@ -266,6 +268,22 @@ local destinations = {
         return
       end
       callback(session, window, pane)
+    end,
+  },
+  n = {
+    desc = "最近的 AI（本窗口优先，其次编号最近的窗口）",
+    resolve = function(callback)
+      local host = vim.env.TMUX_PANE
+      if not host or host == "" then
+        print("Not inside a tmux pane")
+        return
+      end
+      local target = trim(vim.fn.system({ vim.fn.expand("~/deploy/configs/tmux/ai/nearest_ai_pane.sh"), host }))
+      if vim.v.shell_error ~= 0 or target == "" then
+        print("No AI pane in this session")
+        return
+      end
+      callback(target:match("^([^:]+):([^%.]+)%.(.+)$"))
     end,
   },
   f = {
