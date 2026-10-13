@@ -731,10 +731,12 @@ _ai_pane_fzf_list() {
             sort_key=05
             status=$'\033[33m●\033[0m '
         elif $is_done; then
-            sort_key=09
+            # Done sits with the panes that need no attention (above), ahead
+            # of unread and idle, where the picker's cursor starts.
+            sort_key=08
             status=$'\033[32m✓\033[0m '
         elif (( is_unread )); then
-            sort_key=08
+            sort_key=09
             status=$'\033[33m◉\033[0m '
         else
             sort_key=1
