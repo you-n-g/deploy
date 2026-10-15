@@ -22,7 +22,7 @@ if [[ "${1:-}" == "--wake" ]]; then
   pane="${2:?$usage}"
   reason="${3:?$usage}"
   [[ "$(tmux show-option -pqv -t "$pane" @ai_agent_pending 2>/dev/null)" == "$reason" ]] || exit 0
-  AI_AGENT_STATE_SOURCE=snooze-wake exec "$script_dir/track_ai_agent_state.sh" toggle-pending "$pane"
+  AI_AGENT_STATE_SOURCE=snooze-wake exec "$script_dir/track_ai_agent_state.sh" wake "$pane"
 fi
 
 pane="$(tmux display-message -p -t "${1:?$usage}" '#{pane_id}')"

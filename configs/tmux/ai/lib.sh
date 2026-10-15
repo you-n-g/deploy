@@ -294,6 +294,12 @@ _ai_done_pane_ids() {
     tmux list-panes -a -F '#{?@ai_agent_done,#{pane_id},}' 2>/dev/null | grep . || true
 }
 
+# Pane ids unread because they were released from pending (@ai_agent_woke),
+# looked up the same way as _ai_done_pane_ids.
+_ai_woke_pane_ids() {
+    tmux list-panes -a -F '#{?@ai_agent_woke,#{pane_id},}' 2>/dev/null | grep . || true
+}
+
 _ai_pending_reason_label() {
     local pending="$1"
     local out_var="$2"
@@ -441,6 +447,7 @@ _clear_ai_pane_state() {
     tmux set-option -pqu -t "$pane_id" @ai_agent_running 2>/dev/null || true
     tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
     tmux set-option -pqu -t "$pane_id" @ai_agent_unread 2>/dev/null || true
+    tmux set-option -pqu -t "$pane_id" @ai_agent_woke 2>/dev/null || true
     tmux set-option -pqu -t "$pane_id" @ai_agent_attribute 2>/dev/null || true
 }
 
@@ -666,6 +673,7 @@ _ai_pane_rows() {
 #   ◒   (yellow) Claude background work
 #   ⏸   (magenta) pending — intentionally waiting on something
 #   ◉   (yellow) unread — finished while not visible
+#   ☀   (yellow) unread — released from pending (dependency or snooze) out of sight
 #   ○   (green)  idle, nothing new since last visit
 #
 # Example output (after ANSI codes stripped):
@@ -688,6 +696,8 @@ _ai_pane_fzf_list() {
     ranked_pane_ids="$(_ai_ranked_pane_id_set)"
     local done_pane_ids
     done_pane_ids=" $(_ai_done_pane_ids | tr '\n' ' ') "
+    local woke_pane_ids
+    woke_pane_ids=" $(_ai_woke_pane_ids | tr '\n' ' ') "
 
     _ai_fzf_reset_session_colors
 
@@ -735,6 +745,9 @@ _ai_pane_fzf_list() {
             # of unread and idle, where the picker's cursor starts.
             sort_key=08
             status=$'\033[32m✓\033[0m '
+        elif (( is_unread )) && [[ "$woke_pane_ids" == *" $wid "* ]]; then
+            sort_key=09
+            status=$'\033[33m☀\033[0m '
         elif (( is_unread )); then
             sort_key=09
             status=$'\033[33m◉\033[0m '
@@ -768,6 +781,7 @@ _ai_pane_fzf_list() {
             state_tags+=$' \033[32m[done]\033[0m'
         elif (( is_unread )); then
             state_tags+=$' \033[33m[unread]\033[0m'
+            [[ "$woke_pane_ids" == *" $wid "* ]] && state_tags+=$' \033[33m[woke]\033[0m'
         else
             state_tags+=" [idle]"
         fi

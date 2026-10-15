@@ -165,7 +165,7 @@ _fzf_header() {
         orchestrator_help="  Ctrl-O toggle orchestrator"
     fi
 
-    printf '▶ current pane busy  ➲ current Claude background  ◒ Claude background  ⏸ pending  ▷ current pane idle  ● busy  ✓ done  ◉ unread  ○ idle  |  orchestrator: %s  |  switcher: %s  |  Enter switch  Ctrl-R reset desc%s\n' \
+    printf '▶ current pane busy  ➲ current Claude background  ◒ Claude background  ⏸ pending  ▷ current pane idle  ● busy  ✓ done  ◉ unread  ☀ woke from pending  ○ idle  |  orchestrator: %s  |  switcher: %s  |  Enter switch  Ctrl-R reset desc%s\n' \
         "$orchestrator_label" \
         "$(_switcher_header_info)" \
         "$orchestrator_help"
