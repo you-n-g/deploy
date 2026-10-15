@@ -81,7 +81,9 @@ decorate_window_status() {
   styled_index='#{?#{m/r:(^| )#{pane_id}( |$),#{@auto_switch_ranked_panes}},#[bold]#[underscore]#I#[nobold]#[nounderscore],#I}'
   has_ai_state='#{||:#{!=:#{@ai_agent_running},},#{||:#{!=:#{@ai_agent_background},},#{||:#{!=:#{@ai_agent_unread},},#{||:#{!=:#{@ai_agent_pending},},#{||:#{!=:#{@ai_agent_done},},#{!=:#{@ai_agent_attribute},}}}}}}'
   state_symbol="#{?#{!=:#{@ai_agent_pending},},⏸,#{?#{==:#{@ai_agent_background},1},◒,#{?#{==:#{@ai_agent_running},1},●,#{?#{==:#{@ai_agent_done},1},✓,#{?#{==:#{@ai_agent_unread},1},#{?#{==:#{@ai_agent_woke},1},☀,◉},○}}}}}"
-  state_suffix="#{?${has_ai_state},${state_symbol},}"
+  # A window a TMA agent made (@tma_created, mark_tma_window.sh) has its
+  # symbol in cyan, so it reads as the agents' own and is safe to close.
+  state_suffix="#{?${has_ai_state},#{?@tma_created,#[fg=colour45]${state_symbol}#[fg=${name_fg}],${state_symbol}},}"
   option_value="${option_value// #I / ${styled_index} ${state_suffix}}"
   # The next auto-switch target's name turns green; a zoomed window's name is
   # bold magenta (zoom_fg, picked per background), so a pane hiding the rest
