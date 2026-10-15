@@ -119,7 +119,7 @@ normalize_existing_sequence() {
 }
 
 status_prefix() {
-  local unread="$1" running="$2" background="$3" pending="$4" done="$5"
+  local unread="$1" running="$2" background="$3" pending="$4" done="$5" woke="${6:-}"
   if [[ -n "$pending" ]]; then
     printf '⏸ '
   elif [[ "$background" == "1" ]]; then
@@ -128,6 +128,8 @@ status_prefix() {
     printf '● '
   elif [[ "$done" == "1" ]]; then
     printf '✓ '
+  elif [[ "$unread" == "1" && "$woke" == "1" ]]; then
+    printf '☀ '
   elif [[ "$unread" == "1" ]]; then
     printf '◉ '
   else
@@ -137,7 +139,7 @@ status_prefix() {
 
 pane_label() {
   local pane="$1"
-  local session_name window_name unread running background pending done attribute clean_attribute label
+  local session_name window_name unread running background pending done woke attribute clean_attribute label
 
   session_name="$(tmux display-message -p -t "$pane" '#{session_name}' 2>/dev/null || true)"
   window_name="$(tmux display-message -p -t "$pane" '#{window_name}' 2>/dev/null || true)"
@@ -146,11 +148,12 @@ pane_label() {
   background="$(tmux show -pv -t "$pane" @ai_agent_background 2>/dev/null || true)"
   pending="$(tmux show -pv -t "$pane" @ai_agent_pending 2>/dev/null || true)"
   done="$(tmux show -pv -t "$pane" @ai_agent_done 2>/dev/null || true)"
+  woke="$(tmux show -pv -t "$pane" @ai_agent_woke 2>/dev/null || true)"
   attribute="$(tmux show -pv -t "$pane" @ai_agent_attribute 2>/dev/null || true)"
   clean_attribute="$(printf '%s' "$attribute" | strip_tmux_format)"
   label="$(compact_ai_label "$session_name" "$window_name" "$clean_attribute")"
   label="${label} [${session_name}:${window_name}]"
-  printf '%s%s' "$(status_prefix "$unread" "$running" "$background" "$pending" "$done")" "$label"
+  printf '%s%s' "$(status_prefix "$unread" "$running" "$background" "$pending" "$done" "$woke")" "$label"
 }
 
 saved_ranked_panes() {
