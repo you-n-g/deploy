@@ -507,6 +507,7 @@ highlight AutoSwitchStateRunning ctermfg=110 cterm=NONE guifg=#87afd7 gui=NONE
 highlight AutoSwitchStateBackground ctermfg=109 cterm=NONE guifg=#87afaf gui=NONE
 highlight AutoSwitchStatePending ctermfg=139 cterm=NONE guifg=#af87af gui=NONE
 highlight AutoSwitchStateUnread ctermfg=143 cterm=NONE guifg=#afaf5f gui=NONE
+highlight AutoSwitchStateWoke ctermfg=179 cterm=bold guifg=#d7af5f gui=bold
 highlight AutoSwitchStateIdle ctermfg=245 cterm=NONE guifg=#8a8a8a gui=NONE
 highlight AutoSwitchStateDone ctermfg=108 cterm=NONE guifg=#87af87 gui=NONE
 " Keep the zebra striping deliberately faint: it should separate adjacent pane
@@ -572,6 +573,7 @@ call matchadd('AutoSwitchStateRunning', '|\\s*\\zsrunning\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateBackground', '|\\s*\\zsbackground\\ze\\s*|', 40)
 call matchadd('AutoSwitchStatePending', '|\\s*\\zspending[^|]*\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateUnread', '|\\s*\\zsunread\\ze\\s*|', 40)
+call matchadd('AutoSwitchStateWoke', '|\\s*\\zswoke\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateIdle', '|\\s*\\zsidle\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateDone', '|\\s*\\zsdone\\ze\\s*|', 40)
 let s:auto_switch_session_groups = [
@@ -595,8 +597,8 @@ for s:auto_switch_line in getline(1, '$')
         \\ '^%[0-9]\\+\\s\\+#\\s\\+\\zs\\V' . s:auto_switch_literal_session . '\\m\\ze:', 35)
 endfor
 for s:auto_switch_colour in ['AutoSwitchStateRunning', 'AutoSwitchStateBackground',
-      \ 'AutoSwitchStatePending', 'AutoSwitchStateUnread', 'AutoSwitchStateIdle',
-      \ 'AutoSwitchStateDone']
+      \ 'AutoSwitchStatePending', 'AutoSwitchStateUnread', 'AutoSwitchStateWoke',
+      \ 'AutoSwitchStateIdle', 'AutoSwitchStateDone']
       \ + s:auto_switch_session_groups
   let s:auto_switch_colour_id = synIDtrans(hlID(s:auto_switch_colour))
   execute 'highlight' s:auto_switch_colour . 'Active'

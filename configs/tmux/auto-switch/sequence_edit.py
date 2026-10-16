@@ -31,6 +31,7 @@ PANE_FORMAT = FIELD_SEP.join(
         "#{@ai_agent_background}",
         "#{@ai_agent_pending}",
         "#{@ai_agent_done}",
+        "#{@ai_agent_woke}",
         "#{@ai_agent_attribute}",
     ]
 )
@@ -120,7 +121,7 @@ def pad_display(text: str, width: int) -> str:
     return text + " " * max(0, width - display_width(text))
 
 
-def state_label(unread: str, running: str, background: str, pending: str, done: str) -> str:
+def state_label(unread: str, running: str, background: str, pending: str, done: str, woke: str) -> str:
     if pending:
         return "pending"
     if background == "1":
@@ -129,6 +130,8 @@ def state_label(unread: str, running: str, background: str, pending: str, done: 
         return "running"
     if done == "1":
         return "done"
+    if unread == "1" and woke == "1":
+        return "woke"  # unread because it was released from pending
     if unread == "1":
         return "unread"
     return "idle"
@@ -144,8 +147,8 @@ def load_panes() -> Dict[str, Dict[str, str]]:
     rows: Dict[str, Dict[str, str]] = {}
     output = tmux_output("list-panes", "-a", "-F", PANE_FORMAT)
     for line in output.splitlines():
-        parts = line.split(FIELD_SEP, 11)
-        if len(parts) != 12 or not parts[0]:
+        parts = line.split(FIELD_SEP, 12)
+        if len(parts) != 13 or not parts[0]:
             continue
         (
             pane_id,
@@ -159,6 +162,7 @@ def load_panes() -> Dict[str, Dict[str, str]]:
             background,
             pending,
             done,
+            woke,
             attribute,
         ) = parts
         rows[pane_id] = {
@@ -173,6 +177,7 @@ def load_panes() -> Dict[str, Dict[str, str]]:
             "background": background,
             "pending": pending,
             "done": done,
+            "woke": woke,
             "attribute": attribute,
         }
     return rows
@@ -220,7 +225,7 @@ def normalize_sequence(ranked: str) -> str:
 def edit_row(row: Dict[str, str], session_name: str) -> Dict[str, str]:
     window_name = row["window_name"]
     target = f"{row['session_name']}:{window_name}.{row['pane_index']}"
-    state = state_label(row["unread"], row["running"], row["background"], row["pending"], row["done"])
+    state = state_label(row["unread"], row["running"], row["background"], row["pending"], row["done"], row["woke"])
     attribute = strip_tmux_format(row["attribute"]) or "no attribute"
     return {
         "pane_id": row["pane_id"],
@@ -356,6 +361,7 @@ def apply_edit_file(path: str) -> str:
                 tmux_run("set-option", "-pq", "-t", pane, "@ai_agent_running", "0")
                 tmux_run("set-option", "-pqu", "-t", pane, "@ai_agent_background")
                 tmux_run("set-option", "-pq", "-t", pane, "@ai_agent_unread", "0")
+                tmux_run("set-option", "-pqu", "-t", pane, "@ai_agent_woke")
             else:
                 tmux_run("set-option", "-pqu", "-t", pane, "@ai_agent_pending")
             changed = True

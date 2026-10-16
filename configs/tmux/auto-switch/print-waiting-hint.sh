@@ -10,14 +10,14 @@ ranked="$(tmux show-option -gqv @auto_switch_ranked_panes 2>/dev/null || true)"
 current_pane="$(tmux display-message -p '#{pane_id}' 2>/dev/null || true)"
 [ -n "$current_pane" ] || exit 0
 
-pane_rows="$(tmux list-panes -a -F '#{pane_id}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_unread}|#{@ai_agent_pending}|#{@ai_agent_done}' 2>/dev/null || true)"
+pane_rows="$(tmux list-panes -a -F '#{pane_id}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_unread}|#{@ai_agent_pending}|#{@ai_agent_done}|#{@ai_agent_woke}' 2>/dev/null || true)"
 
 lookup_pane_state() {
-  local wanted="$1" pane running background unread pending done
+  local wanted="$1" pane running background unread pending done woke
 
-  while IFS='|' read -r pane running background unread pending done; do
+  while IFS='|' read -r pane running background unread pending done woke; do
     [ "$pane" = "$wanted" ] || continue
-    printf '%s|%s|%s|%s|%s\n' "$running" "$background" "$unread" "$pending" "$done"
+    printf '%s|%s|%s|%s|%s|%s\n' "$running" "$background" "$unread" "$pending" "$done" "$woke"
     return 0
   done <<< "$pane_rows"
 
@@ -25,7 +25,7 @@ lookup_pane_state() {
 }
 
 state_symbol() {
-  local running="$1" background="$2" unread="$3" pending="$4"
+  local running="$1" background="$2" unread="$3" pending="$4" woke="${5:-}"
 
   if [ -n "$pending" ]; then
     printf '⏸'
@@ -33,6 +33,8 @@ state_symbol() {
     printf '◒'
   elif [ "$running" = "1" ]; then
     printf '●'
+  elif [ "$unread" = "1" ] && [ "$woke" = "1" ]; then
+    printf '☀'
   elif [ "$unread" = "1" ]; then
     printf '◉'
   else
@@ -45,13 +47,13 @@ best_symbol=""
 for candidate in $ranked; do
   row="$(lookup_pane_state "$candidate" || true)"
   [ -n "$row" ] || continue
-  IFS='|' read -r running background unread pending done <<< "$row"
+  IFS='|' read -r running background unread pending done woke <<< "$row"
   if [ "$running" != "1" ] \
     && [ "$background" != "1" ] \
     && [ -z "$pending" ] \
     && [ -z "$done" ]; then
     best_pane="$candidate"
-    best_symbol="$(state_symbol "$running" "$background" "$unread" "$pending")"
+    best_symbol="$(state_symbol "$running" "$background" "$unread" "$pending" "$woke")"
     break
   fi
 done

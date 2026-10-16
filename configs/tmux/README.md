@@ -53,3 +53,19 @@ tmux 3.7b 有个 bug：在 zoom 状态的 window 里用 `new-pane` 建的 floati
 所有浮窗都经 `script/new_float_pane.sh` 创建，它是唯一调用 `tmux new-pane` 的地方（`tests/test_float_panes.py` 会拒绝别处的直接调用）：默认先取消 zoom 再建；后台弹出的不打断 zoom：`--skip-if-zoomed` 时不建、退出码 3（auto-switch 切换预览）；`--zoomed-message TEXT` 同样不建，但先在状态栏显示 TEXT 5 秒（完成 toast）。tmux 修复前不要绕过它。
 
 另一个坑：window 处于 zoom 时，tmux 把浮窗的 `#{pane_floating_flag}` 报成 0。要按这个标志区分浮窗和分屏的脚本（`float_to_split.sh`、`split_to_float.sh`）都先取消 zoom 再判断。
+
+# AI pane 状态标识
+
+pane 的状态存在 pane option 里（`@ai_agent_running` / `_background` / `_pending` / `_done` / `_unread` / `_woke`，含义见 `script/track_ai_agent_state.sh` 文件头），窗口是否由 Agent 创建存在 window option `@tma_created`。状态只由 `track_ai_agent_state.sh` 写；下面这些地方各自读它、各自画符号，加一种状态或改一个符号时要逐个改：
+
+| 位置 | 文件 | 画法 |
+| --- | --- | --- |
+| 底部窗口列表 | `script/refresh_status_right.sh` 的 `decorate_window_status` | tmux 格式串里的 `state_symbol`；脚本只装饰一次，已运行的 tmux 要手动改 `window-status-format` / `window-status-current-format` 或重启 |
+| 左下角计数 | `script/print_ai_status.sh` | running / `~`background / `!`unread 的数量 |
+| `prefix + g` / `C-g` 选择器 | `ai/lib.sh` 的 `_ai_pane_fzf_list` | 符号、`[unread]` 这类标签、排序键；图例在 `ai/get_ai_pane.sh` 的 header；光标起点在 `_fzf_start_pos` 按标签找 |
+| `prefix + C-a` 序列编辑器 | `auto-switch/sequence_edit.py` 的 `state_label`（状态写成单词）、`auto-switch/sequence.sh` 的 vim 高亮（`AutoSwitchState*`）和 `status_prefix`（预览里的符号） | |
+| 终端标题 | `script/print_terminal_title.sh` | |
+| 下一个 auto-switch 目标提示 | `auto-switch/print-waiting-hint.sh` | |
+| auto-switch 跳过谁 | `auto-switch/switch-next.sh`、`auto-switch/refresh-next-pane.sh` | 只看 running / background / pending / done |
+
+改完跑 `python3 -m unittest configs/tmux/tests/test_state_symbols.py`：它检查画了某个符号的文件把同一族的符号都画了（比如有 unread 的 ◉ 就要有 woke 的 ☀），以及序列编辑器认识每种状态。加了新符号就把它补进测试里的 `FAMILIES` / `WORD_FILES`。
