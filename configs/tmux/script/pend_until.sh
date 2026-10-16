@@ -10,7 +10,8 @@
 # idle turn end releases "等", marking done releases both. A released pane
 # returning to idle counts as idle, so a chain A->B->C unwinds at once. A
 # target that stops with background work still pending is not idle yet.
-# Waiting for done on a target already marked done sets nothing.
+# Waiting for done on a target already marked done, or for idle on a target
+# already idle, sets nothing.
 #
 # Without TARGET an AI-pane picker opens (the tmuxg one) over PANE's session,
 # or over every session with -A; prefix + M-p w / W / f / F. TMA Agents can
@@ -59,6 +60,15 @@ fi
 label="$(tmux display-message -p -t "$target" '#{session_name}:#{window_index}.#{pane_index} #{window_name}')"
 if [[ "$mode" == "done" && -n "$(tmux show-option -pqv -t "$target" @ai_agent_done)" ]]; then
   tmux display-message "pend_until: $label 已标记完成，不用等"
+  exit 0
+fi
+# An idle wait is released by the target's next idle edge; a target already
+# idle (not running, no background work, not pending itself) may never have
+# one, so there is nothing to wait for.
+read -r t_running t_background t_pending < <(tmux display-message -p -t "$target" \
+  '#{?#{==:#{@ai_agent_running},1},1,0} #{?#{==:#{@ai_agent_background},1},1,0} #{?@ai_agent_pending,1,0}')
+if [[ "$mode" == "idle" && "$t_running$t_background$t_pending" == "000" ]]; then
+  tmux display-message "pend_until: $label 已经 idle，不用等"
   exit 0
 fi
 AI_AGENT_STATE_SOURCE="${AI_AGENT_STATE_SOURCE:-pend-until-$mode}" \
