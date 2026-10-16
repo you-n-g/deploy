@@ -736,6 +736,40 @@ function! s:AutoSwitchMoveToEdge(direction) abort
   call cursor(l:lnum, 1)
 endfunction
 
+" Visual-mode twin of Alt-a / Alt-e: send the whole selected block to the top /
+" bottom of the pane block, keeping its order. Same rule as the drag: every
+" selected line must be a pane row. The moved block stays selected.
+function! s:AutoSwitchMoveRangeToEdge(direction) abort
+  let l:top = line("'<")
+  let l:bot = line("'>")
+  let l:ok = 1
+  for l:lnum in range(l:top, l:bot)
+    let l:ok = l:ok && s:AutoSwitchIsPaneLine(l:lnum)
+  endfor
+  if !l:ok
+    echohl WarningMsg
+    echo 'Pane lines can only be reordered among themselves'
+    echohl None
+    normal! gv
+    return
+  endif
+  let l:edge = a:direction > 0 ? l:bot : l:top
+  while s:AutoSwitchIsPaneLine(l:edge + a:direction)
+    let l:edge += a:direction
+  endwhile
+  let l:size = l:bot - l:top
+  if a:direction > 0
+    execute l:top . ',' . l:bot . 'move ' . l:edge
+    let l:top = l:edge - l:size
+  else
+    execute l:top . ',' . l:bot . 'move ' . (l:edge - 1)
+    let l:top = l:edge
+  endif
+  call cursor(l:top, 1)
+  normal! V
+  call cursor(l:top + l:size, 1)
+endfunction
+
 " tmux hands Alt-j to the popup as ESC j. Terminal vim does not know that
 " byte pair is a Meta key until told; nvim decodes it on its own.
 if !has('nvim')
@@ -751,6 +785,8 @@ xnoremap <buffer> <silent> <M-j> :<C-u>call <SID>AutoSwitchMoveRange(1)<CR>
 xnoremap <buffer> <silent> <M-k> :<C-u>call <SID>AutoSwitchMoveRange(-1)<CR>
 nnoremap <buffer> <silent> <M-a> :call <SID>AutoSwitchMoveToEdge(-1)<CR>
 nnoremap <buffer> <silent> <M-e> :call <SID>AutoSwitchMoveToEdge(1)<CR>
+xnoremap <buffer> <silent> <M-a> :<C-u>call <SID>AutoSwitchMoveRangeToEdge(-1)<CR>
+xnoremap <buffer> <silent> <M-e> :<C-u>call <SID>AutoSwitchMoveRangeToEdge(1)<CR>
 VIM
   vim_script_file="${vim_script//\'/''}"
 
