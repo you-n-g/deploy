@@ -681,6 +681,7 @@ _ai_pane_rows() {
 #   ◉   (yellow) unread — finished while not visible
 #   ☀   (yellow) unread — released from pending (dependency or snooze) out of sight
 #   ○   (green)  idle, nothing new since last visit
+#   [agent] (cyan) after the window name: a TMA agent made the window
 #
 # Example output (after ANSI codes stripped):
 #   %12 work:3.0 ▶ claude          [act 5s]  [pane %12]
@@ -803,6 +804,11 @@ _ai_pane_fzf_list() {
         display_wname="$wname"
         if $is_ranked; then
             display_wname=$'\033[1;91m'"${display_wname}"$'\033[0m'
+        fi
+        # A window a TMA agent made says so next to its name, in the cyan of
+        # its window-list symbol.
+        if [[ "$tma_pane_ids" == *" $wid "* ]]; then
+            display_wname="${display_wname} "$'\033[36m[agent]\033[0m'
         fi
         path_info=""
         [[ -n "$pane_path" ]] && path_info="  ${pane_path}"
