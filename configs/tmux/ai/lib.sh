@@ -294,6 +294,12 @@ _ai_done_pane_ids() {
     tmux list-panes -a -F '#{?@ai_agent_done,#{pane_id},}' 2>/dev/null | grep . || true
 }
 
+# Pane ids in windows a TMA agent made (@tma_created, a window option), looked
+# up the same way as _ai_done_pane_ids.
+_ai_tma_pane_ids() {
+    tmux list-panes -a -F '#{?@tma_created,#{pane_id},}' 2>/dev/null | grep . || true
+}
+
 # Pane ids unread because they were released from pending (@ai_agent_woke),
 # looked up the same way as _ai_done_pane_ids.
 _ai_woke_pane_ids() {
@@ -698,6 +704,8 @@ _ai_pane_fzf_list() {
     done_pane_ids=" $(_ai_done_pane_ids | tr '\n' ' ') "
     local woke_pane_ids
     woke_pane_ids=" $(_ai_woke_pane_ids | tr '\n' ' ') "
+    local tma_pane_ids
+    tma_pane_ids=" $(_ai_tma_pane_ids | tr '\n' ' ') "
 
     _ai_fzf_reset_session_colors
 
@@ -802,6 +810,13 @@ _ai_pane_fzf_list() {
         local pane_marker="pane ${wid}"
         [[ -n "$marked_pane_id" && "$wid" == "$marked_pane_id" ]] && pane_marker="${pane_marker} marked"
         [[ -n "$switcher_pane_id" && "$wid" == "$switcher_pane_id" ]] && pane_marker="${pane_marker} switcher"
+        # Within one state, the windows a TMA agent made come after the
+        # user's own: they mostly need less attention.
+        if [[ "$tma_pane_ids" == *" $wid "* ]]; then
+            sort_key="${sort_key}1"
+        else
+            sort_key="${sort_key}0"
+        fi
         if [[ "${AI_PANE_FZF_PRESERVE_ORDER:-}" == "1" ]]; then
             printf -v sort_key '%08d' "$input_index"
         fi

@@ -71,6 +71,13 @@ decorate_window_status() {
   # window background, colour239 / colour90 for the current window's.
   name_fg="$2"
   zoom_fg="$3"
+  # The state symbol of a window a TMA agent made is cyan. On the current
+  # window's orange cyan barely shows, so there it sits on a dark cell:
+  # tma_style turns that on, tma_reset restores the window's own colours.
+  # Both are #[...] runs of one attribute each: a comma inside #[] would end
+  # the #{?...} branch they sit in.
+  tma_style="$4"
+  tma_reset="$5"
   option_value="$(tmux show-options -gqv "$option_name")"
   # This script can run once from tmux.conf and again after TPM finishes.  Do
   # not decorate the result of an earlier run: replacing its embedded #W again
@@ -82,8 +89,8 @@ decorate_window_status() {
   has_ai_state='#{||:#{!=:#{@ai_agent_running},},#{||:#{!=:#{@ai_agent_background},},#{||:#{!=:#{@ai_agent_unread},},#{||:#{!=:#{@ai_agent_pending},},#{||:#{!=:#{@ai_agent_done},},#{!=:#{@ai_agent_attribute},}}}}}}'
   state_symbol="#{?#{!=:#{@ai_agent_pending},},⏸,#{?#{==:#{@ai_agent_background},1},◒,#{?#{==:#{@ai_agent_running},1},●,#{?#{==:#{@ai_agent_done},1},✓,#{?#{==:#{@ai_agent_unread},1},#{?#{==:#{@ai_agent_woke},1},☀,◉},○}}}}}"
   # A window a TMA agent made (@tma_created, mark_tma_window.sh) has its
-  # symbol in cyan, so it reads as the agents' own and is safe to close.
-  state_suffix="#{?${has_ai_state},#{?@tma_created,#[fg=colour45]${state_symbol}#[fg=${name_fg}],${state_symbol}},}"
+  # symbol in tma_fg, so it reads as the agents' own and is safe to close.
+  state_suffix="#{?${has_ai_state},#{?@tma_created,${tma_style}#[bold]${state_symbol}${tma_reset}#[nobold],${state_symbol}},}"
   option_value="${option_value// #I / ${styled_index} ${state_suffix}}"
   # The next auto-switch target's name turns green; a zoomed window's name is
   # bold magenta (zoom_fg, picked per background), so a pane hiding the rest
@@ -96,8 +103,8 @@ decorate_window_status() {
   tmux set-option -g "$option_name" "$option_value"
 }
 
-decorate_window_status window-status-format colour223 colour213
-decorate_window_status window-status-current-format colour239 colour90
+decorate_window_status window-status-format colour223 colour213 '#[fg=colour45]' '#[fg=colour223]'
+decorate_window_status window-status-current-format colour239 colour90 '#[fg=colour45]#[bg=colour237]' '#[fg=colour239]#[bg=colour214]'
 
 status_right="${status_right}#[fg=green]#(${SCRIPT_DIR}/print_resource_status.sh)#[default]"
 status_right="${status_right} #[fg=yellow]#(df -h ${mount_path} 2>/dev/null | awk 'NR==2 {print \"${display_path} \" \$5 \" \" \$4}')#[default]"
