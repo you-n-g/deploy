@@ -4,9 +4,13 @@
 # For an agent that has handed its work to other agents and now only waits on
 # them. PANE goes pending at once (reason "判定中…") and the user is moved on;
 # in the background a headless AI reads PANE's recent output against the list
-# of live AI panes and picks the one it waits on, and whether until that pane
-# goes idle or until it is marked done. The reason then becomes the usual
-# pend_until.sh one, so the release works as for prefix + M-p w / f.
+# of live AI panes and picks the one it waits on. The reason then becomes the
+# usual pend_until.sh "等 %id" one, so the release works as for prefix + M-p w.
+#
+# Always until idle, never until done: a pane is marked done only by hand, and
+# agents seldom are, so a done wait would never release. Idle already means
+# the work is over -- a turn that stops with background jobs still pending is
+# background, not idle.
 #
 # When the AI finds no AI pane to wait on, the reason becomes its short note
 # of what PANE waits for (a plain pending, released by hand). The answer is
@@ -73,8 +77,7 @@ trap 'rm -f "$prompt" "$answer" "$errors"' EXIT
 $candidates
 
 只输出一行，不要解释、不要 Markdown：
-- 等某个窗口这一轮停下（它跑完一轮回到 idle 就能继续）：idle <pane id>
-- 等某个窗口把整个任务做完（中间会停好几次，要它标记完成才算）：done <pane id>
+- 等某个窗口（它停下来、没有后台作业时就能继续）：idle <pane id>
 - 等的不是上面任何窗口（比如等 Slurm 作业、等用户拍板）：none <不超过 15 个字的等待内容>
 同时在等好几个窗口时，选最晚才会结束的那个。pane id 形如 %123，必须来自候选列表。
 
@@ -85,16 +88,16 @@ EOF
 
 "$script_dir/headless_ai.sh" "$pane" < "$prompt" > "$answer" 2> "$errors" \
   || fail "AI 调用失败：$(grep -v '^[[:space:]]*$' "$errors" | tail -n 1)"
-read -r mode rest < <(grep -m1 -E '^(idle|done|none)( |$)' "$answer" || true) || true
+read -r mode rest < <(grep -m1 -E '^(idle|none)( |$)' "$answer" || true) || true
 [[ -n "${mode:-}" ]] || fail "AI 回答无法解析：$(head -c 80 "$answer")"
 
 still_ours || exit 0
 case "$mode" in
-  idle|done)
+  idle)
     target="${rest%% *}"
     grep -q "^$target " <<< "$candidates" || fail "AI 选的 $target 不在候选里"
     AI_AGENT_STATE_SOURCE=auto-pend "$script_dir/pend_until.sh" "$mode" "$pane" "$target"
-    # A done target needs no wait: pend_until.sh sets nothing, so release.
+    # A target already idle needs no wait: pend_until.sh sets nothing, so release.
     if still_ours; then
       AI_AGENT_STATE_SOURCE=auto-pend "$script_dir/track_ai_agent_state.sh" wake "$pane"
     fi
