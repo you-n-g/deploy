@@ -30,6 +30,7 @@ from aiohttp import web
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 443
 RECEIVER = "__msg_bridge_receiver__"
+RECEIVER_PROTOCOL = "msg-bridge.v2"
 BATCH_DELAY = 0.5
 DEFAULT_DB = Path.home() / ".local/share/msg-bridge/messages.sqlite3"
 DEFAULT_PASSWORD_FILE = Path.home() / ".config/msg-bridge/web-password"
@@ -57,7 +58,7 @@ WEB_PAGE = r"""<!doctype html>
     <form id="sender">
       <label for="message">消息</label>
       <textarea id="message" rows="8" placeholder="在这里输入…" required></textarea>
-      <div class="actions"><span>Ctrl / ⌘ + Enter 发送</span><button type="submit">发送</button></div>
+      <div class="actions"><span>Ctrl / ⌘ + Enter 发送</span><div class="send-buttons"><button id="send-draft" type="button">发送但不回车</button><button id="send-submit" type="submit">发送</button></div></div>
     </form>
     <aside aria-labelledby="history-heading">
       <div class="history-heading"><h2 id="history-heading">历史消息</h2><button id="refresh-history" type="button">刷新</button></div>
@@ -78,7 +79,8 @@ const account = document.querySelector('#account');
 const logout = document.querySelector('#logout');
 const password = document.querySelector('#password');
 const message = document.querySelector('#message');
-const button = form.querySelector('button');
+const button = document.querySelector('#send-submit');
+const draftButton = document.querySelector('#send-draft');
 const loginButton = login.querySelector('button');
 const status = document.querySelector('#status');
 const workspace = document.querySelector('#workspace');
@@ -190,7 +192,7 @@ logout.addEventListener('click', async () => {
   }
 });
 
-async function sendContent(content, clearDraft) {
+async function sendContent(content, clearDraft, submit = true) {
   if (button.disabled) return;
   if (!content.trim()) {
     showError(new Error('请输入消息。'));
@@ -198,6 +200,7 @@ async function sendContent(content, clearDraft) {
     return;
   }
   button.disabled = true;
+  draftButton.disabled = true;
   logout.disabled = true;
   refreshHistory.disabled = true;
   historyList.querySelectorAll('button').forEach((item) => { item.disabled = true; });
@@ -205,9 +208,9 @@ async function sendContent(content, clearDraft) {
   status.dataset.error = 'false';
   status.textContent = '正在发送…';
   try {
-    const result = await request('messages', { message: content });
+    const result = await request('messages', { message: content, submit });
     status.textContent = result.receivers > 0
-      ? `已发送到 ${result.receivers} 个接收端。`
+      ? (submit ? `已发送到 ${result.receivers} 个接收端。` : `已贴入 ${result.receivers} 个接收端，未按回车，可继续编辑。`)
       : '已存档，但没有接收端在线；这条消息不会自动补发。';
     if (clearDraft) message.value = '';
     await loadHistory();
@@ -216,6 +219,7 @@ async function sendContent(content, clearDraft) {
     showError(error, true);
   } finally {
     button.disabled = false;
+    draftButton.disabled = false;
     logout.disabled = false;
     refreshHistory.disabled = false;
     historyList.querySelectorAll('button').forEach((item) => { item.disabled = false; });
@@ -228,6 +232,7 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
   await sendContent(message.value, true);
 });
+draftButton.addEventListener('click', () => sendContent(message.value, true, false));
 
 message.addEventListener('keydown', (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !event.isComposing) {
@@ -264,6 +269,8 @@ textarea { resize: vertical; line-height: 1.7; min-height: 280px; }
 input:focus, textarea:focus { outline: 2px solid #548778; outline-offset: 2px; }
 .actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
 .actions span { font-size: 12px; color: #738077; }
+.send-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+#send-draft { background: #edf4ef; color: #235c4a; padding: 12px 16px; }
 button { border: 0; border-radius: 10px; background: #235c4a; color: #fff; padding: 12px 30px; font: inherit; cursor: pointer; }
 button:disabled { opacity: .5; cursor: wait; }
 #status { min-height: 24px; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
@@ -305,7 +312,7 @@ def web_password(path: Path) -> str:
 
 
 def web_app(
-    password: str, forward: Callable[[str], Awaitable[int]],
+    password: str, forward: Callable[[str, bool], Awaitable[int]],
     history: Callable[[], list[dict]],
 ) -> web.Application:
     response_headers = {
@@ -389,7 +396,10 @@ def web_app(
             raise web.HTTPBadRequest(text="请输入消息")
         if message == RECEIVER:
             raise web.HTTPBadRequest(text="不能发送 bridge 的保留连接标记")
-        count = await forward(message)
+        submit = payload.get("submit", True)
+        if not isinstance(submit, bool):
+            raise web.HTTPBadRequest(text="submit 必须为布尔值")
+        count = await forward(message, submit)
         return web.json_response({"receivers": count})
 
     async def recent_messages(request):
@@ -424,7 +434,7 @@ async def bridge_loop(
     if web_port is not None and tls is None and web_host not in {"127.0.0.1", "::1", "localhost"}:
         raise ValueError("Plain HTTP must bind to loopback; use --web-cert/--web-key for public HTTPS")
     password = web_password(password_file) if web_port is not None else None
-    receivers: set[websockets.ServerConnection] = set()
+    receivers: dict[websockets.ServerConnection, bool] = {}
     db_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     db_path.touch(exist_ok=True, mode=0o600)
 
@@ -439,15 +449,17 @@ async def bridge_loop(
         db.execute("CREATE INDEX IF NOT EXISTS messages_received_at ON messages(received_at)")
         db.commit()
 
-        async def forward(msg: str) -> int:
+        async def forward(msg: str, submit: bool = True) -> int:
             if not isinstance(msg, str):
                 raise TypeError("msg-bridge only accepts text messages")
+            if not submit and not all(receivers.values()):
+                raise web.HTTPConflict(text="有旧版接收端在线：请先更新并重启 msg-bridge r，才能发送但不回车")
             db.execute(
                 "INSERT INTO messages (received_at, content, char_count, byte_count) VALUES (?, ?, ?, ?)",
                 (datetime.now(timezone.utc).isoformat(timespec="milliseconds"), msg, len(msg), len(msg.encode("utf-8"))),
             )
             db.commit()
-            return await broadcast(receivers, msg)
+            return await broadcast(receivers, msg, submit)
 
         def history() -> list[dict]:
             rows = db.execute(
@@ -458,17 +470,20 @@ async def bridge_loop(
         async def handle(ws: websockets.ServerConnection) -> None:
             first = await ws.recv()
             if first == RECEIVER:
-                receivers.add(ws)
+                receivers[ws] = ws.subprotocol == RECEIVER_PROTOCOL
                 try:
                     await ws.wait_closed()
                 finally:
-                    receivers.discard(ws)
+                    del receivers[ws]
                 return
             await forward(first)
             async for msg in ws:
                 await forward(msg)
 
-        async with websockets.serve(handle, host, port):
+        async with websockets.serve(
+            handle, host, port, subprotocols=[RECEIVER_PROTOCOL],
+            select_subprotocol=lambda connection, offered: RECEIVER_PROTOCOL if RECEIVER_PROTOCOL in offered else None,
+        ):
             print(f"msg-bridge b listening on ws://{host}:{port}; storing messages in {db_path}")
             runner = web.AppRunner(web_app(password, forward, history)) if password is not None else None
             try:
@@ -482,17 +497,15 @@ async def bridge_loop(
                     await runner.cleanup()
 
 
-async def broadcast(receivers: set[websockets.ServerConnection], msg: str) -> int:
-    dead = []
+async def broadcast(receivers: dict[websockets.ServerConnection, bool], msg: str, submit: bool = True) -> int:
     delivered = 0
-    for ws in tuple(receivers):
+    for ws, structured in tuple(receivers.items()):
         try:
-            await ws.send(msg)
+            await ws.send(json.dumps({"message": msg, "submit": submit}, ensure_ascii=False) if structured else msg)
             delivered += 1
         except websockets.ConnectionClosed:
-            dead.append(ws)
-    for ws in dead:
-        receivers.discard(ws)
+            # The receiver handler removes the connection when wait_closed() completes.
+            continue
     return delivered
 
 
@@ -630,15 +643,16 @@ def active_pane(session: str | None) -> str:
     return tmux("display-message", "-p", "-t", active_client_tty(), "#{pane_id}")
 
 
-def inject(msg: str, session: str | None, enter_delay: float) -> None:
+def inject(msg: str, session: str | None, enter_delay: float, *, submit: bool = True) -> None:
     pane = active_pane(session)
     buf = f"msg-bridge-{os.getpid()}-{time.time_ns()}"
     subprocess.run(["tmux", "set-buffer", "-b", buf, "--", msg], check=True)
     try:
-        subprocess.run(["tmux", "paste-buffer", "-b", buf, "-t", pane], check=True)
-        if enter_delay:
-            time.sleep(enter_delay)
-        subprocess.run(["tmux", "send-keys", "-t", pane, "Enter"], check=True)
+        subprocess.run(["tmux", "paste-buffer", "-p", "-b", buf, "-t", pane], check=True)
+        if submit:
+            if enter_delay:
+                time.sleep(enter_delay)
+            subprocess.run(["tmux", "send-keys", "-t", pane, "Enter"], check=True)
     finally:
         subprocess.run(["tmux", "delete-buffer", "-b", buf], check=False)
 
@@ -647,10 +661,16 @@ async def receive_loop(host: str, port: int, session: str | None, enter_delay: f
     _, _, url = client_endpoint(host, port)
     while True:
         try:
-            async with websockets.connect(url, open_timeout=60) as ws:
+            async with websockets.connect(url, open_timeout=60, subprotocols=[RECEIVER_PROTOCOL]) as ws:
                 await ws.send(RECEIVER)
                 async for msg in ws:
-                    inject(msg, session, enter_delay)
+                    if ws.subprotocol == RECEIVER_PROTOCOL:
+                        payload = json.loads(msg)
+                        if not isinstance(payload, dict) or not isinstance(payload.get("message"), str) or not isinstance(payload.get("submit"), bool):
+                            raise ValueError("Invalid structured message from bridge")
+                        inject(payload["message"], session, enter_delay, submit=payload["submit"])
+                    else:
+                        inject(msg, session, enter_delay)
         except (OSError, websockets.ConnectionClosed):
             await asyncio.sleep(1)
 
