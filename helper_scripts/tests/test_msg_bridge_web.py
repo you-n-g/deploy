@@ -4,6 +4,7 @@
 # ///
 """Run with: uv run helper_scripts/tests/test_msg_bridge_web.py"""
 import asyncio
+import json
 from contextlib import suppress
 from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
@@ -29,9 +30,11 @@ loader.exec_module(bridge)
 class WebTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.messages = []
+        self.submissions = []
 
-        async def forward(message):
+        async def forward(message, submit):
             self.messages.append(message)
+            self.submissions.append(submit)
             return 2
 
         self.client = TestClient(TestServer(bridge.web_app("test-password", forward, lambda: [])))
@@ -79,7 +82,7 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_invalid_inputs_and_size_limit(self):
         headers = await self.login()
-        for payload in ({}, [], {"message": 42}, {"message": "\n "}, {"message": bridge.RECEIVER}):
+        for payload in ({}, [], {"message": 42}, {"message": "\n "}, {"message": bridge.RECEIVER}, {"message": "text", "submit": "false"}):
             response = await self.client.post("/send/api/messages", json=payload, headers=headers)
             self.assertEqual(response.status, 400)
         response = await self.client.post("/send/api/messages", data="{", headers={
@@ -111,12 +114,80 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
         headers = await self.login()
         tampered = {'Cookie': headers['Cookie'] + 'x'}
         self.assertEqual((await self.client.get('/send/api/session', headers=tampered)).status, 401)
-        async def forward(message):
+        async def forward(message, submit):
             self.fail('Session check must not forward messages')
         # Same password preserves login across service restarts.
         for password, expected in [('test-password', 200), ('rotated-password', 401)]:
             async with TestClient(TestServer(bridge.web_app(password, forward, lambda: []))) as client:
                 self.assertEqual((await client.get('/send/api/session', headers=headers)).status, expected)
+
+    async def test_draft_flag_is_explicit_and_normal_send_still_submits(self):
+        headers = await self.login()
+        for payload in ({'message': 'draft\ntext', 'submit': False}, {'message': 'normal'}):
+            response = await self.client.post('/send/api/messages', json=payload, headers=headers)
+            self.assertEqual(response.status, 200)
+        self.assertEqual(self.messages, ['draft\ntext', 'normal'])
+        self.assertEqual(self.submissions, [False, True])
+
+
+class InjectionTests(unittest.TestCase):
+    def test_draft_pastes_with_bracketed_paste_and_never_presses_enter(self):
+        with patch.object(bridge, 'active_pane', return_value='%test'), patch.object(bridge.subprocess, 'run') as run:
+            with patch.object(bridge.time, 'sleep') as sleep:
+                bridge.inject('编辑\n下一行', None, .2, submit=False)
+                sleep.assert_not_called()
+        commands = [call.args[0] for call in run.call_args_list]
+        paste = next(command for command in commands if command[1] == 'paste-buffer')
+        self.assertIn('-p', paste)
+        self.assertFalse(any(command[1] == 'send-keys' for command in commands))
+        self.assertEqual(commands[-1][1], 'delete-buffer')
+
+    def test_existing_injection_still_presses_enter(self):
+        with patch.object(bridge, 'active_pane', return_value='%test'), patch.object(bridge.subprocess, 'run') as run:
+            with patch.object(bridge.time, 'sleep') as sleep:
+                bridge.inject('normal', None, .2)
+                sleep.assert_called_once_with(.2)
+        self.assertIn(['tmux', 'send-keys', '-t', '%test', 'Enter'], [call.args[0] for call in run.call_args_list])
+
+
+class ReceiverProtocolTests(unittest.IsolatedAsyncioTestCase):
+    async def check_receiver(self, structured):
+        received = asyncio.Event()
+        expected = [False, True] if structured else [True]
+        calls = []
+
+        def inject(message, session, enter_delay, *, submit=True):
+            calls.append((message, submit))
+            if len(calls) == len(expected):
+                received.set()
+
+        async def handle(ws):
+            self.assertEqual(await ws.recv(), bridge.RECEIVER)
+            if structured:
+                for submit in expected:
+                    await ws.send(json.dumps({'message': 'draft\ntext', 'submit': submit}))
+            else:
+                await ws.send('{"message":"ordinary text"}')
+            await ws.wait_closed()
+
+        async with websockets.serve(handle, '127.0.0.1', 0, subprotocols=[bridge.RECEIVER_PROTOCOL] if structured else None) as server:
+            port = server.sockets[0].getsockname()[1]
+            with patch.object(bridge, 'inject', side_effect=inject):
+                task = asyncio.create_task(bridge.receive_loop('127.0.0.1', port, 'test-session', .2))
+                try:
+                    await asyncio.wait_for(received.wait(), 2)
+                finally:
+                    task.cancel()
+                    with suppress(asyncio.CancelledError):
+                        await task
+        self.assertEqual([call[1] for call in calls], expected)
+        self.assertEqual(calls[0][0], 'draft\ntext' if structured else '{"message":"ordinary text"}')
+
+    async def test_new_receiver_honors_submit_flag(self):
+        await self.check_receiver(True)
+
+    async def test_new_receiver_still_accepts_plain_text_from_old_bridge(self):
+        await self.check_receiver(False)
 
 
 def unused_port():
@@ -185,9 +256,20 @@ class BridgeIntegrationTests(unittest.IsolatedAsyncioTestCase):
                         response = await client.post(base + 'api/messages', json={'message': history[1]['content']}, ssl=context)
                         self.assertEqual(await response.json(), {'receivers': 1})
                         self.assertEqual(await asyncio.wait_for(receiver.recv(), 2), '网页测试\nhello')
+                        response = await client.post(base + 'api/messages', json={'message': 'must not send', 'submit': False}, ssl=context)
+                        self.assertEqual(response.status, 409)
+                    async with websockets.connect(f'ws://127.0.0.1:{ws_port}', subprotocols=[bridge.RECEIVER_PROTOCOL]) as receiver:
+                        self.assertEqual(receiver.subprotocol, bridge.RECEIVER_PROTOCOL)
+                        await receiver.send(bridge.RECEIVER)
+                        await (await receiver.ping())
+                        for submit in (False, True):
+                            response = await client.post(base + 'api/messages', json={'message': '编辑\n草稿', 'submit': submit}, ssl=context)
+                            self.assertEqual(await response.json(), {'receivers': 1})
+                            payload = json.loads(await asyncio.wait_for(receiver.recv(), 2))
+                            self.assertEqual(payload, {'message': '编辑\n草稿', 'submit': submit})
                     with sqlite3.connect(db) as connection:
                         rows = connection.execute("SELECT content FROM messages ORDER BY id").fetchall()
-                        self.assertEqual(rows, [("offline",), ("网页测试\nhello",), ("existing CLI",), ('网页测试\nhello',)])
+                        self.assertEqual(rows, [("offline",), ("网页测试\nhello",), ("existing CLI",), ('网页测试\nhello',), ('编辑\n草稿',), ('编辑\n草稿',)])
                         connection.executemany(
                             'INSERT INTO messages (received_at, content, char_count, byte_count) VALUES (?, ?, ?, ?)',
                             [('2026-10-18T00:00:00+00:00', f'older-{index}', 8, 8) for index in range(55)],
