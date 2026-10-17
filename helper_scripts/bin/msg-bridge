@@ -1,18 +1,23 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["prompt_toolkit>=3,<4", "python-socks[asyncio]>=2,<3", "typer>=0.12,<1", "websockets>=15,<16"]
+# dependencies = ["aiohttp>=3.12,<4", "prompt_toolkit>=3,<4", "python-socks[asyncio]>=2,<3", "typer>=0.12,<1", "websockets>=15,<16"]
 # ///
 
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable
 from contextlib import closing
 from datetime import datetime, timezone
+import hmac
+import json
 import os
 from pathlib import Path
+import secrets
 import socket
 import sqlite3
+import ssl
 import subprocess
 import sys
 import time
@@ -20,16 +25,405 @@ from typing import Annotated
 
 import typer
 import websockets
+from aiohttp import web
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 443
 RECEIVER = "__msg_bridge_receiver__"
 BATCH_DELAY = 0.5
 DEFAULT_DB = Path.home() / ".local/share/msg-bridge/messages.sqlite3"
+DEFAULT_PASSWORD_FILE = Path.home() / ".config/msg-bridge/web-password"
+WEB_PAGE = r"""<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>发送消息 · Bridge</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <main>
+    <p class="label">MSG BRIDGE</p>
+    <h1>发送消息</h1>
+    <p class="intro">把想说的话，发送到当前连接的接收端。</p>
+    <form id="login" hidden>
+      <label for="password">访问密码</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <div class="actions"><span>登录后保持 30 天</span><button type="submit">登录</button></div>
+    </form>
+    <div id="account" hidden><button id="logout" type="button">退出登录</button></div>
+    <div id="workspace" hidden>
+    <form id="sender">
+      <label for="message">消息</label>
+      <textarea id="message" rows="8" placeholder="在这里输入…" required></textarea>
+      <div class="actions"><span>Ctrl / ⌘ + Enter 发送</span><button type="submit">发送</button></div>
+    </form>
+    <aside aria-labelledby="history-heading">
+      <div class="history-heading"><h2 id="history-heading">历史消息</h2><button id="refresh-history" type="button">刷新</button></div>
+      <p class="history-hint">最近 50 条 · 点击消息立即重发</p>
+      <p id="history-status" role="status"></p>
+      <div id="history-list"></div>
+    </aside>
+    </div>
+    <p id="status" role="status" aria-live="polite">正在检查登录状态…</p>
+  </main>
+</body>
+</html>
+"""
+
+WEB_SCRIPT = r"""const form = document.querySelector('#sender');
+const login = document.querySelector('#login');
+const account = document.querySelector('#account');
+const logout = document.querySelector('#logout');
+const password = document.querySelector('#password');
+const message = document.querySelector('#message');
+const button = form.querySelector('button');
+const loginButton = login.querySelector('button');
+const status = document.querySelector('#status');
+const workspace = document.querySelector('#workspace');
+const historyList = document.querySelector('#history-list');
+const historyStatus = document.querySelector('#history-status');
+const refreshHistory = document.querySelector('#refresh-history');
+let signedIn = false;
+
+function showSession(authenticated) {
+  signedIn = authenticated;
+  login.hidden = authenticated;
+  form.hidden = !authenticated;
+  workspace.hidden = !authenticated;
+  account.hidden = !authenticated;
+  if (!authenticated) historyList.replaceChildren();
+  (authenticated ? message : password).focus();
+}
+
+async function request(path, payload) {
+  const response = await fetch(`./api/${path}`, {
+    method: payload === undefined ? 'GET' : 'POST',
+    credentials: 'same-origin',
+    headers: payload === undefined ? {} : { 'Content-Type': 'application/json' },
+    body: payload === undefined ? undefined : JSON.stringify(payload),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) {
+    const error = new Error(await response.text());
+    error.status = response.status;
+    throw error;
+  }
+  return response.json();
+}
+
+function showError(error, sending = false) {
+  status.dataset.error = 'true';
+  status.textContent = error instanceof TypeError || error.name === 'TimeoutError'
+    ? (sending ? '连接中断或超时，无法确认是否送达。内容已保留，重发前请先检查接收端。' : '连接失败，请检查网络后重试。')
+    : error.message;
+}
+
+async function loadHistory() {
+  refreshHistory.disabled = true;
+  historyStatus.dataset.error = 'false';
+  historyStatus.textContent = '正在加载…';
+  try {
+    const result = await request('messages');
+    if (!signedIn) return;
+    const items = result.messages.map((entry) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'history-item';
+      item.disabled = button.disabled;
+      item.title = '点击立即重发这条消息';
+      const time = document.createElement('time');
+      time.dateTime = entry.received_at;
+      time.textContent = new Date(entry.received_at).toLocaleString('zh-CN', { hour12: false });
+      const content = document.createElement('span');
+      content.className = 'history-content';
+      content.textContent = entry.content;
+      item.append(time, content);
+      item.addEventListener('click', () => sendContent(entry.content, false));
+      return item;
+    });
+    historyList.replaceChildren(...items);
+    historyStatus.textContent = items.length ? '' : '还没有历史消息。';
+  } catch (error) {
+    if (error.status === 401) showSession(false);
+    historyStatus.dataset.error = 'true';
+    historyStatus.textContent = '历史消息加载失败，请点击刷新重试。';
+    if (error.status === 401) showError(error);
+  } finally {
+    refreshHistory.disabled = button.disabled;
+  }
+}
+refreshHistory.addEventListener('click', loadHistory);
+
+login.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (loginButton.disabled) return;
+  loginButton.disabled = true;
+  status.textContent = '正在登录…';
+  status.dataset.error = 'false';
+  try {
+    await request('login', { password: password.value });
+    password.value = '';
+    showSession(true);
+    status.textContent = '';
+    await loadHistory();
+  } catch (error) {
+    showError(error);
+  } finally {
+    loginButton.disabled = false;
+  }
+});
+
+logout.addEventListener('click', async () => {
+  if (logout.disabled) return;
+  logout.disabled = true;
+  try {
+    await request('logout', {});
+    showSession(false);
+    status.dataset.error = 'false';
+    status.textContent = '已退出登录。';
+  } catch (error) {
+    showError(error);
+  } finally {
+    logout.disabled = false;
+  }
+});
+
+async function sendContent(content, clearDraft) {
+  if (button.disabled) return;
+  if (!content.trim()) {
+    showError(new Error('请输入消息。'));
+    message.focus();
+    return;
+  }
+  button.disabled = true;
+  logout.disabled = true;
+  refreshHistory.disabled = true;
+  historyList.querySelectorAll('button').forEach((item) => { item.disabled = true; });
+  message.readOnly = true;
+  status.dataset.error = 'false';
+  status.textContent = '正在发送…';
+  try {
+    const result = await request('messages', { message: content });
+    status.textContent = result.receivers > 0
+      ? `已发送到 ${result.receivers} 个接收端。`
+      : '已存档，但没有接收端在线；这条消息不会自动补发。';
+    if (clearDraft) message.value = '';
+    await loadHistory();
+  } catch (error) {
+    if (error.status === 401) showSession(false);
+    showError(error, true);
+  } finally {
+    button.disabled = false;
+    logout.disabled = false;
+    refreshHistory.disabled = false;
+    historyList.querySelectorAll('button').forEach((item) => { item.disabled = false; });
+    message.readOnly = false;
+    if (!form.hidden) message.focus();
+  }
+}
+
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  await sendContent(message.value, true);
+});
+
+message.addEventListener('keydown', (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !event.isComposing) {
+    event.preventDefault();
+    form.requestSubmit();
+  }
+});
+
+async function restoreSession() {
+  try {
+    await request('session');
+    showSession(true);
+    status.textContent = '';
+    await loadHistory();
+  } catch (error) {
+    showSession(false);
+    if (error.status === 401) status.textContent = '';
+    else showError(error);
+  }
+}
+restoreSession();
+"""
+
+WEB_STYLE = r""":root { font-family: system-ui, sans-serif; color: #172c2a; background: #f2f5f1; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 8vh 20px; }
+main { max-width: 1180px; margin: auto; padding: 36px; background: #fff; border: 1px solid #dce5dd; border-radius: 20px; box-shadow: 0 12px 50px #18372c08; }
+.label { font-size: 12px; font-weight: 700; letter-spacing: .16em; color: #54766c; }
+h1 { margin: 12px 0; font-size: 30px; }
+.intro { color: #64716b; line-height: 1.7; margin-bottom: 28px; }
+label { display: block; font-size: 14px; font-weight: 600; margin: 20px 0 8px; }
+input, textarea { width: 100%; font: inherit; border: 1px solid #c9d5cd; border-radius: 10px; padding: 12px; background: #fcfdfb; }
+textarea { resize: vertical; line-height: 1.7; min-height: 280px; }
+input:focus, textarea:focus { outline: 2px solid #548778; outline-offset: 2px; }
+.actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
+.actions span { font-size: 12px; color: #738077; }
+button { border: 0; border-radius: 10px; background: #235c4a; color: #fff; padding: 12px 30px; font: inherit; cursor: pointer; }
+button:disabled { opacity: .5; cursor: wait; }
+#status { min-height: 24px; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+#status[data-error="true"] { color: #ad302d; }
+#account { text-align: right; }
+#logout { color: #54766c; background: transparent; padding: 4px 0; font-size: 13px; }
+#login { max-width: 480px; }
+#workspace:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 36px; margin-top: 20px; }
+#sender label { margin-top: 0; }
+aside { min-width: 0; border-left: 1px solid #e2e9e3; padding-left: 28px; }
+.history-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+h2 { margin: 0; font-size: 17px; }
+#refresh-history { color: #235c4a; background: #edf4ef; padding: 6px 12px; font-size: 13px; }
+.history-hint, #history-status { font-size: 12px; color: #738077; line-height: 1.7; }
+#history-status[data-error="true"] { color: #ad302d; }
+#history-list { display: grid; gap: 10px; max-height: 65vh; overflow-y: auto; padding: 3px; }
+.history-item { width: 100%; color: #172c2a; background: #f6f9f5; border: 1px solid #dce5dd; padding: 12px 14px; text-align: left; }
+.history-item:hover { background: #eaf2eb; border-color: #87a796; }
+.history-item:focus-visible { outline: 2px solid #548778; outline-offset: 1px; }
+.history-item time { display: block; margin-bottom: 6px; font-size: 11px; color: #738077; }
+.history-content { display: block; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 180px; overflow-y: auto; line-height: 1.6; font-size: 14px; }
+@media (max-width: 760px) { #workspace:not([hidden]) { grid-template-columns: minmax(0, 1fr); } aside { border-left: 0; border-top: 1px solid #e2e9e3; padding: 24px 0 0; } }
+@media (max-width: 480px) { body { padding: 24px 12px; } main { padding: 24px; } }
+"""
+SESSION_COOKIE = "msg_bridge_session"
+SESSION_AGE = 30 * 24 * 60 * 60
 app = typer.Typer(add_completion=False, help="Tiny sender / bridge / receiver for tmux message input")
 
 
-async def bridge_loop(host: str, port: int, db_path: Path) -> None:
+def web_password(path: Path) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    if not path.exists():
+        with open(path, "x", opener=lambda name, flags: os.open(name, flags, 0o600)) as file:
+            file.write(secrets.token_urlsafe(24) + "\n")
+    password = path.read_text().strip()
+    if not password:
+        raise ValueError(f"Web password file is empty: {path}")
+    return password
+
+
+def web_app(
+    password: str, forward: Callable[[str], Awaitable[int]],
+    history: Callable[[], list[dict]],
+) -> web.Application:
+    response_headers = {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "no-referrer",
+        "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+    }
+
+    @web.middleware
+    async def headers(request, handler):
+        try:
+            response = await handler(request)
+        except web.HTTPException as error:
+            error.headers.update(response_headers)
+            raise
+        response.headers.update(response_headers)
+        return response
+
+    async def page(request):
+        return web.Response(text=WEB_PAGE, content_type="text/html")
+
+    async def redirect(request):
+        raise web.HTTPPermanentRedirect("/send/")
+
+    async def asset(request):
+        name = request.match_info["name"]
+        content_type = "text/javascript" if name == "app.js" else "text/css"
+        return web.Response(text={"app.js": WEB_SCRIPT, "style.css": WEB_STYLE}[name], content_type=content_type)
+
+    def signature(payload: str) -> str:
+        return hmac.new(password.encode(), payload.encode(), "sha256").hexdigest()
+
+    def require_session(request):
+        token = request.cookies.get(SESSION_COOKIE, "")
+        try:
+            expires, nonce, signed = token.split(".")
+            valid_until = int(expires)
+        except ValueError:
+            raise web.HTTPUnauthorized(text="请先登录")
+        if valid_until <= time.time() or not secrets.compare_digest(signed.encode(), signature(f"{expires}.{nonce}").encode()):
+            raise web.HTTPUnauthorized(text="登录已过期，请重新登录")
+
+    async def json_body(request):
+        if request.content_type != "application/json":
+            raise web.HTTPUnsupportedMediaType(text="请求必须使用 JSON")
+        try:
+            payload = await request.json()
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            raise web.HTTPBadRequest(text="JSON 格式错误")
+        if not isinstance(payload, dict):
+            raise web.HTTPBadRequest(text="JSON 必须为对象")
+        return payload
+
+    async def login(request):
+        payload = await json_body(request)
+        provided = payload.get("password")
+        if not isinstance(provided, str) or not secrets.compare_digest(provided.encode(), password.encode()):
+            raise web.HTTPUnauthorized(text="密码错误")
+        token = f"{int(time.time()) + SESSION_AGE}.{secrets.token_urlsafe(24)}"
+        response = web.json_response({"authenticated": True})
+        response.set_cookie(SESSION_COOKIE, f"{token}.{signature(token)}", max_age=SESSION_AGE,
+                            path="/send/", secure=True, httponly=True, samesite="Strict")
+        return response
+
+    async def session(request):
+        require_session(request)
+        return web.json_response({"authenticated": True})
+
+    async def logout(request):
+        await json_body(request)
+        response = web.json_response({"authenticated": False})
+        response.del_cookie(SESSION_COOKIE, path="/send/")
+        return response
+
+    async def send(request):
+        require_session(request)
+        payload = await json_body(request)
+        message = payload.get("message")
+        if not isinstance(message, str) or not message.strip():
+            raise web.HTTPBadRequest(text="请输入消息")
+        if message == RECEIVER:
+            raise web.HTTPBadRequest(text="不能发送 bridge 的保留连接标记")
+        count = await forward(message)
+        return web.json_response({"receivers": count})
+
+    async def recent_messages(request):
+        require_session(request)
+        return web.json_response({"messages": history()})
+
+    application = web.Application(middlewares=[headers], client_max_size=1024 * 1024)
+    application.router.add_get("/send", redirect)
+    application.router.add_get("/send/", page)
+    application.router.add_get("/send/{name:app\\.js|style\\.css}", asset)
+    application.router.add_post("/send/api/login", login)
+    application.router.add_get("/send/api/session", session)
+    application.router.add_post("/send/api/logout", logout)
+    application.router.add_get("/send/api/messages", recent_messages)
+    application.router.add_post("/send/api/messages", send)
+    return application
+
+
+async def bridge_loop(
+    host: str, port: int, db_path: Path, *, web_host: str = DEFAULT_HOST,
+    web_port: int | None = None, password_file: Path = DEFAULT_PASSWORD_FILE,
+    web_cert: Path | None = None, web_key: Path | None = None,
+) -> None:
+    tls = None
+    if bool(web_cert) != bool(web_key):
+        raise ValueError("--web-cert and --web-key must be provided together")
+    if web_cert and web_port is None:
+        raise ValueError("--web-cert requires --web-port")
+    if web_cert:
+        tls = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        tls.load_cert_chain(web_cert, web_key)
+    if web_port is not None and tls is None and web_host not in {"127.0.0.1", "::1", "localhost"}:
+        raise ValueError("Plain HTTP must bind to loopback; use --web-cert/--web-key for public HTTPS")
+    password = web_password(password_file) if web_port is not None else None
     receivers: set[websockets.ServerConnection] = set()
     db_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     db_path.touch(exist_ok=True, mode=0o600)
@@ -45,7 +439,7 @@ async def bridge_loop(host: str, port: int, db_path: Path) -> None:
         db.execute("CREATE INDEX IF NOT EXISTS messages_received_at ON messages(received_at)")
         db.commit()
 
-        async def forward(msg: str) -> None:
+        async def forward(msg: str) -> int:
             if not isinstance(msg, str):
                 raise TypeError("msg-bridge only accepts text messages")
             db.execute(
@@ -53,7 +447,13 @@ async def bridge_loop(host: str, port: int, db_path: Path) -> None:
                 (datetime.now(timezone.utc).isoformat(timespec="milliseconds"), msg, len(msg), len(msg.encode("utf-8"))),
             )
             db.commit()
-            await broadcast(receivers, msg)
+            return await broadcast(receivers, msg)
+
+        def history() -> list[dict]:
+            rows = db.execute(
+                "SELECT id, received_at, content FROM messages ORDER BY id DESC LIMIT 50"
+            ).fetchall()
+            return [{"id": row[0], "received_at": row[1], "content": row[2]} for row in rows]
 
         async def handle(ws: websockets.ServerConnection) -> None:
             first = await ws.recv()
@@ -70,18 +470,30 @@ async def bridge_loop(host: str, port: int, db_path: Path) -> None:
 
         async with websockets.serve(handle, host, port):
             print(f"msg-bridge b listening on ws://{host}:{port}; storing messages in {db_path}")
-            await asyncio.Future()
+            runner = web.AppRunner(web_app(password, forward, history)) if password is not None else None
+            try:
+                if runner:
+                    await runner.setup()
+                    await web.TCPSite(runner, web_host, web_port, ssl_context=tls).start()
+                    print(f"Web sender: {'https' if tls else 'http'}://{web_host}:{web_port}/send/; password file: {password_file}", flush=True)
+                await asyncio.Future()
+            finally:
+                if runner:
+                    await runner.cleanup()
 
 
-async def broadcast(receivers: set[websockets.ServerConnection], msg: str) -> None:
+async def broadcast(receivers: set[websockets.ServerConnection], msg: str) -> int:
     dead = []
-    for ws in receivers:
+    delivered = 0
+    for ws in tuple(receivers):
         try:
             await ws.send(msg)
+            delivered += 1
         except websockets.ConnectionClosed:
             dead.append(ws)
     for ws in dead:
         receivers.discard(ws)
+    return delivered
 
 
 def parse_endpoint(host: str, port: int) -> tuple[str, int]:
@@ -248,9 +660,15 @@ def b(
     host: Annotated[str, typer.Option("--host", "-H")] = "0.0.0.0",
     port: Annotated[int, typer.Option("--port", "-P")] = DEFAULT_PORT,
     db_path: Annotated[Path, typer.Option("--db", help="SQLite message archive path")] = DEFAULT_DB,
+    web_port: Annotated[int | None, typer.Option(help="Enable the /send/ web page on this port")] = None,
+    web_host: Annotated[str, typer.Option(help="Web listener bind address")] = DEFAULT_HOST,
+    password_file: Annotated[Path, typer.Option(help="Web password file; generated on first start")] = DEFAULT_PASSWORD_FILE,
+    web_cert: Annotated[Path | None, typer.Option(help="HTTPS certificate PEM")] = None,
+    web_key: Annotated[Path | None, typer.Option(help="HTTPS private key PEM")] = None,
 ) -> None:
     host, port = parse_endpoint(host, port)
-    asyncio.run(bridge_loop(host, port, db_path))
+    asyncio.run(bridge_loop(host, port, db_path, web_host=web_host, web_port=web_port,
+                            password_file=password_file, web_cert=web_cert, web_key=web_key))
 
 
 @app.command("stats", help="show total and recent daily message counts")
