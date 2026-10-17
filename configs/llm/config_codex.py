@@ -13,7 +13,7 @@ import typer
 
 
 CONFIG_PATH = Path.home() / ".codex/config.toml"
-DEFAULT_MODEL = "gpt-5.5"
+DEFAULT_MODEL = "gpt-6.1-sol"
 DEFAULT_REASONING_EFFORT = "xhigh"
 DEFAULT_SERVICE_TIER = "fast"
 DEFAULT_STATUS_LINE = [
