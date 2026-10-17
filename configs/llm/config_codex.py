@@ -6,6 +6,7 @@
 # ]
 # ///
 
+import json
 import subprocess
 from pathlib import Path
 import tomlkit
@@ -13,7 +14,18 @@ import typer
 
 
 CONFIG_PATH = Path.home() / ".codex/config.toml"
-DEFAULT_MODEL = "gpt-5.5"
+
+
+def _default_model() -> str:
+    gateways = Path.home() / ".config/llm/gateways.local.json"
+    if gateways.exists():
+        model = json.loads(gateways.read_text()).get("codex", {}).get("default_model")
+        if model:
+            return model
+    return "gpt-5-codex"
+
+
+DEFAULT_MODEL = _default_model()
 DEFAULT_REASONING_EFFORT = "xhigh"
 DEFAULT_SERVICE_TIER = "fast"
 DEFAULT_STATUS_LINE = [
