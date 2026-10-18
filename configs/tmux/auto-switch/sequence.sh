@@ -997,6 +997,10 @@ case "$command_name" in
       reordered="${reordered:+$reordered }$pane"
     done
     tmux set-option -gq "$ranked_option" "$reordered"
+    # Show it now rather than at the next status-interval tick: the window
+    # list underlines sequence members and greens the next target.
+    "$script_dir/refresh-next-pane.sh" 2>/dev/null || true
+    tmux refresh-client -S 2>/dev/null || true
     ;;
   edit)
     edit_sequence
