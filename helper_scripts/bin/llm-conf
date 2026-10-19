@@ -82,10 +82,14 @@ AI_TOOL_CHOICES = (
 )
 
 # status-left shows today's prompt progress (messages typed to agents against
-# a usual day) while this global tmux option is set; off by default.
+# a whole-day target) while this global tmux option is set; its value is the
+# target (see LM_PROGRESS_CHOICES and print_lm_progress.sh). Off by default.
 LM_PROGRESS_OPTION = "@lm_progress"
 LM_PROGRESS_CHOICES = (
-    ("on", "on — show today's prompt progress at the bottom-left"),
+    ("mean", "on — chase a usual day (mean of the other days)"),
+    ("top30", "on — chase the top 30% of days"),
+    ("top20", "on — chase the top 20% of days"),
+    ("top10", "on — chase the top 10% of days"),
     ("off", "off — hide it (default)"),
 )
 REFRESH_STATUS_LINES = (
@@ -243,10 +247,10 @@ def set_ai_tool(value: str) -> None:
 
 
 def set_lm_progress(value: str) -> None:
-    if value == "on":
-        run_tmux("set-option", "-g", LM_PROGRESS_OPTION, "1")
-    else:
+    if value == "off":
         run_tmux("set-option", "-gu", LM_PROGRESS_OPTION)
+    else:
+        run_tmux("set-option", "-g", LM_PROGRESS_OPTION, value)
     # The bar widens status-left; this re-decides the status line count and
     # redraws the status line.
     subprocess.run([str(REFRESH_STATUS_LINES)], check=True)
@@ -548,12 +552,16 @@ class ProviderApp(App[None]):
         )
         self.query_one("#lm-progress-status", Static).update(
             f"Prompt progress at the bottom-left: {self.lm_progress()}\n"
-            "Messages you typed to agents today / a usual whole day (the dashboard's\n"
-            "Prompts page counts), refreshed every 30 seconds"
+            "Messages you typed to agents today / the target day: the usual day, or\n"
+            "the count only the best N% of days beat (the dashboard's Prompts page\n"
+            "counts). The pace follows the usual hour-of-day profile. Refreshed every\n"
+            "30 seconds"
         )
 
     def lm_progress(self) -> str:
-        return "on" if read_global_option(LM_PROGRESS_OPTION) else "off"
+        value = read_global_option(LM_PROGRESS_OPTION)
+        # "1" was "on" before the bar had targets.
+        return {None: "off", "1": "mean"}.get(value, value)
 
     def sync_highlight(self) -> None:
         pane_value, session_value, global_value, _, _ = self.values()
