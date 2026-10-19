@@ -17,15 +17,24 @@
 # or over every session with -A; prefix + M-p w / W / f / F. TMA Agents can
 # pass TARGET.
 #
-# usage: pend_until.sh [-A] idle|done PANE [TARGET]
+# --after-turn (TARGET required) does not pend now but queues the wait on PANE
+# (@ai_agent_pend_next); the pane goes pending when its current turn ends. It
+# is what an agent runs right after dispatching work to another agent: pending
+# set mid-turn would be cleared by its own next tool call.
+#
+# usage: pend_until.sh [-A] [--after-turn] idle|done PANE [TARGET]
 set -euo pipefail
 
-usage="usage: pend_until.sh [-A] idle|done PANE [TARGET]"
+usage="usage: pend_until.sh [-A] [--after-turn] idle|done PANE [TARGET]"
 all_sessions=0
-if [[ "${1:-}" == "-A" ]]; then
-  all_sessions=1
-  shift
-fi
+after_turn=0
+while [[ "${1:-}" == -* ]]; do
+  case "$1" in
+    -A) all_sessions=1; shift ;;
+    --after-turn) after_turn=1; shift ;;
+    *) echo "$usage" >&2; exit 2 ;;
+  esac
+done
 case "${1:-}" in
   idle) prefix="等" ;;
   done) prefix="等完成" ;;
@@ -35,6 +44,13 @@ mode="$1"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 pane="$(tmux display-message -p -t "${2:?$usage}" '#{pane_id}')"
 
+if (( after_turn )); then
+  [[ -n "${3:-}" ]] || { echo "$usage (--after-turn needs TARGET)" >&2; exit 2; }
+  target="$(tmux display-message -p -t "$3" '#{pane_id}')"
+  [[ "$target" != "$pane" ]] || { echo "pend_until: a pane cannot wait on itself" >&2; exit 1; }
+  tmux set-option -pq -t "$pane" @ai_agent_pend_next "$mode $target"
+  exit 0
+fi
 if [[ -n "${3:-}" ]]; then
   target="$(tmux display-message -p -t "$3" '#{pane_id}')"
 else
