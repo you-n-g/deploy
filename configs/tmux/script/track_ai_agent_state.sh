@@ -33,6 +33,13 @@ set -eu
 #   dependency went idle or done, or its snooze ran out) rather than by a turn
 #   of its own finishing. The window list and the pickers show it as ☀ instead
 #   of the unread ◉. Set by wake out of sight; cleared with unread.
+# - @ai_agent_pend_next:
+#   "<idle|done> <pane id>" queued by `pend_until.sh --after-turn` during the
+#   pane's own turn: an agent that has just dispatched work to another agent
+#   asks to wait on it once this turn ends. Pending set mid-turn would be wiped
+#   by the turn's next tool call (it marks the pane running again), so the idle
+#   state applies it instead, and a pane that pends this way is not unread and
+#   does not release its own waiters. A new prompt drops a queued one.
 # - @ai_agent_done:
 #   "1" when the user (or an agent) marked the pane's task done. Idle is not
 #   done: a long task goes idle many times on the way. Set by done /
@@ -477,6 +484,20 @@ release_waiters() {
   done < <(tmux list-panes -a -F $'#{pane_id}\t#{@ai_agent_pending}')
 }
 
+# Apply a wait queued by `pend_until.sh --after-turn` (see @ai_agent_pend_next).
+# Succeeds when the pane ends up pending; a target already idle leaves it not
+# pending and the turn ends as a normal idle.
+apply_pend_next() {
+  local queued mode target
+  queued="$(tmux show -pv -t "$pane_id" @ai_agent_pend_next 2>/dev/null || true)"
+  [ -n "$queued" ] || return 1
+  tmux set-option -pqu -t "$pane_id" @ai_agent_pend_next
+  read -r mode target <<< "$queued"
+  tmux display-message -p -t "$target" '#{pane_id}' >/dev/null 2>&1 || return 1  # target closed
+  AI_AGENT_STATE_SOURCE="after-turn-of:$pane_id" "$SCRIPT_DIR/pend_until.sh" "$mode" "$pane_id" "$target"
+  [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)" ]
+}
+
 case "$state" in
   init)
     # Codex/Claude SessionStart can fire for resume/compact/status-bridge style
@@ -509,6 +530,8 @@ case "$state" in
       tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
       emit_ai_agent_event running
     fi
+    # A new prompt starts a new turn: a wait queued by the last one is stale.
+    [ -z "${AI_AGENT_PROMPT:-}" ] || tmux set-option -pqu -t "$pane_id" @ai_agent_pend_next 2>/dev/null || true
     if is_window_visible; then
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
       tmux set-option -pqu -t "$pane_id" @ai_agent_woke 2>/dev/null || true
@@ -531,6 +554,8 @@ case "$state" in
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
       tmux set-option -pqu -t "$pane_id" @ai_agent_woke 2>/dev/null || true
       tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
+    elif apply_pend_next; then
+      : # now pending on the agent it dispatched to
     else
       tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
       if is_window_visible; then
