@@ -1,4 +1,4 @@
-"""@last_visit and the "last AI pane" built on it (\\c<what>l in nvim, prefix M-l).
+"""@last_visit and the "last AI pane" built on it (\\c<what>l in nvim, prefix k l).
 Runs a private tmux server, not the user's."""
 
 import os
