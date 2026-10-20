@@ -123,7 +123,7 @@ end
 -- the current window, so once this window has a split next to it, {last} resolves
 -- to the neighbour and never to the pane the user actually came from. The real
 -- answer is the @last_visit stamps, which is what last_ai_pane.sh reads -- the
--- same script behind the prefix M-l jump, so both land on the same pane.
+-- same script behind the prefix k l jump, so both land on the same pane.
 local function get_last_visited_ai_pane()
   local cmd = { vim.fn.expand("~/deploy/configs/tmux/ai/last_ai_pane.sh") }
   local self_pane = vim.env.TMUX_PANE
