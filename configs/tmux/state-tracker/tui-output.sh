@@ -52,12 +52,9 @@ capture_recent_output() {
 # grows a per-pane clock, or for setups that never split an AI window.
 QUIET_SOURCE="${TMUX_AI_STATE_TRACKER_QUIET_SOURCE:-pane-output}"
 
+# From the last read_pane.
 seconds_since_window_activity() {
-  local window_activity now
-
-  window_activity="$(tmux display-message -p -t "$pane_id" '#{window_activity}')"
-  now="$(date +%s)"
-  printf '%s\n' "$((now - window_activity))"
+  printf '%s\n' "$(( $(date +%s) - activity ))"
 }
 
 # Updated by note_pane_output on every loop iteration; read by
@@ -122,11 +119,9 @@ detect_tui_state() {
 
 ensure_state() {
   local desired_state="$1"
-  local running
 
   case "$desired_state" in
     running)
-      running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
       if [[ "$running" != "1" ]]; then
         AI_AGENT_STATE_SOURCE="tui-output:goal-running" "$TRACK_SCRIPT" running "$pane_id"
       fi
@@ -135,17 +130,13 @@ ensure_state() {
   esac
 }
 
+# The state as of the last read_pane.
 current_ai_state() {
-  local running background pending
-
-  pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
   if [[ -n "$pending" ]]; then
     printf 'pending\n'
     return
   fi
 
-  running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
-  background="$(tmux show -pv -t "$pane_id" @ai_agent_background 2>/dev/null || true)"
   if [[ "$running" == "1" || "$background" == "1" ]]; then
     printf 'busy\n'
     return
@@ -168,9 +159,8 @@ emit_busy_to_idle() {
 # It always returns 0 so the main loop can run other independent detectors.
 maybe_mark_stale_running_idle() {
   local recent="$1"
-  local running idle_after
+  local idle_after
 
-  running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
   [[ "$running" == "1" ]] || return 0
 
   # Silence alone is not evidence of an ended turn. During the model phase the
@@ -219,19 +209,44 @@ wait_for_ai_proc() {
   return 1
 }
 
-wait_for_ai_proc || exit 0
-last_ai_state="$(current_ai_state)"
+# One tmux round trip per loop for everything the loop needs: with a tracker
+# per AI pane, several queries a second each kept the tmux server busy enough
+# that status-line formats ran past tmux's 100 ms limit and flickered. Fails
+# once the pane is gone.
+read_pane() {
+  local line
+  # "|", not a tab: read collapses runs of whitespace separators, so empty
+  # fields would shift. pending comes last and takes the rest of the line.
+  line="$(tmux display-message -p -t "$pane_id" \
+    '#{pane_pid}|#{window_activity}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_pending}' 2>/dev/null)" || return 1
+  IFS='|' read -r pane_pid activity running background pending <<< "$line"
+}
 
-while tmux display-message -p -t "$pane_id" '#{pane_id}' >/dev/null 2>&1 && pane_has_ai_proc; do
-  recent="$(capture_recent_output)"
-  note_pane_output "$recent"
+wait_for_ai_proc || exit 0
+read_pane || exit 0
+last_ai_state="$(current_ai_state)"
+# capture-pane only when the window has had output since the last capture
+# (#{window_activity}; a split sibling's output costs an extra capture, never
+# a missed one), and at least every CAPTURE_EVERY seconds regardless.
+CAPTURE_EVERY="${TMUX_AI_STATE_TRACKER_CAPTURE_EVERY:-30}"
+captured_activity=""
+captured_at=0
+recent=""
+
+while read_pane && _has_ai_proc "$pane_pid"; do
+  ai_state="$(current_ai_state)"
+  emit_busy_to_idle "$last_ai_state" "$ai_state"
+  last_ai_state="$ai_state"
+  if [[ "$activity" != "$captured_activity" ]] || (( SECONDS - captured_at >= CAPTURE_EVERY )); then
+    recent="$(capture_recent_output)"
+    note_pane_output "$recent"
+    captured_activity="$activity"
+    captured_at=$SECONDS
+  fi
   desired_state="$(detect_tui_state "$recent")"
   if [[ -n "$desired_state" ]]; then
     ensure_state "$desired_state"
   fi
   maybe_mark_stale_running_idle "$recent"
-  ai_state="$(current_ai_state)"
-  emit_busy_to_idle "$last_ai_state" "$ai_state"
-  last_ai_state="$ai_state"
   sleep "${TMUX_AI_STATE_TRACKER_INTERVAL:-1}"
 done
