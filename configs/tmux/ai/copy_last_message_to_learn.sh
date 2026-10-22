@@ -24,11 +24,10 @@ agent="$(_find_ai_pid "$source_root")" || fail "source pane is not a live AI pan
 agent_pid="${agent%% *}"
 agent_kind="${agent##* }"
 
-learn_pane="$(tmux display-message -p -t 'learn:' '#{pane_id}' 2>/dev/null)" ||
-  fail "tmux session does not exist: learn"
-target_dir="$(tmux display-message -p -t "$learn_pane" '#{pane_current_path}')" ||
-  fail "cannot read the learn session working directory"
-[[ -d "$target_dir" ]] || fail "learn session working directory does not exist: $target_dir"
+# The vault root, whichever note the learn session happens to have open: the
+# active pane's directory moves with it (Reading/news, …).
+target_dir="${LEARN_MSG_DIR:-$HOME/vaults/livesync-headless}"
+[[ -d "$target_dir" ]] || fail "msg.md directory does not exist: $target_dir"
 target_file="$target_dir/msg.md"
 # Both copiers write the response here; it then replaces or extends msg.md.
 response_file="$(mktemp)"
