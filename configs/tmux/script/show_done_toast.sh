@@ -3,14 +3,14 @@
 # out of sight over the window the user is looking at, top-right, ~45% of the
 # window, for a few seconds. A floating pane made with new-pane -d, like the
 # auto-switch preview, so keyboard focus stays where it is; it closes itself
-# when preview-prev-pane.sh returns.
+# when preview-pane.sh returns.
 #
 # usage: show_done_toast.sh DONE_PANE HOST_PANE
 set -euo pipefail
 
 done_pane="${1:?usage: show_done_toast.sh DONE_PANE HOST_PANE}"
 host_pane="${2:?usage: show_done_toast.sh DONE_PANE HOST_PANE}"
-preview="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../auto-switch" && pwd)/preview-prev-pane.sh"
+preview="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/preview-pane.sh"
 
 # One toast at a time: a newer completion replaces the one still showing.
 while read -r pane tag; do
