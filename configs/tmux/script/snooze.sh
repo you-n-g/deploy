@@ -42,4 +42,3 @@ AI_AGENT_STATE_SOURCE="${AI_AGENT_STATE_SOURCE:-snooze}" \
   "$script_dir/track_ai_agent_state.sh" pending "$pane" "$reason"
 printf -v wake '%q ' "$script_dir/snooze.sh" --wake "$pane" "$reason"
 tmux run-shell -b "sleep $seconds; $wake"
-tmux display-message "$reason"
