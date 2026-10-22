@@ -68,4 +68,6 @@ pane 的状态存在 pane option 里（`@ai_agent_running` / `_background` / `_p
 | 下一个 auto-switch 目标提示 | `auto-switch/print-waiting-hint.sh` | |
 | auto-switch 跳过谁 | `auto-switch/switch-next.sh`、`auto-switch/refresh-next-pane.sh` | 只看 running / background / pending / done |
 
+状态不是互斥的：unread 和 background 正交，后台还在跑、但这一轮在用户不在看时结束的 pane 两个都是，画成 ◓（带 unread 的 ◒），auto-switch 也会落到它上面；只有 background、没有 unread 的 pane 仍然被跳过。
+
 改完跑 `python3 -m unittest configs/tmux/tests/test_state_symbols.py`：它检查画了某个符号的文件把同一族的符号都画了（比如有 unread 的 ◉ 就要有 woke 的 ☀），以及序列编辑器认识每种状态。加了新符号就把它补进测试里的 `FAMILIES` / `WORD_FILES`。

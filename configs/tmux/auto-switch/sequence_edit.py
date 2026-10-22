@@ -124,6 +124,8 @@ def pad_display(text: str, width: int) -> str:
 def state_label(unread: str, running: str, background: str, pending: str, done: str, woke: str) -> str:
     if pending:
         return "pending"
+    if background == "1" and unread == "1":
+        return "background+unread"  # background work going, a turn unread
     if background == "1":
         return "background"
     if running == "1":

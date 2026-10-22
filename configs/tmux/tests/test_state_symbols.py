@@ -15,10 +15,11 @@ TMUX_DIR = Path(__file__).resolve().parents[1]
 # symbol -> the symbols that must appear wherever it does
 FAMILIES = {
     "◉": ["☀"],  # unread, and unread because released from pending (@ai_agent_woke)
+    "◒": ["◓"],  # background, and background with an unread turn
 }
 # The sequence editor shows states as words, not symbols.
 WORD_FILES = {
-    "auto-switch/sequence_edit.py": ['"unread"', '"woke"'],
+    "auto-switch/sequence_edit.py": ['"unread"', '"woke"', '"background+unread"'],
     "auto-switch/sequence.sh": ["AutoSwitchStateUnread", "AutoSwitchStateWoke"],
 }
 

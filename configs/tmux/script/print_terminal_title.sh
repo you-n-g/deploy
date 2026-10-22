@@ -32,6 +32,8 @@ ai_title_status_prefix() {
 
   if [ -n "$pending" ] && [ "$pending" != "0" ]; then
     printf '⏸ '
+  elif [ "$background" = "1" ] && [ "$unread" = "1" ]; then
+    printf '◓ '
   elif [ "$background" = "1" ]; then
     printf '◒ '
   elif [ "$running" = "1" ]; then

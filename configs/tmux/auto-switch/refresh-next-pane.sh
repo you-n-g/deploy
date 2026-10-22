@@ -31,14 +31,15 @@ while IFS= read -r pane; do
 done < <(tmux list-panes -a -F '#{?#{&&:#{session_attached},#{&&:#{window_active},#{pane_active}}},#{pane_id},}' 2>/dev/null || true)
 
 # One snapshot of the state that decides usability, keyed by pane id.
-declare -A running background pending done
-while IFS='|' read -r pane r b p d; do
+declare -A running background pending done unread
+while IFS='|' read -r pane r b p d u; do
   [[ -n "$pane" ]] || continue
   running[$pane]="$r"
   background[$pane]="$b"
   pending[$pane]="$p"
   done[$pane]="$d"
-done < <(tmux list-panes -a -F '#{pane_id}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_pending}|#{@ai_agent_done}' 2>/dev/null || true)
+  unread[$pane]="$u"
+done < <(tmux list-panes -a -F '#{pane_id}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_pending}|#{@ai_agent_done}|#{@ai_agent_unread}' 2>/dev/null || true)
 
 next=""
 for candidate in $ranked; do
@@ -46,7 +47,7 @@ for candidate in $ranked; do
   [[ -v running[$candidate] ]] || continue
   [[ "$skip" == *" $candidate "* ]] && continue
   if [[ "${running[$candidate]}" != "1" \
-    && "${background[$candidate]}" != "1" \
+    && ( "${background[$candidate]}" != "1" || "${unread[$candidate]}" == "1" ) \
     && -z "${pending[$candidate]}" \
     && -z "${done[$candidate]}" ]]; then
     next="$candidate"

@@ -122,6 +122,8 @@ status_prefix() {
   local unread="$1" running="$2" background="$3" pending="$4" done="$5" woke="${6:-}"
   if [[ -n "$pending" ]]; then
     printf '⏸ '
+  elif [[ "$background" == "1" && "$unread" == "1" ]]; then
+    printf '◓ '
   elif [[ "$background" == "1" ]]; then
     printf '◒ '
   elif [[ "$running" == "1" ]]; then
@@ -571,6 +573,7 @@ highlight AutoSwitchSession96 ctermfg=14 cterm=NONE guifg=#00ffff gui=NONE
 highlight AutoSwitchCurrentPane cterm=bold,reverse gui=bold,reverse
 call matchadd('AutoSwitchStateRunning', '|\\s*\\zsrunning\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateBackground', '|\\s*\\zsbackground\\ze\\s*|', 40)
+call matchadd('AutoSwitchStateWoke', '|\\s*\\zsbackground+unread\\ze\\s*|', 40)
 call matchadd('AutoSwitchStatePending', '|\\s*\\zspending[^|]*\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateUnread', '|\\s*\\zsunread\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateWoke', '|\\s*\\zswoke\\ze\\s*|', 40)

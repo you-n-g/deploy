@@ -74,6 +74,8 @@ while IFS=$'\t' read -r _last_visit pane_target window_name pane_id _pane_pid _a
   fi
   if [ -n "$pending" ] && [ "$pending" != "0" ]; then
     label="⏸${label}"
+  elif [ "$background" = "1" ] && [ "$unread" = "1" ]; then
+    label="◓${label}"
   elif [ "$background" = "1" ]; then
     label="◒${label}"
   fi

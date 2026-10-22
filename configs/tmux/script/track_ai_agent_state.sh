@@ -16,7 +16,8 @@ set -eu
 # - @ai_agent_unread:
 #   "1" means the AI pane stopped while it was not visible to the user. It is
 #   cleared when the user visits a live AI pane or when the pane stops while
-#   already visible.
+#   already visible. Orthogonal to @ai_agent_background: a turn that stops out
+#   of sight with background work still going is both (◓).
 # - @ai_agent_pending:
 #   Non-empty means the pane is intentionally waiting on an external condition
 #   and should not be selected by auto-switch. The value is the pending reason;
@@ -538,11 +539,20 @@ case "$state" in
     fi
     ;;
   background)
+    # Unread is orthogonal to background: a turn that ends out of sight with
+    # background work still going has still said something the user has not
+    # read. It shows as ◓ and auto-switch may land on it.
     tmux set-option -pq -t "$pane_id" @ai_agent_running 0
     tmux set-option -pq -t "$pane_id" @ai_agent_background 1
-    tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
     tmux set-option -pqu -t "$pane_id" @ai_agent_woke 2>/dev/null || true
     tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
+    if is_window_visible; then
+      tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
+    else
+      [ "$(tmux show -pv -t "$pane_id" @ai_agent_unread 2>/dev/null || true)" = "1" ] \
+        || show_done_toast=1
+      tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
+    fi
     ;;
   idle)
     tmux set-option -pq -t "$pane_id" @ai_agent_running 0

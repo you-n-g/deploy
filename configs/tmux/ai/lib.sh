@@ -677,6 +677,7 @@ _ai_pane_rows() {
 #   ✓   (green)  done -- the pane was marked done (current pane too)
 #   ●   (yellow) running
 #   ◒   (yellow) Claude background work
+#   ◓   (yellow) background work, and a turn ended out of sight (unread)
 #   ⏸   (magenta) pending — intentionally waiting on something
 #   ◉   (yellow) unread — finished while not visible
 #   ☀   (yellow) unread — released from pending (dependency or snooze) out of sight
@@ -743,6 +744,11 @@ _ai_pane_fzf_list() {
         elif $is_pending; then
             sort_key=07
             status=$'\033[35m⏸\033[0m '
+        elif $has_background && (( is_unread )); then
+            # Background work still going, but the turn ended out of sight
+            # with something to read: it sorts with the unread panes.
+            sort_key=09
+            status=$'\033[33m◓\033[0m '
         elif $has_background; then
             sort_key=06
             status=$'\033[33m◒\033[0m '
@@ -784,6 +790,7 @@ _ai_pane_fzf_list() {
             pending_mark=$' \033[35m[pending:'"${pending_label}"$']\033[0m'
         elif $has_background; then
             state_tags+=" [background]"
+            (( is_unread )) && state_tags+=$' \033[33m[unread]\033[0m'
         elif $is_busy; then
             state_tags+=" [running]"
         elif $is_done; then

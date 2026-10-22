@@ -29,6 +29,8 @@ state_symbol() {
 
   if [ -n "$pending" ]; then
     printf '⏸'
+  elif [ "$background" = "1" ] && [ "$unread" = "1" ]; then
+    printf '◓'
   elif [ "$background" = "1" ]; then
     printf '◒'
   elif [ "$running" = "1" ]; then
@@ -49,7 +51,7 @@ for candidate in $ranked; do
   [ -n "$row" ] || continue
   IFS='|' read -r running background unread pending done woke <<< "$row"
   if [ "$running" != "1" ] \
-    && [ "$background" != "1" ] \
+    && { [ "$background" != "1" ] || [ "$unread" = "1" ]; } \
     && [ -z "$pending" ] \
     && [ -z "$done" ]; then
     best_pane="$candidate"
