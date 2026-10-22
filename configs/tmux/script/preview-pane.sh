@@ -2,10 +2,13 @@
 set -euo pipefail
 
 # Show a live preview of one pane, refreshed every ~0.5s for a few seconds, then
-# exit. Meant to run inside `display-popup -E` right after an auto-switch: the
-# popup pops on the pane you just switched TO and shows the pane you switched
-# FROM, so a glance tells you what the previous window was doing without
-# switching back. Auto-closes when this command returns.
+# exit. Run it in a floating pane made with `new_float_pane.sh -d`, so keyboard
+# focus stays where the user is; the float closes when this command returns.
+# Callers:
+#   auto-switch/switch-next.sh   the pane just switched away from, over the one
+#                                switched to
+#   show_done_toast.sh           a pane that finished a turn out of sight (the
+#                                task-done toast; also replayed by prefix + t r)
 #
 # With a title, the first line shows it (reverse video) and the rest shows the
 # bottom of the pane, where its newest output is -- used by the task-done toast.
@@ -15,14 +18,14 @@ set -euo pipefail
 # whole seconds, so a key in the same second the preview opened goes unnoticed
 # until the next one.
 #
-# usage: preview-prev-pane.sh [-k] <pane-id> [seconds] [title]
+# usage: preview-pane.sh [-k] <pane-id> [seconds] [title]
 
 dismiss_on_key=0
 if [[ "${1:-}" == "-k" ]]; then
   dismiss_on_key=1
   shift
 fi
-pane="${1:?usage: preview-prev-pane.sh [-k] <pane-id> [seconds] [title]}"
+pane="${1:?usage: preview-pane.sh [-k] <pane-id> [seconds] [title]}"
 seconds="${2:-2}"
 title="${3:-}"
 interval="0.5"

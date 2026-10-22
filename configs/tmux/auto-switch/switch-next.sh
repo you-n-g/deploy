@@ -125,7 +125,7 @@ if [[ -n "$skip_pane_id" && "$skip_pane_id" != "$target" ]] \
     title="$(tmux display-message -p -t "$skip_pane_id" \
       '↩ 上一个  #{session_name}:#{window_index}.#{pane_index}  #{window_name}')"
     # -k: any keystroke closes it early (and still reaches the pane).
-    printf -v preview_cmd '%q ' "$script_dir/preview-prev-pane.sh" -k "$skip_pane_id" 4 "$title"
+    printf -v preview_cmd '%q ' "$script_dir/../script/preview-pane.sh" -k "$skip_pane_id" 4 "$title"
     # --skip-if-zoomed: no preview over a zoomed window (fp stays empty).
     fp="$("$script_dir/../script/new_float_pane.sh" --skip-if-zoomed "$target" \
       -d -x "$pw" -y "$ph" -X "$px" -Y "$py" "$preview_cmd" 2>/dev/null || true)"
