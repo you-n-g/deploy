@@ -116,7 +116,8 @@ _fzf_start_pos() {
     printf '%s\n' "$list" |
         perl -pe 's/\e\[[0-9;]*m//g' |
         awk '
-            /\[current\]/ || /\[running\]/ || /\[background\]/ || /\[pending:/ { next }
+            /\[current\]/ || /\[running\]/ || /\[pending:/ { next }
+            /\[background\]/ && !/\[unread\]/ { next }
             first == 0 { first = NR }
             /\[unread\]/ && $4 == "news" && unread_news == 0 { unread_news = NR }
             /\[unread\]/ && unread == 0 { unread = NR }
@@ -165,7 +166,7 @@ _fzf_header() {
         orchestrator_help="  Ctrl-O toggle orchestrator"
     fi
 
-    printf '▶ current pane busy  ➲ current Claude background  ◒ Claude background  ⏸ pending  ▷ current pane idle  ● busy  ✓ done  ◉ unread  ☀ woke from pending  ○ idle  [agent] made by an agent  |  orchestrator: %s  |  switcher: %s  |  Enter switch  Ctrl-R reset desc%s\n' \
+    printf '▶ current pane busy  ➲ current Claude background  ◒ Claude background  ◓ background + unread  ⏸ pending  ▷ current pane idle  ● busy  ✓ done  ◉ unread  ☀ woke from pending  ○ idle  [agent] made by an agent  |  orchestrator: %s  |  switcher: %s  |  Enter switch  Ctrl-R reset desc%s\n' \
         "$orchestrator_label" \
         "$(_switcher_header_info)" \
         "$orchestrator_help"

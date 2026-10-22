@@ -26,8 +26,11 @@ while IFS='|' read -r session_name pane_id window_name pane_unread pane_running 
   if [ "$show_orchestrator" = "0" ]; then
     _ai_window_is_orchestrator "$window_name" && continue
   fi
-  if [ "$pane_background" = "1" ]; then
-    background=$((background + 1))
+  # Background and unread are orthogonal: a background pane with an unread
+  # turn counts in both.
+  [ "$pane_background" = "1" ] && background=$((background + 1))
+  if [ "$pane_background" = "1" ] && [ "$pane_unread" != "1" ]; then
+    :
   elif [ "$pane_running" = "1" ]; then
     running=$((running + 1))
   elif [ "$pane_done" = "1" ]; then
