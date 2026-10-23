@@ -52,6 +52,8 @@ Usage:
   sequence.sh list-picker-rows
   sequence.sh list-saved
   sequence.sh show
+  sequence.sh note              print the active sequence's note
+  sequence.sh set-note          replace it with stdin (project-mindmap global mode)
 
 Manage the auto-switch pane sequence stored in @auto_switch_ranked_panes.
 Both AI panes and ordinary panes (shell, SSH, editor, etc.) can be added.
@@ -92,7 +94,7 @@ case "$command_name" in
     [[ -n "$saved_index" ]] || { echo "$command_name requires an index" >&2; exit 2; }
     shift
     ;;
-  new-ranked-panes|select-saved|list-picker-rows|list-saved|show)
+  new-ranked-panes|select-saved|list-picker-rows|list-saved|show|note|set-note)
     ;;
   -h|--help)
     usage
@@ -1007,6 +1009,14 @@ case "$command_name" in
     ;;
   edit)
     edit_sequence
+    ;;
+  note)
+    current_note
+    exit 0
+    ;;
+  set-note)
+    set_current_note "$(cat)"
+    exit 0
     ;;
   new-ranked-panes)
     new_ranked_panes
