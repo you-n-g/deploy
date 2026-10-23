@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Toggle a floating pane showing the session's tasks/CURRENT.md (project-mindmap
-# `current` mode) in nvim. A floating pane rather than display-popup: a popup is
+# Toggle a floating pane showing the session's tasks/CURRENT-<session>.md
+# (project-mindmap `current` mode) in nvim. One file per tmux session: several
+# sessions can work in the same repo, each with its own agents. A floating pane rather than display-popup: a popup is
 # modal and swallows every prefix key until it closes, while a floating pane is a
 # real pane, so window switching and navigate-note's tmux links keep working.
 #
-# CURRENT.md is written by the session's orchestrator Agent into its repo (or a
+# The file is written by the session's orchestrator Agent into its repo (or a
 # file named by .tma/tasks-file, see below), so the orchestrator window's cwd
 # decides which project to look in. Sessions without an orchestrator window use
 # the invoking pane's cwd instead.
@@ -46,10 +47,12 @@ else
   LOOKUP_DIR="$WORKDIR"
 fi
 
-# A project whose tasks file is not <git root>/tasks/CURRENT.md -- e.g. a notes
-# vault that is not a git repo, or a plan kept under a subdirectory -- names it
-# in .tma/tasks-file: one line, a path relative to the directory holding .tma
-# (absolute also works). Search upward from the lookup dir, stopping at the git
+# A project whose tasks file is not <git root>/tasks/CURRENT-<session>.md -- e.g.
+# a notes vault that is not a git repo, or a plan kept under a subdirectory --
+# names it in .tma/tasks-file: one line, a path relative to the directory
+# holding .tma (absolute also works), where {session} stands for the session
+# name (e.g. invest/CURRENT-{session}.md).
+# Search upward from the lookup dir, stopping at the git
 # root (or / outside a repo); the first hit wins. Both sides are physical paths
 # (show-toplevel resolves symlinks, so does pwd -P), so the stop test matches.
 find_tasks_pointer() {
@@ -70,6 +73,7 @@ if POINTER_ROOT="$(find_tasks_pointer "$LOOKUP_DIR")"; then
   REPO_ROOT="$POINTER_ROOT"
   rel="$(grep -m1 -v '^[[:space:]]*$' "$POINTER_ROOT/.tma/tasks-file" || true)"
   [[ -n "$rel" ]] || { echo "open_current_tasks.sh: $POINTER_ROOT/.tma/tasks-file is empty" >&2; exit 1; }
+  rel="${rel//\{session\}/$SESSION}"
   [[ "$rel" == /* ]] && FILE="$rel" || FILE="$POINTER_ROOT/$rel"
   if [[ ! -f "$FILE" ]]; then
     echo "open_current_tasks.sh: $FILE does not exist (named by $POINTER_ROOT/.tma/tasks-file)" >&2
@@ -80,7 +84,7 @@ else
     echo "open_current_tasks.sh: $SOURCE is not inside a git repository and has no .tma/tasks-file" >&2
     exit 1
   fi
-  FILE="$REPO_ROOT/tasks/CURRENT.md"
+  FILE="$REPO_ROOT/tasks/CURRENT-$SESSION.md"
   if [[ ! -f "$FILE" ]]; then
     echo "open_current_tasks.sh: $FILE does not exist (looked via $SOURCE); run project-mindmap in current mode first" >&2
     exit 1
