@@ -120,13 +120,15 @@ history_segment="#[norange]#{E:@jump-history-waiting}#{E:@jump-history-status}#[
 # window's attribute/rank -- is what gets watched all day, so it sits at the far
 # left, ahead of the session name, instead of at the tail of status-right.
 ai_group="#[fg=cyan]🤖 #(${SCRIPT_DIR}/print_ai_status.sh)#[default]"
+# 🔇 after the hint marks a muted current pane (prefix + u m). It is a plain
+# format, not part of the #() hint job, so it shows the moment it is toggled.
 # Keep the current-window hint, target-state symbol, and mode symbol in one clickable
 # range. Desktop tmux clients report this as sb_a; mobile clients may not
 # report status ranges at all, so debug MouseDown1Status before changing this.
 # The waiting-hint and window-hint scripts print their own leading space, so
 # an empty one leaves no gap: "3 ↻" vs "3 ● ↻" (the mode symbol carries its
 # own leading space too).
-ai_group="${ai_group}#[range=user|sb_a]#[fg=colour201]#(${SCRIPT_DIR}/../auto-switch/print-waiting-hint.sh)#[fg=green]#{@auto_switch_status_symbol}#[fg=colour203]#(${SCRIPT_DIR}/print_current_window_hint.sh)#[norange default]"
+ai_group="${ai_group}#[range=user|sb_a]#[fg=colour201]#(${SCRIPT_DIR}/../auto-switch/print-waiting-hint.sh)#[fg=green]#{@auto_switch_status_symbol}#[fg=colour203]#(${SCRIPT_DIR}/print_current_window_hint.sh)#{?@ai_agent_muted, 🔇,}#[norange default]"
 
 # Today's prompt progress against a usual day, off unless the global
 # @lm_progress option is set (llm-conf toggles it). tmux expands only the

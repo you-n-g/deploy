@@ -41,6 +41,10 @@ set -eu
 #   by the turn's next tool call (it marks the pane running again), so the idle
 #   state applies it instead, and a pane that pends this way is not unread and
 #   does not release its own waiters. A new prompt drops a queued one.
+# - @ai_agent_muted:
+#   "1" on a pane the user muted (toggle-mute, prefix + u m): it is never
+#   marked unread and never toasts, however its turns end. Muting clears a
+#   current unread. Survives turns; cleared only by toggling it off.
 # - @ai_agent_done:
 #   "1" when the user (or an agent) marked the pane's task done. Idle is not
 #   done: a long task goes idle many times on the way. Set by done /
@@ -104,11 +108,11 @@ set -eu
 #   Optional path for the prompt log. If unset, rows go to
 #   ~/.cache/tmux-ai-prompts.jsonl.
 
-state="${1:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending|toggle-pending|wake|done|toggle-done TARGET [PENDING_REASON]}"
+state="${1:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending|toggle-pending|wake|toggle-mute|done|toggle-done TARGET [PENDING_REASON]}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../ai/lib.sh"
 
-target="${2:-${TMUX_PANE:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending|toggle-pending|wake|done|toggle-done TARGET [PENDING_REASON]}}"
+target="${2:-${TMUX_PANE:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending|toggle-pending|wake|toggle-mute|done|toggle-done TARGET [PENDING_REASON]}}"
 if ! pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')" || [ -z "$pane_id" ]; then
   if [ "$state" = "visit" ]; then
     exit 0
@@ -485,6 +489,10 @@ release_waiters() {
   done < <(tmux list-panes -a -F $'#{pane_id}\t#{@ai_agent_pending}')
 }
 
+is_muted() {
+  [ "$(tmux show -pv -t "$pane_id" @ai_agent_muted 2>/dev/null || true)" = "1" ]
+}
+
 # Apply a wait queued by `pend_until.sh --after-turn` (see @ai_agent_pend_next).
 # Succeeds when the pane ends up pending; a target already idle leaves it not
 # pending and the turn ends as a normal idle.
@@ -546,7 +554,7 @@ case "$state" in
     tmux set-option -pq -t "$pane_id" @ai_agent_background 1
     tmux set-option -pqu -t "$pane_id" @ai_agent_woke 2>/dev/null || true
     tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
-    if is_window_visible; then
+    if is_window_visible || is_muted; then
       tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
     else
       [ "$(tmux show -pv -t "$pane_id" @ai_agent_unread 2>/dev/null || true)" = "1" ] \
@@ -568,7 +576,7 @@ case "$state" in
       : # now pending on the agent it dispatched to
     else
       tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
-      if is_window_visible; then
+      if is_window_visible || is_muted; then
         tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
         tmux set-option -pqu -t "$pane_id" @ai_agent_woke 2>/dev/null || true
       else
@@ -604,6 +612,15 @@ case "$state" in
       fi
     fi
     ;;
+  toggle-mute)
+    if is_muted; then
+      tmux set-option -pqu -t "$pane_id" @ai_agent_muted
+    else
+      tmux set-option -pq -t "$pane_id" @ai_agent_muted 1
+      tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
+      tmux set-option -pqu -t "$pane_id" @ai_agent_woke 2>/dev/null || true
+    fi
+    ;;
   pending|toggle-pending|wake)
     was_running="$(tmux show -pv -t "$pane_id" @ai_agent_running 2>/dev/null || true)"
     was_pending="$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)"
@@ -621,7 +638,7 @@ case "$state" in
       # released rather than toggled by hand -- and as an idle edge it
       # releases the panes waiting on it.
       tmux set-option -pqu -t "$pane_id" @ai_agent_pending
-      if ! is_window_visible; then
+      if ! is_window_visible && ! is_muted; then
         tmux set-option -pq -t "$pane_id" @ai_agent_unread 1
         [ "$state" != "wake" ] || tmux set-option -pq -t "$pane_id" @ai_agent_woke 1
       fi

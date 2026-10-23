@@ -706,6 +706,8 @@ _ai_pane_fzf_list() {
     done_pane_ids=" $(_ai_done_pane_ids | tr '\n' ' ') "
     local woke_pane_ids
     woke_pane_ids=" $(_ai_woke_pane_ids | tr '\n' ' ') "
+    local muted_pane_ids
+    muted_pane_ids=" $(tmux list-panes -a -F '#{?@ai_agent_muted,#{pane_id},}' 2>/dev/null | grep . | tr '\n' ' ') "
     local tma_pane_ids
     tma_pane_ids=" $(_ai_tma_pane_ids | tr '\n' ' ') "
 
@@ -801,6 +803,7 @@ _ai_pane_fzf_list() {
         else
             state_tags+=" [idle]"
         fi
+        [[ "$muted_pane_ids" == *" $wid "* ]] && state_tags+=" [muted]"
         local is_ranked=false
         case "$ranked_pane_ids" in
             *" $wid "*) is_ranked=true ;;
