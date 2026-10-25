@@ -22,33 +22,55 @@
 # is what an agent runs right after dispatching work to another agent: pending
 # set mid-turn would be cleared by its own next tool call.
 #
-# usage: pend_until.sh [-A] [--after-turn] idle|done PANE [TARGET]
+# --timeout DURATION is required (90m, 3h, 5400s; a bare number is seconds):
+# how long the wait is expected to take. The reason gets "· 最晚 HH:MM", and a
+# background tmux job releases PANE at that time if its reason is still exactly
+# that -- a target that crashed or hung must not leave PANE pending forever.
+#
+# usage: pend_until.sh [-A] [--after-turn] --timeout DURATION idle|done PANE [TARGET]
+#        pend_until.sh --expire PANE REASON   (the timeout half)
 set -euo pipefail
 
-usage="usage: pend_until.sh [-A] [--after-turn] idle|done PANE [TARGET]"
+usage="usage: pend_until.sh [-A] [--after-turn] --timeout DURATION idle|done PANE [TARGET]"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [[ "${1:-}" == "--expire" ]]; then
+  pane="${2:?$usage}"
+  reason="${3:?$usage}"
+  [[ "$(tmux show-option -pqv -t "$pane" @ai_agent_pending 2>/dev/null)" == "$reason" ]] || exit 0
+  AI_AGENT_STATE_SOURCE=pend-timeout exec "$script_dir/track_ai_agent_state.sh" wake "$pane"
+fi
 all_sessions=0
 after_turn=0
+timeout=""
 while [[ "${1:-}" == -* ]]; do
   case "$1" in
     -A) all_sessions=1; shift ;;
     --after-turn) after_turn=1; shift ;;
+    --timeout) timeout="${2:-}"; shift 2 ;;
     *) echo "$usage" >&2; exit 2 ;;
   esac
 done
+[[ -n "$timeout" ]] || { echo "pend_until: --timeout is required (expected wait, e.g. 3h)" >&2; tmux display-message "pend_until: 缺 --timeout"; exit 2; }
+[[ "$timeout" =~ ^([0-9]+)([smh]?)$ ]] || { echo "pend_until: --timeout must look like 5400, 90m or 3h" >&2; exit 2; }
+case "${BASH_REMATCH[2]}" in
+  h) timeout_s=$(( BASH_REMATCH[1] * 3600 )) ;;
+  m) timeout_s=$(( BASH_REMATCH[1] * 60 )) ;;
+  *) timeout_s=${BASH_REMATCH[1]} ;;
+esac
+(( timeout_s > 0 )) || { echo "pend_until: --timeout must be greater than 0" >&2; exit 2; }
 case "${1:-}" in
   idle) prefix="等" ;;
   done) prefix="等完成" ;;
   *) echo "$usage" >&2; exit 2 ;;
 esac
 mode="$1"
-script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 pane="$(tmux display-message -p -t "${2:?$usage}" '#{pane_id}')"
 
 if (( after_turn )); then
   [[ -n "${3:-}" ]] || { echo "$usage (--after-turn needs TARGET)" >&2; exit 2; }
   target="$(tmux display-message -p -t "$3" '#{pane_id}')"
   [[ "$target" != "$pane" ]] || { echo "pend_until: a pane cannot wait on itself" >&2; exit 1; }
-  tmux set-option -pq -t "$pane" @ai_agent_pend_next "$mode $target"
+  tmux set-option -pq -t "$pane" @ai_agent_pend_next "$mode $target $timeout_s"
   exit 0
 fi
 if [[ -n "${3:-}" ]]; then
@@ -87,5 +109,14 @@ if [[ "$mode" == "idle" && "$t_running$t_background$t_pending" == "000" ]]; then
   tmux display-message "pend_until: $label 已经 idle，不用等"
   exit 0
 fi
+expire_at=$(( $(date +%s) + timeout_s ))
+if [[ "$(date -d "@$expire_at" +%F)" == "$(date +%F)" ]]; then
+  deadline="$(date -d "@$expire_at" +%H:%M)"
+else
+  deadline="$(date -d "@$expire_at" '+%m-%d %H:%M')"
+fi
+reason="$prefix $target $label · 最晚 $deadline"
 AI_AGENT_STATE_SOURCE="${AI_AGENT_STATE_SOURCE:-pend-until-$mode}" \
-  "$script_dir/track_ai_agent_state.sh" pending "$pane" "$prefix $target $label"
+  "$script_dir/track_ai_agent_state.sh" pending "$pane" "$reason"
+printf -v expire '%q ' "$script_dir/pend_until.sh" --expire "$pane" "$reason"
+tmux run-shell -b "sleep $timeout_s; $expire"
