@@ -35,7 +35,7 @@ set -eu
 #   of its own finishing. The window list and the pickers show it as ☀ instead
 #   of the unread ◉. Set by wake out of sight; cleared with unread.
 # - @ai_agent_pend_next:
-#   "<idle|done> <pane id>" queued by `pend_until.sh --after-turn` during the
+#   "<idle|done> <pane id> <timeout seconds>" queued by `pend_until.sh --after-turn` during the
 #   pane's own turn: an agent that has just dispatched work to another agent
 #   asks to wait on it once this turn ends. Pending set mid-turn would be wiped
 #   by the turn's next tool call (it marks the pane running again), so the idle
@@ -503,9 +503,10 @@ apply_pend_next() {
   queued="$(tmux show -pv -t "$pane_id" @ai_agent_pend_next 2>/dev/null || true)"
   [ -n "$queued" ] || return 1
   tmux set-option -pqu -t "$pane_id" @ai_agent_pend_next
-  read -r mode target <<< "$queued"
+  read -r mode target timeout <<< "$queued"
   tmux display-message -p -t "$target" '#{pane_id}' >/dev/null 2>&1 || return 1  # target closed
-  AI_AGENT_STATE_SOURCE="after-turn-of:$pane_id" "$SCRIPT_DIR/pend_until.sh" "$mode" "$pane_id" "$target"
+  [ -n "$timeout" ] || { tmux display-message "pend_until --after-turn 缺 --timeout，未挂起：$queued"; return 1; }
+  AI_AGENT_STATE_SOURCE="after-turn-of:$pane_id" "$SCRIPT_DIR/pend_until.sh" --timeout "$timeout" "$mode" "$pane_id" "$target"
   [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)" ]
 }
 

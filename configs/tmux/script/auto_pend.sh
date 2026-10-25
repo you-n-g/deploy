@@ -96,7 +96,7 @@ case "$mode" in
   idle)
     target="${rest%% *}"
     grep -q "^$target " <<< "$candidates" || fail "AI 选的 $target 不在候选里"
-    AI_AGENT_STATE_SOURCE=auto-pend "$script_dir/pend_until.sh" "$mode" "$pane" "$target"
+    AI_AGENT_STATE_SOURCE=auto-pend "$script_dir/pend_until.sh" --timeout 4h "$mode" "$pane" "$target"
     # A target already idle needs no wait: pend_until.sh sets nothing, so release.
     if still_ours; then
       AI_AGENT_STATE_SOURCE=auto-pend "$script_dir/track_ai_agent_state.sh" wake "$pane"
