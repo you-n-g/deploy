@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat >&2 <<'USAGE'
 Usage:
-  run-wakeup.sh --mode <timer|ai-idle|ai-running> [--target <ai-pane>] \
+  run-wakeup.sh --mode <timer|ai-idle|ai-running> [--target <ai-pane> --timeout <seconds>] \
     --seconds <seconds> --poll-seconds <seconds> --buffer <name> \
     --file <message-file> --pane <watcher-pane>
 USAGE
@@ -13,6 +13,8 @@ USAGE
 mode=""
 target=""
 seconds=""
+timeout=""
+timed_out=0
 poll_seconds=""
 buffer=""
 file=""
@@ -38,6 +40,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --poll-seconds)
       poll_seconds="${2:-}"
+      shift 2
+      ;;
+    --timeout)
+      timeout="${2:-}"
       shift 2
       ;;
     --buffer)
@@ -74,6 +80,7 @@ done
 [[ -n "$pane" ]] || { echo "--pane is required" >&2; exit 2; }
 if [[ "$mode" == "ai-idle" || "$mode" == "ai-running" ]]; then
   [[ -n "$target" ]] || { echo "--target is required in $mode mode" >&2; exit 2; }
+  [[ "$timeout" =~ ^[0-9]+$ ]] && (( timeout > 0 )) || { echo "--timeout (seconds > 0) is required in $mode mode" >&2; exit 2; }
 fi
 
 log_event() {
@@ -136,6 +143,7 @@ wait_for_condition() {
       interruptible_sleep "$seconds"
       ;;
     ai-idle)
+      deadline=$(( $(date +%s) + timeout ))
       # Goal-mode continuations briefly emit Stop between turns. Treat those as
       # state jitter unless the target stays idle across several normal polls.
       idle_polls=0
@@ -143,6 +151,10 @@ wait_for_condition() {
         target_exists || return 0
         running="$(tmux show -pv -t "$target" @ai_agent_running 2>/dev/null)" \
           || { echo "target $target is missing @ai_agent_running" >&2; exit 1; }
+        if (( $(date +%s) >= deadline )); then
+          timed_out=1
+          return 0
+        fi
         if [[ "$running" == "1" ]]; then
           idle_polls=0
         else
@@ -155,11 +167,16 @@ wait_for_condition() {
       done
       ;;
     ai-running)
+      deadline=$(( $(date +%s) + timeout ))
       while :; do
         target_exists || return 0
         running="$(tmux show -pv -t "$target" @ai_agent_running 2>/dev/null)" \
           || { echo "target $target is missing @ai_agent_running" >&2; exit 1; }
         [[ "$running" == "1" ]] && return 0
+        if (( $(date +%s) >= deadline )); then
+          timed_out=1
+          return 0
+        fi
         interruptible_sleep "$poll_seconds"
       done
       ;;
@@ -279,6 +296,21 @@ submit_message() {
 
 while :; do
   wait_for_condition
+  if (( timed_out )); then
+    # The expected signal did not come in time: wake the watcher anyway, with a
+    # note in front of its task so it checks for a stuck target before acting.
+    note="$(mktemp "${TMPDIR:-/tmp}/watch-target-timeout.XXXXXX")"
+    {
+      printf '【超时唤醒】等了 %s 秒，%s 的「%s」条件仍未满足（当前 @ai_agent_running=%s）。\n' \
+        "$timeout" "$target" "$mode" "$(tmux show -pv -t "$target" @ai_agent_running 2>/dev/null || echo '?')"
+      printf '先确认目标是否卡住（看它的屏幕、后台作业 / Slurm 状态、日志），再决定是否执行下面的原任务；目标正常但只是慢，就重新安排唤醒并给新的 --timeout。\n\n'
+      cat "$file"
+    } > "$note"
+    mv "$note" "$file"
+    log_event "timed out after ${timeout}s"
+    submit_message
+    break
+  fi
   if condition_still_satisfied; then
     submit_message
     break
