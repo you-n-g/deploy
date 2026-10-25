@@ -119,6 +119,18 @@ case "$event" in
     # the tracker read stdin: the tracker has a dozen callers that hand it no
     # JSON at all, and a blocking read on this path would stall the pane.
     read_hook_input
+    # A prompt that a CronCreate / ScheduleWakeup of this session queued
+    # reaches the hook like a typed one; the transcript still has the tool call
+    # that scheduled it, so match the text there and tag the row "schedule".
+    scheduled=""
+    transcript="$(printf '%s' "$hook_input" | jq -r '.transcript_path // empty')"
+    if [ -n "$transcript" ] && [ -f "$transcript" ]; then
+      scheduled="$(grep -F -e '"name":"CronCreate"' -e '"name":"ScheduleWakeup"' "$transcript" \
+        | jq -r --argjson hook "$hook_input" '
+            .message.content[]? | select(.type == "tool_use" and (.name == "CronCreate" or .name == "ScheduleWakeup"))
+            | select(.input.prompt == $hook.prompt) | "1"' 2>/dev/null | head -n 1)"
+    fi
+    AI_AGENT_SCHEDULED="$scheduled" \
     AI_AGENT_PROMPT="$(printf '%s' "$hook_input" | jq -r '.prompt // empty')" \
       AI_AGENT_SESSION_ID="$(printf '%s' "$hook_input" | jq -r '.session_id // empty')" \
       AI_AGENT_CWD="$(printf '%s' "$hook_input" | jq -r '.cwd // empty')" \
