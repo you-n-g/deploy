@@ -141,6 +141,7 @@ AI window 目标正在运行时，优先用条件唤醒：
 "${CLAUDE_SKILL_DIR}/scripts/schedule-wakeup.sh" \
   --mode ai-idle \
   --target '<target-ai-pane>' \
+  --timeout '<预计等待时长，如 3h>' \
   --message '<目标停下或关闭后要提交给 watcher 的检查指令>'
 ```
 
@@ -150,6 +151,7 @@ AI window 目标正在等待输入、而用户要求等它开始运行时，使�
 "${CLAUDE_SKILL_DIR}/scripts/schedule-wakeup.sh" \
   --mode ai-running \
   --target '<target-ai-pane>' \
+  --timeout '<预计等待时长，如 3h>' \
   --message '<目标开始运行或关闭后要提交给 watcher 的检查指令>'
 ```
 
@@ -164,6 +166,8 @@ AI window 目标正在等待输入、而用户要求等它开始运行时，使�
 脚本将完整 `--message` 保留为本次唤醒的任务文件，只向 composer 发送带 TMA 署名的短文件引用；watcher 收到后先完整读取文件，再执行其中指令。任务文件在提交后仍保留，不能随临时 buffer 一起删除。长文本直接 paste 时，TUI 可能在两次回车之后还没处理完，单纯增加固定等待时间不能保证提交。
 
 短引用通过独立 tmux buffer 和 `paste-buffer -p -d` 发送，显式标记粘贴边界；等待 2 秒，再 `send-keys Enter` 并验证 watcher 开始执行。不要把完整任务重新拼回 composer，也不要在 paste 后立刻 Enter。
+
+`--mode ai-idle` / `ai-running` 必须带 `--timeout`（如 `90m`、`3h`、`5400s`，纯数字为秒），写调用方预计多久内会等到信号。到点条件仍未满足，watcher 照样被唤醒，任务文件开头会加一段【超时唤醒】说明：先确认目标是否卡住（看屏幕、后台作业 / Slurm 状态、日志），目标正常只是慢就重新安排唤醒、给新的 `--timeout`。这是为了防止等一个永远不会来的事件（比如上游作业失败、链条再也不会跑完）而双方一起死等。`--timeout` 按这件事正常耗时的 1.5 倍左右给，不要为了省事写成很大的数。
 
 `schedule-wakeup.sh` 是唯一唤醒入口，但必须用 `--mode` 把规则分清楚：默认 `timer` 只负责固定时间 one-shot 唤醒；`--mode ai-idle` 轮询单个 AI window 的 `@ai_agent_running`、停下或关闭后立即唤醒；`--mode ai-running` 轮询单个 AI window 的 `@ai_agent_running`、开始运行或关闭后立即唤醒。不要在默认 timer 模式里混入 AI Agent 状态判断，也不要把候选排序、多目标选择、pending 处理塞进 wakeup 脚本；这些属于调用方 skill。
 

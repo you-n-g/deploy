@@ -5,13 +5,18 @@ usage() {
   cat >&2 <<'USAGE'
 Usage:
   schedule-wakeup.sh --seconds <seconds> --message <message> [--pane <watcher-pane>] [--buffer <name>] [--verbose]
-  schedule-wakeup.sh --mode ai-idle --target <ai-pane> --message <message> [--pane <watcher-pane>] [--poll-seconds <seconds>] [--buffer <name>] [--verbose]
-  schedule-wakeup.sh --mode ai-running --target <ai-pane> --message <message> [--pane <watcher-pane>] [--poll-seconds <seconds>] [--buffer <name>] [--verbose]
+  schedule-wakeup.sh --mode ai-idle --target <ai-pane> --timeout <duration> --message <message> [--pane <watcher-pane>] [--poll-seconds <seconds>] [--buffer <name>] [--verbose]
+  schedule-wakeup.sh --mode ai-running --target <ai-pane> --timeout <duration> --message <message> [--pane <watcher-pane>] [--poll-seconds <seconds>] [--buffer <name>] [--verbose]
 
 Modes:
   timer       Sleep for --seconds, then wake the watcher. This is the default.
   ai-idle     Wake when target stops running or disappears.
   ai-running  Wake when target starts running or disappears.
+
+--timeout is required in ai-idle / ai-running: how long the caller expects to
+wait (e.g. 90m, 3h, 5400s; a bare number is seconds). If the condition has not
+fired by then, the watcher is woken anyway with a timeout note so it checks
+whether the target is stuck -- an event that never comes must not wait forever.
 
 When --pane is omitted, the watcher defaults to $TMUX_PANE.
 Only one wakeup may be pending for the same watcher pane; scheduling a new one
@@ -23,6 +28,7 @@ mode="timer"
 target=""
 pane=""
 seconds="1800"
+timeout=""
 poll_seconds="2"
 message=""
 buffer="watch-target-wakeup"
@@ -48,6 +54,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --poll-seconds)
       poll_seconds="${2:-}"
+      shift 2
+      ;;
+    --timeout)
+      timeout="${2:-}"
       shift 2
       ;;
     --message)
@@ -87,8 +97,17 @@ fi
 [[ -n "$pane" ]] || { echo "--pane is required when TMUX_PANE is unavailable" >&2; usage; exit 2; }
 
 target_pane=""
+timeout_seconds=0
 if [[ "$mode" == "ai-idle" || "$mode" == "ai-running" ]]; then
   [[ -n "$target" ]] || { echo "--target is required in $mode mode" >&2; usage; exit 2; }
+  [[ -n "$timeout" ]] || { echo "--timeout is required in $mode mode (expected wait, e.g. 3h)" >&2; usage; exit 2; }
+  [[ "$timeout" =~ ^([0-9]+)([smh]?)$ ]] || { echo "--timeout must look like 5400, 90m or 3h" >&2; exit 2; }
+  case "${BASH_REMATCH[2]}" in
+    h) timeout_seconds=$(( BASH_REMATCH[1] * 3600 )) ;;
+    m) timeout_seconds=$(( BASH_REMATCH[1] * 60 )) ;;
+    *) timeout_seconds=${BASH_REMATCH[1]} ;;
+  esac
+  (( timeout_seconds > 0 )) || { echo "--timeout must be greater than 0" >&2; exit 2; }
   target_pane="$(tmux display-message -p -t "$target" '#{pane_id}' 2>/dev/null)" \
     && [[ -n "$target_pane" ]] \
     || { echo "target $target does not resolve to a pane" >&2; exit 2; }
@@ -153,7 +172,7 @@ runner="$script_dir/run-wakeup.sh"
 printf -v command '%q --mode %q --seconds %q --poll-seconds %q --buffer %q --file %q --pane %q' \
   "$runner" "$mode" "$seconds" "$poll_seconds" "$buffer" "$message_file" "$watcher_pane"
 if [[ -n "$target_pane" ]]; then
-  printf -v command '%s --target %q' "$command" "$target_pane"
+  printf -v command '%s --target %q --timeout %q' "$command" "$target_pane" "$timeout_seconds"
 fi
 
 printf -v run_command 'nohup sh -c %q </dev/null >>%q 2>&1 &' "exec $command" "$log_file"
@@ -162,7 +181,7 @@ tmux run-shell -b "$run_command"
 if (( verbose )); then
   case "$mode" in
     timer) echo "Scheduled timer wakeup for watcher pane $watcher_pane in ${seconds}s" ;;
-    ai-idle) echo "Scheduled AI-idle wakeup for watcher pane $watcher_pane when $target_pane stops running or closes" ;;
-    ai-running) echo "Scheduled AI-running wakeup for watcher pane $watcher_pane when $target_pane starts running or closes" ;;
+    ai-idle) echo "Scheduled AI-idle wakeup for watcher pane $watcher_pane when $target_pane stops running or closes (timeout ${timeout_seconds}s)" ;;
+    ai-running) echo "Scheduled AI-running wakeup for watcher pane $watcher_pane when $target_pane starts running or closes (timeout ${timeout_seconds}s)" ;;
   esac
 fi
