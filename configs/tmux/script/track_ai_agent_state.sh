@@ -504,7 +504,8 @@ apply_pend_next() {
   [ -n "$queued" ] || return 1
   tmux set-option -pqu -t "$pane_id" @ai_agent_pend_next
   read -r mode target timeout <<< "$queued"
-  tmux display-message -p -t "$target" '#{pane_id}' >/dev/null 2>&1 || return 1  # target closed
+  # target closed (a pid target is checked by pend_until.sh itself)
+  [ "$mode" = pid ] || tmux display-message -p -t "$target" '#{pane_id}' >/dev/null 2>&1 || return 1
   [ -n "$timeout" ] || { tmux display-message "pend_until --after-turn 缺 --timeout，未挂起：$queued"; return 1; }
   AI_AGENT_STATE_SOURCE="after-turn-of:$pane_id" "$SCRIPT_DIR/pend_until.sh" --timeout "$timeout" "$mode" "$pane_id" "$target"
   [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_pending 2>/dev/null || true)" ]
@@ -553,8 +554,11 @@ case "$state" in
     # Unread is orthogonal to background: a turn that ends out of sight with
     # background work still going has still said something the user has not
     # read. It shows as ◓ and auto-switch may land on it.
-    tmux set-option -pq -t "$pane_id" @ai_agent_running 0
+    # background before running=0: the TUI tracker polls these two options,
+    # and in the gap between the writes it would see a stopped pane with no
+    # background work and send idle, which clears background again.
     tmux set-option -pq -t "$pane_id" @ai_agent_background 1
+    tmux set-option -pq -t "$pane_id" @ai_agent_running 0
     tmux set-option -pqu -t "$pane_id" @ai_agent_woke 2>/dev/null || true
     tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
     if is_window_visible || is_muted; then
