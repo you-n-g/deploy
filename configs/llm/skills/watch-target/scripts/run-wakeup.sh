@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat >&2 <<'USAGE'
 Usage:
-  run-wakeup.sh --mode <timer|ai-idle|ai-running> [--target <ai-pane> --timeout <seconds>] \
+  run-wakeup.sh --mode <timer|ai-idle|ai-running|pid-exit> [--target <ai-pane|pid> --timeout <seconds>] \
     --seconds <seconds> --poll-seconds <seconds> --buffer <name> \
     --file <message-file> --pane <watcher-pane>
 USAGE
@@ -70,15 +70,17 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ "$mode" == "timer" || "$mode" == "ai-idle" || "$mode" == "ai-running" ]] \
-  || { echo "--mode must be timer, ai-idle, or ai-running" >&2; exit 2; }
+case "$mode" in
+  timer|ai-idle|ai-running|pid-exit) ;;
+  *) echo "--mode must be timer, ai-idle, ai-running or pid-exit" >&2; exit 2 ;;
+esac
 [[ -n "$seconds" && "$seconds" =~ ^[0-9]+$ ]] || { echo "--seconds must be a non-negative integer" >&2; exit 2; }
 [[ -n "$poll_seconds" && "$poll_seconds" =~ ^[0-9]+$ ]] || { echo "--poll-seconds must be a positive integer" >&2; exit 2; }
 (( poll_seconds > 0 )) || { echo "--poll-seconds must be greater than 0" >&2; exit 2; }
 [[ -n "$buffer" ]] || { echo "--buffer is required" >&2; exit 2; }
 [[ -n "$file" ]] || { echo "--file is required" >&2; exit 2; }
 [[ -n "$pane" ]] || { echo "--pane is required" >&2; exit 2; }
-if [[ "$mode" == "ai-idle" || "$mode" == "ai-running" ]]; then
+if [[ "$mode" != "timer" ]]; then
   [[ -n "$target" ]] || { echo "--target is required in $mode mode" >&2; exit 2; }
   [[ "$timeout" =~ ^[0-9]+$ ]] && (( timeout > 0 )) || { echo "--timeout (seconds > 0) is required in $mode mode" >&2; exit 2; }
 fi
@@ -180,7 +182,25 @@ wait_for_condition() {
         interruptible_sleep "$poll_seconds"
       done
       ;;
+    pid-exit)
+      deadline=$(( $(date +%s) + timeout ))
+      while kill -0 "$target" 2>/dev/null; do
+        if (( $(date +%s) >= deadline )); then
+          timed_out=1
+          return 0
+        fi
+        interruptible_sleep "$poll_seconds"
+      done
+      ;;
   esac
+}
+
+# pid-exit: a line in front of the watcher's task once the process is gone.
+prepend_note() {
+  local note
+  note="$(mktemp "${TMPDIR:-/tmp}/watch-target-note.XXXXXX")"
+  { printf '%s\n\n' "$1"; cat "$file"; } > "$note"
+  mv "$note" "$file"
 }
 
 condition_still_satisfied() {
@@ -303,13 +323,16 @@ while :; do
     {
       printf '【超时唤醒】等了 %s 秒，%s 的「%s」条件仍未满足（当前 @ai_agent_running=%s）。\n' \
         "$timeout" "$target" "$mode" "$(tmux show -pv -t "$target" @ai_agent_running 2>/dev/null || echo '?')"
-      printf '先确认目标是否卡住（看它的屏幕、后台作业 / Slurm 状态、日志），再决定是否执行下面的原任务；目标正常但只是慢，就重新安排唤醒并给新的 --timeout。\n\n'
+      printf '先确认目标是否卡住（看它的屏幕、它在等的后台任务或外部作业的状态、相关日志），再决定是否执行下面的原任务；目标正常但只是慢，就重新安排唤醒并给新的 --timeout。\n\n'
       cat "$file"
     } > "$note"
     mv "$note" "$file"
     log_event "timed out after ${timeout}s"
     submit_message
     break
+  fi
+  if [[ "$mode" == "pid-exit" ]]; then
+    prepend_note "【进程结束】pid $target 已退出，它的输出在哪看由你自己起它时决定（通常是它的日志文件）。"
   fi
   if condition_still_satisfied; then
     submit_message
