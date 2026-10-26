@@ -155,6 +155,20 @@ AI window 目标正在等待输入、而用户要求等它开始运行时，使�
   --message '<目标开始运行或关闭后要提交给 watcher 的检查指令>'
 ```
 
+等「某件事结束」时，统一用 `pid-exit`：唤醒入口只认进程。等的是进程本身就直接传它的 pid；等别的东西（Slurm 作业、产物文件、日志里某一行）时，先自己写一个小 watcher 后台跑起来，让它在那件事结束时退出、把结论写进日志，再把这个 watcher 的 pid 交给 `pid-exit`。不要自己写循环轮询后再手动安排唤醒。
+
+```bash
+# 例：自己写的 watcher，等作业离开队列后记下最终状态再退出。用 setsid nohup 起，
+# 不随这次工具调用的 shell 一起结束。
+setsid nohup bash -c 'while squeue -h -j "$0" | grep -q .; do sleep 60; done
+  sacct -X -n -P -j "$0" -o JobID,State,Elapsed,ExitCode' "$JOB" > "$LOG" 2>&1 < /dev/null &
+"${CLAUDE_SKILL_DIR}/scripts/schedule-wakeup.sh" \
+  --mode pid-exit --target "$!" --timeout '<按预计耗时留余量，如 8h>' \
+  --message '<它结束后要做的事，比如先读 $LOG>'
+```
+
+watcher 要能自己结束：等的东西可能永远不来（比如作业卡在永远不会开跑的状态）时，在 watcher 里识别出来并退出，或者至少靠 `--timeout` 兜底唤醒自己去看。
+
 只有非 AI 目标，或 AI 目标没有 `@ai_agent_running=1` 这类状态信号时，才用固定间隔唤醒：
 
 ```bash
@@ -167,9 +181,9 @@ AI window 目标正在等待输入、而用户要求等它开始运行时，使�
 
 短引用通过独立 tmux buffer 和 `paste-buffer -p -d` 发送，显式标记粘贴边界；等待 2 秒，再 `send-keys Enter` 并验证 watcher 开始执行。不要把完整任务重新拼回 composer，也不要在 paste 后立刻 Enter。
 
-`--mode ai-idle` / `ai-running` 必须带 `--timeout`（如 `90m`、`3h`、`5400s`，纯数字为秒），写调用方预计多久内会等到信号。到点条件仍未满足，watcher 照样被唤醒，任务文件开头会加一段【超时唤醒】说明：先确认目标是否卡住（看屏幕、后台作业 / Slurm 状态、日志），目标正常只是慢就重新安排唤醒、给新的 `--timeout`。这是为了防止等一个永远不会来的事件（比如上游作业失败、链条再也不会跑完）而双方一起死等。`--timeout` 按这件事正常耗时的 1.5 倍左右给，不要为了省事写成很大的数。
+除 `timer` 以外的模式（`ai-idle` / `ai-running` / `pid-exit`）都必须带 `--timeout`（如 `90m`、`3h`、`5400s`，纯数字为秒），写调用方预计多久内会等到信号。到点条件仍未满足，watcher 照样被唤醒，任务文件开头会加一段【超时唤醒】说明：先确认目标是否卡住（看它的屏幕、它在等的后台任务或外部作业的状态、相关日志），目标正常只是慢就重新安排唤醒、给新的 `--timeout`。这是为了防止等一个永远不会来的事件（比如目标等的上游任务已经失败、永远不会完成）而双方一起死等。`--timeout` 按这件事正常耗时的 1.5 倍左右给，不要为了省事写成很大的数。
 
-`schedule-wakeup.sh` 是唯一唤醒入口，但必须用 `--mode` 把规则分清楚：默认 `timer` 只负责固定时间 one-shot 唤醒；`--mode ai-idle` 轮询单个 AI window 的 `@ai_agent_running`、停下或关闭后立即唤醒；`--mode ai-running` 轮询单个 AI window 的 `@ai_agent_running`、开始运行或关闭后立即唤醒。不要在默认 timer 模式里混入 AI Agent 状态判断，也不要把候选排序、多目标选择、pending 处理塞进 wakeup 脚本；这些属于调用方 skill。
+`schedule-wakeup.sh` 是唯一唤醒入口，但必须用 `--mode` 把规则分清楚：默认 `timer` 只负责固定时间 one-shot 唤醒；`--mode ai-idle` 轮询单个 AI window 的 `@ai_agent_running`、停下或关闭后立即唤醒；`--mode ai-running` 轮询单个 AI window 的 `@ai_agent_running`、开始运行或关闭后立即唤醒；`--mode pid-exit` 等一个进程退出后唤醒，等别的事情都换成「自己的 watcher 进程退出」。不要在默认 timer 模式里混入 AI Agent 状态判断，也不要把候选排序、多目标选择、pending 处理塞进 wakeup 脚本；这些属于调用方 skill。
 
 同一个 watcher pane 的 wakeup 是互斥的，只允许有一个 pending wakeup。每次通过 `schedule-wakeup.sh` 安排新唤醒时，脚本会先关闭同一 watcher pane 旧的 `run-wakeup.sh` 进程并清理它的临时 message file，然后再启动新的 watcher。不要绕过 `schedule-wakeup.sh` 手写 `sleep` / 条件循环，否则多个 wakeup 可能互相交替提交消息，造成死锁或重复调度。
 

@@ -7,13 +7,18 @@ Usage:
   schedule-wakeup.sh --seconds <seconds> --message <message> [--pane <watcher-pane>] [--buffer <name>] [--verbose]
   schedule-wakeup.sh --mode ai-idle --target <ai-pane> --timeout <duration> --message <message> [--pane <watcher-pane>] [--poll-seconds <seconds>] [--buffer <name>] [--verbose]
   schedule-wakeup.sh --mode ai-running --target <ai-pane> --timeout <duration> --message <message> [--pane <watcher-pane>] [--poll-seconds <seconds>] [--buffer <name>] [--verbose]
+  schedule-wakeup.sh --mode pid-exit --target <pid> --timeout <duration> --message <message> [--pane <watcher-pane>] [--poll-seconds <seconds>] [--verbose]
 
 Modes:
   timer       Sleep for --seconds, then wake the watcher. This is the default.
   ai-idle     Wake when target stops running or disappears.
   ai-running  Wake when target starts running or disappears.
+  pid-exit    Wake when process <pid> exits. The general "wait for X to end":
+              to wait on anything else (a Slurm job, a file, a log line), start
+              your own watcher process that exits when X is over and pass its
+              pid.
 
---timeout is required in ai-idle / ai-running: how long the caller expects to
+--timeout is required in every mode but timer: how long the caller expects to
 wait (e.g. 90m, 3h, 5400s; a bare number is seconds). If the condition has not
 fired by then, the watcher is woken anyway with a timeout note so it checks
 whether the target is stuck -- an event that never comes must not wait forever.
@@ -29,7 +34,7 @@ target=""
 pane=""
 seconds="1800"
 timeout=""
-poll_seconds="2"
+poll_seconds=""
 message=""
 buffer="watch-target-wakeup"
 verbose=0
@@ -84,8 +89,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ "$mode" == "timer" || "$mode" == "ai-idle" || "$mode" == "ai-running" ]] \
-  || { echo "--mode must be timer, ai-idle, or ai-running" >&2; exit 2; }
+case "$mode" in
+  timer|ai-idle|ai-running|pid-exit) ;;
+  *) echo "--mode must be timer, ai-idle, ai-running or pid-exit" >&2; exit 2 ;;
+esac
+[[ -n "$poll_seconds" ]] || poll_seconds=2
 [[ -n "$message" ]] || { echo "--message is required" >&2; usage; exit 2; }
 [[ "$seconds" =~ ^[0-9]+$ ]] || { echo "--seconds must be a non-negative integer" >&2; exit 2; }
 [[ "$poll_seconds" =~ ^[0-9]+$ ]] || { echo "--poll-seconds must be a positive integer" >&2; exit 2; }
@@ -98,7 +106,7 @@ fi
 
 target_pane=""
 timeout_seconds=0
-if [[ "$mode" == "ai-idle" || "$mode" == "ai-running" ]]; then
+if [[ "$mode" != "timer" ]]; then
   [[ -n "$target" ]] || { echo "--target is required in $mode mode" >&2; usage; exit 2; }
   [[ -n "$timeout" ]] || { echo "--timeout is required in $mode mode (expected wait, e.g. 3h)" >&2; usage; exit 2; }
   [[ "$timeout" =~ ^([0-9]+)([smh]?)$ ]] || { echo "--timeout must look like 5400, 90m or 3h" >&2; exit 2; }
@@ -108,6 +116,12 @@ if [[ "$mode" == "ai-idle" || "$mode" == "ai-running" ]]; then
     *) timeout_seconds=${BASH_REMATCH[1]} ;;
   esac
   (( timeout_seconds > 0 )) || { echo "--timeout must be greater than 0" >&2; exit 2; }
+fi
+if [[ "$mode" == "pid-exit" ]]; then
+  [[ "$target" =~ ^[0-9]+$ ]] && kill -0 "$target" 2>/dev/null \
+    || { echo "pid $target is not a live process" >&2; exit 2; }
+  target_pane="$target"
+elif [[ "$mode" != "timer" ]]; then
   target_pane="$(tmux display-message -p -t "$target" '#{pane_id}' 2>/dev/null)" \
     && [[ -n "$target_pane" ]] \
     || { echo "target $target does not resolve to a pane" >&2; exit 2; }
@@ -183,5 +197,6 @@ if (( verbose )); then
     timer) echo "Scheduled timer wakeup for watcher pane $watcher_pane in ${seconds}s" ;;
     ai-idle) echo "Scheduled AI-idle wakeup for watcher pane $watcher_pane when $target_pane stops running or closes (timeout ${timeout_seconds}s)" ;;
     ai-running) echo "Scheduled AI-running wakeup for watcher pane $watcher_pane when $target_pane starts running or closes (timeout ${timeout_seconds}s)" ;;
+    pid-exit) echo "Scheduled wakeup for watcher pane $watcher_pane when pid $target_pane exits (timeout ${timeout_seconds}s)" ;;
   esac
 fi
