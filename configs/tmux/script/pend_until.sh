@@ -5,6 +5,10 @@
 #
 #   idle  reason "等 %<target id> <session:window.pane name>"
 #   done  reason "等完成 %<target id> <session:window.pane name>"
+#   pid   reason "等进程 <pid> <command>": until process TARGET exits -- the
+#         general "wait for X to end". To wait on anything else (a Slurm job,
+#         a file), start a watcher process that exits when X is over and pass
+#         its pid. A background job here releases PANE when the pid is gone.
 #
 # track_ai_agent_state.sh releases the waiting panes (release_waiters): an
 # idle turn end releases "等", marking done releases both. A released pane
@@ -28,16 +32,17 @@
 # that -- a target that crashed or hung must not leave PANE pending forever.
 #
 # usage: pend_until.sh [-A] [--after-turn] --timeout DURATION idle|done PANE [TARGET]
-#        pend_until.sh --expire PANE REASON   (the timeout half)
+#        pend_until.sh [--after-turn] --timeout DURATION pid PANE PID
+#        pend_until.sh --expire PANE REASON   (the timeout / pid-exit half)
 set -euo pipefail
 
-usage="usage: pend_until.sh [-A] [--after-turn] --timeout DURATION idle|done PANE [TARGET]"
+usage="usage: pend_until.sh [-A] [--after-turn] --timeout DURATION idle|done|pid PANE [TARGET|PID]"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 if [[ "${1:-}" == "--expire" ]]; then
   pane="${2:?$usage}"
   reason="${3:?$usage}"
   [[ "$(tmux show-option -pqv -t "$pane" @ai_agent_pending 2>/dev/null)" == "$reason" ]] || exit 0
-  AI_AGENT_STATE_SOURCE=pend-timeout exec "$script_dir/track_ai_agent_state.sh" wake "$pane"
+  AI_AGENT_STATE_SOURCE="${AI_AGENT_STATE_SOURCE:-pend-timeout}" exec "$script_dir/track_ai_agent_state.sh" wake "$pane"
 fi
 all_sessions=0
 after_turn=0
@@ -61,10 +66,34 @@ esac
 case "${1:-}" in
   idle) prefix="等" ;;
   done) prefix="等完成" ;;
+  pid) prefix="等进程" ;;
   *) echo "$usage" >&2; exit 2 ;;
 esac
 mode="$1"
 pane="$(tmux display-message -p -t "${2:?$usage}" '#{pane_id}')"
+
+if [[ "$mode" == pid ]]; then
+  pid="${3:?$usage (pid needs PID)}"
+  [[ "$pid" =~ ^[0-9]+$ ]] || { echo "pend_until: not a pid: $pid" >&2; exit 2; }
+  if (( after_turn )); then
+    tmux set-option -pq -t "$pane" @ai_agent_pend_next "pid $pid $timeout_s"
+    exit 0
+  fi
+  # Already gone: nothing to wait for.
+  kill -0 "$pid" 2>/dev/null || { tmux display-message "pend_until: 进程 $pid 已经结束，不用等"; exit 0; }
+  expire_at=$(( $(date +%s) + timeout_s ))
+  [[ "$(date -d "@$expire_at" +%F)" == "$(date +%F)" ]] \
+    && deadline="$(date -d "@$expire_at" +%H:%M)" || deadline="$(date -d "@$expire_at" '+%m-%d %H:%M')"
+  command="$(ps -o args= -p "$pid" | cut -c1-40)"
+  reason="$prefix $pid ${command} · 最晚 $deadline"
+  AI_AGENT_STATE_SOURCE="${AI_AGENT_STATE_SOURCE:-pend-until-pid}" \
+    "$script_dir/track_ai_agent_state.sh" pending "$pane" "$reason"
+  printf -v expire '%q ' "$script_dir/pend_until.sh" --expire "$pane" "$reason"
+  # Release on exit (kill -0 polling: the pid is not our child) or at the deadline.
+  tmux run-shell -b "while kill -0 $pid 2>/dev/null; do sleep 5; done; AI_AGENT_STATE_SOURCE=pid-exit-of:$pid $expire"
+  tmux run-shell -b "sleep $timeout_s; $expire"
+  exit 0
+fi
 
 if (( after_turn )); then
   [[ -n "${3:-}" ]] || { echo "$usage (--after-turn needs TARGET)" >&2; exit 2; }
