@@ -510,6 +510,9 @@ highlight AutoSwitchSeparator ctermfg=45 cterm=bold guifg=#00d7ff gui=bold
 highlight AutoSwitchStateRunning ctermfg=110 cterm=NONE guifg=#87afd7 gui=NONE
 highlight AutoSwitchStateBackground ctermfg=109 cterm=NONE guifg=#87afaf gui=NONE
 highlight AutoSwitchStatePending ctermfg=139 cterm=NONE guifg=#af87af gui=NONE
+" Pending with nothing that will release it (no "等 %id", "等完成 %id",
+" "等进程", "睡到" reason): it stays parked until someone clears it by hand.
+highlight AutoSwitchStatePendingManual ctermfg=97 cterm=bold guifg=#875faf gui=bold
 highlight AutoSwitchStateUnread ctermfg=143 cterm=NONE guifg=#afaf5f gui=NONE
 highlight AutoSwitchStateWoke ctermfg=179 cterm=bold guifg=#d7af5f gui=bold
 highlight AutoSwitchStateIdle ctermfg=245 cterm=NONE guifg=#8a8a8a gui=NONE
@@ -581,6 +584,14 @@ call matchadd('AutoSwitchStateUnread', '|\\s*\\zsunread\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateWoke', '|\\s*\\zswoke\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateIdle', '|\\s*\\zsidle\\ze\\s*|', 40)
 call matchadd('AutoSwitchStateDone', '|\\s*\\zsdone\\ze\\s*|', 40)
+for s:auto_switch_row in range(1, line('\$'))
+  let s:auto_switch_line = getline(s:auto_switch_row)
+  if s:auto_switch_line =~# '^%[0-9]\\+\\s.*|\\s*pending\\s*|'
+        \ && matchstr(s:auto_switch_line, '[^|]*\$') !~# '^\\s*\\%(等 %\\|等完成 %\\|等进程 \\|睡到 \\)'
+    call matchadd('AutoSwitchStatePendingManual',
+          \ '\\%' . s:auto_switch_row . 'l|\\s*\\zspending\\ze\\s*|', 41)
+  endif
+endfor
 let s:auto_switch_session_groups = [
       \\ 'AutoSwitchSession31', 'AutoSwitchSession32', 'AutoSwitchSession33',
       \\ 'AutoSwitchSession34', 'AutoSwitchSession35', 'AutoSwitchSession36',
@@ -602,7 +613,7 @@ for s:auto_switch_line in getline(1, '$')
         \\ '^%[0-9]\\+\\s\\+#\\s\\+\\zs\\V' . s:auto_switch_literal_session . '\\m\\ze:', 35)
 endfor
 for s:auto_switch_colour in ['AutoSwitchStateRunning', 'AutoSwitchStateBackground',
-      \ 'AutoSwitchStatePending', 'AutoSwitchStateUnread', 'AutoSwitchStateWoke',
+      \ 'AutoSwitchStatePending', 'AutoSwitchStatePendingManual', 'AutoSwitchStateUnread', 'AutoSwitchStateWoke',
       \ 'AutoSwitchStateIdle', 'AutoSwitchStateDone']
       \ + s:auto_switch_session_groups
   let s:auto_switch_colour_id = synIDtrans(hlID(s:auto_switch_colour))
