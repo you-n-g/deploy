@@ -9,7 +9,7 @@
 # exactly that, so a snooze cleared, rewritten or replaced in the meantime is
 # left alone. Like every pending, it does not survive a tmux server restart.
 #
-# prefix + M-p 1 / 2 / 3 / 4 / s.
+# prefix + M-p . (half an hour) / 1 / 2 / 3 / 4 / s.
 #
 # usage: snooze.sh PANE HOURS      (HOURS may be fractional: 0.5, 1.5)
 #        snooze.sh --wake PANE REASON
