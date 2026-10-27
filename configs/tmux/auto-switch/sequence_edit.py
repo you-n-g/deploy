@@ -5,7 +5,7 @@ import re
 import subprocess
 import unicodedata
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 
 FIELD_SEP = "\t"
@@ -348,9 +348,29 @@ def parse_edit_file(
     return ranked, pending_reasons, attributes, "\n".join(note_lines).strip("\n")
 
 
-def apply_edit_file(path: str) -> str:
+def edit_file_cells(path: str) -> Dict[str, Tuple[str, str]]:
+    """Pending and Attribute of each pane line, keyed by the pane id as written."""
+    cells: Dict[str, Tuple[str, str]] = {}
+    with open(path, encoding="utf-8") as file:
+        for line_no, line in enumerate(file, start=1):
+            line = line.rstrip("\n")
+            if line.strip() == NOTE_SEPARATOR:
+                break
+            before_hash, hash_found, after_hash = line.partition("#")
+            if before_hash.strip() and hash_found:
+                pending, attribute = parse_edit_comment(after_hash, line_no)
+                cells[before_hash.strip()] = (pending_reason(pending), attribute)
+    return cells
+
+
+def apply_edit_file(path: str, base_path: Optional[str] = None) -> str:
     panes = load_panes()
     ranked, pending_reasons, attributes, note = parse_edit_file(path, panes)
+    # The file as written when the editor opened. A cell left as it was there is
+    # not the user's edit: pend_until, a release or a timeout may have changed
+    # the pane while the editor was open, and writing the stale value back would
+    # undo that. Only cells the user changed are applied.
+    base = edit_file_cells(base_path) if base_path else {}
     write_note(note)
     refresh_script = Path.home() / "deploy/configs/tmux/script/refresh_status_lines.sh"
 
@@ -358,7 +378,8 @@ def apply_edit_file(path: str) -> str:
         changed = False
         new_pending = pending_reasons[pane]
         old_pending = pending_reason(panes[pane]["pending"])
-        if old_pending != new_pending:
+        base_pending, base_attribute = base.get(pane, (None, None))
+        if new_pending != base_pending and old_pending != new_pending:
             if new_pending:
                 tmux_run("set-option", "-pq", "-t", pane, "@ai_agent_pending", new_pending)
                 tmux_run("set-option", "-pq", "-t", pane, "@ai_agent_running", "0")
@@ -374,7 +395,7 @@ def apply_edit_file(path: str) -> str:
             new_attribute = ""
 
         old_attribute = panes[pane]["attribute"]
-        if strip_tmux_format(old_attribute) != strip_tmux_format(new_attribute):
+        if attributes[pane] != base_attribute and strip_tmux_format(old_attribute) != strip_tmux_format(new_attribute):
             if new_attribute:
                 tmux_run("set-option", "-pq", "-t", pane, "@ai_agent_attribute", new_attribute)
             else:
@@ -411,6 +432,7 @@ def main() -> None:
 
     apply_parser = subparsers.add_parser("apply")
     apply_parser.add_argument("path")
+    apply_parser.add_argument("--base", default=None, help="the edit file as written before the user edited it")
 
     encode_parser = subparsers.add_parser("encode-note")
     encode_parser.add_argument("note")
@@ -429,7 +451,7 @@ def main() -> None:
     elif args.command == "set-note":
         write_note(args.note)
     elif args.command == "apply":
-        print(apply_edit_file(args.path), end="")
+        print(apply_edit_file(args.path, args.base), end="")
     elif args.command == "encode-note":
         print(encode_note(args.note), end="")
     elif args.command == "decode-note":
