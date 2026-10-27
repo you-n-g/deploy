@@ -7,9 +7,13 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 from collections.abc import Awaitable, Callable
 from contextlib import closing
 from datetime import datetime, timezone
+from email.utils import formatdate
+import hashlib
+import html
 import hmac
 import json
 import os
@@ -32,6 +36,7 @@ DEFAULT_PORT = 443
 RECEIVER = "__msg_bridge_receiver__"
 RECEIVER_PROTOCOL = "msg-bridge.v2"
 BATCH_DELAY = 0.5
+DEFAULT_ENTER_DELAY = 2.0
 DEFAULT_DB = Path.home() / ".local/share/msg-bridge/messages.sqlite3"
 DEFAULT_PASSWORD_FILE = Path.home() / ".config/msg-bridge/web-password"
 WEB_PAGE = r"""<!doctype html>
@@ -50,19 +55,30 @@ WEB_PAGE = r"""<!doctype html>
     <p class="intro">把想说的话，发送到当前连接的接收端。</p>
     <form id="login" hidden>
       <label for="password">访问密码</label>
-      <input id="password" type="password" autocomplete="current-password" required>
-      <div class="actions"><span>登录后保持 30 天</span><button type="submit">登录</button></div>
+      <input id="password" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+      <div class="actions"><span>每次访问续期 30 天</span><button type="submit">登录</button></div>
     </form>
     <div id="account" hidden><button id="logout" type="button">退出登录</button></div>
     <div id="workspace" hidden>
     <form id="sender">
       <label for="message">消息</label>
       <textarea id="message" rows="8" placeholder="在这里输入…" required></textarea>
-      <div class="actions"><span>Ctrl / ⌘ + Enter 发送</span><div class="send-buttons"><button id="send-draft" type="button">发送但不回车</button><button id="send-submit" type="submit">发送</button></div></div>
+      <div class="actions"><button id="send-left" type="submit">发送</button><div class="send-buttons"><button id="save-message" type="button">暂存</button><button id="send-draft" type="button">不回车</button><button id="send-submit" type="submit">发送</button></div></div>
+      <p class="key-hint">Enter 发送 · Shift + Enter 换行 · 也支持 Ctrl / ⌘ + Enter</p>
     </form>
     <aside aria-labelledby="history-heading">
+      <section class="saved-panel" aria-labelledby="saved-heading">
+        <h2 id="saved-heading">暂存消息 · 置顶</h2>
+        <p class="history-hint">点击发送 · 左滑编辑 · 右滑或点「删除」移除</p>
+        <div id="saved-list"></div>
+      </section>
+      <section class="favorite-panel" aria-labelledby="favorite-heading">
+        <h2 id="favorite-heading">收藏消息</h2>
+        <p class="history-hint">点击反复发送 · 左滑编辑 · 发送后保留</p>
+        <div id="favorite-list"></div>
+      </section>
       <div class="history-heading"><h2 id="history-heading">历史消息</h2><button id="refresh-history" type="button">刷新</button></div>
-      <p class="history-hint">最近 50 条 · 点击消息立即重发</p>
+      <p class="history-hint">最近 50 条 · 点击发送 · 左滑编辑 · 右滑收藏</p>
       <p id="history-status" role="status"></p>
       <div id="history-list"></div>
     </aside>
@@ -80,7 +96,11 @@ const logout = document.querySelector('#logout');
 const password = document.querySelector('#password');
 const message = document.querySelector('#message');
 const button = document.querySelector('#send-submit');
+const leftButton = document.querySelector('#send-left');
 const draftButton = document.querySelector('#send-draft');
+const saveButton = document.querySelector('#save-message');
+const savedList = document.querySelector('#saved-list');
+const favoriteList = document.querySelector('#favorite-list');
 const loginButton = login.querySelector('button');
 const status = document.querySelector('#status');
 const workspace = document.querySelector('#workspace');
@@ -88,6 +108,12 @@ const historyList = document.querySelector('#history-list');
 const historyStatus = document.querySelector('#history-status');
 const refreshHistory = document.querySelector('#refresh-history');
 let signedIn = false;
+let pendingSend = null;
+let historyGeneration = 0;
+let historyEntries = [];
+let savedEntries = [];
+let favoriteEntries = [];
+let pendingSave = null;
 
 function showSession(authenticated) {
   signedIn = authenticated;
@@ -95,17 +121,24 @@ function showSession(authenticated) {
   form.hidden = !authenticated;
   workspace.hidden = !authenticated;
   account.hidden = !authenticated;
-  if (!authenticated) historyList.replaceChildren();
+  if (!authenticated) {
+    historyGeneration++;
+    historyList.replaceChildren();
+    renderSaved([]);
+    renderFavorites([]);
+  }
   (authenticated ? message : password).focus();
 }
 
-async function request(path, payload) {
+async function request(path, payload, timeout = 15000, method = payload === undefined ? 'GET' : 'POST') {
+  const headers = payload === undefined ? {} : { 'Content-Type': 'application/json' };
+  if (payload && payload.request_id) headers['X-Request-ID'] = payload.request_id;
   const response = await fetch(`./api/${path}`, {
-    method: payload === undefined ? 'GET' : 'POST',
+    method,
     credentials: 'same-origin',
-    headers: payload === undefined ? {} : { 'Content-Type': 'application/json' },
+    headers,
     body: payload === undefined ? undefined : JSON.stringify(payload),
-    signal: AbortSignal.timeout(15000),
+    signal: AbortSignal.timeout(timeout),
   });
   if (!response.ok) {
     const error = new Error(await response.text());
@@ -122,38 +155,265 @@ function showError(error, sending = false) {
     : error.message;
 }
 
+function renderHistory(messages) {
+  const seen = new Set();
+  historyEntries = messages.filter((entry) => {
+    if (seen.has(entry.content)) return false;
+    seen.add(entry.content);
+    return true;
+  }).slice(0, 50);
+  const items = historyEntries.map((entry) => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'history-item';
+    item.disabled = button.disabled;
+    item.title = '点击立即重发这条消息';
+    const time = document.createElement('time');
+    time.dateTime = entry.received_at;
+    time.textContent = new Date(entry.received_at).toLocaleString('zh-CN', { hour12: false });
+    const content = document.createElement('span');
+    content.className = 'history-content';
+    content.textContent = entry.content;
+    item.append(time, content);
+    attachGesture(item, time, () => favoriteMessage(entry), 'favorite', '松开收藏', () => editMessage(entry), () => sendContent(entry.content, false));
+    return item;
+  });
+  historyList.replaceChildren(...items);
+  historyStatus.textContent = items.length ? '' : '还没有历史消息。';
+}
+
+function attachGesture(item, label, rightAction, rightKind, rightLabel, leftAction, clickAction) {
+  const restingLabel = label.textContent;
+  let start = null;
+  let suppressClick = false;
+  const resetGesture = () => {
+    start = null;
+    delete item.dataset.swipe;
+    label.textContent = restingLabel;
+  };
+  const cancel = () => { suppressClick = true; resetGesture(); };
+  const begin = (id, x, y) => {
+    if (button.disabled) return;
+    suppressClick = false;
+    start = { id, x, y, axis: null };
+  };
+  const move = (x, y, event) => {
+    if (!start) return;
+    const dx = x - start.x;
+    const dy = y - start.y;
+    // Decide intent early, before the browser turns a thumb's diagonal motion into scrolling.
+    if (!start.axis && Math.max(Math.abs(dx), Math.abs(dy)) >= 6) {
+      start.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    }
+    if (start.axis === 'y') return;
+    if (start.axis === 'x' && event.cancelable) event.preventDefault();
+    if (start.axis === 'x' && (dx < 0 || rightAction) && Math.abs(dx) >= 36 && Math.abs(dx) > Math.abs(dy) * 1.1) {
+      item.dataset.swipe = dx > 0 ? rightKind : 'edit';
+      label.textContent = dx > 0 ? rightLabel : '松开编辑';
+    } else {
+      delete item.dataset.swipe;
+      label.textContent = restingLabel;
+    }
+  };
+  const finish = (x, y, event) => {
+    if (!start) return;
+    const dx = x - start.x;
+    const dy = y - start.y;
+    const vertical = start.axis === 'y';
+    suppressClick = Math.abs(dx) > 6 || Math.abs(dy) > 6;
+    resetGesture();
+    if (vertical || Math.abs(dx) < 36 || Math.abs(dx) <= Math.abs(dy) * 1.1) return;
+    event.preventDefault();
+    if (dx > 0) {
+      if (rightAction) return rightAction();
+      return;
+    }
+    return leftAction();
+  };
+  // Touch owns finger gestures; Pointer Events are used only for a pen, avoiding duplicate actions.
+  item.addEventListener('touchstart', (event) => {
+    if (event.touches.length !== 1) { cancel(); return; }
+    const touch = event.touches[0];
+    begin(touch.identifier, touch.clientX, touch.clientY);
+  }, { passive: true });
+  item.addEventListener('touchmove', (event) => {
+    if (event.touches.length !== 1) { cancel(); return; }
+    const touch = event.touches[0];
+    if (start && touch.identifier === start.id) move(touch.clientX, touch.clientY, event);
+  }, { passive: false });
+  item.addEventListener('touchend', (event) => {
+    if (event.touches.length) { cancel(); return; }
+    const touch = Array.from(event.changedTouches).find((touch) => start && touch.identifier === start.id);
+    if (touch) return finish(touch.clientX, touch.clientY, event);
+  }, { passive: false });
+  item.addEventListener('touchcancel', cancel);
+  item.addEventListener('pointerdown', (event) => {
+    if (event.pointerType !== 'pen' || event.isPrimary === false) return;
+    begin(event.pointerId, event.clientX, event.clientY);
+  });
+  item.addEventListener('pointermove', (event) => {
+    if (event.pointerType === 'pen' && start && event.pointerId === start.id) move(event.clientX, event.clientY, event);
+  });
+  item.addEventListener('pointerup', (event) => {
+    if (event.pointerType === 'pen' && start && event.pointerId === start.id) return finish(event.clientX, event.clientY, event);
+  });
+  item.addEventListener('pointercancel', (event) => { if (event.pointerType === 'pen') cancel(); });
+  item.addEventListener('click', (event) => {
+    if (suppressClick && event.detail !== 0) return;
+    return clickAction();
+  });
+}
+
+function renderSaved(entries) {
+  savedEntries = entries;
+  const items = entries.map((entry) => {
+    const row = document.createElement('div');
+    row.className = 'saved-row';
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'history-item saved-item';
+    item.disabled = button.disabled;
+    const label = document.createElement('span');
+    label.className = 'saved-label';
+    label.textContent = '暂存 · 点击发送';
+    const content = document.createElement('span');
+    content.className = 'history-content';
+    content.textContent = entry.content;
+    item.append(label, content);
+    attachGesture(item, label, () => deleteSaved(entry), 'delete', '松开删除', () => editSaved(entry), () => sendContent(entry.content, false, true, entry.id));
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'delete-saved';
+    remove.textContent = '删除';
+    remove.disabled = button.disabled;
+    remove.addEventListener('click', () => deleteSaved(entry));
+    row.append(item, remove);
+    return row;
+  });
+  savedList.replaceChildren(...items);
+}
+
+function editMessage(entry) {
+  if (button.disabled) return;
+  message.value = message.value ? message.value + '\n' + entry.content : entry.content;
+  status.dataset.error = 'false';
+  status.textContent = '已放回输入框，可继续编辑。';
+  message.focus();
+}
+
+function editSaved(entry) {
+  if (button.disabled) return;
+  editMessage(entry);
+  status.textContent = '已放回输入框，可继续编辑；暂存消息仍然保留。';
+}
+
+function renderFavorites(entries) {
+  favoriteEntries = entries;
+  const rows = entries.map((entry) => {
+    const row = document.createElement('div');
+    row.className = 'saved-row';
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'history-item favorite-item';
+    item.disabled = button.disabled;
+    const label = document.createElement('span');
+    label.textContent = '收藏 · 点击发送';
+    const content = document.createElement('span');
+    content.className = 'history-content';
+    content.textContent = entry.content;
+    item.append(label, content);
+    attachGesture(item, label, null, null, null, () => editMessage(entry), () => sendContent(entry.content, false));
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'delete-saved';
+    remove.textContent = '取消收藏';
+    remove.disabled = button.disabled;
+    remove.addEventListener('click', () => changeFavorite(entry, true));
+    row.append(item, remove);
+    return row;
+  });
+  favoriteList.replaceChildren(...rows);
+}
+
+function favoriteMessage(entry) {
+  return changeFavorite(entry, false);
+}
+
+async function changeFavorite(entry, removing) {
+  if (button.disabled) return;
+  setBusy(true);
+  historyGeneration++;
+  status.dataset.error = 'false';
+  status.textContent = removing ? '正在取消收藏…' : '正在收藏…';
+  try {
+    if (removing) {
+      await request(`favorites/${entry.id}`, undefined, 15000, 'DELETE');
+      renderFavorites(favoriteEntries.filter((item) => item.id !== entry.id));
+    } else {
+      const result = await request('favorites', { message: entry.content });
+      renderFavorites([result, ...favoriteEntries.filter((item) => item.id !== result.id)]);
+    }
+    status.textContent = removing ? '已取消收藏。' : '已收藏，可在收藏区反复发送。';
+  } catch (error) {
+    if (error.status === 401) showSession(false);
+    showError(error);
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function deleteSaved(entry) {
+  if (button.disabled) return;
+  setBusy(true);
+  historyGeneration++;
+  status.dataset.error = 'false';
+  status.textContent = '正在删除暂存消息…';
+  try {
+    await request(`saved/${entry.id}`, undefined, 15000, 'DELETE');
+    renderSaved(savedEntries.filter((item) => item.id !== entry.id));
+    if (pendingSave && pendingSave.request_id === entry.id) pendingSave = null;
+    if (pendingSend && pendingSend.request_id === entry.id) pendingSend = null;
+    status.textContent = '已删除暂存消息。';
+  } catch (error) {
+    if (error.status === 401) showSession(false);
+    status.dataset.error = 'true';
+    status.textContent = isTransportError(error)
+      ? '删除结果未确认，条目已保留，可再次点击删除核对。'
+      : error.message;
+  } finally {
+    setBusy(false);
+  }
+}
+
+function newRequestId() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)), (value) => value.toString(16).padStart(2, '0')).join('');
+}
+
+function setBusy(busy) {
+  for (const control of [button, leftButton, draftButton, saveButton, logout, refreshHistory]) control.disabled = busy;
+  for (const list of [historyList, savedList, favoriteList]) list.querySelectorAll('button').forEach((item) => { item.disabled = busy; });
+  message.readOnly = busy;
+}
+
 async function loadHistory() {
+  const generation = ++historyGeneration;
   refreshHistory.disabled = true;
   historyStatus.dataset.error = 'false';
   historyStatus.textContent = '正在加载…';
   try {
     const result = await request('messages');
-    if (!signedIn) return;
-    const items = result.messages.map((entry) => {
-      const item = document.createElement('button');
-      item.type = 'button';
-      item.className = 'history-item';
-      item.disabled = button.disabled;
-      item.title = '点击立即重发这条消息';
-      const time = document.createElement('time');
-      time.dateTime = entry.received_at;
-      time.textContent = new Date(entry.received_at).toLocaleString('zh-CN', { hour12: false });
-      const content = document.createElement('span');
-      content.className = 'history-content';
-      content.textContent = entry.content;
-      item.append(time, content);
-      item.addEventListener('click', () => sendContent(entry.content, false));
-      return item;
-    });
-    historyList.replaceChildren(...items);
-    historyStatus.textContent = items.length ? '' : '还没有历史消息。';
+    if (!signedIn || generation !== historyGeneration) return;
+    renderHistory(result.messages);
+    renderSaved(result.saved);
+    renderFavorites(result.favorites);
   } catch (error) {
+    if (generation !== historyGeneration) return;
     if (error.status === 401) showSession(false);
     historyStatus.dataset.error = 'true';
     historyStatus.textContent = '历史消息加载失败，请点击刷新重试。';
     if (error.status === 401) showError(error);
   } finally {
-    refreshHistory.disabled = button.disabled;
+    if (generation === historyGeneration) refreshHistory.disabled = button.disabled;
   }
 }
 refreshHistory.addEventListener('click', loadHistory);
@@ -166,10 +426,19 @@ login.addEventListener('submit', async (event) => {
   status.dataset.error = 'false';
   try {
     await request('login', { password: password.value });
+    let state;
+    try {
+      state = await request('messages');
+    } catch (error) {
+      if (error.status === 401) throw new Error('浏览器未保留登录 Cookie。请允许本站保存 Cookie，并使用同一个 HTTPS 地址访问。');
+      throw error;
+    }
     password.value = '';
     showSession(true);
     status.textContent = '';
-    await loadHistory();
+    renderHistory(state.messages);
+    renderSaved(state.saved);
+    renderFavorites(state.favorites);
   } catch (error) {
     showError(error);
   } finally {
@@ -192,40 +461,69 @@ logout.addEventListener('click', async () => {
   }
 });
 
-async function sendContent(content, clearDraft, submit = true) {
+function isTransportError(error) {
+  return error instanceof TypeError || error.name === 'TimeoutError';
+}
+
+async function confirmReceipt(requestId) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt) await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      const result = await request(`requests/${requestId}`, undefined, 5000);
+      if (result.status === 'sent') return result;
+    } catch (error) {
+      if (!isTransportError(error) && error.status !== 404 && !(error.status >= 500)) throw error;
+    }
+  }
+  throw new Error(`发送结果暂未确认（编号 ${requestId.slice(0, 8)}）。内容已保留；再次发送相同内容会沿用原编号，服务器不会重复转发。`);
+}
+
+async function sendContent(content, clearDraft, submit = true, savedId = null) {
   if (button.disabled) return;
   if (!content.trim()) {
     showError(new Error('请输入消息。'));
     message.focus();
     return;
   }
-  button.disabled = true;
-  draftButton.disabled = true;
-  logout.disabled = true;
-  refreshHistory.disabled = true;
-  historyList.querySelectorAll('button').forEach((item) => { item.disabled = true; });
-  message.readOnly = true;
+  if (!pendingSend || pendingSend.message !== content || pendingSend.submit !== submit || (savedId && pendingSend.request_id !== savedId)) {
+    pendingSend = { message: content, submit, request_id: savedId || newRequestId() };
+  }
+  const sending = pendingSend;
+  let confirmed = false;
+  setBusy(true);
   status.dataset.error = 'false';
   status.textContent = '正在发送…';
   try {
-    const result = await request('messages', { message: content, submit });
+    let result;
+    try {
+      result = await request('messages', sending);
+    } catch (error) {
+      if (!isTransportError(error) && !(error.status >= 500)) throw error;
+      status.textContent = '正在核对服务器回执…';
+      result = await confirmReceipt(sending.request_id);
+    }
+    if (result.status === 'pending') {
+      status.textContent = '服务器已收录，正在确认转发结果…';
+      result = await confirmReceipt(sending.request_id);
+    }
     status.textContent = result.receivers > 0
       ? (submit ? `已发送到 ${result.receivers} 个接收端。` : `已贴入 ${result.receivers} 个接收端，未按回车，可继续编辑。`)
       : '已存档，但没有接收端在线；这条消息不会自动补发。';
+    historyGeneration++;
+    renderHistory([{ id: result.message_id, received_at: new Date().toISOString(), content }, ...historyEntries]);
+    historyList.scrollTop = 0;
     if (clearDraft) message.value = '';
-    await loadHistory();
+    if (savedId) renderSaved(savedEntries.filter((entry) => entry.id !== savedId));
+    pendingSend = null;
+    confirmed = true;
   } catch (error) {
     if (error.status === 401) showSession(false);
     showError(error, true);
   } finally {
-    button.disabled = false;
-    draftButton.disabled = false;
-    logout.disabled = false;
-    refreshHistory.disabled = false;
-    historyList.querySelectorAll('button').forEach((item) => { item.disabled = false; });
-    message.readOnly = false;
+    setBusy(false);
     if (!form.hidden) message.focus();
   }
+  if (confirmed && signedIn) void loadHistory();
 }
 
 form.addEventListener('submit', async (event) => {
@@ -233,27 +531,50 @@ form.addEventListener('submit', async (event) => {
   await sendContent(message.value, true);
 });
 draftButton.addEventListener('click', () => sendContent(message.value, true, false));
-
-message.addEventListener('keydown', (event) => {
-  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !event.isComposing) {
-    event.preventDefault();
-    form.requestSubmit();
+saveButton.addEventListener('click', async () => {
+  if (button.disabled) return;
+  const content = message.value;
+  if (!content.trim()) {
+    showError(new Error('请输入要暂存的消息。'));
+    return;
+  }
+  if (!pendingSave || pendingSave.message !== content) pendingSave = { message: content, request_id: newRequestId() };
+  setBusy(true);
+  status.dataset.error = 'false';
+  status.textContent = '正在暂存…';
+  try {
+    const result = await request('saved', pendingSave);
+    renderSaved([result, ...savedEntries.filter((entry) => entry.id !== result.id)]);
+    pendingSave = null;
+    message.value = '';
+    status.textContent = '已暂存，点击下方黄色消息即可发送。';
+  } catch (error) {
+    if (error.status === 401) showSession(false);
+    status.dataset.error = 'true';
+    status.textContent = isTransportError(error)
+      ? '暂存结果未确认，原文已保留；再次暂存相同内容不会生成重复条目。'
+      : error.message;
+  } finally {
+    setBusy(false);
+    if (signedIn) message.focus();
   }
 });
 
-async function restoreSession() {
-  try {
-    await request('session');
-    showSession(true);
-    status.textContent = '';
-    await loadHistory();
-  } catch (error) {
-    showSession(false);
-    if (error.status === 401) status.textContent = '';
-    else showError(error);
-  }
+message.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' || event.isComposing || event.keyCode === 229) return;
+  if (event.shiftKey && !event.ctrlKey && !event.metaKey) return;
+  event.preventDefault();
+  form.requestSubmit(button);
+});
+
+const initialState = JSON.parse(document.querySelector('#initial-state').content.textContent);
+showSession(initialState.authenticated);
+status.textContent = '';
+if (initialState.authenticated) {
+  renderHistory(initialState.messages);
+  renderSaved(initialState.saved);
+  renderFavorites(initialState.favorites);
 }
-restoreSession();
 """
 
 WEB_STYLE = r""":root { font-family: system-ui, sans-serif; color: #172c2a; background: #f2f5f1; }
@@ -269,8 +590,27 @@ textarea { resize: vertical; line-height: 1.7; min-height: 280px; }
 input:focus, textarea:focus { outline: 2px solid #548778; outline-offset: 2px; }
 .actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
 .actions span { font-size: 12px; color: #738077; }
+.key-hint { color: #738077; font-size: 12px; line-height: 1.7; }
 .send-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 #send-draft { background: #edf4ef; color: #235c4a; padding: 12px 16px; }
+#save-message { background: #fff0bf; color: #795615; padding: 12px 16px; }
+.saved-panel { border-bottom: 1px solid #eee5ce; padding-bottom: 20px; margin-bottom: 24px; }
+#saved-list { display: grid; gap: 10px; max-height: 40vh; overflow-y: auto; padding: 3px; }
+.history-item.saved-item { background: #fff6d9; border-color: #e7ce86; }
+.history-item.saved-item:hover { background: #ffedb6; border-color: #c9a94c; }
+.saved-label { display: block; color: #916916; font-size: 12px; margin-bottom: 8px; }
+.saved-row { display: flex; gap: 8px; min-width: 0; }
+.saved-row .history-item { flex: 1; width: auto; min-width: 0; touch-action: auto; }
+.delete-saved { background: #fff0ed; color: #a33b2d; padding: 10px; font-size: 13px; }
+.delete-saved:hover { background: #ffe1db; }
+.history-item.saved-item[data-swipe="delete"] { background: #ffe1db; border-color: #ce7667; }
+.history-item { touch-action: auto; }
+.history-item[data-swipe="favorite"] { background: #e9e2ff; border-color: #9273c0; }
+.favorite-panel { border-bottom: 1px solid #e1d9ed; padding-bottom: 20px; margin-bottom: 24px; }
+#favorite-list { display: grid; gap: 10px; max-height: 40vh; overflow-y: auto; padding: 3px; }
+.history-item.favorite-item { background: #f1ebff; border-color: #c9b4e9; }
+.history-item[data-swipe="edit"] { background: #e1f2e4; border-color: #75a580; }
+.favorite-item > span:first-child { display: block; color: #74528f; font-size: 12px; margin-bottom: 8px; }
 button { border: 0; border-radius: 10px; background: #235c4a; color: #fff; padding: 12px 30px; font: inherit; cursor: pointer; }
 button:disabled { opacity: .5; cursor: wait; }
 #status { min-height: 24px; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
@@ -312,28 +652,63 @@ def web_password(path: Path) -> str:
 
 
 def web_app(
-    password: str, forward: Callable[[str, bool], Awaitable[int]],
+    password: str, forward: Callable[[str, bool, str | None], Awaitable[dict]],
     history: Callable[[], list[dict]],
+    receipt: Callable[[str], dict | None],
+    saved: Callable[[], list[dict]],
+    save: Callable[[str, str], dict],
+    remove_saved: Callable[[str], None],
+    favorites: Callable[[], list[dict]],
+    add_favorite: Callable[[str], dict],
+    remove_favorite: Callable[[int], None],
 ) -> web.Application:
     response_headers = {
         "Cache-Control": "no-store",
         "X-Content-Type-Options": "nosniff",
         "Referrer-Policy": "no-referrer",
-        "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+        "Content-Security-Policy": (
+            "default-src 'none'; script-src 'self' 'sha256-"
+            + base64.b64encode(hashlib.sha256(WEB_SCRIPT.encode()).digest()).decode()
+            + "'; style-src 'self' 'sha256-"
+            + base64.b64encode(hashlib.sha256(WEB_STYLE.encode()).digest()).decode()
+            + "'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
+        ),
     }
+
+    def finish_response(request, response):
+        nonce = request.get("session_nonce")
+        response.headers["X-Bridge-Authenticated"] = "1" if nonce is not None else "0"
+        if nonce is not None and SESSION_COOKIE not in response.cookies:
+            expires = int(time.time()) + SESSION_AGE
+            token = f"{expires}.{nonce}"
+            response.set_cookie(SESSION_COOKIE, f"{token}.{signature(token)}", max_age=SESSION_AGE,
+                                expires=formatdate(expires, usegmt=True), path="/send/",
+                                secure=True, httponly=True, samesite="Lax")
+        response.headers.update(response_headers)
+        return response
 
     @web.middleware
     async def headers(request, handler):
         try:
             response = await handler(request)
         except web.HTTPException as error:
-            error.headers.update(response_headers)
+            finish_response(request, error)
             raise
-        response.headers.update(response_headers)
-        return response
+        return finish_response(request, response)
 
     async def page(request):
-        return web.Response(text=WEB_PAGE, content_type="text/html")
+        try:
+            require_session(request)
+        except web.HTTPUnauthorized:
+            state = {"authenticated": False}
+        else:
+            state = {"authenticated": True, "messages": history(), "saved": saved(), "favorites": favorites()}
+        page_html = WEB_PAGE.replace('<link rel="stylesheet" href="./style.css">', f'<style>{WEB_STYLE}</style>')
+        page_html = page_html.replace('<script src="./app.js" defer></script>', '')
+        page_html = page_html.replace('</body>',
+            '<template id="initial-state">' + html.escape(json.dumps(state, ensure_ascii=False))
+            + f'</template><script>{WEB_SCRIPT}</script></body>')
+        return web.Response(text=page_html, content_type="text/html")
 
     async def redirect(request):
         raise web.HTTPPermanentRedirect("/send/")
@@ -355,6 +730,7 @@ def web_app(
             raise web.HTTPUnauthorized(text="请先登录")
         if valid_until <= time.time() or not secrets.compare_digest(signed.encode(), signature(f"{expires}.{nonce}").encode()):
             raise web.HTTPUnauthorized(text="登录已过期，请重新登录")
+        request["session_nonce"] = nonce
 
     async def json_body(request):
         if request.content_type != "application/json":
@@ -372,11 +748,8 @@ def web_app(
         provided = payload.get("password")
         if not isinstance(provided, str) or not secrets.compare_digest(provided.encode(), password.encode()):
             raise web.HTTPUnauthorized(text="密码错误")
-        token = f"{int(time.time()) + SESSION_AGE}.{secrets.token_urlsafe(24)}"
-        response = web.json_response({"authenticated": True})
-        response.set_cookie(SESSION_COOKIE, f"{token}.{signature(token)}", max_age=SESSION_AGE,
-                            path="/send/", secure=True, httponly=True, samesite="Strict")
-        return response
+        request["session_nonce"] = secrets.token_urlsafe(24)
+        return web.json_response({"authenticated": True})
 
     async def session(request):
         require_session(request)
@@ -399,12 +772,61 @@ def web_app(
         submit = payload.get("submit", True)
         if not isinstance(submit, bool):
             raise web.HTTPBadRequest(text="submit 必须为布尔值")
-        count = await forward(message, submit)
-        return web.json_response({"receivers": count})
+        request_id = payload.get("request_id")
+        if request_id is not None:
+            validate_request_id(request_id)
+        result = await forward(message, submit, request_id)
+        return web.json_response(result, status=202 if result.get("status") == "pending" else 200)
+
+    def validate_request_id(request_id):
+        if not isinstance(request_id, str) or len(request_id) != 32 or any(c not in "0123456789abcdef" for c in request_id):
+            raise web.HTTPBadRequest(text="request_id 必须为 32 位十六进制字符串")
+
+    async def request_receipt(request):
+        require_session(request)
+        request_id = request.match_info["request_id"]
+        validate_request_id(request_id)
+        result = receipt(request_id)
+        if result is None:
+            raise web.HTTPNotFound(text="尚未找到该请求")
+        return web.json_response(result)
 
     async def recent_messages(request):
         require_session(request)
-        return web.json_response({"messages": history()})
+        return web.json_response({"messages": history(), "saved": saved(), "favorites": favorites()})
+
+    async def save_message(request):
+        require_session(request)
+        payload = await json_body(request)
+        message = payload.get("message")
+        if not isinstance(message, str) or not message.strip() or message == RECEIVER:
+            raise web.HTTPBadRequest(text="请输入要暂存的消息")
+        request_id = payload.get("request_id")
+        validate_request_id(request_id)
+        return web.json_response(save(message, request_id))
+
+    async def delete_saved_message(request):
+        require_session(request)
+        request_id = request.match_info["request_id"]
+        validate_request_id(request_id)
+        remove_saved(request_id)
+        return web.json_response({"deleted": request_id})
+
+    async def favorite_message(request):
+        require_session(request)
+        payload = await json_body(request)
+        message = payload.get("message")
+        if not isinstance(message, str) or not message.strip() or message == RECEIVER:
+            raise web.HTTPBadRequest(text="请输入要收藏的消息")
+        return web.json_response(add_favorite(message))
+
+    async def delete_favorite(request):
+        require_session(request)
+        favorite_id = request.match_info["favorite_id"]
+        if not favorite_id.isascii() or not favorite_id.isdigit() or len(favorite_id) > 18 or int(favorite_id) < 1:
+            raise web.HTTPBadRequest(text="收藏编号必须为正整数")
+        remove_favorite(int(favorite_id))
+        return web.json_response({"deleted": int(favorite_id)})
 
     application = web.Application(middlewares=[headers], client_max_size=1024 * 1024)
     application.router.add_get("/send", redirect)
@@ -415,6 +837,11 @@ def web_app(
     application.router.add_post("/send/api/logout", logout)
     application.router.add_get("/send/api/messages", recent_messages)
     application.router.add_post("/send/api/messages", send)
+    application.router.add_post("/send/api/favorites", favorite_message)
+    application.router.add_delete("/send/api/favorites/{favorite_id}", delete_favorite)
+    application.router.add_post("/send/api/saved", save_message)
+    application.router.add_delete("/send/api/saved/{request_id}", delete_saved_message)
+    application.router.add_get("/send/api/requests/{request_id}", request_receipt)
     return application
 
 
@@ -447,19 +874,108 @@ async def bridge_loop(
             byte_count INTEGER NOT NULL
         )""")
         db.execute("CREATE INDEX IF NOT EXISTS messages_received_at ON messages(received_at)")
+        db.execute("""CREATE TABLE IF NOT EXISTS web_requests (
+            request_id TEXT PRIMARY KEY,
+            message_id INTEGER NOT NULL REFERENCES messages(id),
+            submit INTEGER NOT NULL,
+            receivers INTEGER
+        )""")
+        db.execute("""CREATE TABLE IF NOT EXISTS saved_messages (
+            id TEXT PRIMARY KEY,
+            created_at TEXT NOT NULL,
+            content TEXT NOT NULL
+        )""")
+        db.execute("""CREATE TABLE IF NOT EXISTS favorite_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at TEXT NOT NULL,
+            content TEXT NOT NULL UNIQUE
+        )""")
+        db.execute("CREATE TABLE IF NOT EXISTS deleted_saved_messages (id TEXT PRIMARY KEY)")
         db.commit()
 
-        async def forward(msg: str, submit: bool = True) -> int:
+        def favorites() -> list[dict]:
+            rows = db.execute("SELECT id, created_at, content FROM favorite_messages ORDER BY created_at DESC, id DESC").fetchall()
+            return [{"id": row[0], "created_at": row[1], "content": row[2]} for row in rows]
+
+        def add_favorite(message: str) -> dict:
+            created_at = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+            db.execute("INSERT INTO favorite_messages (created_at, content) VALUES (?, ?) ON CONFLICT(content) DO NOTHING", (created_at, message))
+            db.commit()
+            row = db.execute("SELECT id, created_at, content FROM favorite_messages WHERE content = ?", (message,)).fetchone()
+            return {"id": row[0], "created_at": row[1], "content": row[2]}
+
+        def remove_favorite(favorite_id: int) -> None:
+            db.execute("DELETE FROM favorite_messages WHERE id = ?", (favorite_id,))
+            db.commit()
+
+        def saved() -> list[dict]:
+            rows = db.execute("SELECT id, created_at, content FROM saved_messages ORDER BY created_at DESC, rowid DESC").fetchall()
+            return [{"id": row[0], "created_at": row[1], "content": row[2]} for row in rows]
+
+        def save(message: str, request_id: str) -> dict:
+            if db.execute("SELECT 1 FROM deleted_saved_messages WHERE id = ?", (request_id,)).fetchone():
+                raise web.HTTPConflict(text="这条暂存消息已删除，不能重新使用原编号")
+            converted = db.execute("SELECT 1 FROM web_requests WHERE request_id = ?", (request_id,)).fetchone()
+            if converted is not None:
+                raise web.HTTPConflict(text="这条暂存消息已进入发送流程，请刷新列表查看结果")
+            existing = db.execute("SELECT created_at, content FROM saved_messages WHERE id = ?", (request_id,)).fetchone()
+            if existing is not None:
+                if existing[1] != message:
+                    raise web.HTTPConflict(text="同一暂存编号不能用于不同内容")
+                created_at = existing[0]
+            else:
+                created_at = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+                db.execute("INSERT INTO saved_messages (id, created_at, content) VALUES (?, ?, ?)", (request_id, created_at, message))
+                db.commit()
+            return {"id": request_id, "created_at": created_at, "content": message}
+
+        def remove_saved(request_id: str) -> None:
+            if db.execute("SELECT 1 FROM web_requests WHERE request_id = ?", (request_id,)).fetchone():
+                raise web.HTTPConflict(text="这条消息已进入发送流程，删除暂存不能撤销发送，请刷新列表")
+            db.execute("INSERT OR IGNORE INTO deleted_saved_messages (id) VALUES (?)", (request_id,))
+            db.execute("DELETE FROM saved_messages WHERE id = ?", (request_id,))
+            db.commit()
+
+        def receipt(request_id: str) -> dict | None:
+            row = db.execute("SELECT message_id, receivers FROM web_requests WHERE request_id = ?", (request_id,)).fetchone()
+            if row is None:
+                return None
+            return {"request_id": request_id, "message_id": row[0], "receivers": row[1],
+                    "status": "pending" if row[1] is None else "sent"}
+
+        async def forward(msg: str, submit: bool = True, request_id: str | None = None) -> dict:
+            started = time.monotonic()
             if not isinstance(msg, str):
                 raise TypeError("msg-bridge only accepts text messages")
+            if request_id is not None:
+                if db.execute("SELECT 1 FROM deleted_saved_messages WHERE id = ?", (request_id,)).fetchone():
+                    raise web.HTTPConflict(text="这条暂存消息已删除，请刷新列表")
+                stored = db.execute("SELECT content FROM saved_messages WHERE id = ?", (request_id,)).fetchone()
+                if stored is not None and stored[0] != msg:
+                    raise web.HTTPConflict(text="暂存消息的发送内容必须与原文一致")
+                existing = db.execute("""SELECT m.content, r.submit FROM web_requests r
+                    JOIN messages m ON m.id = r.message_id WHERE r.request_id = ?""", (request_id,)).fetchone()
+                if existing is not None:
+                    if existing != (msg, int(submit)):
+                        raise web.HTTPConflict(text="同一 request_id 不能用于不同消息或发送模式")
+                    return receipt(request_id)
             if not submit and not all(receivers.values()):
                 raise web.HTTPConflict(text="有旧版接收端在线：请先更新并重启 msg-bridge r，才能发送但不回车")
-            db.execute(
+            inserted = db.execute(
                 "INSERT INTO messages (received_at, content, char_count, byte_count) VALUES (?, ?, ?, ?)",
                 (datetime.now(timezone.utc).isoformat(timespec="milliseconds"), msg, len(msg), len(msg.encode("utf-8"))),
             )
+            if request_id is not None:
+                db.execute("INSERT INTO web_requests (request_id, message_id, submit) VALUES (?, ?, ?)",
+                           (request_id, inserted.lastrowid, int(submit)))
             db.commit()
-            return await broadcast(receivers, msg, submit)
+            delivered = await broadcast(receivers, msg, submit)
+            if request_id is not None:
+                db.execute("UPDATE web_requests SET receivers = ? WHERE request_id = ?", (delivered, request_id))
+                db.execute("DELETE FROM saved_messages WHERE id = ?", (request_id,))
+                db.commit()
+            print(f"forwarded id={inserted.lastrowid} request_id={request_id or '-'} submit={submit} receivers={delivered} chars={len(msg)} duration_ms={(time.monotonic() - started) * 1000:.1f}", flush=True)
+            return receipt(request_id) if request_id is not None else {"receivers": delivered}
 
         def history() -> list[dict]:
             rows = db.execute(
@@ -471,10 +987,12 @@ async def bridge_loop(
             first = await ws.recv()
             if first == RECEIVER:
                 receivers[ws] = ws.subprotocol == RECEIVER_PROTOCOL
+                print(f"receiver connected id={ws.id} protocol={ws.subprotocol or 'legacy'} receivers={len(receivers)}", flush=True)
                 try:
                     await ws.wait_closed()
                 finally:
                     del receivers[ws]
+                    print(f"receiver disconnected id={ws.id} receivers={len(receivers)}", flush=True)
                 return
             await forward(first)
             async for msg in ws:
@@ -485,7 +1003,7 @@ async def bridge_loop(
             select_subprotocol=lambda connection, offered: RECEIVER_PROTOCOL if RECEIVER_PROTOCOL in offered else None,
         ):
             print(f"msg-bridge b listening on ws://{host}:{port}; storing messages in {db_path}")
-            runner = web.AppRunner(web_app(password, forward, history)) if password is not None else None
+            runner = web.AppRunner(web_app(password, forward, history, receipt, saved, save, remove_saved, favorites, add_favorite, remove_favorite)) if password is not None else None
             try:
                 if runner:
                     await runner.setup()
@@ -653,6 +1171,7 @@ def inject(msg: str, session: str | None, enter_delay: float, *, submit: bool = 
             if enter_delay:
                 time.sleep(enter_delay)
             subprocess.run(["tmux", "send-keys", "-t", pane, "Enter"], check=True)
+        print(f"injected pane={pane} submit={submit} chars={len(msg)}", flush=True)
     finally:
         subprocess.run(["tmux", "delete-buffer", "-b", buf], check=False)
 
@@ -724,7 +1243,7 @@ def r(
     host: Annotated[str, typer.Option("--host", "-H")] = DEFAULT_HOST,
     port: Annotated[int, typer.Option("--port", "-P")] = DEFAULT_PORT,
     session: Annotated[str | None, typer.Option("--session")] = None,
-    enter_delay: Annotated[float, typer.Option("--enter-delay")] = 0.2,
+    enter_delay: Annotated[float, typer.Option("--enter-delay", help="Seconds to wait after paste before pressing Enter")] = DEFAULT_ENTER_DELAY,
 ) -> None:
     asyncio.run(receive_loop(host, port, session, enter_delay))
 

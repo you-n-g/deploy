@@ -4,11 +4,15 @@
 # ///
 """Run with: uv run helper_scripts/tests/test_msg_bridge_web.py"""
 import asyncio
+import base64
+import hashlib
+import html
 import json
 from contextlib import suppress
 from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
 from pathlib import Path
+import re
 import socket
 import sqlite3
 import ssl
@@ -32,12 +36,12 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
         self.messages = []
         self.submissions = []
 
-        async def forward(message, submit):
+        async def forward(message, submit, request_id):
             self.messages.append(message)
             self.submissions.append(submit)
-            return 2
+            return {"receivers": 2}
 
-        self.client = TestClient(TestServer(bridge.web_app("test-password", forward, lambda: [])))
+        self.client = TestClient(TestServer(bridge.web_app("test-password", forward, lambda: [], lambda request_id: None, lambda: [], lambda message, request_id: {"id": request_id, "content": message}, lambda request_id: None, lambda: [], lambda message: {}, lambda favorite_id: None)))
         await self.client.start_server()
 
     async def asyncTearDown(self):
@@ -49,9 +53,19 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
         cookie = response.cookies[bridge.SESSION_COOKIE]
         self.assertTrue(cookie['secure'])
         self.assertTrue(cookie['httponly'])
-        self.assertEqual(cookie['samesite'], 'Strict')
+        self.assertEqual(cookie['samesite'], 'Lax')
+        self.assertTrue(cookie['expires'])
         self.assertEqual(int(cookie['max-age']), bridge.SESSION_AGE)
         return {'Cookie': f'{bridge.SESSION_COOKIE}={cookie.value}'}
+
+    async def test_favorite_input_validation(self):
+        headers = await self.login()
+        for value in (None, '', '  ', 42, bridge.RECEIVER):
+            response = await self.client.post('/send/api/favorites', json={'message': value}, headers=headers)
+            self.assertEqual(response.status, 400)
+        for value in ('0', '-1', 'abc', '999999999999999999999999'):
+            response = await self.client.delete('/send/api/favorites/' + value, headers=headers)
+            self.assertEqual(response.status, 400)
 
     async def test_page_and_assets_have_no_password_or_cache(self):
         for path in ("/send/", "/send/app.js", "/send/style.css"):
@@ -61,8 +75,41 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
             self.assertNotIn("test-password", await response.text())
         self.assertEqual((await self.client.get("/send/other.js")).status, 404)
 
+    async def test_single_response_bootstrap_keeps_history_private_and_escaped(self):
+        headers = await self.login()
+        history_calls = []
+        content = '</template><script>alert("history-xss")</script>\n正文 & <b>'
+        messages = [{'id': 1, 'received_at': '2026-10-18T00:00:00Z', 'content': content}]
+        def history():
+            history_calls.append(True)
+            return messages
+        async def forward(message, submit, request_id):
+            self.fail('Page loading must not send messages')
+        async with TestClient(TestServer(bridge.web_app('test-password', forward, history, lambda request_id: None, lambda: [], lambda message, request_id: {"id": request_id, "content": message}, lambda request_id: None, lambda: [], lambda message: {}, lambda favorite_id: None))) as client:
+            response = await client.get('/send/')
+            page = await response.text()
+            state = json.loads(html.unescape(re.search(r'<template id="initial-state">(.*?)</template>', page, re.S)[1]))
+            self.assertEqual(state, {'authenticated': False})
+            self.assertEqual(history_calls, [])
+            response = await client.get('/send/', headers=headers)
+            page = await response.text()
+            state = json.loads(html.unescape(re.search(r'<template id="initial-state">(.*?)</template>', page, re.S)[1]))
+            self.assertEqual(state, {'authenticated': True, 'messages': messages, 'saved': [], 'favorites': []})
+            self.assertNotIn(content, page)
+            self.assertNotIn('src="./app.js"', page)
+            self.assertNotIn('href="./style.css"', page)
+            for tag in ('script', 'style'):
+                inline = re.search(f'<{tag}>(.*?)</{tag}>', page, re.S)[1]
+                digest = base64.b64encode(hashlib.sha256(inline.encode()).digest()).decode()
+                self.assertIn(f"'sha256-{digest}'", response.headers['Content-Security-Policy'])
+
     async def test_unauthorized_and_cross_origin_requests_do_not_forward(self):
         self.assertEqual((await self.client.get('/send/api/messages')).status, 401)
+        self.assertEqual((await self.client.post('/send/api/saved', json={})).status, 401)
+        self.assertEqual((await self.client.delete('/send/api/saved/' + 'e' * 32)).status, 401)
+        self.assertEqual((await self.client.post('/send/api/favorites', json={'message': 'secret'})).status, 401)
+        self.assertEqual((await self.client.delete('/send/api/favorites/1')).status, 401)
+        self.assertEqual((await self.client.get('/send/api/requests/' + 'a' * 32)).status, 401)
         for headers in ({}, {"X-Bridge-Password": "wrong"}):
             response = await self.client.post("/send/api/messages", json={"message": "hello"}, headers=headers)
             self.assertEqual(response.status, 401)
@@ -95,6 +142,25 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status, 413)
         self.assertEqual(self.messages, [])
 
+    async def test_receipts_reject_invalid_ids_and_report_missing_requests(self):
+        headers = await self.login()
+        for request_id in (123, '', 'x' * 32, 'a' * 31):
+            response = await self.client.post('/send/api/messages', json={'message': 'text', 'request_id': request_id}, headers=headers)
+            self.assertEqual(response.status, 400)
+        self.assertEqual((await self.client.get('/send/api/requests/' + 'a' * 32, headers=headers)).status, 404)
+        self.assertEqual(self.messages, [])
+
+    async def test_save_validates_input_without_forwarding(self):
+        headers = await self.login()
+        for payload in ({}, {'message': ' '}, {'message': bridge.RECEIVER, 'request_id': 'c' * 32},
+                        {'message': 'draft', 'request_id': 'invalid'}):
+            response = await self.client.post('/send/api/saved', json=payload, headers=headers)
+            self.assertEqual(response.status, 400)
+        response = await self.client.post('/send/api/saved', json={'message': 'draft', 'request_id': 'c' * 32}, headers=headers)
+        self.assertEqual(response.status, 200)
+        self.assertEqual((await response.json())['content'], 'draft')
+        self.assertEqual(self.messages, [])
+
     async def test_login_session_logout_and_bad_password(self):
         response = await self.client.post('/send/api/login', json={'password': 'wrong'})
         self.assertEqual(response.status, 401)
@@ -114,12 +180,52 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
         headers = await self.login()
         tampered = {'Cookie': headers['Cookie'] + 'x'}
         self.assertEqual((await self.client.get('/send/api/session', headers=tampered)).status, 401)
-        async def forward(message, submit):
+        async def forward(message, submit, request_id):
             self.fail('Session check must not forward messages')
         # Same password preserves login across service restarts.
         for password, expected in [('test-password', 200), ('rotated-password', 401)]:
-            async with TestClient(TestServer(bridge.web_app(password, forward, lambda: []))) as client:
+            async with TestClient(TestServer(bridge.web_app(password, forward, lambda: [], lambda request_id: None, lambda: [], lambda message, request_id: {"id": request_id, "content": message}, lambda request_id: None, lambda: [], lambda message: {}, lambda favorite_id: None))) as client:
                 self.assertEqual((await client.get('/send/api/session', headers=headers)).status, expected)
+
+    async def test_session_slides_on_page_refresh_and_expires_only_after_inactivity(self):
+        start = time.time()
+        with patch.object(bridge.time, 'time', return_value=start):
+            original = await self.login()
+        with patch.object(bridge.time, 'time', return_value=start + 29 * 86400):
+            response = await self.client.get('/send/', headers=original)
+            self.assertEqual(response.headers['X-Bridge-Authenticated'], '1')
+            cookie = response.cookies[bridge.SESSION_COOKIE]
+            self.assertEqual(cookie['samesite'], 'Lax')
+            self.assertEqual(cookie['path'], '/send/')
+            self.assertEqual(int(cookie['max-age']), 30 * 86400)
+            renewed = {'Cookie': f'{bridge.SESSION_COOKIE}={cookie.value}'}
+        with patch.object(bridge.time, 'time', return_value=start + 58 * 86400):
+            response = await self.client.get('/send/api/messages', headers=renewed)
+            self.assertEqual(response.status, 200)
+            cookie = response.cookies[bridge.SESSION_COOKIE]
+            latest = {'Cookie': f'{bridge.SESSION_COOKIE}={cookie.value}'}
+        # A fresh app instance preserves the same login after an ordinary service restart.
+        async def forward(message, submit, request_id):
+            self.fail('Session check must not send messages')
+        async with TestClient(TestServer(bridge.web_app('test-password', forward, lambda: [], lambda request_id: None,
+                                                     lambda: [], lambda message, request_id: {}, lambda request_id: None, lambda: [], lambda message: {}, lambda favorite_id: None))) as client:
+            with patch.object(bridge.time, 'time', return_value=start + 59 * 86400):
+                response = await client.get('/send/', headers=latest)
+                self.assertEqual(response.headers['X-Bridge-Authenticated'], '1')
+                cookie = response.cookies[bridge.SESSION_COOKIE]
+                latest = {'Cookie': f'{bridge.SESSION_COOKIE}={cookie.value}'}
+            with patch.object(bridge.time, 'time', return_value=start + 90 * 86400):
+                response = await client.get('/send/api/session', headers=latest)
+                self.assertEqual(response.status, 401)
+                self.assertNotIn(bridge.SESSION_COOKIE, response.cookies)
+
+    async def test_logout_does_not_renew_session_and_bad_cookie_cannot_be_renewed(self):
+        headers = await self.login()
+        response = await self.client.post('/send/api/logout', json={}, headers=headers)
+        self.assertEqual(response.cookies[bridge.SESSION_COOKIE]['max-age'], '0')
+        response = await self.client.get('/send/', headers={'Cookie': f'{bridge.SESSION_COOKIE}=bad-token'})
+        self.assertEqual(response.headers['X-Bridge-Authenticated'], '0')
+        self.assertNotIn(bridge.SESSION_COOKIE, response.cookies)
 
     async def test_draft_flag_is_explicit_and_normal_send_still_submits(self):
         headers = await self.login()
@@ -232,6 +338,44 @@ class BridgeIntegrationTests(unittest.IsolatedAsyncioTestCase):
                     response = await client.post(base + 'api/login', json={'password': password}, ssl=context)
                     self.assertEqual(response.status, 200)
                     headers = {}
+                    saved_payload = {'message': 'save for later', 'request_id': 'c' * 32}
+                    response = await client.post(base + 'api/saved', json=saved_payload, ssl=context)
+                    saved_entry = await response.json()
+                    self.assertEqual(saved_entry['content'], 'save for later')
+                    response = await client.post(base + 'api/saved', json=saved_payload, ssl=context)
+                    self.assertEqual(await response.json(), saved_entry)
+                    response = await client.get(base + 'api/messages', ssl=context)
+                    self.assertEqual(await response.json(), {'messages': [], 'saved': [saved_entry], 'favorites': []})
+                    response = await client.get(base, ssl=context)
+                    state = json.loads(html.unescape(re.search(r'<template id="initial-state">(.*?)</template>', await response.text(), re.S)[1]))
+                    self.assertEqual(state['saved'], [saved_entry])
+                    with sqlite3.connect(db) as connection:
+                        self.assertEqual(connection.execute('SELECT content FROM saved_messages').fetchall(), [('save for later',)])
+                    response = await client.post(base + 'api/favorites', json={'message': 'favorite text'}, ssl=context)
+                    favorite = await response.json()
+                    self.assertEqual(favorite['content'], 'favorite text')
+                    response = await client.post(base + 'api/favorites', json={'message': 'favorite text'}, ssl=context)
+                    self.assertEqual(await response.json(), favorite)
+                    response = await client.get(base, ssl=context)
+                    state = json.loads(html.unescape(re.search(r'<template id="initial-state">(.*?)</template>', await response.text(), re.S)[1]))
+                    self.assertEqual(state['favorites'], [favorite])
+                    with sqlite3.connect(db) as connection:
+                        self.assertEqual(connection.execute('SELECT content FROM favorite_messages').fetchall(), [('favorite text',)])
+                        self.assertEqual(connection.execute('SELECT COUNT(*) FROM messages').fetchone()[0], 0)
+                    for _ in range(2):
+                        response = await client.delete(base + 'api/favorites/' + str(favorite['id']), ssl=context)
+                        self.assertEqual(response.status, 200)
+                    deleted_payload = {'message': 'delete instead of sending', 'request_id': 'e' * 32}
+                    response = await client.post(base + 'api/saved', json=deleted_payload, ssl=context)
+                    self.assertEqual(response.status, 200)
+                    for _ in range(2):
+                        response = await client.delete(base + 'api/saved/' + 'e' * 32, ssl=context)
+                        self.assertEqual(await response.json(), {'deleted': 'e' * 32})
+                    for route in ('api/saved', 'api/messages'):
+                        response = await client.post(base + route, json=deleted_payload, ssl=context)
+                        self.assertEqual(response.status, 409)
+                    response = await client.get(base + 'api/messages', ssl=context)
+                    self.assertEqual(await response.json(), {'messages': [], 'saved': [saved_entry], 'favorites': []})
                     # Offline sends are archived, and explicitly report zero receivers.
                     response = await client.post(base + "api/messages", json={"message": "offline"},
                                                  headers=headers, ssl=context)
@@ -258,6 +402,10 @@ class BridgeIntegrationTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(await asyncio.wait_for(receiver.recv(), 2), '网页测试\nhello')
                         response = await client.post(base + 'api/messages', json={'message': 'must not send', 'submit': False}, ssl=context)
                         self.assertEqual(response.status, 409)
+                        response = await client.post(base + 'api/messages', json={**saved_payload, 'submit': False}, ssl=context)
+                        self.assertEqual(response.status, 409)
+                        response = await client.get(base + 'api/messages', ssl=context)
+                        self.assertEqual((await response.json())['saved'], [saved_entry])
                     async with websockets.connect(f'ws://127.0.0.1:{ws_port}', subprotocols=[bridge.RECEIVER_PROTOCOL]) as receiver:
                         self.assertEqual(receiver.subprotocol, bridge.RECEIVER_PROTOCOL)
                         await receiver.send(bridge.RECEIVER)
@@ -267,9 +415,68 @@ class BridgeIntegrationTests(unittest.IsolatedAsyncioTestCase):
                             self.assertEqual(await response.json(), {'receivers': 1})
                             payload = json.loads(await asyncio.wait_for(receiver.recv(), 2))
                             self.assertEqual(payload, {'message': '编辑\n草稿', 'submit': submit})
+                        retry_payload = {'message': 'response lost', 'submit': True, 'request_id': 'a' * 32}
+                        response = await client.post(base + 'api/messages', json=retry_payload, ssl=context)
+                        response.release()  # The browser may lose this response after delivery.
+                        self.assertEqual(json.loads(await receiver.recv())['message'], 'response lost')
+                        response = await client.get(base + 'api/requests/' + 'a' * 32, ssl=context)
+                        receipt = await response.json()
+                        self.assertEqual(receipt['status'], 'sent')
+                        self.assertEqual(receipt['receivers'], 1)
+                        response = await client.post(base + 'api/messages', json=retry_payload, ssl=context)
+                        self.assertEqual(await response.json(), receipt)
+                        with self.assertRaises(asyncio.TimeoutError):
+                            await asyncio.wait_for(receiver.recv(), .05)
+                        response = await client.post(base + 'api/favorites', json={'message': saved_payload['message']}, ssl=context)
+                        kept_favorite = await response.json()
+                        response = await client.post(base + 'api/messages', json=saved_payload, ssl=context)
+                        saved_receipt = await response.json()
+                        self.assertEqual(saved_receipt['status'], 'sent')
+                        self.assertEqual(json.loads(await receiver.recv())['message'], 'save for later')
+                        response = await client.get(base + 'api/messages', ssl=context)
+                        converted = await response.json()
+                        self.assertEqual(converted['saved'], [])
+                        self.assertEqual(converted['favorites'], [kept_favorite])
+                        self.assertEqual(converted['messages'][0]['content'], 'save for later')
+                        response = await client.post(base + 'api/messages', json=saved_payload, ssl=context)
+                        self.assertEqual(await response.json(), saved_receipt)
+                        with self.assertRaises(asyncio.TimeoutError):
+                            await asyncio.wait_for(receiver.recv(), .05)
+                        response = await client.post(base + 'api/saved', json=saved_payload, ssl=context)
+                        self.assertEqual(response.status, 409)
+                        response = await client.delete(base + 'api/saved/' + 'c' * 32, ssl=context)
+                        self.assertEqual(response.status, 409)
+                        response = await client.post(base + 'api/messages', json={**retry_payload, 'submit': False}, ssl=context)
+                        self.assertEqual(response.status, 409)
+
+                        started, release = asyncio.Event(), asyncio.Event()
+                        original_broadcast = bridge.broadcast
+                        async def slow_broadcast(receivers, message, submit=True):
+                            started.set()
+                            await release.wait()
+                            return await original_broadcast(receivers, message, submit)
+                        pending_payload = {'message': 'pending delivery', 'request_id': 'b' * 32}
+                        with patch.object(bridge, 'broadcast', side_effect=slow_broadcast):
+                            first = asyncio.ensure_future(client.post(base + 'api/messages', json=pending_payload, ssl=context))
+                            try:
+                                await asyncio.wait_for(started.wait(), 2)
+                                response = await client.get(base + 'api/requests/' + 'b' * 32, ssl=context)
+                                self.assertEqual((await response.json())['status'], 'pending')
+                                response = await client.post(base + 'api/messages', json=pending_payload, ssl=context)
+                                self.assertEqual(response.status, 202)
+                                self.assertEqual((await response.json())['status'], 'pending')
+                            finally:
+                                release.set()
+                            response = await first
+                            self.assertEqual((await response.json())['status'], 'sent')
+                        self.assertEqual(json.loads(await receiver.recv())['message'], 'pending delivery')
+                        with self.assertRaises(asyncio.TimeoutError):
+                            await asyncio.wait_for(receiver.recv(), .05)
                     with sqlite3.connect(db) as connection:
                         rows = connection.execute("SELECT content FROM messages ORDER BY id").fetchall()
-                        self.assertEqual(rows, [("offline",), ("网页测试\nhello",), ("existing CLI",), ('网页测试\nhello',), ('编辑\n草稿',), ('编辑\n草稿',)])
+                        self.assertEqual(rows, [("offline",), ("网页测试\nhello",), ("existing CLI",), ('网页测试\nhello',), ('编辑\n草稿',), ('编辑\n草稿',), ('response lost',), ('save for later',), ('pending delivery',)])
+                        stored = connection.execute('SELECT request_id, receivers FROM web_requests ORDER BY request_id').fetchall()
+                        self.assertEqual(stored, [('a' * 32, 1), ('b' * 32, 1), ('c' * 32, 1)])
                         connection.executemany(
                             'INSERT INTO messages (received_at, content, char_count, byte_count) VALUES (?, ?, ?, ?)',
                             [('2026-10-18T00:00:00+00:00', f'older-{index}', 8, 8) for index in range(55)],
