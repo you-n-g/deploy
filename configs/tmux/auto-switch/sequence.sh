@@ -446,8 +446,8 @@ write_edit_file() {
 }
 
 apply_edit_file() {
-  local file="$1"
-  run_sequence_edit apply "$file"
+  local file="$1" base="$2"
+  run_sequence_edit apply "$file" --base "$base"
 }
 
 switch_to_pane() {
@@ -475,13 +475,15 @@ edit_sequence() {
   tmp="$(mktemp "/tmp/auto-switch-sequence.XXXXXX")"
   selected_file="$(mktemp "/tmp/auto-switch-selected.XXXXXX")"
   vim_script="$(mktemp "/tmp/auto-switch-edit.XXXXXX.vim")"
-  trap 'rm -f "$tmp" "$selected_file" "$vim_script"' RETURN
+  trap 'rm -f "$tmp" "$tmp.base" "$selected_file" "$vim_script"' RETURN
 
   # current_ranked_sequence already returns the normalized sequence, and
   # normalize is idempotent — re-normalizing here only bought another helper
   # process on the `prefix C-a` path.
   ranked="$(current_ranked_sequence)"
   write_edit_file "$tmp" "$ranked"
+  # What the editor opened with: apply writes back only the cells changed from it.
+  cp "$tmp" "$tmp.base"
   focus_line="$(edit_focus_line "$tmp" "$ranked" "$edit_focus_target")"
   focus_pane="$(resolve_pane "$edit_focus_target" || true)"
   vim_focus_match=""
@@ -825,7 +827,7 @@ VIM
     return 1
   fi
 
-  if ! ranked="$(apply_edit_file "$tmp")"; then
+  if ! ranked="$(apply_edit_file "$tmp" "$tmp.base")"; then
     wait_after_error
     return 1
   fi
