@@ -34,6 +34,7 @@ install_external_skills() {
         bash "$SCRIPT_DIR/install_rednote.sh"
     fi
     bash "$SCRIPT_DIR/install_excalidraw_diagram_skill.sh"
+    bash "$SCRIPT_DIR/install_zhihu.sh"
     # bash "$SCRIPT_DIR/install_x_research.sh"
 
     npm install -g defuddle-cli
@@ -66,6 +67,13 @@ merge_skills() {
     # External: obsidian-skills
     if [ -d "$OBSIDIAN_SKILLS_DIR/skills" ]; then
         for skill in "$OBSIDIAN_SKILLS_DIR/skills"/*/; do
+            [ -d "$skill" ] && link_skill "$skill"
+        done
+    fi
+
+    # External: zhihu-skills
+    if [ -d "$EXTERNAL_REPOS_DIR/zhihu-skills/skills" ]; then
+        for skill in "$EXTERNAL_REPOS_DIR/zhihu-skills/skills"/*/; do
             [ -d "$skill" ] && link_skill "$skill"
         done
     fi
