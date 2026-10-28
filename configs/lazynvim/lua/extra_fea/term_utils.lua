@@ -391,6 +391,13 @@ function M.open_file_with_line_in_normal()
 
   local extracted_file, start_line, end_line, match_start, match_end = extract_file_line_ref()
   local file = resolve_relative_to_buffer(M.normalize_path_for_edit(extracted_file))
+  -- <cfile> may have absorbed Chinese prose glued to the path; try it without.
+  if vim.fn.filereadable(file) == 0 and vim.fn.isdirectory(file) == 0 then
+    local stripped = resolve_relative_to_buffer(strip_non_ascii_edges(file))
+    if stripped ~= "" and vim.uv.fs_stat(stripped) then
+      file = stripped
+    end
+  end
   if file == "" then
     vim.cmd("normal! gf")
     return
