@@ -45,6 +45,8 @@ Usage:
   sequence.sh reset-current <pane>
   sequence.sh append-current <pane>
   sequence.sh prepend-current <pane>
+  sequence.sh remove-current <pane>
+  sequence.sh demote-current <pane>   move it just below the next pane auto-switch would pick
   sequence.sh edit [focus-pane]
   sequence.sh new-ranked-panes
   sequence.sh select-saved
@@ -80,7 +82,7 @@ message=""
 selection_cancelled=0
 
 case "$command_name" in
-  reset-current|append-current|prepend-current)
+  reset-current|append-current|prepend-current|remove-current|demote-current)
     target_pane="${1:-}"
     [[ -n "$target_pane" ]] || { echo "$command_name requires a pane target" >&2; exit 2; }
     shift
@@ -1020,6 +1022,54 @@ case "$command_name" in
     "$script_dir/refresh-next-pane.sh" 2>/dev/null || true
     tmux refresh-client -S 2>/dev/null || true
     ;;
+  remove-current)
+    pane="$(resolve_pane "$target_pane")" || { echo "pane does not resolve: $target_pane" >&2; exit 1; }
+    target_pane="$pane"
+    ranked="$(normalize_existing_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
+    remaining=""
+    for pane in $ranked; do
+      [[ "$pane" == "$target_pane" ]] && continue
+      remaining="${remaining:+$remaining }$pane"
+    done
+    tmux set-option -gq "$ranked_option" "$remaining"
+    "$script_dir/refresh-next-pane.sh" 2>/dev/null || true
+    tmux refresh-client -S 2>/dev/null || true
+    ;;
+  demote-current)
+    pane="$(resolve_pane "$target_pane")" || { echo "pane does not resolve: $target_pane" >&2; exit 1; }
+    target_pane="$pane"
+    ranked="$(normalize_existing_sequence "$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)")"
+    read -r -a panes <<< "$ranked"
+    for i in "${!panes[@]}"; do
+      [[ "${panes[$i]}" == "$target_pane" ]] && break
+    done
+    if [[ "${panes[$i]:-}" != "$target_pane" ]]; then
+      tmux display-message "auto-switch: $target_pane is not in the sequence"
+      exit 1
+    fi
+    # Panes auto-switch would skip (running, pending, done, background with
+    # nothing unread -- the rule in switch-next.sh) are passed over: moving
+    # below one of them would not change what comes next. Land just below the
+    # next switchable pane, or at the end when there is none.
+    reordered=()
+    placed=0
+    for (( k = 0; k < ${#panes[@]}; k++ )); do
+      (( k == i )) && continue
+      reordered+=("${panes[$k]}")
+      if (( k > i && ! placed )); then
+        IFS='|' read -r running background pending done unread < <(tmux display-message -p -t "${panes[$k]}" \
+          '#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_pending}|#{@ai_agent_done}|#{@ai_agent_unread}')
+        if [[ "$running" != "1" && ( "$background" != "1" || "$unread" == "1" ) && -z "$pending" && -z "$done" ]]; then
+          reordered+=("$target_pane")
+          placed=1
+        fi
+      fi
+    done
+    (( placed )) || reordered+=("$target_pane")
+    tmux set-option -gq "$ranked_option" "${reordered[*]}"
+    "$script_dir/refresh-next-pane.sh" 2>/dev/null || true
+    tmux refresh-client -S 2>/dev/null || true
+    ;;
   edit)
     edit_sequence
     ;;
@@ -1066,7 +1116,7 @@ if [[ "$selection_cancelled" == "1" ]]; then
   exit 0
 fi
 
-if [[ "$command_name" == "append-current" || "$command_name" == "prepend-current" ]]; then
+if [[ "$command_name" == "append-current" || "$command_name" == "prepend-current" || "$command_name" == "remove-current" || "$command_name" == "demote-current" ]]; then
   exit 0
 fi
 
