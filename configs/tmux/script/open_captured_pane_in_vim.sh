@@ -4,15 +4,17 @@ set -euo pipefail
 # Where the capture opens:
 #   (default)  a new tab in the session's Vim window (ensure_vim_window.sh)
 #   --float    a new nvim in a floating pane over the source pane's window
-#   --split    a new nvim in a split beside the source pane
-# A new nvim exits with its buffer, so :q closes the pane. --float / --split
+#   --stacked / --side-by-side
+#              a new nvim in a split below / to the right of the source pane
+# A new nvim exits with its buffer, so :q closes the pane. --float / a split
 # open nothing new when the source pane's window already has a Vim (split or
 # floating, other than the source pane): the capture goes there as a new tab.
-usage="usage: open_captured_pane_in_vim.sh [--float|--split] SESSION SOURCE_PANE WORKDIR"
+usage="usage: open_captured_pane_in_vim.sh [--float|--stacked|--side-by-side] SESSION SOURCE_PANE WORKDIR"
 MODE="existing"
 case "${1:-}" in
   --float) MODE="float"; shift ;;
-  --split) MODE="split"; shift ;;
+  --stacked) MODE="split"; split_flag=-v; shift ;;
+  --side-by-side) MODE="split"; split_flag=-h; shift ;;
 esac
 SESSION="${1:?$usage}"
 SOURCE_PANE="${2:?$usage}"
@@ -158,18 +160,18 @@ if [[ "$MODE" == "existing" || "$MODE" == "window-vim" ]]; then
 else
   # A nvim we start ourselves listens where we tell it, so there is no process
   # scan; the new pane already has focus. nvim_server_for_pid knows this socket
-  # name, so a later --float / --split in this window can reuse it.
+  # name, so a later --float / split in this window can reuse it.
   nvim_server="$(mktemp -u /tmp/nvim-capture.XXXXXX).sock"
   if [[ "$MODE" == "float" ]]; then
-    # A centred overlay at 80% x 70% of the window, so the source pane stays
-    # visible around it for comparison.
+    # The top-right quarter of the window, where the other floating panes go,
+    # so most of the source pane stays visible beside it for comparison.
     read -r win_w win_h < <(tmux display-message -p -t "$SOURCE_PANE" '#{window_width} #{window_height}')
-    fw=$(( win_w * 80 / 100 )); fh=$(( win_h * 70 / 100 ))
+    fw=$(( win_w / 2 )); fh=$(( win_h / 2 ))
     "$SCRIPT_DIR/new_float_pane.sh" "$SOURCE_PANE" \
-      -x "$fw" -y "$fh" -X "$(( (win_w - fw) / 2 ))" -Y "$(( (win_h - fh) / 2 ))" \
+      -x "$fw" -y "$fh" -X "$(( win_w - fw - 1 ))" -Y 1 \
       -c "$WORKDIR" nvim --listen "$nvim_server" >/dev/null
   else
-    tmux split-window -h -t "$SOURCE_PANE" -c "$WORKDIR" nvim --listen "$nvim_server"
+    tmux split-window "$split_flag" -t "$SOURCE_PANE" -c "$WORKDIR" nvim --listen "$nvim_server"
   fi
   for _ in {1..50}; do
     [[ -S "$nvim_server" ]] && break

@@ -2,7 +2,7 @@
 # Fork an AI session into a new tmux window and switch to it.
 # Supports Claude Code (clauder) and Codex (codexr).
 #
-# Usage: fork_ai_session.sh [-q] [--target PANE] [--suffix SUFFIX] [--disable-tmux-rename] [--join-back] [--prepend-sequence] [window_name]
+# Usage: fork_ai_session.sh [-q] [--target PANE] [--suffix SUFFIX] [--disable-tmux-rename] [--join-back stacked|side-by-side] [--prepend-sequence] [window_name]
 #   window_name  — name of a window in the CURRENT session whose AI pane to
 #                  fork. When omitted, fork the AI in the current pane.
 #   --target     — tmux pane target that defines "current" for this fork.
@@ -10,21 +10,23 @@
 #                  forked window (default: -fork).
 #   --disable-tmux-rename
 #                — set TMUX_AI_DISABLE_RENAME=1 for the forked TUI wrapper.
-#   --join-back  — join the forked pane into the source pane's window instead
-#                  of leaving it in a window of its own. Both panes are named
+#   --join-back stacked|side-by-side
+#                — join the forked pane into the source pane's window, below /
+#                  to the right of it, instead of leaving it in a window of its
+#                  own (prefix + M-f s / v). Both panes are named
 #                  by id: run-shell children have no pane of their own, so a
 #                  relative target such as ":!." resolves against whatever
 #                  session tmux deems current and can pick an unrelated pane.
 #   --prepend-sequence
 #                — put the forked pane first in the auto-switch pane list
-#                  (prefix + M-f F).
+#                  (prefix + M-f T).
 #   -q           — quiet mode (always exit 0, suppress status-bar flash).
 
 QUIET=false
 SOURCE_TARGET=""
 SUFFIX="-fork"
 DISABLE_TMUX_RENAME=false
-JOIN_BACK=false
+JOIN_BACK=""
 PREPEND_SEQUENCE=false
 while [[ "$1" == -* ]]; do
     case "$1" in
@@ -32,7 +34,13 @@ while [[ "$1" == -* ]]; do
         --target) SOURCE_TARGET="$2"; shift 2 ;;
         --suffix) SUFFIX="$2"; shift 2 ;;
         --disable-tmux-rename) DISABLE_TMUX_RENAME=true; shift ;;
-        --join-back) JOIN_BACK=true; shift ;;
+        --join-back)
+            case "${2:-}" in
+                stacked) JOIN_BACK=-v ;;
+                side-by-side) JOIN_BACK=-h ;;
+                *) tmux display-message "fork: --join-back needs stacked or side-by-side, got '${2:-}'"; exit 1 ;;
+            esac
+            shift 2 ;;
         --prepend-sequence) PREPEND_SEQUENCE=true; shift ;;
         *)  shift ;;
     esac
@@ -268,8 +276,8 @@ fork_pane_id=$(tmux display-message -p -t "$win_id" '#{pane_id}')
 if [[ "$PREPEND_SEQUENCE" == true ]]; then
     "$SCRIPT_DIR/../auto-switch/sequence.sh" prepend-current "$fork_pane_id"
 fi
-if [[ "$JOIN_BACK" == true ]]; then
-    "$SCRIPT_DIR/../script/smart_join_pane.sh" "$source_pane_id" "$fork_pane_id"
+if [[ -n "$JOIN_BACK" ]]; then
+    tmux join-pane "$JOIN_BACK" -t "$source_pane_id" -s "$fork_pane_id"
 else
     tmux select-window -t "$win_id"
 fi
