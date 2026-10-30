@@ -139,8 +139,10 @@ def provider_choices() -> tuple[tuple[str, str], ...]:
 def clauder_provider_choices() -> tuple[tuple[str, str], ...]:
     # One choice per settings file; the label shows where it points and its
     # default model so the gateway-specific model names are visible here.
-    if not CLAUDER_PROVIDER_DIR.is_dir():
-        raise ToolError(f"clauder provider directory missing: {CLAUDER_PROVIDER_DIR}")
+    # Provider files are optional, including on a fresh machine where the
+    # directory has not been created yet. An existing non-directory is an error.
+    if CLAUDER_PROVIDER_DIR.exists() and not CLAUDER_PROVIDER_DIR.is_dir():
+        raise ToolError(f"clauder provider path is not a directory: {CLAUDER_PROVIDER_DIR}")
     choices: list[tuple[str, str]] = []
     for path in sorted(CLAUDER_PROVIDER_DIR.glob("*.json")):
         provider_id = path.stem
