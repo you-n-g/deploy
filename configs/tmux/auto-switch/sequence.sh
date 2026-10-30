@@ -122,46 +122,6 @@ normalize_existing_sequence() {
   run_sequence_edit normalize "$1"
 }
 
-status_prefix() {
-  local unread="$1" running="$2" background="$3" pending="$4" done="$5" woke="${6:-}"
-  if [[ -n "$pending" ]]; then
-    printf '⏸ '
-  elif [[ "$background" == "1" && "$unread" == "1" ]]; then
-    printf '◓ '
-  elif [[ "$background" == "1" ]]; then
-    printf '◒ '
-  elif [[ "$running" == "1" ]]; then
-    printf '● '
-  elif [[ "$done" == "1" ]]; then
-    printf '✓ '
-  elif [[ "$unread" == "1" && "$woke" == "1" ]]; then
-    printf '☀ '
-  elif [[ "$unread" == "1" ]]; then
-    printf '◉ '
-  else
-    printf '○ '
-  fi
-}
-
-pane_label() {
-  local pane="$1"
-  local session_name window_name unread running background pending done woke attribute clean_attribute label
-
-  session_name="$(tmux display-message -p -t "$pane" '#{session_name}' 2>/dev/null || true)"
-  window_name="$(tmux display-message -p -t "$pane" '#{window_name}' 2>/dev/null || true)"
-  unread="$(tmux show -pv -t "$pane" @ai_agent_unread 2>/dev/null || true)"
-  running="$(tmux show -pv -t "$pane" @ai_agent_running 2>/dev/null || true)"
-  background="$(tmux show -pv -t "$pane" @ai_agent_background 2>/dev/null || true)"
-  pending="$(tmux show -pv -t "$pane" @ai_agent_pending 2>/dev/null || true)"
-  done="$(tmux show -pv -t "$pane" @ai_agent_done 2>/dev/null || true)"
-  woke="$(tmux show -pv -t "$pane" @ai_agent_woke 2>/dev/null || true)"
-  attribute="$(tmux show -pv -t "$pane" @ai_agent_attribute 2>/dev/null || true)"
-  clean_attribute="$(printf '%s' "$attribute" | strip_tmux_format)"
-  label="$(compact_ai_label "$session_name" "$window_name" "$clean_attribute")"
-  label="${label} [${session_name}:${window_name}]"
-  printf '%s%s' "$(status_prefix "$unread" "$running" "$background" "$pending" "$done" "$woke")" "$label"
-}
-
 saved_ranked_panes() {
   tmux show-option -gqv "$saved_option" 2>/dev/null || true
 }
@@ -849,14 +809,10 @@ VIM
 }
 
 format_sequence() {
-  local ranked="$1" pane label out="" index=0
-  for pane in $ranked; do
-    [[ -n "$(resolve_pane "$pane" || true)" ]] || continue
-    index=$((index + 1))
-    label="$(pane_label "$pane")"
-    out="${out:+$out | }${index}:${label}"
-  done
-  printf '%s\n' "${out:-empty}"
+  # One tmux call and one python start for the whole sequence (format_sequence.py);
+  # labelling pane by pane in bash cost ~11 processes each and made loading a long list slow.
+  tmux list-panes -a -F '#{pane_id}	#{session_name}	#{window_name}	#{@ai_agent_unread}	#{@ai_agent_running}	#{@ai_agent_background}	#{@ai_agent_pending}	#{@ai_agent_done}	#{@ai_agent_woke}	#{@ai_agent_attribute}' |
+    python3 "$script_dir/format_sequence.py" "$1"
 }
 
 sequence_count() {

@@ -63,7 +63,7 @@ pane 的状态存在 pane option 里（`@ai_agent_running` / `_background` / `_p
 | 底部窗口列表 | `script/refresh_status_right.sh` 的 `decorate_window_status` | tmux 格式串里的 `state_symbol`；脚本只装饰一次，已运行的 tmux 要手动改 `window-status-format` / `window-status-current-format` 或重启 |
 | 左下角计数 | `script/print_ai_status.sh` | running / `~`background / `!`unread 的数量 |
 | `prefix + g` / `C-g` 选择器 | `ai/lib.sh` 的 `_ai_pane_fzf_list` | 符号、`[unread]` 这类标签、排序键；图例在 `ai/get_ai_pane.sh` 的 header；光标起点在 `_fzf_start_pos` 按标签找 |
-| `prefix + C-a` 序列编辑器 | `auto-switch/sequence_edit.py` 的 `state_label`（状态写成单词）、`auto-switch/sequence.sh` 的 vim 高亮（`AutoSwitchState*`）和 `status_prefix`（预览里的符号） | |
+| `prefix + C-a` 序列编辑器 | `auto-switch/sequence_edit.py` 的 `state_label`（状态写成单词）、`auto-switch/sequence.sh` 的 vim 高亮（`AutoSwitchState*`）和 `format_sequence.py` 的 `state_symbol`（加载 / 显示序列时消息里的符号） | |
 | 终端标题 | `script/print_terminal_title.sh` | |
 | 下一个 auto-switch 目标提示 | `auto-switch/print-waiting-hint.sh` | |
 | auto-switch 跳过谁 | `auto-switch/switch-next.sh`、`auto-switch/refresh-next-pane.sh` | 只看 running / background / pending / done |
