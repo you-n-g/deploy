@@ -112,13 +112,21 @@ if [[ -n "$skip_pane_id" && "$skip_pane_id" != "$target" ]] \
   # Size (-x/-y) and position (-X/-Y) are both set at creation, so it lands in a
   # fixed spot: floating panes otherwise cascade their position per window with
   # no way to move them afterwards. Pinned to the top-right, 45% of the window
-  # high. Width is the previewed pane's own width (capped to the window, leaving
-  # room for the border) so its lines show whole instead of clipped.
+  # high. Width follows @auto_switch_preview_width (tma-conf): unset / "full" is
+  # the previewed pane's own width, so its lines show whole instead of clipped;
+  # a number is that percent of the window. Either way it is capped to the
+  # window, leaving room for the border.
   win_w="$(tmux display-message -p -t "$target" '#{window_width}' 2>/dev/null || echo 0)"
   win_h="$(tmux display-message -p -t "$target" '#{window_height}' 2>/dev/null || echo 0)"
   src_w="$(tmux display-message -p -t "$skip_pane_id" '#{pane_width}' 2>/dev/null || echo 0)"
+  width_setting="$(tmux show-option -gqv @auto_switch_preview_width)"
+  case "$width_setting" in
+    ''|full) want_w="$src_w" ;;
+    *[!0-9]*) tmux display-message "auto-switch: @auto_switch_preview_width must be full or a percent, got '$width_setting'"; exit 1 ;;
+    *) want_w=$(( win_w * width_setting / 100 )) ;;
+  esac
   if (( win_w > 0 && win_h > 0 && src_w > 0 )); then
-    pw=$(( src_w < win_w - 2 ? src_w : win_w - 2 )); ph=$(( win_h * 45 / 100 ))
+    pw=$(( want_w < win_w - 2 ? want_w : win_w - 2 )); ph=$(( win_h * 45 / 100 ))
     px=$(( win_w - pw - 1 )); py=1
     # Name the previewed pane on its first line: a border title would need the
     # window-wide pane-border-status, which re-lays out every pane under it.
