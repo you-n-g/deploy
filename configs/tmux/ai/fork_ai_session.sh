@@ -2,7 +2,7 @@
 # Fork an AI session into a new tmux window and switch to it.
 # Supports Claude Code (clauder) and Codex (codexr).
 #
-# Usage: fork_ai_session.sh [-q] [--target PANE] [--suffix SUFFIX] [--disable-tmux-rename] [--join-back stacked|side-by-side] [--prepend-sequence] [window_name]
+# Usage: fork_ai_session.sh [-q] [--target PANE] [--suffix SUFFIX] [--disable-tmux-rename] [--join-back stacked|side-by-side] [--float] [--prepend-sequence] [window_name]
 #   window_name  — name of a window in the CURRENT session whose AI pane to
 #                  fork. When omitted, fork the AI in the current pane.
 #   --target     — tmux pane target that defines "current" for this fork.
@@ -13,13 +13,17 @@
 #   --join-back stacked|side-by-side
 #                — join the forked pane into the source pane's window, below /
 #                  to the right of it, instead of leaving it in a window of its
-#                  own (prefix + M-f s / v). Both panes are named
+#                  own (prefix + f s / v). Both panes are named
 #                  by id: run-shell children have no pane of their own, so a
 #                  relative target such as ":!." resolves against whatever
 #                  session tmux deems current and can pick an unrelated pane.
+#   --float      — open the fork in a floating pane over the source pane's window
+#                  (its top-right quarter, as other floating panes), instead of
+#                  a window of its own (prefix + f f). Implies
+#                  --disable-tmux-rename: the window belongs to the source pane.
 #   --prepend-sequence
 #                — put the forked pane first in the auto-switch pane list
-#                  (prefix + M-f T).
+#                  (prefix + f T).
 #   -q           — quiet mode (always exit 0, suppress status-bar flash).
 
 QUIET=false
@@ -27,6 +31,7 @@ SOURCE_TARGET=""
 SUFFIX="-fork"
 DISABLE_TMUX_RENAME=false
 JOIN_BACK=""
+FLOAT=false
 PREPEND_SEQUENCE=false
 while [[ "$1" == -* ]]; do
     case "$1" in
@@ -41,6 +46,7 @@ while [[ "$1" == -* ]]; do
                 *) tmux display-message "fork: --join-back needs stacked or side-by-side, got '${2:-}'"; exit 1 ;;
             esac
             shift 2 ;;
+        --float) FLOAT=true; DISABLE_TMUX_RENAME=true; shift ;;
         --prepend-sequence) PREPEND_SEQUENCE=true; shift ;;
         *)  shift ;;
     esac
@@ -267,6 +273,15 @@ if [[ "$DISABLE_TMUX_RENAME" == true ]]; then
     printf -v launch_cmd 'TMUX_AI_DISABLE_RENAME=1 zsh -ic %q' "$cmd"
 else
     printf -v launch_cmd 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$fork_name" "$cmd"
+fi
+if [[ "$FLOAT" == true ]]; then
+    # tmux cannot make an existing pane floating, so the fork starts in one.
+    read -r win_w win_h < <(tmux display-message -p -t "$source_pane_id" '#{window_width} #{window_height}')
+    fw=$(( win_w / 2 )); fh=$(( win_h / 2 ))
+    fork_pane_id=$("$SCRIPT_DIR/../script/new_float_pane.sh" "$source_pane_id" \
+        -x "$fw" -y "$fh" -X "$(( win_w - fw - 1 ))" -Y 1 -c "$workdir" "$launch_cmd")
+    [[ "$PREPEND_SEQUENCE" == true ]] && "$SCRIPT_DIR/../auto-switch/sequence.sh" prepend-current "$fork_pane_id"
+    exit 0
 fi
 win_id=$(tmux new-window -d -P -F '#{window_id}' -t "$source_session:" -n "$fork_name" -c "$workdir" "$launch_cmd")
 # Block TUI escape-sequence renames. Wrapper-driven renames are controlled by
