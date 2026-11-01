@@ -17,6 +17,10 @@ path_append_if_missing() {
 }
 
 path_prepend_if_missing "$HOME/deploy/helper_scripts/bin"
+# Scripts shipped with farside, on machines that have it cloned.
+if [ -d "$HOME/farside/bin" ]; then
+    path_prepend_if_missing "$HOME/farside/bin"
+fi
 path_prepend_if_missing "$HOME/bin"
 path_prepend_if_missing "$HOME/apps/nodejs/bin"
 path_prepend_if_missing "$HOME/.luarocks/bin"
