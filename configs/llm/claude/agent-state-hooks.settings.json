@@ -7,7 +7,7 @@
           {
             "type": "command",
             "command": "bash -lc 'exec \"$HOME/deploy/configs/tmux/script/claude_agent_state_hook.sh\" init'",
-            "timeout": 5
+            "timeout": 15
           }
         ]
       }
@@ -18,7 +18,7 @@
           {
             "type": "command",
             "command": "bash -lc 'exec \"$HOME/deploy/configs/tmux/script/claude_agent_state_hook.sh\" running'",
-            "timeout": 5
+            "timeout": 15
           }
         ]
       }
@@ -30,7 +30,7 @@
           {
             "type": "command",
             "command": "\"$HOME/deploy/configs/tmux/script/claude_agent_state_hook.sh\" pretool",
-            "timeout": 5
+            "timeout": 15
           }
         ]
       }
@@ -41,7 +41,7 @@
           {
             "type": "command",
             "command": "bash -lc 'exec \"$HOME/deploy/configs/tmux/script/claude_agent_state_hook.sh\" stop'",
-            "timeout": 5
+            "timeout": 15
           }
         ]
       }

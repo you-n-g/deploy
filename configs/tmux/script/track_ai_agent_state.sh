@@ -676,7 +676,14 @@ case "$state" in
     ;;
 esac
 
-"$SCRIPT_DIR/refresh_status_lines.sh" "$pane_id"
+# The status lines and terminal title are display only, and redrawing them is
+# most of this script's time (~0.7 s of ~1.5 s). Claude runs this as a hook with
+# a 5 s budget, and on a busy shared filesystem the whole run overshot it: the hook was killed
+# before the prompt was logged. The state above is settled, so draw in the
+# background; the redraw reads the current state, so drawing late is still
+# right. Its stderr goes to a log rather than nowhere.
+setsid "$SCRIPT_DIR/refresh_status_lines.sh" "$pane_id" </dev/null >/dev/null \
+  2>>"$HOME/.cache/tmux-status-refresh.err" &
 
 # Last, so the state and status lines above are already settled if it fails.
 # No attached client means nobody to show it to. The orchestrator window only

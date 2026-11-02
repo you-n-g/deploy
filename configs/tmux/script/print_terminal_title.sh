@@ -4,7 +4,6 @@ set -eu
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../ai/lib.sh"
-source "$SCRIPT_DIR/ai_label.sh"
 
 ai_title_status_prefix() {
   local is_current="$1"
@@ -49,13 +48,14 @@ ai_title_status_prefix() {
   fi
 }
 
-append_title_item() {
-  local item="$1"
-  if [ -n "$title" ]; then
-    title="${title} | ${item}"
-  else
-    title="$item"
-  fi
+# The title's panes, current first: collected, then labelled in one python start
+# (compact_ai_label.py). A python start per label made this -- run on every
+# agent state change -- the slow part of Claude's state hook.
+items=()
+
+add_title_item() {
+  # \x1f, not a tab: read collapses consecutive tabs, and empty fields are common.
+  items+=("$(printf '%s\x1f' "$@")")
 }
 
 format_title_item() {
@@ -66,12 +66,9 @@ format_title_item() {
   local running="$5"
   local background="$6"
   local pending="$7"
-  local attribute="$8"
-  local session_name clean_attribute label is_current marker
+  local label="$8"
+  local is_current marker
 
-  session_name="${pane_target%:*}"
-  clean_attribute="$(printf '%s' "$attribute" | strip_tmux_format)"
-  label="$(compact_ai_label "$session_name" "$window_name" "$clean_attribute")"
   is_current=0
   [ "$pane_target" = "$current_target" ] && is_current=1
   marker=""
@@ -118,7 +115,7 @@ if [ -n "${rows:-}" ]; then
 
   if [ -n "$current_row" ]; then
     IFS=$'\t' read -r pane_target pane_id window_name unread running background pending attribute <<< "$current_row"
-    append_title_item "$(format_title_item "$pane_target" "$pane_id" "$window_name" "$unread" "$running" "$background" "$pending" "$attribute")"
+    add_title_item "$pane_target" "$pane_id" "$window_name" "$unread" "$running" "$background" "$pending" "$attribute"
     count=$((count + 1))
   fi
 
@@ -129,8 +126,21 @@ if [ -n "${rows:-}" ]; then
     count=$((count + 1))
     [ "$count" -le "$max_items" ] || break
 
-    append_title_item "$(format_title_item "$pane_target" "$pane_id" "$window_name" "$unread" "$running" "$background" "$pending" "$attribute")"
+    add_title_item "$pane_target" "$pane_id" "$window_name" "$unread" "$running" "$background" "$pending" "$attribute"
   done <<< "$rows"
+
+  if [ "${#items[@]}" -gt 0 ]; then
+    # session (from session:window.pane), window, attribute -> one label per line
+    mapfile -t labels < <(for item in "${items[@]}"; do
+      IFS=$'\x1f' read -r pane_target _ window_name _ _ _ _ attribute _ <<< "$item"
+      printf '%s\t%s\t%s\n' "${pane_target%:*}" "$window_name" "$attribute"
+    done | python3 "$SCRIPT_DIR/compact_ai_label.py")
+    for i in "${!items[@]}"; do
+      IFS=$'\x1f' read -r pane_target pane_id window_name unread running background pending _ <<< "${items[$i]}"
+      item="$(format_title_item "$pane_target" "$pane_id" "$window_name" "$unread" "$running" "$background" "$pending" "${labels[$i]}")"
+      title="${title:+$title | }$item"
+    done
+  fi
 
   if [ -n "$title" ]; then
     printf '%s\n' "$title"
