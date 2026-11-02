@@ -199,6 +199,32 @@ class JumpHistoryTest(unittest.TestCase):
         ).strip()
         self.assertEqual(other, self.target(self.c))
 
+    def test_previous_other_session_skips_the_current_session(self):
+        # a, b and c are all in session "one"; d is in session "two".
+        d = self.tmux("new-session", "-d", "-s", "two", "-P", "-F", "#{session_id}:.#{pane_id}")
+        self.visit(self.a)
+        self.visit(self.b)
+        result = subprocess.run(
+            ["python3", SCRIPT, "--socket", self.socket, "--other-session", "previous", self.client],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("in another session", result.stderr)
+        self.visit(d)
+        self.visit(self.c)
+        self.visit(self.a)
+        self.assertEqual(self.previous(), self.target(self.c))
+        other = subprocess.check_output(
+            ["python3", SCRIPT, "--socket", self.socket, "--other-session", "previous", self.client],
+            universal_newlines=True,
+        ).strip()
+        self.assertEqual(other, self.target(d))
+        # The insert script passes it through (prefix + t L).
+        pane = self.a.split(":.")[1]
+        subprocess.check_call([INSERT_SCRIPT, "--other-session", self.socket, self.client, pane])
+        expected = "请capture我的Tmux的这个pane[" + self.target(d) + "]的内容"
+        self.wait_for(lambda: expected in self.tmux("capture-pane", "-p", "-t", pane))
+
     def test_join_previous_moves_pane_into_previous_window(self):
         self.visit(self.c)
         self.visit(self.b)
