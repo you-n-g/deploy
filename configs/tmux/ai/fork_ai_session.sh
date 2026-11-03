@@ -7,7 +7,8 @@
 #                  fork. When omitted, fork the AI in the current pane.
 #   --target     — tmux pane target that defines "current" for this fork.
 #   --suffix     — suffix appended to the target window name for the new
-#                  forked window (default: -fork).
+#                  forked window (default: "⎇", U+2387, so a fork stands out
+#                  in the window list).
 #   --disable-tmux-rename
 #                — set TMUX_AI_DISABLE_RENAME=1 for the forked TUI wrapper.
 #   --join-back stacked|side-by-side
@@ -28,7 +29,7 @@
 
 QUIET=false
 SOURCE_TARGET=""
-SUFFIX="-fork"
+SUFFIX="⎇"  # U+2387 (the git branch symbol), plain Unicode (no Nerd Font); literal: \u needs a UTF-8 locale
 DISABLE_TMUX_RENAME=false
 JOIN_BACK=""
 FLOAT=false
