@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Start a new AI (the TMUX_AI_TOOL wrapper, codexr / clauder) next to PANE and
-# hand it PANE the way prefix t a does: type the capture request into its
-# prompt (no Enter) and focus it. LAYOUT is where the AI goes:
+# focus it. With --send-target it is also handed PANE the way prefix t a does:
+# the capture request is typed into its prompt (no Enter). LAYOUT is where the
+# AI goes:
 #
 #   stacked       split PANE, the AI below (vim :split)
 #   side-by-side  split PANE, the AI on the right (vim :vsplit)
@@ -11,12 +12,15 @@
 #
 # The request is typed only once the agent is up -- its SessionStart hook has
 # set @ai_agent_running (track_ai_agent_state.sh init) -- so it is not lost to
-# a TUI still starting. prefix t c s / v / f / t.
+# a TUI still starting. prefix c s / v / f / t make the AI; prefix t c s / v /
+# f / t make it and send PANE (--send-target).
 #
-# usage: send_target_to_new_ai.sh stacked|side-by-side|float|window PANE
+# usage: new_ai_pane.sh [--send-target] stacked|side-by-side|float|window PANE
 set -euo pipefail
 
-usage="usage: send_target_to_new_ai.sh stacked|side-by-side|float|window PANE"
+usage="usage: new_ai_pane.sh [--send-target] stacked|side-by-side|float|window PANE"
+send_target=0
+[[ "${1:-}" != --send-target ]] || { send_target=1; shift; }
 layout="${1:?$usage}"
 host="$(tmux display-message -p -t "${2:?$usage}" '#{pane_id}')"
 start_timeout_tenths=600
@@ -50,6 +54,10 @@ case "$layout" in
     ;;
   *) fail "unknown layout: $layout ($usage)" ;;
 esac
+
+tmux select-window -t "$pane"
+tmux select-pane -t "$pane"
+(( send_target )) || exit 0
 
 for (( i = 0; i < start_timeout_tenths; i++ )); do
   tmux display-message -p -t "$pane" '#{pane_id}' >/dev/null 2>&1 || fail "$pane exited while starting $tool_cmd"
