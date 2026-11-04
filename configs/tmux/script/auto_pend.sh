@@ -16,10 +16,12 @@
 # or a watcher it started to wait on something outside (a Slurm job, a file) --
 # and PANE then waits for that pid to exit (pend_until.sh pid).
 #
-# When the AI finds nothing to wait on, the reason becomes its short note of
-# what PANE waits for (a plain pending, released by hand). The answer is
-# applied only while the reason is still "判定中…": a pending changed or
-# cleared in the meantime is left alone.
+# When the AI finds nothing to wait on -- or the decision fails -- PANE goes
+# back to idle and the reason (with the AI's note of what PANE seemed to wait
+# for) is shown as a tmux message. A pending with no release condition would
+# sit there until noticed, and its target may never come (a watcher that died).
+# The answer is applied only while the reason is still "判定中…": a pending
+# changed or cleared in the meantime is left alone.
 #
 # prefix + M-p a.
 #
@@ -52,9 +54,15 @@ fi
 
 still_ours() { [[ "$(tmux show-option -pqv -t "$pane" @ai_agent_pending 2>/dev/null)" == "$placeholder" ]]; }
 
+# Back to idle (toggle-pending unparks: unread when out of sight, and it releases
+# the panes waiting on PANE), with the reason on the status line.
+unpend() {
+  still_ours && AI_AGENT_STATE_SOURCE=auto-pend "$script_dir/track_ai_agent_state.sh" toggle-pending "$pane"
+  tmux display-message -d 8000 "auto_pend ${label:-$pane}: $1，已回到 idle"
+}
+
 fail() {
-  still_ours && AI_AGENT_STATE_SOURCE=auto-pend "$script_dir/track_ai_agent_state.sh" pending "$pane" "自动判定失败"
-  tmux display-message "auto_pend: $1"
+  unpend "$1"
   exit 1
 }
 
@@ -137,7 +145,8 @@ case "$mode" in
     fi
     ;;
   none)
-    AI_AGENT_STATE_SOURCE=auto-pend "$script_dir/track_ai_agent_state.sh" pending "$pane" "${rest:-/}"
+    unpend "没有可等的窗口或进程（AI：${rest:-无说明}）"
+    exit 0
     ;;
 esac
 tmux display-message "auto_pend $label → $(tmux show-option -pqv -t "$pane" @ai_agent_pending)"
