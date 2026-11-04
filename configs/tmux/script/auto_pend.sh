@@ -23,6 +23,10 @@
 # The answer is applied only while the reason is still "判定中…": a pending
 # changed or cleared in the meantime is left alone.
 #
+# Only a failure shows a message. Finding the target -- or finding it already
+# over, so PANE is released at once -- is silent: the window list shows the
+# new state, and a message would only pull the user back.
+#
 # prefix + M-p a.
 #
 # usage: auto_pend.sh PANE            (pend, move on, decide in the background)
@@ -129,7 +133,7 @@ case "$mode" in
   idle)
     target="${rest%% *}"
     grep -q "^$target " <<< "$candidates" || fail "AI 选的 $target 不在候选里"
-    AI_AGENT_STATE_SOURCE=auto-pend "$script_dir/pend_until.sh" --timeout 4h "$mode" "$pane" "$target"
+    PEND_UNTIL_QUIET=1 AI_AGENT_STATE_SOURCE=auto-pend "$script_dir/pend_until.sh" --timeout 4h "$mode" "$pane" "$target"
     # A target already idle needs no wait: pend_until.sh sets nothing, so release.
     if still_ours; then
       AI_AGENT_STATE_SOURCE=auto-pend "$script_dir/track_ai_agent_state.sh" wake "$pane"
@@ -138,7 +142,7 @@ case "$mode" in
   pid)
     target="${rest%% *}"
     grep -q "^$target " <<< "$processes" || fail "AI 选的进程 $target 不在候选里"
-    AI_AGENT_STATE_SOURCE=auto-pend "$script_dir/pend_until.sh" --timeout 12h pid "$pane" "$target"
+    PEND_UNTIL_QUIET=1 AI_AGENT_STATE_SOURCE=auto-pend "$script_dir/pend_until.sh" --timeout 12h pid "$pane" "$target"
     # Already gone: pend_until.sh sets nothing, so release.
     if still_ours; then
       AI_AGENT_STATE_SOURCE=auto-pend "$script_dir/track_ai_agent_state.sh" wake "$pane"
@@ -149,4 +153,3 @@ case "$mode" in
     exit 0
     ;;
 esac
-tmux display-message "auto_pend $label → $(tmux show-option -pqv -t "$pane" @ai_agent_pending)"

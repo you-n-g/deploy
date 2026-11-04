@@ -36,6 +36,10 @@
 #        pend_until.sh --expire PANE REASON   (the timeout / pid-exit half)
 set -euo pipefail
 
+# PEND_UNTIL_QUIET=1 (auto_pend.sh): no message when there is nothing to wait
+# for because the target is already over; errors still show.
+note() { [[ "${PEND_UNTIL_QUIET:-}" == 1 ]] || tmux display-message "$1"; }
+
 usage="usage: pend_until.sh [-A] [--after-turn] --timeout DURATION idle|done|pid PANE [TARGET|PID]"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 if [[ "${1:-}" == "--expire" ]]; then
@@ -80,7 +84,7 @@ if [[ "$mode" == pid ]]; then
     exit 0
   fi
   # Already gone: nothing to wait for.
-  kill -0 "$pid" 2>/dev/null || { tmux display-message "pend_until: 进程 $pid 已经结束，不用等"; exit 0; }
+  kill -0 "$pid" 2>/dev/null || { note "pend_until: 进程 $pid 已经结束，不用等"; exit 0; }
   expire_at=$(( $(date +%s) + timeout_s ))
   [[ "$(date -d "@$expire_at" +%F)" == "$(date +%F)" ]] \
     && deadline="$(date -d "@$expire_at" +%H:%M)" || deadline="$(date -d "@$expire_at" '+%m-%d %H:%M')"
@@ -126,7 +130,7 @@ fi
 
 label="$(tmux display-message -p -t "$target" '#{session_name}:#{window_index}.#{pane_index} #{window_name}')"
 if [[ "$mode" == "done" && -n "$(tmux show-option -pqv -t "$target" @ai_agent_done)" ]]; then
-  tmux display-message "pend_until: $label 已标记完成，不用等"
+  note "pend_until: $label 已标记完成，不用等"
   exit 0
 fi
 # An idle wait is released by the target's next idle edge; a target already
@@ -135,7 +139,7 @@ fi
 read -r t_running t_background t_pending < <(tmux display-message -p -t "$target" \
   '#{?#{==:#{@ai_agent_running},1},1,0} #{?#{==:#{@ai_agent_background},1},1,0} #{?@ai_agent_pending,1,0}')
 if [[ "$mode" == "idle" && "$t_running$t_background$t_pending" == "000" ]]; then
-  tmux display-message "pend_until: $label 已经 idle，不用等"
+  note "pend_until: $label 已经 idle，不用等"
   exit 0
 fi
 expire_at=$(( $(date +%s) + timeout_s ))
