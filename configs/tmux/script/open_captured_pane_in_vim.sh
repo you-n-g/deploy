@@ -6,15 +6,18 @@ set -euo pipefail
 #   --float    a new nvim in a floating pane over the source pane's window
 #   --stacked / --side-by-side
 #              a new nvim in a split below / to the right of the source pane
+#   --window   a new nvim in a new tmux window next to the source pane's (vim: a tab)
 # A new nvim exits with its buffer, so :q closes the pane. --float / a split
 # open nothing new when the source pane's window already has a Vim (split or
 # floating, other than the source pane): the capture goes there as a new tab.
-usage="usage: open_captured_pane_in_vim.sh [--float|--stacked|--side-by-side] SESSION SOURCE_PANE WORKDIR"
+# --window always opens a new one: it is asked for a window of its own.
+usage="usage: open_captured_pane_in_vim.sh [--float|--stacked|--side-by-side|--window] SESSION SOURCE_PANE WORKDIR"
 MODE="existing"
 case "${1:-}" in
   --float) MODE="float"; shift ;;
   --stacked) MODE="split"; split_flag=-v; shift ;;
   --side-by-side) MODE="split"; split_flag=-h; shift ;;
+  --window) MODE="window"; shift ;;
 esac
 SESSION="${1:?$usage}"
 SOURCE_PANE="${2:?$usage}"
@@ -116,7 +119,7 @@ nvim_server_for_pid() {
 }
 
 vim_pane=""
-if [[ "$MODE" != "existing" ]]; then
+if [[ "$MODE" == "float" || "$MODE" == "split" ]]; then
   while IFS= read -r pane; do
     [[ "$pane" != "$SOURCE_PANE" ]] || continue
     if [[ -n "$(find_nvim_pids_for_pane "$pane")" ]]; then
@@ -170,6 +173,10 @@ else
     "$SCRIPT_DIR/new_float_pane.sh" "$SOURCE_PANE" \
       -x "$fw" -y "$fh" -X "$(( win_w - fw - 1 ))" -Y 1 \
       -c "$WORKDIR" nvim --listen "$nvim_server" >/dev/null
+  elif [[ "$MODE" == "window" ]]; then
+    # -a: right after the source pane's window; -t takes a window, not a pane.
+    tmux new-window -a -t "$(tmux display-message -p -t "$SOURCE_PANE" '#{window_id}')" -n capture \
+      -c "$WORKDIR" nvim --listen "$nvim_server"
   else
     tmux split-window "$split_flag" -t "$SOURCE_PANE" -c "$WORKDIR" nvim --listen "$nvim_server"
   fi
