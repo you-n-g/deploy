@@ -3,6 +3,7 @@ set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$script_dir/lib.sh"
+source "$script_dir/../script/nvim_pane_lib.sh"
 
 # MODE: replace overwrites msg.md (the default), append adds the response at
 # its end after a --- rule. prefix + C-o picks one from a menu.
@@ -25,9 +26,16 @@ fail() {
 
 source_root="$(tmux display-message -p -t "$source_pane" '#{pane_pid}' 2>/dev/null)" ||
   fail "source pane does not resolve: $source_pane"
-agent="$(_find_ai_pid "$source_root")" || fail "source pane is not a live AI pane: $source_pane"
-agent_pid="${agent%% *}"
-agent_kind="${agent##* }"
+# An AI pane gives its last response; a Vim pane its visual selection, or the
+# whole buffer outside visual mode (e.g. a news note to discuss elsewhere).
+if agent="$(_find_ai_pid "$source_root")"; then
+  agent_pid="${agent%% *}"
+  agent_kind="${agent##* }"
+elif nvim_pid="$(find_nvim_pids_for_pane "$source_pane" | head -n 1)" && [[ -n "$nvim_pid" ]]; then
+  agent_kind="vim"
+else
+  fail "source pane is neither an AI pane nor a Vim pane: $source_pane"
+fi
 
 # The vault root, whichever note the learn session happens to have open: the
 # active pane's directory moves with it (Reading/news, …).
@@ -71,17 +79,28 @@ copy_claude() {
   tmux load-buffer -b "claude-last-message-${source_pane#%}" "$response_file"
 }
 
+# A Vim pane: its visual selection, or the whole buffer (vim_selection_or_buffer.lua,
+# run in that nvim over its RPC socket).
+copy_vim() {
+  local server
+  server="$(nvim_server_for_pid "$nvim_pid")" || fail "no RPC socket for nvim $nvim_pid in $source_pane"
+  nvim --server "$server" --remote-expr "luaeval('dofile(\"$script_dir/vim_selection_or_buffer.lua\")')" \
+    >"$response_file" || fail "nvim did not return the text"
+  [[ -s "$response_file" ]] || fail "the Vim buffer / selection is empty"
+}
+
 case "$agent_kind" in
   codex) copy_codex ;;
   claude) copy_claude ;;
+  vim) copy_vim ;;
   *) fail "unsupported AI agent in $source_pane: $agent_kind" ;;
 esac
 if [[ "$mode" == append && -s "$target_file" ]]; then
   # A Markdown rule between responses (blank lines around it, so it is not
   # read as a setext heading underline).
   { printf '\n\n---\n\n'; cat "$response_file"; } >>"$target_file" || fail "cannot append to $target_file"
-  tmux display-message "Appended latest $agent_kind response to $target_file"
+  tmux display-message "Appended latest $agent_kind text to $target_file"
 else
   cp "$response_file" "$target_file" || fail "cannot write $target_file"
-  tmux display-message "Copied latest $agent_kind response to $target_file"
+  tmux display-message "Copied latest $agent_kind text to $target_file"
 fi
