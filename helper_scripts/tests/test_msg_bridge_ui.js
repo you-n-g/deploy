@@ -11,31 +11,51 @@ const source = fs.readFileSync(path.join(__dirname, '../bin/msg-bridge'), 'utf8'
 
 function element(tagName = 'div') {
   return {
-    tagName, value: '', hidden: true, disabled: false, dataset: {}, children: [], handlers: {}, listenerOptions: {},
+    tagName, style: {}, scrollHeight: 96, value: '', hidden: true, disabled: false, dataset: {}, children: [], handlers: {}, listenerOptions: {},
     addEventListener(event, handler, options) { this.handlers[event] = handler; this.listenerOptions[event] = options; },
-    focus() {}, querySelector() { return { disabled: false }; },
-    querySelectorAll() { return this.children.flatMap((child) => [...(child.tagName === 'button' ? [child] : []), ...child.querySelectorAll()]); },
-    replaceChildren(...children) { this.children = children; },
-    append(...children) { this.children.push(...children); },
+    focus() {}, scrollIntoView() {},
+    querySelector(selector) {
+      for (const child of this.children) {
+        if (selector.startsWith('.') ? (child.className || '').split(' ').includes(selector.slice(1)) : child.tagName === selector) return child;
+        const found = child.querySelector(selector);
+        if (found.tagName) return found;
+      }
+      return { disabled: false };
+    },
+    querySelectorAll(selector) { return this.children.flatMap((child) => [...(selector.split(', ').includes(child.tagName) ? [child] : []), ...child.querySelectorAll(selector)]); },
+    replaceChildren(...children) { this.children = []; this.append(...children); },
+    append(...children) { children.forEach((child) => { child.parent = this; this.children.push(child); }); },
     insertBefore(child, before) {
-      this.children = this.children.filter((item) => item !== child);
+      if (child.parent) child.parent.children = child.parent.children.filter((item) => item !== child);
+      child.parent = this;
       const index = before === null ? this.children.length : this.children.indexOf(before);
       this.children.splice(index, 0, child);
     },
-    getBoundingClientRect() { return { top: 0, bottom: 400, height: 400 }; },
+    getBoundingClientRect() { return { top: 0, bottom: 400, height: 400, left: 0, right: 400 }; },
     setPointerCapture() {},
   };
 }
 
+function favoriteBox(browser, groupId = 0) {
+  return browser.elements['#favorite-list'].children.find((box) => box.dataset.groupId === String(groupId));
+}
+function favoriteContainer(browser, groupId = 0) { return favoriteBox(browser, groupId).querySelector('.favorite-group-items'); }
+function favoriteRows(browser) { return browser.elements['#favorite-list'].children.flatMap((box) => box.querySelector('.favorite-group-items').children); }
+
 function response(body, status = 200) {
+  if (Array.isArray(body.favorites)) body.favorites = body.favorites.map((entry) => ({ group_id: 0, group_position: null, ...entry }));
+  if (typeof body.id === 'number' && 'content' in body) body = { group_id: 0, group_position: null, ...body };
+  if (body.favorite_groups && !body.favorite_group_order) body.favorite_group_order = [0, ...body.favorite_groups.map((group) => group.id)];
   return { ok: status < 400, status, json: async () => body, text: async () => String(body) };
 }
 
 async function page(exchange, historyHangs = false, initialState = { authenticated: true, messages: [], saved: [] }) {
-  initialState = { favorites: [], ...initialState };
+  initialState = { favorites: [], favorite_groups: [], ...initialState };
+  initialState.favorite_group_order = initialState.favorite_group_order || [0, ...initialState.favorite_groups.map((group) => group.id)];
+  initialState.favorites = initialState.favorites.map((entry) => ({ group_id: 0, group_position: null, ...entry }));
   const elements = {};
   for (const name of ['sender', 'login', 'account', 'logout', 'password', 'message', 'status',
-    'workspace', 'history-list', 'history-status', 'refresh-history', 'send-draft', 'send-submit', 'send-left', 'save-message', 'saved-list', 'favorite-list', 'initial-state']) {
+    'workspace', 'history-list', 'history-status', 'refresh-history', 'send-draft', 'send-submit', 'send-left', 'save-message', 'saved-list', 'favorite-list', 'favorite-new-group', 'favorite-new-open', 'favorite-new-editor', 'favorite-new-name', 'favorite-new-save', 'favorite-new-cancel', 'initial-state']) {
     elements[`#${name}`] = element();
   }
   elements['#initial-state'].content = { textContent: JSON.stringify(initialState) };
@@ -45,7 +65,7 @@ async function page(exchange, historyHangs = false, initialState = { authenticat
   vm.runInNewContext(source, {
     document: { querySelector: (name) => elements[name], createElement: element },
     crypto: webcrypto, AbortSignal, TypeError,
-    window: { innerHeight: 800, scrollBy() {} },
+    window: { innerHeight: 800, scrollBy() {}, addEventListener() {} },
     setTimeout: (resolve, delay) => {
       if (delay !== 400) return setImmediate(resolve);
       const id = {};
@@ -58,7 +78,7 @@ async function page(exchange, historyHangs = false, initialState = { authenticat
       if (url.endsWith('/session')) return response({ authenticated: true });
       if (url.endsWith('/messages') && options.method === 'GET') {
         if (++historyLoads > 0 && historyHangs) return new Promise(() => {});
-        return response({ messages: [], saved: [], favorites: [] });
+        return response({ messages: [], saved: [], favorites: [], favorite_groups: [] });
       }
       return exchange(url, options);
     },
@@ -359,7 +379,7 @@ test('history left swipe restores the draft and right swipe favorites without se
     } else {
       assert.equal(browser.elements['#message'].value, 'current draft');
       assert.equal(browser.calls.length, 1);
-      assert.equal(browser.elements['#favorite-list'].children[0].children[0].children[1].textContent, 'history text');
+      assert.equal(favoriteRows(browser)[0].children[0].children[1].textContent, 'history text');
     }
   }
 });
@@ -378,16 +398,16 @@ test('favorite can be sent repeatedly with fresh ids and removed independently',
     return response({ status: 'sent', receivers: 1, message_id: ids.length });
   }, true, { authenticated: true, messages: [], saved: [], favorites: [{ id: 7, content: 'favorite text' }] });
   browser.elements['#message'].value = 'keep draft';
-  const row = browser.elements['#favorite-list'].children[0];
+  const row = favoriteRows(browser)[0];
   await row.children[0].handlers.click();
   await row.children[0].handlers.click();
   assert.equal(ids.length, 2);
   assert.notEqual(ids[0], ids[1]);
-  assert.equal(browser.elements['#favorite-list'].children.length, 1);
+  assert.equal(favoriteRows(browser).length, 1);
   assert.equal(row.children.length, 1);
   row.children[0].handlers.touchstart(touchEvent([finger(100, 100)]));
   await row.children[0].handlers.touchend(touchEvent([], [finger(150, 100)]));
-  assert.equal(browser.elements['#favorite-list'].children.length, 0);
+  assert.equal(favoriteRows(browser).length, 0);
   assert.equal(browser.elements['#message'].value, 'keep draft');
 });
 
@@ -402,7 +422,7 @@ test('failed favorite leaves history intact and never sends', async () => {
   await item.handlers.click({ detail: 1 });
   assert.equal(browser.calls.length, 1);
   assert.equal(browser.elements['#history-list'].children.length, 1);
-  assert.equal(browser.elements['#favorite-list'].children.length, 0);
+  assert.equal(favoriteRows(browser).length, 0);
   assert.match(browser.elements['#status'].textContent, /favorite failed/);
 });
 
@@ -504,7 +524,7 @@ test('favorite single thumb left swipe edits without sending or removing the fav
     browser.elements['#message'].value = draft;
     let focused = false;
     browser.elements['#message'].focus = () => { focused = true; };
-    const item = browser.elements['#favorite-list'].children[0].children[0];
+    const item = favoriteRows(browser)[0].children[0];
     item.handlers.touchstart(touchEvent([finger(100, 100)]));
     const early = touchEvent([finger(92, 106)]);
     item.handlers.touchmove(early);
@@ -515,7 +535,7 @@ test('favorite single thumb left swipe edits without sending or removing the fav
     await item.handlers.click({ detail: 1 });
     assert.equal(browser.elements['#message'].value, draft ? 'current draft\nfavorite text' : 'favorite text');
     assert.equal(focused, true);
-    assert.equal(browser.elements['#favorite-list'].children.length, 1);
+    assert.equal(favoriteRows(browser).length, 1);
     assert.equal(browser.calls.length, 0);
   }
 });
@@ -525,14 +545,14 @@ test('favorite vertical scrolling never sends or removes', async () => {
     const browser = await page(() => { throw new Error('Gesture must not request'); }, true, {
       authenticated: true, messages: [], saved: [], favorites: [{ id: 7, content: 'favorite text' }],
     });
-    const item = browser.elements['#favorite-list'].children[0].children[0];
+    const item = favoriteRows(browser)[0].children[0];
     item.handlers.touchstart(touchEvent([finger(100, 100)]));
     item.handlers.touchmove(touchEvent([finger(x, y)]));
     assert.equal(item.dataset.swipe, undefined);
     await item.handlers.touchend(touchEvent([], [finger(x, y)]));
     await item.handlers.click({ detail: 1 });
     assert.equal(browser.elements['#message'].value, '');
-    assert.equal(browser.elements['#favorite-list'].children.length, 1);
+    assert.equal(favoriteRows(browser).length, 1);
     assert.equal(browser.calls.length, 0);
   }
 });
@@ -541,7 +561,7 @@ test('favorite vertical scrolling never sends or removes', async () => {
 async function sortableFavorites(exchange) {
   const favorites = [1, 2, 3].map((id) => ({ id, content: `favorite ${id}` }));
   const browser = await page(exchange, true, { authenticated: true, messages: [], saved: [], favorites });
-  const list = browser.elements['#favorite-list'];
+  const list = favoriteContainer(browser);
   for (const row of list.children) row.getBoundingClientRect = () => ({ top: list.children.indexOf(row) * 60, height: 60 });
   return browser;
 }
@@ -554,7 +574,7 @@ test('long press drags favorites up and down and persists the resulting order wi
       return response({ favorites: expected.map((id) => ({ id, content: `favorite ${id}` })) });
     });
     browser.elements['#message'].value = 'keep draft';
-    const list = browser.elements['#favorite-list'];
+    const list = favoriteContainer(browser);
     const item = list.children[index].children[0];
     const startY = index * 60 + 30;
     item.handlers.touchstart(touchEvent([finger(100, startY)]));
@@ -565,7 +585,7 @@ test('long press drags favorites up and down and persists the resulting order wi
     assert.equal(move.prevented, true);
     await item.handlers.touchend(touchEvent([], [finger(100, y)]));
     await item.handlers.click({ detail: 1 });
-    assert.deepEqual(list.children.map((row) => Number(row.dataset.favoriteId)), expected);
+    assert.deepEqual(favoriteContainer(browser).children.map((row) => Number(row.dataset.favoriteId)), expected);
     assert.equal(browser.calls.length, 1);
     assert.equal(browser.elements['#message'].value, 'keep draft');
     assert.equal(browser.elements['#send-submit'].disabled, false);
@@ -575,7 +595,7 @@ test('long press drags favorites up and down and persists the resulting order wi
 test('cancelled or unchanged long press never saves or sends', async () => {
   for (const cancel of [true, false]) {
     const browser = await sortableFavorites(() => { throw new Error('Must not request'); });
-    const list = browser.elements['#favorite-list'];
+    const list = favoriteContainer(browser);
     const item = list.children[0].children[0];
     item.handlers.touchstart(touchEvent([finger(100, 30)]));
     browser.hold();
@@ -586,7 +606,7 @@ test('cancelled or unchanged long press never saves or sends', async () => {
       await item.handlers.touchend(touchEvent([], [finger(100, 30)]));
     }
     await item.handlers.click({ detail: 1 });
-    assert.deepEqual(list.children.map((row) => Number(row.dataset.favoriteId)), [1, 2, 3]);
+    assert.deepEqual(favoriteContainer(browser).children.map((row) => Number(row.dataset.favoriteId)), [1, 2, 3]);
     assert.equal(browser.calls.length, 0);
     assert.equal(browser.elements['#send-submit'].disabled, false);
   }
@@ -594,20 +614,20 @@ test('cancelled or unchanged long press never saves or sends', async () => {
 
 test('failed order save reports the error and restores the displayed order', async () => {
   const browser = await sortableFavorites(async () => response('收藏列表已改变，请刷新后重新排序', 409));
-  const list = browser.elements['#favorite-list'];
+  const list = favoriteContainer(browser);
   const item = list.children[0].children[0];
   item.handlers.touchstart(touchEvent([finger(100, 30)]));
   browser.hold();
   item.handlers.touchmove(touchEvent([finger(100, 210)]));
   await item.handlers.touchend(touchEvent([], [finger(100, 210)]));
-  assert.deepEqual(list.children.map((row) => Number(row.dataset.favoriteId)), [1, 2, 3]);
+  assert.deepEqual(favoriteContainer(browser).children.map((row) => Number(row.dataset.favoriteId)), [1, 2, 3]);
   assert.match(browser.elements['#status'].textContent, /刷新/);
   assert.equal(browser.elements['#status'].dataset.error, 'true');
 });
 
 test('moving before the hold threshold remains a scroll instead of a reorder', async () => {
   const browser = await sortableFavorites(() => { throw new Error('Must not request'); });
-  const item = browser.elements['#favorite-list'].children[0].children[0];
+  const item = favoriteRows(browser)[0].children[0];
   item.handlers.touchstart(touchEvent([finger(100, 30)]));
   const move = touchEvent([finger(100, 50)]);
   item.handlers.touchmove(move);
@@ -616,5 +636,190 @@ test('moving before the hold threshold remains a scroll instead of a reorder', a
   assert.equal(item.dataset.dragging, undefined);
   await item.handlers.touchend(touchEvent([], [finger(100, 210)]));
   await item.handlers.click({ detail: 1 });
+  assert.equal(browser.calls.length, 0);
+});
+
+
+const grouped = {
+  authenticated: true, messages: [], saved: [], favorite_groups: [{ id: 5, name: 'Work' }], favorites: [
+    { id: 1, content: 'ungrouped', group_id: 0, group_position: null },
+    { id: 2, content: 'work A', group_id: 5, group_position: 1 },
+    { id: 3, content: 'work B', group_id: 5, group_position: 0 },
+  ],
+};
+
+function swipeGroup(browser, id) {
+  const heading = favoriteBox(browser, id).children[0];
+  heading.handlers.touchstart(touchEvent([finger(120, 20)]));
+  heading.handlers.touchmove(touchEvent([finger(40, 20)]));
+  heading.handlers.touchend(touchEvent([], [finger(40, 20)]));
+}
+
+test('group boxes show counts and compact cards without the legacy management bar', async () => {
+  const browser = await page(() => { throw new Error('Rendering must not request'); }, true, grouped);
+  assert.equal(favoriteBox(browser, 0).children[0].children[0].textContent, '未分组 · 1');
+  assert.equal(favoriteBox(browser, 5).children[0].children[0].textContent, 'Work · 2');
+  assert.deepEqual(favoriteContainer(browser, 5).children.map((row) => Number(row.dataset.favoriteId)), [3, 2]);
+  assert.equal(favoriteRows(browser)[0].children[0].children[0].textContent, '');
+  assert.equal(browser.calls.length, 0);
+});
+
+test('swiping a group title opens rename without sending or changing the draft', async () => {
+  const browser = await page(async (url, options) => {
+    assert.equal(url, './api/favorite-groups/5');
+    assert.equal(options.method, 'PATCH');
+    assert.deepEqual(JSON.parse(options.body), { name: 'Research' });
+    return response({ favorites: grouped.favorites, favorite_groups: [{ id: 5, name: 'Research' }] });
+  }, true, grouped);
+  browser.elements['#message'].value = 'keep draft';
+  let editor = favoriteBox(browser, 5).querySelector('.group-rename-editor');
+  assert.equal(editor.hidden, true);
+  swipeGroup(browser, 5);
+  assert.equal(editor.hidden, false);
+  assert.equal(editor.children[0].value, 'Work');
+  assert.equal(browser.calls.length, 0);
+  editor.children[0].value = 'Research';
+  await editor.children[1].handlers.click();
+  assert.equal(favoriteBox(browser, 5).children[0].children[0].textContent, 'Research · 2');
+  assert.equal(favoriteBox(browser, 5).querySelector('.group-rename-editor').hidden, true);
+  assert.equal(browser.elements['#message'].value, 'keep draft');
+});
+
+test('reserved group cannot be renamed and cancelling rename makes no request', async () => {
+  const browser = await page(() => { throw new Error('Cancel must not request'); }, true, grouped);
+  swipeGroup(browser, 0);
+  assert.equal(favoriteBox(browser, 0).children.length, 2);
+  swipeGroup(browser, 5);
+  const editor = favoriteBox(browser, 5).querySelector('.group-rename-editor');
+  editor.children[0].value = 'unsaved';
+  editor.children[2].handlers.click();
+  assert.equal(editor.hidden, true);
+  swipeGroup(browser, 5);
+  assert.equal(editor.children[0].value, 'Work');
+  assert.equal(browser.calls.length, 0);
+});
+
+test('group reorder submits only visible ids and preserves the other groups', async () => {
+  const browser = await page(async (url, options) => {
+    assert.equal(url, './api/favorites/order');
+    assert.deepEqual(JSON.parse(options.body), { ids: [2, 3], group_id: 5 });
+    return response({ favorites: grouped.favorites.map((entry) => ({ ...entry,
+      group_position: entry.id === 2 ? 0 : entry.id === 3 ? 1 : null })) });
+  }, true, grouped);
+  favoriteBox(browser, 0).getBoundingClientRect = () => ({ top: -500, bottom: -100, left: 0, right: 400, height: 400 });
+  const list = favoriteContainer(browser, 5);
+  for (const row of list.children) row.getBoundingClientRect = () => ({ top: list.children.indexOf(row) * 60, height: 60 });
+  const item = list.children[0].children[0];
+  item.handlers.touchstart(touchEvent([finger(100, 30)]));
+  browser.hold();
+  item.handlers.touchmove(touchEvent([finger(100, 180)]));
+  await item.handlers.touchend(touchEvent([], [finger(100, 180)]));
+  assert.deepEqual(favoriteContainer(browser, 5).children.map((row) => Number(row.dataset.favoriteId)), [2, 3]);
+  assert.deepEqual(favoriteRows(browser).map((row) => Number(row.dataset.favoriteId)), [1, 2, 3]);
+});
+
+test('failed rename keeps the entered name editable and Enter retries', async () => {
+  const browser = await page(async () => response('分组名称已存在', 409), true, grouped);
+  swipeGroup(browser, 5);
+  const editor = favoriteBox(browser, 5).querySelector('.group-rename-editor');
+  const input = editor.children[0];
+  input.value = 'duplicate';
+  await editor.children[1].handlers.click();
+  assert.equal(editor.hidden, false);
+  assert.equal(input.value, 'duplicate');
+  assert.equal(input.disabled, false);
+  assert.match(browser.elements['#status'].textContent, /已存在/);
+  await input.handlers.keydown({ key: 'Enter', preventDefault() {} });
+  assert.equal(browser.calls.length, 2);
+  input.handlers.keydown({ key: 'Escape', preventDefault() {} });
+  assert.equal(editor.hidden, true);
+});
+
+function layoutGroupBoxes(browser) {
+  for (const [index, box] of browser.elements['#favorite-list'].children.entries()) {
+    box.getBoundingClientRect = () => ({ top: index * 200, bottom: index * 200 + 180, height: 180, left: 0, right: 400 });
+    for (const [rowIndex, row] of box.querySelector('.favorite-group-items').children.entries()) row.getBoundingClientRect = () => ({ top: index * 200 + 20 + rowIndex * 60, height: 40 });
+  }
+  browser.elements['#favorite-new-group'].getBoundingClientRect = () => ({ top: 500, bottom: 600, height: 100, left: 0, right: 400 });
+}
+
+test('dragging a message into another box saves membership and insertion order in one request', async () => {
+  const browser = await page(async (url, options) => {
+    assert.equal(url, './api/favorites/move');
+    assert.deepEqual(JSON.parse(options.body), { ids: [1], group_id: 5, order: [1, 3, 2] });
+    return response({ favorite_groups: grouped.favorite_groups, favorites: grouped.favorites.map((entry) => ({ ...entry, group_id: 5, group_position: entry.id === 1 ? 0 : entry.id === 3 ? 1 : 2 })) });
+  }, true, grouped);
+  layoutGroupBoxes(browser);
+  browser.elements['#message'].value = 'keep draft';
+  const item = favoriteContainer(browser, 0).children[0].children[0];
+  item.handlers.touchstart(touchEvent([finger(100, 30)]));
+  browser.hold();
+  item.handlers.touchmove(touchEvent([finger(100, 210)]));
+  assert.equal(favoriteBox(browser, 5).dataset.drop, 'true');
+  await item.handlers.touchend(touchEvent([], [finger(100, 210)]));
+  await item.handlers.click({ detail: 1 });
+  assert.equal(favoriteContainer(browser, 0).children.length, 0);
+  assert.deepEqual(favoriteContainer(browser, 5).children.map((row) => Number(row.dataset.favoriteId)), [1, 3, 2]);
+  assert.equal(browser.calls.length, 1);
+  assert.equal(browser.elements['#message'].value, 'keep draft');
+});
+
+test('dropping on new group waits for a name before atomically creating and moving', async () => {
+  const browser = await page(async (url, options) => {
+    assert.equal(url, './api/favorite-groups');
+    assert.deepEqual(JSON.parse(options.body), { name: 'New', ids: [1] });
+    return response({ favorite_groups: [...grouped.favorite_groups, { id: 9, name: 'New' }], favorites: grouped.favorites.map((entry) => ({ ...entry, group_id: entry.id === 1 ? 9 : entry.group_id })) });
+  }, true, grouped);
+  layoutGroupBoxes(browser);
+  const item = favoriteContainer(browser, 0).children[0].children[0];
+  item.handlers.touchstart(touchEvent([finger(100, 30)]));
+  browser.hold();
+  item.handlers.touchmove(touchEvent([finger(100, 550)]));
+  await item.handlers.touchend(touchEvent([], [finger(100, 550)]));
+  assert.equal(browser.calls.length, 0);
+  assert.equal(browser.elements['#favorite-new-editor'].hidden, false);
+  assert.equal(favoriteContainer(browser, 0).children.length, 1);
+  browser.elements['#favorite-new-name'].value = 'New';
+  await browser.elements['#favorite-new-save'].handlers.click();
+  assert.equal(favoriteContainer(browser, 9).children.length, 1);
+  assert.equal(browser.elements['#favorite-new-editor'].hidden, true);
+});
+
+test('group title long press reorders entire boxes, including ungrouped', async () => {
+  const browser = await page(async (url, options) => {
+    assert.equal(url, './api/favorite-groups/order');
+    assert.deepEqual(JSON.parse(options.body), { ids: [5, 0] });
+    return response({ favorites: grouped.favorites, favorite_groups: grouped.favorite_groups, favorite_group_order: [5, 0] });
+  }, true, grouped);
+  layoutGroupBoxes(browser);
+  const handle = favoriteBox(browser, 0).children[0];
+  handle.handlers.touchstart(touchEvent([finger(100, 10)]));
+  browser.hold();
+  handle.handlers.touchmove(touchEvent([finger(100, 400)]));
+  await handle.handlers.touchend(touchEvent([], [finger(100, 400)]));
+  await handle.handlers.click({ detail: 1 });
+  assert.deepEqual(browser.elements['#favorite-list'].children.map((box) => Number(box.dataset.groupId)), [5, 0]);
+  assert.equal(favoriteRows(browser).length, 3);
+  assert.equal(browser.calls.length, 1);
+});
+
+test('cancelling a group drag or a new-group drop preserves every message', async () => {
+  const browser = await page(() => { throw new Error('Cancellation must not request'); }, true, grouped);
+  layoutGroupBoxes(browser);
+  const handle = favoriteBox(browser, 0).children[0];
+  handle.handlers.touchstart(touchEvent([finger(100, 10)]));
+  browser.hold();
+  handle.handlers.touchmove(touchEvent([finger(100, 400)]));
+  handle.handlers.touchcancel();
+  assert.deepEqual(browser.elements['#favorite-list'].children.map((box) => Number(box.dataset.groupId)), [0, 5]);
+  layoutGroupBoxes(browser);
+  const item = favoriteContainer(browser, 0).children[0].children[0];
+  item.handlers.touchstart(touchEvent([finger(100, 30)]));
+  browser.hold();
+  item.handlers.touchmove(touchEvent([finger(100, 550)]));
+  await item.handlers.touchend(touchEvent([], [finger(100, 550)]));
+  browser.elements['#favorite-new-cancel'].handlers.click();
+  assert.equal(browser.elements['#favorite-new-editor'].hidden, true);
+  assert.equal(favoriteContainer(browser, 0).children.length, 1);
   assert.equal(browser.calls.length, 0);
 });

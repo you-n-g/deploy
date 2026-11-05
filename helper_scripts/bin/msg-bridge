@@ -60,13 +60,21 @@ WEB_PAGE = r"""<!doctype html>
     </form>
     <div id="account" hidden><button id="logout" type="button">退出登录</button></div>
     <div id="workspace" hidden>
+    <div class="message-column">
     <form id="sender">
       <label for="message">消息</label>
-      <textarea id="message" rows="8" placeholder="在这里输入…" required></textarea>
+      <textarea id="message" rows="3" placeholder="在这里输入…" required></textarea>
       <div class="actions"><button id="send-left" type="submit">发送</button><div class="send-buttons"><button id="save-message" type="button">暂存</button><button id="send-draft" type="button">不回车</button><button id="send-submit" type="submit">发送</button></div></div>
       <p class="key-hint">Enter 发送 · Shift + Enter 换行 · 也支持 Ctrl / ⌘ + Enter</p>
     </form>
-    <aside aria-labelledby="history-heading">
+    <section class="history-panel" aria-labelledby="history-heading">
+      <div class="history-heading"><h2 id="history-heading">历史消息</h2><button id="refresh-history" type="button">刷新</button></div>
+      <p class="history-hint">最近 50 条 · 点击发送 · 左滑编辑 · 右滑收藏</p>
+      <p id="history-status" role="status"></p>
+      <div id="history-list"></div>
+    </section>
+    </div>
+    <aside aria-label="暂存与收藏消息">
       <section class="saved-panel" aria-labelledby="saved-heading">
         <h2 id="saved-heading">暂存消息 · 置顶</h2>
         <p class="history-hint">点击发送 · 左滑编辑 · 右滑或点「删除」移除</p>
@@ -74,13 +82,16 @@ WEB_PAGE = r"""<!doctype html>
       </section>
       <section class="favorite-panel" aria-labelledby="favorite-heading">
         <h2 id="favorite-heading">收藏消息</h2>
-        <p class="history-hint">点击发送 · 左滑编辑 · 右滑取消收藏 · 长按拖动排序</p>
+        <p class="history-hint">点击发送 · 左滑编辑 · 右滑取消收藏 · 长按消息跨组拖动，左滑组标题重命名 · 长按组标题排序</p>
         <div id="favorite-list"></div>
+        <div id="favorite-new-group" class="favorite-group-box favorite-new-group">
+          <button id="favorite-new-open" type="button">＋ 新建分组 · 也可拖入消息</button>
+          <div id="favorite-new-editor" hidden>
+            <input id="favorite-new-name" maxlength="40" placeholder="新分组名称" aria-label="新分组名称">
+            <button id="favorite-new-save" type="button">创建</button><button id="favorite-new-cancel" type="button">取消</button>
+          </div>
+        </div>
       </section>
-      <div class="history-heading"><h2 id="history-heading">历史消息</h2><button id="refresh-history" type="button">刷新</button></div>
-      <p class="history-hint">最近 50 条 · 点击发送 · 左滑编辑 · 右滑收藏</p>
-      <p id="history-status" role="status"></p>
-      <div id="history-list"></div>
     </aside>
     </div>
     <p id="status" role="status" aria-live="polite">正在检查登录状态…</p>
@@ -101,6 +112,12 @@ const draftButton = document.querySelector('#send-draft');
 const saveButton = document.querySelector('#save-message');
 const savedList = document.querySelector('#saved-list');
 const favoriteList = document.querySelector('#favorite-list');
+const favoriteNewGroup = document.querySelector('#favorite-new-group');
+const favoriteNewOpen = document.querySelector('#favorite-new-open');
+const favoriteNewEditor = document.querySelector('#favorite-new-editor');
+const favoriteNewName = document.querySelector('#favorite-new-name');
+const favoriteNewSave = document.querySelector('#favorite-new-save');
+const favoriteNewCancel = document.querySelector('#favorite-new-cancel');
 const loginButton = login.querySelector('button');
 const status = document.querySelector('#status');
 const workspace = document.querySelector('#workspace');
@@ -113,6 +130,9 @@ let historyGeneration = 0;
 let historyEntries = [];
 let savedEntries = [];
 let favoriteEntries = [];
+let favoriteGroups = [];
+let favoriteGroupOrder = [0];
+let pendingGroupFavorites = [];
 let pendingSave = null;
 
 function showSession(authenticated) {
@@ -125,8 +145,13 @@ function showSession(authenticated) {
     historyGeneration++;
     historyList.replaceChildren();
     renderSaved([]);
+    favoriteGroups = [];
+    favoriteGroupOrder = [0];
+    pendingGroupFavorites = [];
+    favoriteNewEditor.hidden = true;
     renderFavorites([]);
   }
+  if (authenticated) resizeMessage();
   (authenticated ? message : password).focus();
 }
 
@@ -182,7 +207,7 @@ function renderHistory(messages) {
   historyStatus.textContent = items.length ? '' : '还没有历史消息。';
 }
 
-function attachGesture(item, label, rightAction, rightKind, rightLabel, leftAction, clickAction, drag = null) {
+function attachGesture(item, label, rightAction, rightKind, rightLabel, leftAction, clickAction, drag = null, leftLabel = '松开编辑') {
   const restingLabel = label.textContent;
   let start = null;
   let suppressClick = false;
@@ -215,7 +240,7 @@ function attachGesture(item, label, rightAction, rightKind, rightLabel, leftActi
     if (!start) return;
     if (dragging) {
       if (event.cancelable) event.preventDefault();
-      drag.move(y);
+      drag.move(x, y);
       // Moving the card in the DOM releases pointer capture in Chromium.
       if (event.pointerType === 'mouse' || event.pointerType === 'pen') item.setPointerCapture(event.pointerId);
       return;
@@ -229,9 +254,9 @@ function attachGesture(item, label, rightAction, rightKind, rightLabel, leftActi
     }
     if (start.axis === 'y') return;
     if (start.axis === 'x' && event.cancelable) event.preventDefault();
-    if (start.axis === 'x' && (dx < 0 || rightAction) && Math.abs(dx) >= 36 && Math.abs(dx) > Math.abs(dy) * 1.1) {
+    if (start.axis === 'x' && (dx < 0 ? leftAction : rightAction) && Math.abs(dx) >= 36 && Math.abs(dx) > Math.abs(dy) * 1.1) {
       item.dataset.swipe = dx > 0 ? rightKind : 'edit';
-      label.textContent = dx > 0 ? rightLabel : '松开编辑';
+      label.textContent = dx > 0 ? rightLabel : leftLabel;
     } else {
       delete item.dataset.swipe;
       label.textContent = restingLabel;
@@ -255,7 +280,7 @@ function attachGesture(item, label, rightAction, rightKind, rightLabel, leftActi
       if (rightAction) return rightAction();
       return;
     }
-    return leftAction();
+    if (leftAction) return leftAction();
   };
   // Touch owns finger gestures; Pointer Events are used only for a pen, avoiding duplicate actions.
   item.addEventListener('touchstart', (event) => {
@@ -324,6 +349,7 @@ function renderSaved(entries) {
 function editMessage(entry) {
   if (button.disabled) return;
   message.value = message.value ? message.value + '\n' + entry.content : entry.content;
+  resizeMessage();
   status.dataset.error = 'false';
   status.textContent = '已放回输入框，可继续编辑。';
   message.focus();
@@ -335,82 +361,247 @@ function editSaved(entry) {
   status.textContent = '已放回输入框，可继续编辑；暂存消息仍然保留。';
 }
 
+function visibleFavorites(groupId) {
+  return favoriteEntries.filter((entry) => entry.group_id === groupId).sort((a, b) => {
+    if (a.group_position === b.group_position) return 0;
+    if (a.group_position === null) return -1;
+    if (b.group_position === null) return 1;
+    return a.group_position - b.group_position;
+  });
+}
+
+async function manageFavoriteGroup(path, payload, method = 'POST') {
+  setBusy(true);
+  historyGeneration++;
+  status.dataset.error = 'false';
+  status.textContent = '正在保存分组…';
+  try {
+    const result = await request(path, payload, 15000, method);
+    favoriteGroups = result.favorite_groups;
+    favoriteGroupOrder = result.favorite_group_order;
+    renderFavorites(result.favorites);
+    pendingGroupFavorites = [];
+    favoriteNewEditor.hidden = true;
+    status.textContent = '分组已保存。';
+  } catch (error) {
+    if (error.status === 401) showSession(false);
+    showError(error);
+    if (isTransportError(error)) status.textContent = '分组保存结果未确认，请刷新核对；消息内容已保留。';
+  } finally {
+    setBusy(false);
+  }
+}
+
+function openFavoriteGroup(ids = []) {
+  pendingGroupFavorites = ids;
+  favoriteNewEditor.hidden = false;
+  favoriteNewName.value = '';
+  favoriteNewName.focus();
+  favoriteNewGroup.scrollIntoView({ block: 'nearest' });
+  status.textContent = ids.length ? '输入新分组名称，创建后移入拖来的消息。' : '输入新分组名称。';
+}
+favoriteNewOpen.addEventListener('click', () => openFavoriteGroup());
+favoriteNewCancel.addEventListener('click', () => {
+  pendingGroupFavorites = [];
+  favoriteNewEditor.hidden = true;
+  status.textContent = '已取消新建分组。';
+});
+favoriteNewSave.addEventListener('click', () => manageFavoriteGroup('favorite-groups', { name: favoriteNewName.value, ids: pendingGroupFavorites }));
+
+function scrollFavoriteBoard(y) {
+  if (y < 32) window.scrollBy(0, -16);
+  if (y > window.innerHeight - 32) window.scrollBy(0, 16);
+}
+function clearFavoriteDrop() {
+  for (const box of [...favoriteList.children, favoriteNewGroup]) delete box.dataset.drop;
+}
+
 function renderFavorites(entries) {
   favoriteEntries = entries;
-  const rows = entries.map((entry) => {
-    const row = document.createElement('div');
-    row.className = 'favorite-row';
-    row.dataset.favoriteId = entry.id;
-    const item = document.createElement('button');
-    item.type = 'button';
-    item.className = 'history-item favorite-item';
-    item.disabled = button.disabled;
-    const label = document.createElement('span');
-    label.className = 'gesture-label';
-    label.textContent = '';
-    const content = document.createElement('span');
-    content.className = 'history-content';
-    content.textContent = entry.content;
-    item.append(label, content);
-    let original;
-    const restore = () => {
-      renderFavorites(original);
-      setBusy(false);
-    };
-    attachGesture(item, label, () => changeFavorite(entry, true), 'delete', '松开取消收藏',
-      () => editMessage(entry), () => sendContent(entry.content, false), {
+  const byId = new Map([{ id: 0, name: '未分组' }, ...favoriteGroups].map((group) => [group.id, group]));
+  const boxes = favoriteGroupOrder.map((groupId) => {
+    const group = byId.get(groupId);
+    const box = document.createElement('section');
+    box.className = 'favorite-group-box';
+    box.dataset.groupId = String(groupId);
+    const heading = document.createElement('button');
+    heading.type = 'button';
+    heading.className = 'favorite-group-handle';
+    heading.title = groupId === 0 ? '长按标题，上下拖动分组排序' : '左滑重命名，长按标题拖动排序';
+    heading.disabled = button.disabled;
+    const title = document.createElement('span');
+    const members = visibleFavorites(groupId);
+    title.textContent = `${group.name} · ${members.length}`;
+    heading.append(title);
+    const body = document.createElement('div');
+    body.className = 'favorite-group-items';
+    box.append(heading, body);
+    let rename = null;
+    if (groupId !== 0) {
+      const editor = document.createElement('div');
+      editor.className = 'group-rename-editor';
+      editor.hidden = true;
+      const input = document.createElement('input');
+      input.maxLength = 40;
+      input.ariaLabel = '新的分组名称';
+      const save = document.createElement('button');
+      save.type = 'button';
+      save.textContent = '保存';
+      const cancel = document.createElement('button');
+      cancel.type = 'button';
+      cancel.textContent = '取消';
+      editor.append(input, save, cancel);
+      box.insertBefore(editor, body);
+      rename = () => {
+        input.value = group.name;
+        editor.hidden = false;
+        input.focus();
+      };
+      const submitRename = () => manageFavoriteGroup(`favorite-groups/${groupId}`, { name: input.value }, 'PATCH');
+      save.addEventListener('click', submitRename);
+      cancel.addEventListener('click', () => { editor.hidden = true; });
+      input.addEventListener('keydown', (event) => {
+        if (event.isComposing) return;
+        if (event.key === 'Enter') { event.preventDefault(); return submitRename(); }
+        if (event.key === 'Escape') { event.preventDefault(); editor.hidden = true; }
+      });
+    }
+    let originalGroupOrder;
+    attachGesture(heading, title, null, null, null, rename,
+      () => { status.textContent = groupId === 0 ? '长按分组标题后上下拖动排序。' : '左滑分组标题可重命名，长按后上下拖动排序。'; }, {
         start() {
-          original = favoriteEntries.slice();
+          originalGroupOrder = favoriteGroupOrder.slice();
           historyGeneration++;
           setBusy(true);
-          item.disabled = false;
-          item.dataset.dragging = 'true';
+          heading.disabled = false;
+          box.dataset.dragging = 'true';
           status.dataset.error = 'false';
-          status.textContent = '拖动收藏消息调整顺序，松开保存。';
+          status.textContent = '上下拖动整个分组，松开保存顺序。';
         },
-        move(y) {
-          if (y < 32) window.scrollBy(0, -16);
-          if (y > window.innerHeight - 32) window.scrollBy(0, 16);
+        move(x, y) {
+          scrollFavoriteBoard(y);
           const before = Array.from(favoriteList.children).find((other) => {
             const rect = other.getBoundingClientRect();
-            return other !== row && y < rect.top + rect.height / 2;
+            return other !== box && y < rect.top + rect.height / 2;
           });
-          favoriteList.insertBefore(row, before || null);
-          const byId = new Map(original.map((entry) => [entry.id, entry]));
-          favoriteEntries = Array.from(favoriteList.children).map((row) => byId.get(Number(row.dataset.favoriteId)));
+          favoriteList.insertBefore(box, before || null);
         },
         async end() {
-          delete item.dataset.dragging;
-          if (favoriteEntries.every((entry, index) => entry.id === original[index].id)) {
-            restore();
-            status.textContent = '收藏顺序未改变。';
+          const ids = Array.from(favoriteList.children).map((box) => Number(box.dataset.groupId));
+          if (ids.every((id, index) => id === originalGroupOrder[index])) {
+            renderFavorites(favoriteEntries);
+            setBusy(false);
+            status.textContent = '分组顺序未改变。';
             return;
           }
-          item.disabled = true;
-          status.textContent = '正在保存收藏顺序…';
-          try {
-            const result = await request('favorites/order', { ids: favoriteEntries.map((entry) => entry.id) });
-            renderFavorites(result.favorites);
-            status.textContent = '收藏顺序已保存。';
-          } catch (error) {
-            renderFavorites(original);
-            if (error.status === 401) showSession(false);
-            showError(error);
-            if (isTransportError(error)) status.textContent = '排序保存结果未确认，请刷新核对。';
-          } finally {
-            setBusy(false);
-          }
+          await manageFavoriteGroup('favorite-groups/order', { ids });
+          // A rejected or uncertain save displays the original known order.
+          renderFavorites(favoriteEntries);
         },
         cancel() {
-          restore();
-          status.textContent = '已取消排序。';
+          renderFavorites(favoriteEntries);
+          setBusy(false);
+          status.textContent = '已取消分组排序。';
         },
-      });
-    item.addEventListener('contextmenu', (event) => event.preventDefault());
-    row.append(item);
-    return row;
+      }, '松开重命名');
+    heading.addEventListener('contextmenu', (event) => event.preventDefault());
+    const rows = members.map((entry) => {
+      const row = document.createElement('div');
+      row.className = 'favorite-row';
+      row.dataset.favoriteId = entry.id;
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'history-item favorite-item';
+      item.disabled = button.disabled;
+      const label = document.createElement('span');
+      label.className = 'gesture-label';
+      label.textContent = '';
+      const content = document.createElement('span');
+      content.className = 'history-content';
+      content.textContent = entry.content;
+      item.append(label, content);
+      let original;
+      let target;
+      let ordered;
+      const restore = () => {
+        clearFavoriteDrop();
+        renderFavorites(original);
+        setBusy(false);
+      };
+      attachGesture(item, label, () => changeFavorite(entry, true), 'delete', '松开取消收藏',
+        () => editMessage(entry), () => sendContent(entry.content, false), {
+          start() {
+            original = favoriteEntries.slice();
+            target = groupId;
+            ordered = members.map((entry) => entry.id);
+            historyGeneration++;
+            setBusy(true);
+            item.disabled = false;
+            item.dataset.dragging = 'true';
+            status.dataset.error = 'false';
+            status.textContent = '拖入分组框调整消息，或拖到「新建分组」。';
+          },
+          move(x, y) {
+            scrollFavoriteBoard(y);
+            clearFavoriteDrop();
+            const destination = [...favoriteList.children, favoriteNewGroup].find((other) => {
+              const rect = other.getBoundingClientRect();
+              return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+            });
+            if (!destination) { target = null; return; }
+            destination.dataset.drop = 'true';
+            if (destination === favoriteNewGroup) { target = 'new'; return; }
+            target = Number(destination.dataset.groupId);
+            const container = destination.querySelector('.favorite-group-items');
+            const before = Array.from(container.children).find((other) => {
+              const rect = other.getBoundingClientRect();
+              return other !== row && y < rect.top + rect.height / 2;
+            });
+            container.insertBefore(row, before || null);
+            ordered = Array.from(container.children).map((row) => Number(row.dataset.favoriteId));
+          },
+          async end() {
+            clearFavoriteDrop();
+            delete item.dataset.dragging;
+            if (target === 'new') {
+              restore();
+              openFavoriteGroup([entry.id]);
+              return;
+            }
+            if (target === null) { restore(); status.textContent = '已取消移动。'; return; }
+            if (target !== groupId) {
+              await manageFavoriteGroup('favorites/move', { ids: [entry.id], group_id: target, order: ordered });
+              renderFavorites(favoriteEntries);
+              return;
+            }
+            if (ordered.every((id, index) => id === members[index].id)) {
+              restore();
+              status.textContent = '收藏顺序未改变。';
+              return;
+            }
+            item.disabled = true;
+            status.textContent = '正在保存收藏顺序…';
+            try {
+              const result = await request('favorites/order', { ids: ordered, group_id: groupId });
+              renderFavorites(result.favorites);
+              status.textContent = '收藏顺序已保存。';
+            } catch (error) {
+              renderFavorites(original);
+              if (error.status === 401) showSession(false);
+              showError(error);
+              if (isTransportError(error)) status.textContent = '排序保存结果未确认，请刷新核对。';
+            } finally { setBusy(false); }
+          },
+          cancel() { restore(); status.textContent = '已取消排序。'; },
+        });
+      item.addEventListener('contextmenu', (event) => event.preventDefault());
+      row.append(item);
+      return row;
+    });
+    body.append(...rows);
+    return box;
   });
-  favoriteList.replaceChildren(...rows);
+  favoriteList.replaceChildren(...boxes);
 }
 
 function favoriteMessage(entry) {
@@ -428,7 +619,7 @@ async function changeFavorite(entry, removing) {
       await request(`favorites/${entry.id}`, undefined, 15000, 'DELETE');
       renderFavorites(favoriteEntries.filter((item) => item.id !== entry.id));
     } else {
-      const result = await request('favorites', { message: entry.content });
+      const result = await request('favorites', { message: entry.content, group_id: 0 });
       if (!favoriteEntries.some((item) => item.id === result.id)) renderFavorites([result, ...favoriteEntries]);
     }
     status.textContent = removing ? '已取消收藏。' : '已收藏，可在收藏区反复发送。';
@@ -468,8 +659,8 @@ function newRequestId() {
 }
 
 function setBusy(busy) {
-  for (const control of [button, leftButton, draftButton, saveButton, logout, refreshHistory]) control.disabled = busy;
-  for (const list of [historyList, savedList, favoriteList]) list.querySelectorAll('button').forEach((item) => { item.disabled = busy; });
+  for (const control of [button, leftButton, draftButton, saveButton, logout, refreshHistory, favoriteNewOpen, favoriteNewName, favoriteNewSave, favoriteNewCancel]) control.disabled = busy;
+  for (const list of [historyList, savedList, favoriteList]) list.querySelectorAll('button, input').forEach((item) => { item.disabled = busy; });
   message.readOnly = busy;
 }
 
@@ -483,6 +674,8 @@ async function loadHistory() {
     if (!signedIn || generation !== historyGeneration) return;
     renderHistory(result.messages);
     renderSaved(result.saved);
+    favoriteGroups = result.favorite_groups;
+    favoriteGroupOrder = result.favorite_group_order;
     renderFavorites(result.favorites);
   } catch (error) {
     if (generation !== historyGeneration) return;
@@ -516,6 +709,8 @@ login.addEventListener('submit', async (event) => {
     status.textContent = '';
     renderHistory(state.messages);
     renderSaved(state.saved);
+    favoriteGroups = state.favorite_groups;
+    favoriteGroupOrder = state.favorite_group_order;
     renderFavorites(state.favorites);
   } catch (error) {
     showError(error);
@@ -590,7 +785,10 @@ async function sendContent(content, clearDraft, submit = true, savedId = null) {
     historyGeneration++;
     renderHistory([{ id: result.message_id, received_at: new Date().toISOString(), content }, ...historyEntries]);
     historyList.scrollTop = 0;
-    if (clearDraft) message.value = '';
+    if (clearDraft) {
+      message.value = '';
+      resizeMessage();
+    }
     if (savedId) renderSaved(savedEntries.filter((entry) => entry.id !== savedId));
     pendingSend = null;
     confirmed = true;
@@ -625,6 +823,7 @@ saveButton.addEventListener('click', async () => {
     renderSaved([result, ...savedEntries.filter((entry) => entry.id !== result.id)]);
     pendingSave = null;
     message.value = '';
+    resizeMessage();
     status.textContent = '已暂存，点击下方黄色消息即可发送。';
   } catch (error) {
     if (error.status === 401) showSession(false);
@@ -637,6 +836,14 @@ saveButton.addEventListener('click', async () => {
     if (signedIn) message.focus();
   }
 });
+
+function resizeMessage() {
+  message.style.height = 'auto';
+  // scrollHeight includes padding; add the two 1px borders for border-box sizing.
+  message.style.height = `${message.scrollHeight + 2}px`;
+}
+message.addEventListener('input', resizeMessage);
+window.addEventListener('resize', resizeMessage);
 
 message.addEventListener('keydown', (event) => {
   if (event.key !== 'Enter' || event.isComposing || event.keyCode === 229) return;
@@ -651,6 +858,8 @@ status.textContent = '';
 if (initialState.authenticated) {
   renderHistory(initialState.messages);
   renderSaved(initialState.saved);
+  favoriteGroups = initialState.favorite_groups;
+  favoriteGroupOrder = initialState.favorite_group_order;
   renderFavorites(initialState.favorites);
 }
 """
@@ -664,7 +873,7 @@ h1 { margin: 12px 0; font-size: 30px; }
 .intro { color: #64716b; line-height: 1.7; margin-bottom: 28px; }
 label { display: block; font-size: 14px; font-weight: 600; margin: 20px 0 8px; }
 input, textarea { width: 100%; font: inherit; border: 1px solid #c9d5cd; border-radius: 10px; padding: 12px; background: #fcfdfb; }
-textarea { resize: vertical; line-height: 1.7; min-height: 280px; }
+textarea { resize: none; line-height: 1.7; min-height: 96px; max-height: min(45vh, 420px); overflow-y: auto; }
 input:focus, textarea:focus { outline: 2px solid #548778; outline-offset: 2px; }
 .actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
 .actions span { font-size: 12px; color: #738077; }
@@ -686,6 +895,21 @@ input:focus, textarea:focus { outline: 2px solid #548778; outline-offset: 2px; }
 .history-item.saved-item[data-swipe="delete"] { background: #ffe1db; border-color: #ce7667; }
 .history-item { touch-action: auto; }
 .history-item[data-swipe="favorite"] { background: #e9e2ff; border-color: #9273c0; }
+.favorite-group-box { border: 1px solid #d8cbe7; border-radius: 12px; padding: 8px; min-height: 64px; background: #faf8fd; }
+.favorite-group-items { display: grid; gap: 6px; min-height: 32px; }
+.favorite-group-handle { display: block; width: 100%; text-align: left; background: transparent; color: #74528f; font-size: 13px; padding: 4px 4px 8px; cursor: grab; touch-action: auto; user-select: none; -webkit-touch-callout: none; }
+.favorite-group-handle::before { content: "⠿"; margin-right: 6px; }
+.favorite-group-box[data-drop="true"] { outline: 2px solid #9273c0; background: #efe7ff; }
+.favorite-group-box[data-dragging="true"] { opacity: .65; outline: 2px solid #9273c0; }
+.favorite-new-group { margin-top: 10px; border-style: dashed; }
+#favorite-new-open { background: transparent; color: #74528f; padding: 8px; width: 100%; }
+#favorite-new-editor input { margin-bottom: 8px; padding: 8px; }
+#favorite-new-editor button { padding: 7px 12px; font-size: 13px; margin-right: 6px; }
+.group-rename-editor { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+.group-rename-editor[hidden] { display: none; }
+.group-rename-editor input { min-width: 0; flex: 1; padding: 7px; }
+.group-rename-editor button { padding: 7px 10px; font-size: 13px; }
+.favorite-group-handle[data-swipe="edit"] { background: #e1f2e4; }
 .favorite-panel { border-bottom: 1px solid #e1d9ed; padding-bottom: 20px; margin-bottom: 24px; }
 #favorite-list { display: grid; gap: 10px; padding: 3px; }
 .history-item.favorite-item { padding: 10px 12px; user-select: none; -webkit-touch-callout: none; background: #f1ebff; border-color: #c9b4e9; }
@@ -701,6 +925,8 @@ button:disabled { opacity: .5; cursor: wait; }
 #logout { color: #54766c; background: transparent; padding: 4px 0; font-size: 13px; }
 #login { max-width: 480px; }
 #workspace:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 36px; margin-top: 20px; }
+.message-column { min-width: 0; }
+.history-panel { margin-top: 24px; }
 #sender label { margin-top: 0; }
 aside { min-width: 0; border-left: 1px solid #e2e9e3; padding-left: 28px; }
 .history-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -741,9 +967,12 @@ def web_app(
     save: Callable[[str, str], dict],
     remove_saved: Callable[[str], None],
     favorites: Callable[[], list[dict]],
-    add_favorite: Callable[[str], dict],
+    add_favorite: Callable[[str, int], dict],
     remove_favorite: Callable[[int], None],
-    reorder_favorites: Callable[[list[int]], list[dict]],
+    reorder_favorites: Callable[[list[int], int | None], list[dict]],
+    favorite_groups: Callable[[], list[dict]],
+    manage_favorite_group: Callable[[str, dict], dict],
+    favorite_group_order: Callable[[], list[int]],
 ) -> web.Application:
     response_headers = {
         "Cache-Control": "no-store",
@@ -785,7 +1014,7 @@ def web_app(
         except web.HTTPUnauthorized:
             state = {"authenticated": False}
         else:
-            state = {"authenticated": True, "messages": history(), "saved": saved(), "favorites": favorites()}
+            state = {"authenticated": True, "messages": history(), "saved": saved(), "favorites": favorites(), "favorite_groups": favorite_groups(), "favorite_group_order": favorite_group_order()}
         page_html = WEB_PAGE.replace('<link rel="stylesheet" href="./style.css">', f'<style>{WEB_STYLE}</style>')
         page_html = page_html.replace('<script src="./app.js" defer></script>', '')
         page_html = page_html.replace('</body>',
@@ -876,7 +1105,7 @@ def web_app(
 
     async def recent_messages(request):
         require_session(request)
-        return web.json_response({"messages": history(), "saved": saved(), "favorites": favorites()})
+        return web.json_response({"messages": history(), "saved": saved(), "favorites": favorites(), "favorite_groups": favorite_groups(), "favorite_group_order": favorite_group_order()})
 
     async def save_message(request):
         require_session(request)
@@ -895,21 +1124,67 @@ def web_app(
         remove_saved(request_id)
         return web.json_response({"deleted": request_id})
 
+    def validate_group_id(value):
+        if type(value) is not int or value < 0 or value > 9223372036854775807:
+            raise web.HTTPBadRequest(text="分组编号必须为非负整数")
+
+    def validate_favorite_ids(ids):
+        if not isinstance(ids, list) or any(type(value) is not int or value < 1 or value > 9223372036854775807 for value in ids) or len(set(ids)) != len(ids):
+            raise web.HTTPBadRequest(text="收藏编号必须是不重复的正整数列表")
+
+    async def group_action(request):
+        require_session(request)
+        payload = await json_body(request)
+        if request.method == "PATCH":
+            action = "rename"
+            payload["group_id"] = int(request.match_info["group_id"])
+        elif request.path.endswith("/favorite-groups/order"):
+            action = "order"
+            ids = payload.get("ids")
+            if not isinstance(ids, list):
+                raise web.HTTPBadRequest(text="请提供分组顺序列表")
+            for value in ids:
+                validate_group_id(value)
+            if len(set(ids)) != len(ids):
+                raise web.HTTPBadRequest(text="分组编号不能重复")
+        elif request.path.endswith("/move"):
+            action = "move"
+            validate_favorite_ids(payload.get("ids"))
+            if not payload["ids"]:
+                raise web.HTTPBadRequest(text="请先选择收藏消息")
+            validate_group_id(payload.get("group_id"))
+            if "order" in payload:
+                validate_favorite_ids(payload["order"])
+        else:
+            action = "create"
+        if action in ("create", "rename"):
+            name = payload.get("name")
+            if not isinstance(name, str) or not name.strip() or len(name.strip()) > 40 or name.strip() in ("全部", "未分组"):
+                raise web.HTTPBadRequest(text="分组名称须为 1 至 40 个字符，不能使用「全部」或「未分组」")
+            payload["name"] = name.strip()
+            if action == "create" and "ids" in payload:
+                validate_favorite_ids(payload["ids"])
+        return web.json_response(manage_favorite_group(action, payload))
+
     async def favorite_message(request):
         require_session(request)
         payload = await json_body(request)
         message = payload.get("message")
         if not isinstance(message, str) or not message.strip() or message == RECEIVER:
             raise web.HTTPBadRequest(text="请输入要收藏的消息")
-        return web.json_response(add_favorite(message))
+        group_id = payload.get("group_id", 0)
+        validate_group_id(group_id)
+        return web.json_response(add_favorite(message, group_id))
 
     async def order_favorites(request):
         require_session(request)
         payload = await json_body(request)
         ids = payload.get("ids")
-        if not isinstance(ids, list) or any(type(value) is not int or value < 1 or value > 9223372036854775807 for value in ids) or len(set(ids)) != len(ids):
-            raise web.HTTPBadRequest(text="收藏顺序必须是不重复的正整数编号列表")
-        return web.json_response({"favorites": reorder_favorites(ids)})
+        validate_favorite_ids(ids)
+        group_id = payload.get("group_id")
+        if group_id is not None:
+            validate_group_id(group_id)
+        return web.json_response({"favorites": reorder_favorites(ids, group_id)})
 
     async def delete_favorite(request):
         require_session(request)
@@ -928,6 +1203,10 @@ def web_app(
     application.router.add_post("/send/api/logout", logout)
     application.router.add_get("/send/api/messages", recent_messages)
     application.router.add_post("/send/api/messages", send)
+    application.router.add_post("/send/api/favorite-groups/order", group_action)
+    application.router.add_post("/send/api/favorite-groups", group_action)
+    application.router.add_patch(r"/send/api/favorite-groups/{group_id:\d{1,18}}", group_action)
+    application.router.add_post("/send/api/favorites/move", group_action)
     application.router.add_post("/send/api/favorites/order", order_favorites)
     application.router.add_post("/send/api/favorites", favorite_message)
     application.router.add_delete("/send/api/favorites/{favorite_id}", delete_favorite)
@@ -982,32 +1261,113 @@ async def bridge_loop(
             created_at TEXT NOT NULL,
             content TEXT NOT NULL UNIQUE
         )""")
+        db.execute("CREATE TABLE IF NOT EXISTS favorite_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE)")
+        db.execute("CREATE TABLE IF NOT EXISTS favorite_group_layout (group_id INTEGER PRIMARY KEY, position INTEGER NOT NULL)")
+        db.execute("CREATE TABLE IF NOT EXISTS favorite_membership (favorite_id INTEGER PRIMARY KEY, group_id INTEGER NOT NULL)")
+        db.execute("CREATE TABLE IF NOT EXISTS favorite_group_order (favorite_id INTEGER PRIMARY KEY, group_id INTEGER NOT NULL, position INTEGER NOT NULL)")
         db.execute("CREATE TABLE IF NOT EXISTS favorite_order (favorite_id INTEGER PRIMARY KEY, position INTEGER NOT NULL)")
         db.execute("CREATE TABLE IF NOT EXISTS deleted_saved_messages (id TEXT PRIMARY KEY)")
         db.commit()
 
-        def favorites() -> list[dict]:
-            rows = db.execute("SELECT f.id, f.created_at, f.content FROM favorite_messages f LEFT JOIN favorite_order o ON o.favorite_id = f.id ORDER BY o.position ASC, f.created_at DESC, f.id DESC").fetchall()
-            return [{"id": row[0], "created_at": row[1], "content": row[2]} for row in rows]
+        def favorite_group_order() -> list[int]:
+            return [row[0] for row in db.execute("""SELECT g.id FROM (SELECT 0 AS id UNION ALL SELECT id FROM favorite_groups) g
+                LEFT JOIN favorite_group_layout o ON o.group_id = g.id
+                ORDER BY o.position IS NULL ASC, o.position ASC, g.id ASC""")]
 
-        def reorder_favorites(ids: list[int]) -> list[dict]:
-            current = {row[0] for row in db.execute("SELECT id FROM favorite_messages")}
+        def favorite_groups() -> list[dict]:
+            return [{"id": row[0], "name": row[1]} for row in db.execute("SELECT id, name FROM favorite_groups ORDER BY id")]
+
+        def require_group(group_id: int) -> None:
+            if group_id != 0 and db.execute("SELECT 1 FROM favorite_groups WHERE id = ?", (group_id,)).fetchone() is None:
+                raise web.HTTPNotFound(text="分组不存在，请刷新")
+
+        def favorites() -> list[dict]:
+            rows = db.execute("""SELECT f.id, f.created_at, f.content, COALESCE(m.group_id, 0), g.position
+                FROM favorite_messages f LEFT JOIN favorite_order o ON o.favorite_id = f.id
+                LEFT JOIN favorite_membership m ON m.favorite_id = f.id
+                LEFT JOIN favorite_group_order g ON g.favorite_id = f.id AND g.group_id = COALESCE(m.group_id, 0)
+                ORDER BY o.position ASC, f.created_at DESC, f.id DESC""").fetchall()
+            return [{"id": row[0], "created_at": row[1], "content": row[2], "group_id": row[3], "group_position": row[4]} for row in rows]
+
+        def reorder_favorites(ids: list[int], group_id: int | None) -> list[dict]:
+            if group_id is not None:
+                require_group(group_id)
+            current = {entry["id"] for entry in favorites() if group_id is None or entry["group_id"] == group_id}
             if set(ids) != current:
                 raise web.HTTPConflict(text="收藏列表已改变，请刷新后重新排序")
             with db:
-                db.execute("DELETE FROM favorite_order")
-                db.executemany("INSERT INTO favorite_order (favorite_id, position) VALUES (?, ?)",
-                               [(favorite_id, position) for position, favorite_id in enumerate(ids)])
+                if group_id is None:
+                    db.execute("DELETE FROM favorite_order")
+                    db.executemany("INSERT INTO favorite_order (favorite_id, position) VALUES (?, ?)",
+                                   [(favorite_id, position) for position, favorite_id in enumerate(ids)])
+                else:
+                    db.execute("DELETE FROM favorite_group_order WHERE group_id = ?", (group_id,))
+                    db.executemany("INSERT INTO favorite_group_order (favorite_id, group_id, position) VALUES (?, ?, ?)",
+                                   [(favorite_id, group_id, position) for position, favorite_id in enumerate(ids)])
             return favorites()
 
-        def add_favorite(message: str) -> dict:
+        def add_favorite(message: str, group_id: int) -> dict:
+            require_group(group_id)
             created_at = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
-            db.execute("INSERT INTO favorite_messages (created_at, content) VALUES (?, ?) ON CONFLICT(content) DO NOTHING", (created_at, message))
-            db.commit()
-            row = db.execute("SELECT id, created_at, content FROM favorite_messages WHERE content = ?", (message,)).fetchone()
-            return {"id": row[0], "created_at": row[1], "content": row[2]}
+            with db:
+                inserted = db.execute("INSERT INTO favorite_messages (created_at, content) VALUES (?, ?) ON CONFLICT(content) DO NOTHING", (created_at, message))
+                if inserted.rowcount:
+                    db.execute("INSERT INTO favorite_membership (favorite_id, group_id) VALUES (?, ?)", (inserted.lastrowid, group_id))
+            return next(entry for entry in favorites() if entry["content"] == message)
+
+        def manage_favorite_group(action: str, payload: dict) -> dict:
+            if action == "order":
+                ids = payload["ids"]
+                if set(ids) != set(favorite_group_order()):
+                    raise web.HTTPConflict(text="分组列表已改变，请刷新后重新排序")
+                with db:
+                    db.execute("DELETE FROM favorite_group_layout")
+                    db.executemany("INSERT INTO favorite_group_layout (group_id, position) VALUES (?, ?)", [(value, position) for position, value in enumerate(ids)])
+            elif action == "move":
+                group_id = payload["group_id"]
+                require_group(group_id)
+                ids = payload["ids"]
+                current = {entry["id"] for entry in favorites()}
+                if not set(ids) <= current:
+                    raise web.HTTPConflict(text="收藏列表已改变，请刷新后重试")
+                if "order" in payload:
+                    expected = {entry["id"] for entry in favorites() if entry["group_id"] == group_id} | set(ids)
+                    if set(payload["order"]) != expected:
+                        raise web.HTTPConflict(text="目标分组已改变，请刷新后重试")
+                # Moving within the same group preserves its order.
+                changed = [entry["id"] for entry in favorites() if entry["id"] in ids and entry["group_id"] != group_id]
+                with db:
+                    db.executemany("INSERT INTO favorite_membership (favorite_id, group_id) VALUES (?, ?) ON CONFLICT(favorite_id) DO UPDATE SET group_id = excluded.group_id", [(value, group_id) for value in changed])
+                    db.executemany("DELETE FROM favorite_group_order WHERE favorite_id = ?", [(value,) for value in changed])
+                    if "order" in payload:
+                        db.execute("DELETE FROM favorite_group_order WHERE group_id = ?", (group_id,))
+                        db.executemany("INSERT INTO favorite_group_order (favorite_id, group_id, position) VALUES (?, ?, ?)", [(value, group_id, position) for position, value in enumerate(payload["order"])])
+            else:
+                name = payload["name"]
+                group_id = payload["group_id"] if action == "rename" else None
+                if action == "rename":
+                    if group_id == 0:
+                        raise web.HTTPBadRequest(text="未分组不能重命名")
+                    require_group(group_id)
+                existing = db.execute("SELECT id FROM favorite_groups WHERE name = ?", (name,)).fetchone()
+                if existing is not None and existing[0] != group_id:
+                    raise web.HTTPConflict(text="已存在同名分组")
+                with db:
+                    if action == "create":
+                        ids = payload.get("ids", [])
+                        current = {entry["id"] for entry in favorites()}
+                        if not set(ids) <= current:
+                            raise web.HTTPConflict(text="收藏列表已改变，请刷新后重试")
+                        created = db.execute("INSERT INTO favorite_groups (name) VALUES (?)", (name,))
+                        db.executemany("INSERT INTO favorite_membership (favorite_id, group_id) VALUES (?, ?) ON CONFLICT(favorite_id) DO UPDATE SET group_id = excluded.group_id", [(value, created.lastrowid) for value in ids])
+                        db.executemany("DELETE FROM favorite_group_order WHERE favorite_id = ?", [(value,) for value in ids])
+                    else:
+                        db.execute("UPDATE favorite_groups SET name = ? WHERE id = ?", (name, group_id))
+            return {"favorites": favorites(), "favorite_groups": favorite_groups(), "favorite_group_order": favorite_group_order()}
 
         def remove_favorite(favorite_id: int) -> None:
+            db.execute("DELETE FROM favorite_group_order WHERE favorite_id = ?", (favorite_id,))
+            db.execute("DELETE FROM favorite_membership WHERE favorite_id = ?", (favorite_id,))
             db.execute("DELETE FROM favorite_order WHERE favorite_id = ?", (favorite_id,))
             db.execute("DELETE FROM favorite_messages WHERE id = ?", (favorite_id,))
             db.commit()
@@ -1107,7 +1467,7 @@ async def bridge_loop(
             select_subprotocol=lambda connection, offered: RECEIVER_PROTOCOL if RECEIVER_PROTOCOL in offered else None,
         ):
             print(f"msg-bridge b listening on ws://{host}:{port}; storing messages in {db_path}")
-            runner = web.AppRunner(web_app(password, forward, history, receipt, saved, save, remove_saved, favorites, add_favorite, remove_favorite, reorder_favorites)) if password is not None else None
+            runner = web.AppRunner(web_app(password, forward, history, receipt, saved, save, remove_saved, favorites, add_favorite, remove_favorite, reorder_favorites, favorite_groups, manage_favorite_group, favorite_group_order)) if password is not None else None
             try:
                 if runner:
                     await runner.setup()

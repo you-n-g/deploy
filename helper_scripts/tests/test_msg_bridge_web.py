@@ -41,7 +41,7 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
             self.submissions.append(submit)
             return {"receivers": 2}
 
-        self.client = TestClient(TestServer(bridge.web_app("test-password", forward, lambda: [], lambda request_id: None, lambda: [], lambda message, request_id: {"id": request_id, "content": message}, lambda request_id: None, lambda: [], lambda message: {}, lambda favorite_id: None, lambda ids: [])))
+        self.client = TestClient(TestServer(bridge.web_app("test-password", forward, lambda: [], lambda request_id: None, lambda: [], lambda message, request_id: {"id": request_id, "content": message}, lambda request_id: None, lambda: [], lambda message, group_id: {}, lambda favorite_id: None, lambda ids, group_id: [], lambda: [], lambda action, payload: {}, lambda: [0])))
         await self.client.start_server()
 
     async def asyncTearDown(self):
@@ -57,6 +57,30 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(cookie['expires'])
         self.assertEqual(int(cookie['max-age']), bridge.SESSION_AGE)
         return {'Cookie': f'{bridge.SESSION_COOKIE}={cookie.value}'}
+
+    async def test_group_boundaries(self):
+        for method, path, payload in (
+            ('post', '/send/api/favorite-groups', {'name': 'work'}),
+            ('post', '/send/api/favorite-groups/order', {'ids': [0]}),
+            ('patch', '/send/api/favorite-groups/1', {'name': 'renamed'}),
+            ('post', '/send/api/favorites/move', {'ids': [1], 'group_id': 0}),
+        ):
+            self.assertEqual((await getattr(self.client, method)(path, json=payload)).status, 401)
+        headers = await self.login()
+        for ids in (None, [0, 0], [True], [-1], ['1']):
+            response = await self.client.post('/send/api/favorite-groups/order', json={'ids': ids}, headers=headers)
+            self.assertEqual(response.status, 400)
+        response = await self.client.post('/send/api/favorite-groups', json={'name': 'Work', 'ids': [True]}, headers=headers)
+        self.assertEqual(response.status, 400)
+        for name in (None, '', '   ', 42, 'x' * 41, '全部', '未分组'):
+            response = await self.client.post('/send/api/favorite-groups', json={'name': name}, headers=headers)
+            self.assertEqual(response.status, 400)
+        for payload in ({'ids': [], 'group_id': 0}, {'ids': [1, 1], 'group_id': 0}, {'ids': [1], 'group_id': True}, {'ids': [1], 'group_id': -1}):
+            response = await self.client.post('/send/api/favorites/move', json=payload, headers=headers)
+            self.assertEqual(response.status, 400)
+        for group_id in (True, '1', -1, 2**63):
+            response = await self.client.post('/send/api/favorites/order', json={'ids': [], 'group_id': group_id}, headers=headers)
+            self.assertEqual(response.status, 400)
 
     async def test_favorite_order_validation(self):
         headers = await self.login()
@@ -91,7 +115,7 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
             return messages
         async def forward(message, submit, request_id):
             self.fail('Page loading must not send messages')
-        async with TestClient(TestServer(bridge.web_app('test-password', forward, history, lambda request_id: None, lambda: [], lambda message, request_id: {"id": request_id, "content": message}, lambda request_id: None, lambda: [], lambda message: {}, lambda favorite_id: None, lambda ids: []))) as client:
+        async with TestClient(TestServer(bridge.web_app('test-password', forward, history, lambda request_id: None, lambda: [], lambda message, request_id: {"id": request_id, "content": message}, lambda request_id: None, lambda: [], lambda message, group_id: {}, lambda favorite_id: None, lambda ids, group_id: [], lambda: [], lambda action, payload: {}, lambda: [0]))) as client:
             response = await client.get('/send/')
             page = await response.text()
             state = json.loads(html.unescape(re.search(r'<template id="initial-state">(.*?)</template>', page, re.S)[1]))
@@ -100,7 +124,7 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
             response = await client.get('/send/', headers=headers)
             page = await response.text()
             state = json.loads(html.unescape(re.search(r'<template id="initial-state">(.*?)</template>', page, re.S)[1]))
-            self.assertEqual(state, {'authenticated': True, 'messages': messages, 'saved': [], 'favorites': []})
+            self.assertEqual(state, {'authenticated': True, 'messages': messages, 'saved': [], 'favorites': [], 'favorite_groups': [], 'favorite_group_order': [0]})
             self.assertNotIn(content, page)
             self.assertNotIn('src="./app.js"', page)
             self.assertNotIn('href="./style.css"', page)
@@ -191,7 +215,7 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
             self.fail('Session check must not forward messages')
         # Same password preserves login across service restarts.
         for password, expected in [('test-password', 200), ('rotated-password', 401)]:
-            async with TestClient(TestServer(bridge.web_app(password, forward, lambda: [], lambda request_id: None, lambda: [], lambda message, request_id: {"id": request_id, "content": message}, lambda request_id: None, lambda: [], lambda message: {}, lambda favorite_id: None, lambda ids: []))) as client:
+            async with TestClient(TestServer(bridge.web_app(password, forward, lambda: [], lambda request_id: None, lambda: [], lambda message, request_id: {"id": request_id, "content": message}, lambda request_id: None, lambda: [], lambda message, group_id: {}, lambda favorite_id: None, lambda ids, group_id: [], lambda: [], lambda action, payload: {}, lambda: [0]))) as client:
                 self.assertEqual((await client.get('/send/api/session', headers=headers)).status, expected)
 
     async def test_session_slides_on_page_refresh_and_expires_only_after_inactivity(self):
@@ -215,7 +239,7 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
         async def forward(message, submit, request_id):
             self.fail('Session check must not send messages')
         async with TestClient(TestServer(bridge.web_app('test-password', forward, lambda: [], lambda request_id: None,
-                                                     lambda: [], lambda message, request_id: {}, lambda request_id: None, lambda: [], lambda message: {}, lambda favorite_id: None, lambda ids: []))) as client:
+                                                     lambda: [], lambda message, request_id: {}, lambda request_id: None, lambda: [], lambda message, group_id: {}, lambda favorite_id: None, lambda ids, group_id: [], lambda: [], lambda action, payload: {}, lambda: [0]))) as client:
             with patch.object(bridge.time, 'time', return_value=start + 59 * 86400):
                 response = await client.get('/send/', headers=latest)
                 self.assertEqual(response.headers['X-Bridge-Authenticated'], '1')
@@ -352,7 +376,7 @@ class BridgeIntegrationTests(unittest.IsolatedAsyncioTestCase):
                     response = await client.post(base + 'api/saved', json=saved_payload, ssl=context)
                     self.assertEqual(await response.json(), saved_entry)
                     response = await client.get(base + 'api/messages', ssl=context)
-                    self.assertEqual(await response.json(), {'messages': [], 'saved': [saved_entry], 'favorites': []})
+                    self.assertEqual(await response.json(), {'messages': [], 'saved': [saved_entry], 'favorites': [], 'favorite_groups': [], 'favorite_group_order': [0]})
                     response = await client.get(base, ssl=context)
                     state = json.loads(html.unescape(re.search(r'<template id="initial-state">(.*?)</template>', await response.text(), re.S)[1]))
                     self.assertEqual(state['saved'], [saved_entry])
@@ -402,7 +426,7 @@ class BridgeIntegrationTests(unittest.IsolatedAsyncioTestCase):
                         response = await client.post(base + route, json=deleted_payload, ssl=context)
                         self.assertEqual(response.status, 409)
                     response = await client.get(base + 'api/messages', ssl=context)
-                    self.assertEqual(await response.json(), {'messages': [], 'saved': [saved_entry], 'favorites': []})
+                    self.assertEqual(await response.json(), {'messages': [], 'saved': [saved_entry], 'favorites': [], 'favorite_groups': [], 'favorite_group_order': [0]})
                     # Offline sends are archived, and explicitly report zero receivers.
                     response = await client.post(base + "api/messages", json={"message": "offline"},
                                                  headers=headers, ssl=context)
@@ -514,6 +538,77 @@ class BridgeIntegrationTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(len(history), 50)
                     self.assertEqual(history[0]['content'], 'older-54')
                     self.assertEqual(history[-1]['content'], 'older-5')
+                    # Group management never sends, archives or duplicates a message.
+                    response = await client.post(base + 'api/favorite-groups', json={'name': 'Work'}, ssl=context)
+                    self.assertEqual(response.status, 200)
+                    group = (await response.json())['favorite_groups'][0]
+                    group_id = group['id']
+                    response = await client.post(base + 'api/favorite-groups', json={'name': 'Work'}, ssl=context)
+                    self.assertEqual(response.status, 409)
+                    response = await client.patch(base + f'api/favorite-groups/{group_id}', json={'name': 'Research'}, ssl=context)
+                    self.assertEqual((await response.json())['favorite_groups'][0]['name'], 'Research')
+                    response = await client.post(base + 'api/favorites', json={'message': 'group A', 'group_id': group_id}, ssl=context)
+                    a = await response.json()
+                    response = await client.post(base + 'api/favorites', json={'message': 'group B', 'group_id': group_id}, ssl=context)
+                    b = await response.json()
+                    response = await client.get(base + 'api/messages', ssl=context)
+                    before = await response.json()
+                    self.assertTrue(any(entry['group_id'] == 0 for entry in before['favorites']))
+                    response = await client.post(base + 'api/favorites/order', json={'ids': [a['id'], b['id']], 'group_id': group_id}, ssl=context)
+                    ordered = (await response.json())['favorites']
+                    self.assertEqual([entry['id'] for entry in ordered], [entry['id'] for entry in before['favorites']])
+                    self.assertEqual({entry['id']: entry['group_position'] for entry in ordered if entry['group_id'] == group_id}, {a['id']: 0, b['id']: 1})
+                    response = await client.post(base + 'api/favorites/order', json={'ids': [a['id']], 'group_id': group_id}, ssl=context)
+                    self.assertEqual(response.status, 409)
+                    response = await client.post(base + 'api/favorites/move', json={'ids': [a['id'], b['id']], 'group_id': 0}, ssl=context)
+                    moved = await response.json()
+                    self.assertTrue(all(entry['group_id'] == 0 for entry in moved['favorites']))
+                    self.assertTrue(all(entry['group_position'] is None for entry in moved['favorites']))
+                    response = await client.post(base + 'api/favorites/move', json={'ids': [a['id'], 999999], 'group_id': group_id}, ssl=context)
+                    self.assertEqual(response.status, 409)
+                    response = await client.post(base + 'api/favorites/move', json={'ids': [a['id'], b['id']], 'group_id': group_id}, ssl=context)
+                    self.assertEqual(response.status, 200)
+                    response = await client.post(base + 'api/favorites/order', json={'ids': [b['id'], a['id']], 'group_id': group_id}, ssl=context)
+                    self.assertEqual(response.status, 200)
+                    # A same-group move preserves the group's custom order.
+                    response = await client.post(base + 'api/favorites/move', json={'ids': [a['id']], 'group_id': group_id}, ssl=context)
+                    same = await response.json()
+                    self.assertEqual(next(entry for entry in same['favorites'] if entry['id'] == a['id'])['group_position'], 1)
+                    response = await client.get(base, ssl=context)
+                    state = json.loads(html.unescape(re.search(r'<template id="initial-state">(.*?)</template>', await response.text(), re.S)[1]))
+                    self.assertEqual(state['favorite_groups'], [{'id': group_id, 'name': 'Research'}])
+                    self.assertEqual(next(entry for entry in state['favorites'] if entry['id'] == b['id'])['group_position'], 0)
+                    with sqlite3.connect(db) as connection:
+                        self.assertEqual(connection.execute('SELECT name FROM favorite_groups').fetchall(), [('Research',)])
+                        self.assertEqual(connection.execute('SELECT favorite_id FROM favorite_group_order ORDER BY position').fetchall(), [(b['id'],), (a['id'],)])
+                        self.assertEqual(connection.execute('SELECT COUNT(*) FROM messages').fetchone()[0], 64)
+                    response = await client.post(base + 'api/favorites', json={'message': 'invalid group', 'group_id': 999999}, ssl=context)
+                    self.assertEqual(response.status, 404)
+                    response = await client.post(base + 'api/favorite-groups/order', json={'ids': [group_id, 0]}, ssl=context)
+                    self.assertEqual((await response.json())['favorite_group_order'], [group_id, 0])
+                    response = await client.post(base + 'api/favorite-groups/order', json={'ids': [group_id]}, ssl=context)
+                    self.assertEqual(response.status, 409)
+                    response = await client.post(base + 'api/favorites/move', json={'ids': [a['id']], 'group_id': 0, 'order': [a['id']]}, ssl=context)
+                    self.assertEqual(response.status, 409)
+                    response = await client.get(base + 'api/messages', ssl=context)
+                    state = await response.json()
+                    target_ids = [entry['id'] for entry in state['favorites'] if entry['group_id'] == 0] + [a['id']]
+                    response = await client.post(base + 'api/favorites/move', json={'ids': [a['id']], 'group_id': 0, 'order': target_ids}, ssl=context)
+                    self.assertEqual(response.status, 200)
+                    moved = await response.json()
+                    self.assertEqual(next(entry for entry in moved['favorites'] if entry['id'] == a['id'])['group_id'], 0)
+                    response = await client.post(base + 'api/favorite-groups', json={'name': 'Drop group', 'ids': [a['id']]}, ssl=context)
+                    created = await response.json()
+                    new_group = next(group for group in created['favorite_groups'] if group['name'] == 'Drop group')
+                    self.assertEqual(next(entry for entry in created['favorites'] if entry['id'] == a['id'])['group_id'], new_group['id'])
+                    self.assertEqual(created['favorite_group_order'], [group_id, 0, new_group['id']])
+                    response = await client.post(base + 'api/favorite-groups', json={'name': 'Must not exist', 'ids': [999999]}, ssl=context)
+                    self.assertEqual(response.status, 409)
+                    with sqlite3.connect(db) as connection:
+                        self.assertIsNone(connection.execute("SELECT id FROM favorite_groups WHERE name = 'Must not exist'").fetchone())
+                        self.assertEqual(connection.execute('SELECT group_id FROM favorite_group_layout ORDER BY position').fetchall(), [(group_id,), (0,)])
+
+
             finally:
                 task.cancel()
                 with suppress(asyncio.CancelledError):
