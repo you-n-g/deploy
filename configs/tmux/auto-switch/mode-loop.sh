@@ -97,6 +97,13 @@ while [[ "$(tmux show-option -gqv @auto_switch_mode_token 2>/dev/null || true)" 
   [[ -n "$submitted_pane" ]] || continue
   [[ "$(tmux show-option -gqv @auto_switch_mode_token 2>/dev/null || true)" == "$token" ]] || exit 0
 
+  # prefix a e (submit-stay.sh) asked to stay on this submit.
+  stay_until="$(tmux show-option -pqv -t "$submitted_pane" @auto_switch_stay_until 2>/dev/null || true)"
+  if [[ -n "$stay_until" ]]; then
+    tmux set-option -pqu -t "$submitted_pane" @auto_switch_stay_until 2>/dev/null || true
+    (( $(date +%s) <= stay_until )) && continue
+  fi
+
   # Pass the pane being left as --skip-pane: switch-next skips it when picking
   # the target and floats a preview of it, same as a manual prefix+a. Without
   # this the continuous path never triggers the preview.
