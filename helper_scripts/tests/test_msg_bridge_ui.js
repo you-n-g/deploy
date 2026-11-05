@@ -17,6 +17,13 @@ function element(tagName = 'div') {
     querySelectorAll() { return this.children.flatMap((child) => [...(child.tagName === 'button' ? [child] : []), ...child.querySelectorAll()]); },
     replaceChildren(...children) { this.children = children; },
     append(...children) { this.children.push(...children); },
+    insertBefore(child, before) {
+      this.children = this.children.filter((item) => item !== child);
+      const index = before === null ? this.children.length : this.children.indexOf(before);
+      this.children.splice(index, 0, child);
+    },
+    getBoundingClientRect() { return { top: 0, bottom: 400, height: 400 }; },
+    setPointerCapture() {},
   };
 }
 
@@ -33,11 +40,19 @@ async function page(exchange, historyHangs = false, initialState = { authenticat
   }
   elements['#initial-state'].content = { textContent: JSON.stringify(initialState) };
   const calls = [];
+  const holdTimers = new Map();
   let historyLoads = 0;
   vm.runInNewContext(source, {
     document: { querySelector: (name) => elements[name], createElement: element },
     crypto: webcrypto, AbortSignal, TypeError,
-    setTimeout: (resolve) => setImmediate(resolve),
+    window: { innerHeight: 800, scrollBy() {} },
+    setTimeout: (resolve, delay) => {
+      if (delay !== 400) return setImmediate(resolve);
+      const id = {};
+      holdTimers.set(id, resolve);
+      return id;
+    },
+    clearTimeout: (id) => { if (!holdTimers.delete(id)) clearImmediate(id); },
     fetch: async (url, options) => {
       calls.push({ url, options });
       if (url.endsWith('/session')) return response({ authenticated: true });
@@ -51,6 +66,11 @@ async function page(exchange, historyHangs = false, initialState = { authenticat
   await new Promise(setImmediate);
   return {
     elements, calls,
+    hold() {
+      const callbacks = [...holdTimers.values()];
+      holdTimers.clear();
+      callbacks.forEach((callback) => callback());
+    },
     async send(content) {
       elements['#message'].value = content;
       await elements['#sender'].handlers.submit({ preventDefault() {} });
@@ -364,7 +384,9 @@ test('favorite can be sent repeatedly with fresh ids and removed independently',
   assert.equal(ids.length, 2);
   assert.notEqual(ids[0], ids[1]);
   assert.equal(browser.elements['#favorite-list'].children.length, 1);
-  await row.children[1].handlers.click();
+  assert.equal(row.children.length, 1);
+  row.children[0].handlers.touchstart(touchEvent([finger(100, 100)]));
+  await row.children[0].handlers.touchend(touchEvent([], [finger(150, 100)]));
   assert.equal(browser.elements['#favorite-list'].children.length, 0);
   assert.equal(browser.elements['#message'].value, 'keep draft');
 });
@@ -498,8 +520,8 @@ test('favorite single thumb left swipe edits without sending or removing the fav
   }
 });
 
-test('favorite right swipe and vertical scroll neither send nor remove', async () => {
-  for (const [x, y] of [[150, 100], [104, 160]]) {
+test('favorite vertical scrolling never sends or removes', async () => {
+  for (const [x, y] of [[104, 160]]) {
     const browser = await page(() => { throw new Error('Gesture must not request'); }, true, {
       authenticated: true, messages: [], saved: [], favorites: [{ id: 7, content: 'favorite text' }],
     });
@@ -513,4 +535,86 @@ test('favorite right swipe and vertical scroll neither send nor remove', async (
     assert.equal(browser.elements['#favorite-list'].children.length, 1);
     assert.equal(browser.calls.length, 0);
   }
+});
+
+
+async function sortableFavorites(exchange) {
+  const favorites = [1, 2, 3].map((id) => ({ id, content: `favorite ${id}` }));
+  const browser = await page(exchange, true, { authenticated: true, messages: [], saved: [], favorites });
+  const list = browser.elements['#favorite-list'];
+  for (const row of list.children) row.getBoundingClientRect = () => ({ top: list.children.indexOf(row) * 60, height: 60 });
+  return browser;
+}
+
+test('long press drags favorites up and down and persists the resulting order without sending', async () => {
+  for (const [index, y, expected] of [[0, 210, [2, 3, 1]], [2, 5, [3, 1, 2]]]) {
+    const browser = await sortableFavorites(async (url, options) => {
+      assert.equal(url, './api/favorites/order');
+      assert.deepEqual(JSON.parse(options.body).ids, expected);
+      return response({ favorites: expected.map((id) => ({ id, content: `favorite ${id}` })) });
+    });
+    browser.elements['#message'].value = 'keep draft';
+    const list = browser.elements['#favorite-list'];
+    const item = list.children[index].children[0];
+    const startY = index * 60 + 30;
+    item.handlers.touchstart(touchEvent([finger(100, startY)]));
+    browser.hold();
+    assert.equal(item.dataset.dragging, 'true');
+    const move = touchEvent([finger(100, y)]);
+    item.handlers.touchmove(move);
+    assert.equal(move.prevented, true);
+    await item.handlers.touchend(touchEvent([], [finger(100, y)]));
+    await item.handlers.click({ detail: 1 });
+    assert.deepEqual(list.children.map((row) => Number(row.dataset.favoriteId)), expected);
+    assert.equal(browser.calls.length, 1);
+    assert.equal(browser.elements['#message'].value, 'keep draft');
+    assert.equal(browser.elements['#send-submit'].disabled, false);
+  }
+});
+
+test('cancelled or unchanged long press never saves or sends', async () => {
+  for (const cancel of [true, false]) {
+    const browser = await sortableFavorites(() => { throw new Error('Must not request'); });
+    const list = browser.elements['#favorite-list'];
+    const item = list.children[0].children[0];
+    item.handlers.touchstart(touchEvent([finger(100, 30)]));
+    browser.hold();
+    if (cancel) {
+      item.handlers.touchmove(touchEvent([finger(100, 210)]));
+      item.handlers.touchcancel();
+    } else {
+      await item.handlers.touchend(touchEvent([], [finger(100, 30)]));
+    }
+    await item.handlers.click({ detail: 1 });
+    assert.deepEqual(list.children.map((row) => Number(row.dataset.favoriteId)), [1, 2, 3]);
+    assert.equal(browser.calls.length, 0);
+    assert.equal(browser.elements['#send-submit'].disabled, false);
+  }
+});
+
+test('failed order save reports the error and restores the displayed order', async () => {
+  const browser = await sortableFavorites(async () => response('收藏列表已改变，请刷新后重新排序', 409));
+  const list = browser.elements['#favorite-list'];
+  const item = list.children[0].children[0];
+  item.handlers.touchstart(touchEvent([finger(100, 30)]));
+  browser.hold();
+  item.handlers.touchmove(touchEvent([finger(100, 210)]));
+  await item.handlers.touchend(touchEvent([], [finger(100, 210)]));
+  assert.deepEqual(list.children.map((row) => Number(row.dataset.favoriteId)), [1, 2, 3]);
+  assert.match(browser.elements['#status'].textContent, /刷新/);
+  assert.equal(browser.elements['#status'].dataset.error, 'true');
+});
+
+test('moving before the hold threshold remains a scroll instead of a reorder', async () => {
+  const browser = await sortableFavorites(() => { throw new Error('Must not request'); });
+  const item = browser.elements['#favorite-list'].children[0].children[0];
+  item.handlers.touchstart(touchEvent([finger(100, 30)]));
+  const move = touchEvent([finger(100, 50)]);
+  item.handlers.touchmove(move);
+  browser.hold();
+  assert.equal(move.prevented, false);
+  assert.equal(item.dataset.dragging, undefined);
+  await item.handlers.touchend(touchEvent([], [finger(100, 210)]));
+  await item.handlers.click({ detail: 1 });
+  assert.equal(browser.calls.length, 0);
 });

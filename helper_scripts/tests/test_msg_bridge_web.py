@@ -41,7 +41,7 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
             self.submissions.append(submit)
             return {"receivers": 2}
 
-        self.client = TestClient(TestServer(bridge.web_app("test-password", forward, lambda: [], lambda request_id: None, lambda: [], lambda message, request_id: {"id": request_id, "content": message}, lambda request_id: None, lambda: [], lambda message: {}, lambda favorite_id: None)))
+        self.client = TestClient(TestServer(bridge.web_app("test-password", forward, lambda: [], lambda request_id: None, lambda: [], lambda message, request_id: {"id": request_id, "content": message}, lambda request_id: None, lambda: [], lambda message: {}, lambda favorite_id: None, lambda ids: [])))
         await self.client.start_server()
 
     async def asyncTearDown(self):
@@ -57,6 +57,12 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(cookie['expires'])
         self.assertEqual(int(cookie['max-age']), bridge.SESSION_AGE)
         return {'Cookie': f'{bridge.SESSION_COOKIE}={cookie.value}'}
+
+    async def test_favorite_order_validation(self):
+        headers = await self.login()
+        for ids in (None, '1,2', [1, 1], [True], [0], [-1], ['1'], [2**63]):
+            response = await self.client.post('/send/api/favorites/order', json={'ids': ids}, headers=headers)
+            self.assertEqual(response.status, 400)
 
     async def test_favorite_input_validation(self):
         headers = await self.login()
@@ -85,7 +91,7 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
             return messages
         async def forward(message, submit, request_id):
             self.fail('Page loading must not send messages')
-        async with TestClient(TestServer(bridge.web_app('test-password', forward, history, lambda request_id: None, lambda: [], lambda message, request_id: {"id": request_id, "content": message}, lambda request_id: None, lambda: [], lambda message: {}, lambda favorite_id: None))) as client:
+        async with TestClient(TestServer(bridge.web_app('test-password', forward, history, lambda request_id: None, lambda: [], lambda message, request_id: {"id": request_id, "content": message}, lambda request_id: None, lambda: [], lambda message: {}, lambda favorite_id: None, lambda ids: []))) as client:
             response = await client.get('/send/')
             page = await response.text()
             state = json.loads(html.unescape(re.search(r'<template id="initial-state">(.*?)</template>', page, re.S)[1]))
@@ -109,6 +115,7 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.client.delete('/send/api/saved/' + 'e' * 32)).status, 401)
         self.assertEqual((await self.client.post('/send/api/favorites', json={'message': 'secret'})).status, 401)
         self.assertEqual((await self.client.delete('/send/api/favorites/1')).status, 401)
+        self.assertEqual((await self.client.post('/send/api/favorites/order', json={'ids': []})).status, 401)
         self.assertEqual((await self.client.get('/send/api/requests/' + 'a' * 32)).status, 401)
         for headers in ({}, {"X-Bridge-Password": "wrong"}):
             response = await self.client.post("/send/api/messages", json={"message": "hello"}, headers=headers)
@@ -184,7 +191,7 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
             self.fail('Session check must not forward messages')
         # Same password preserves login across service restarts.
         for password, expected in [('test-password', 200), ('rotated-password', 401)]:
-            async with TestClient(TestServer(bridge.web_app(password, forward, lambda: [], lambda request_id: None, lambda: [], lambda message, request_id: {"id": request_id, "content": message}, lambda request_id: None, lambda: [], lambda message: {}, lambda favorite_id: None))) as client:
+            async with TestClient(TestServer(bridge.web_app(password, forward, lambda: [], lambda request_id: None, lambda: [], lambda message, request_id: {"id": request_id, "content": message}, lambda request_id: None, lambda: [], lambda message: {}, lambda favorite_id: None, lambda ids: []))) as client:
                 self.assertEqual((await client.get('/send/api/session', headers=headers)).status, expected)
 
     async def test_session_slides_on_page_refresh_and_expires_only_after_inactivity(self):
@@ -208,7 +215,7 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
         async def forward(message, submit, request_id):
             self.fail('Session check must not send messages')
         async with TestClient(TestServer(bridge.web_app('test-password', forward, lambda: [], lambda request_id: None,
-                                                     lambda: [], lambda message, request_id: {}, lambda request_id: None, lambda: [], lambda message: {}, lambda favorite_id: None))) as client:
+                                                     lambda: [], lambda message, request_id: {}, lambda request_id: None, lambda: [], lambda message: {}, lambda favorite_id: None, lambda ids: []))) as client:
             with patch.object(bridge.time, 'time', return_value=start + 59 * 86400):
                 response = await client.get('/send/', headers=latest)
                 self.assertEqual(response.headers['X-Bridge-Authenticated'], '1')
@@ -362,6 +369,26 @@ class BridgeIntegrationTests(unittest.IsolatedAsyncioTestCase):
                     with sqlite3.connect(db) as connection:
                         self.assertEqual(connection.execute('SELECT content FROM favorite_messages').fetchall(), [('favorite text',)])
                         self.assertEqual(connection.execute('SELECT COUNT(*) FROM messages').fetchone()[0], 0)
+                    response = await client.post(base + 'api/favorites', json={'message': 'second favorite'}, ssl=context)
+                    second = await response.json()
+                    expected_order = [favorite['id'], second['id']]
+                    response = await client.post(base + 'api/favorites/order', json={'ids': expected_order}, ssl=context)
+                    self.assertEqual([entry['id'] for entry in (await response.json())['favorites']], expected_order)
+                    response = await client.get(base, ssl=context)
+                    state = json.loads(html.unescape(re.search(r'<template id="initial-state">(.*?)</template>', await response.text(), re.S)[1]))
+                    self.assertEqual([entry['id'] for entry in state['favorites']], expected_order)
+                    with sqlite3.connect(db) as connection:
+                        self.assertEqual(connection.execute('SELECT favorite_id FROM favorite_order ORDER BY position').fetchall(), [(value,) for value in expected_order])
+                    for invalid in ([favorite['id']], [*expected_order, 999999]):
+                        response = await client.post(base + 'api/favorites/order', json={'ids': invalid}, ssl=context)
+                        self.assertEqual(response.status, 409)
+                    response = await client.post(base + 'api/favorites', json={'message': 'newest favorite'}, ssl=context)
+                    newest = await response.json()
+                    response = await client.get(base + 'api/messages', ssl=context)
+                    self.assertEqual([entry['id'] for entry in (await response.json())['favorites']], [newest['id'], *expected_order])
+                    for entry in (second, newest):
+                        response = await client.delete(base + 'api/favorites/' + str(entry['id']), ssl=context)
+                        self.assertEqual(response.status, 200)
                     for _ in range(2):
                         response = await client.delete(base + 'api/favorites/' + str(favorite['id']), ssl=context)
                         self.assertEqual(response.status, 200)

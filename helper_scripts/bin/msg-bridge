@@ -74,7 +74,7 @@ WEB_PAGE = r"""<!doctype html>
       </section>
       <section class="favorite-panel" aria-labelledby="favorite-heading">
         <h2 id="favorite-heading">收藏消息</h2>
-        <p class="history-hint">点击反复发送 · 左滑编辑 · 发送后保留</p>
+        <p class="history-hint">点击发送 · 左滑编辑 · 右滑取消收藏 · 长按拖动排序</p>
         <div id="favorite-list"></div>
       </section>
       <div class="history-heading"><h2 id="history-heading">历史消息</h2><button id="refresh-history" type="button">刷新</button></div>
@@ -182,27 +182,49 @@ function renderHistory(messages) {
   historyStatus.textContent = items.length ? '' : '还没有历史消息。';
 }
 
-function attachGesture(item, label, rightAction, rightKind, rightLabel, leftAction, clickAction) {
+function attachGesture(item, label, rightAction, rightKind, rightLabel, leftAction, clickAction, drag = null) {
   const restingLabel = label.textContent;
   let start = null;
   let suppressClick = false;
+  let holdTimer;
+  let dragging = false;
   const resetGesture = () => {
+    clearTimeout(holdTimer);
+    dragging = false;
     start = null;
     delete item.dataset.swipe;
     label.textContent = restingLabel;
   };
-  const cancel = () => { suppressClick = true; resetGesture(); };
+  const cancel = () => {
+    if (dragging) drag.cancel();
+    suppressClick = true;
+    resetGesture();
+  };
   const begin = (id, x, y) => {
     if (button.disabled) return;
     suppressClick = false;
     start = { id, x, y, axis: null };
+    if (drag) holdTimer = setTimeout(() => {
+      dragging = true;
+      suppressClick = true;
+      drag.start();
+      label.textContent = '上下拖动 · 松开保存';
+    }, 400);
   };
   const move = (x, y, event) => {
     if (!start) return;
+    if (dragging) {
+      if (event.cancelable) event.preventDefault();
+      drag.move(y);
+      // Moving the card in the DOM releases pointer capture in Chromium.
+      if (event.pointerType === 'mouse' || event.pointerType === 'pen') item.setPointerCapture(event.pointerId);
+      return;
+    }
     const dx = x - start.x;
     const dy = y - start.y;
     // Decide intent early, before the browser turns a thumb's diagonal motion into scrolling.
     if (!start.axis && Math.max(Math.abs(dx), Math.abs(dy)) >= 6) {
+      clearTimeout(holdTimer);
       start.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
     }
     if (start.axis === 'y') return;
@@ -217,6 +239,11 @@ function attachGesture(item, label, rightAction, rightKind, rightLabel, leftActi
   };
   const finish = (x, y, event) => {
     if (!start) return;
+    if (dragging) {
+      event.preventDefault();
+      resetGesture();
+      return drag.end();
+    }
     const dx = x - start.x;
     const dy = y - start.y;
     const vertical = start.axis === 'y';
@@ -248,16 +275,17 @@ function attachGesture(item, label, rightAction, rightKind, rightLabel, leftActi
   }, { passive: false });
   item.addEventListener('touchcancel', cancel);
   item.addEventListener('pointerdown', (event) => {
-    if (event.pointerType !== 'pen' || event.isPrimary === false) return;
+    if ((event.pointerType !== 'pen' && !(drag && event.pointerType === 'mouse')) || event.isPrimary === false) return;
+    if (event.pointerType === 'mouse') item.setPointerCapture(event.pointerId);
     begin(event.pointerId, event.clientX, event.clientY);
   });
   item.addEventListener('pointermove', (event) => {
-    if (event.pointerType === 'pen' && start && event.pointerId === start.id) move(event.clientX, event.clientY, event);
+    if ((event.pointerType === 'pen' || event.pointerType === 'mouse') && start && event.pointerId === start.id) move(event.clientX, event.clientY, event);
   });
   item.addEventListener('pointerup', (event) => {
-    if (event.pointerType === 'pen' && start && event.pointerId === start.id) return finish(event.clientX, event.clientY, event);
+    if ((event.pointerType === 'pen' || event.pointerType === 'mouse') && start && event.pointerId === start.id) return finish(event.clientX, event.clientY, event);
   });
-  item.addEventListener('pointercancel', (event) => { if (event.pointerType === 'pen') cancel(); });
+  item.addEventListener('pointercancel', (event) => { if (event.pointerType === 'pen' || event.pointerType === 'mouse') cancel(); });
   item.addEventListener('click', (event) => {
     if (suppressClick && event.detail !== 0) return;
     return clickAction();
@@ -274,8 +302,8 @@ function renderSaved(entries) {
     item.className = 'history-item saved-item';
     item.disabled = button.disabled;
     const label = document.createElement('span');
-    label.className = 'saved-label';
-    label.textContent = '暂存 · 点击发送';
+    label.className = 'gesture-label';
+    label.textContent = '';
     const content = document.createElement('span');
     content.className = 'history-content';
     content.textContent = entry.content;
@@ -311,25 +339,75 @@ function renderFavorites(entries) {
   favoriteEntries = entries;
   const rows = entries.map((entry) => {
     const row = document.createElement('div');
-    row.className = 'saved-row';
+    row.className = 'favorite-row';
+    row.dataset.favoriteId = entry.id;
     const item = document.createElement('button');
     item.type = 'button';
     item.className = 'history-item favorite-item';
     item.disabled = button.disabled;
     const label = document.createElement('span');
-    label.textContent = '收藏 · 点击发送';
+    label.className = 'gesture-label';
+    label.textContent = '';
     const content = document.createElement('span');
     content.className = 'history-content';
     content.textContent = entry.content;
     item.append(label, content);
-    attachGesture(item, label, null, null, null, () => editMessage(entry), () => sendContent(entry.content, false));
-    const remove = document.createElement('button');
-    remove.type = 'button';
-    remove.className = 'delete-saved';
-    remove.textContent = '取消收藏';
-    remove.disabled = button.disabled;
-    remove.addEventListener('click', () => changeFavorite(entry, true));
-    row.append(item, remove);
+    let original;
+    const restore = () => {
+      renderFavorites(original);
+      setBusy(false);
+    };
+    attachGesture(item, label, () => changeFavorite(entry, true), 'delete', '松开取消收藏',
+      () => editMessage(entry), () => sendContent(entry.content, false), {
+        start() {
+          original = favoriteEntries.slice();
+          historyGeneration++;
+          setBusy(true);
+          item.disabled = false;
+          item.dataset.dragging = 'true';
+          status.dataset.error = 'false';
+          status.textContent = '拖动收藏消息调整顺序，松开保存。';
+        },
+        move(y) {
+          if (y < 32) window.scrollBy(0, -16);
+          if (y > window.innerHeight - 32) window.scrollBy(0, 16);
+          const before = Array.from(favoriteList.children).find((other) => {
+            const rect = other.getBoundingClientRect();
+            return other !== row && y < rect.top + rect.height / 2;
+          });
+          favoriteList.insertBefore(row, before || null);
+          const byId = new Map(original.map((entry) => [entry.id, entry]));
+          favoriteEntries = Array.from(favoriteList.children).map((row) => byId.get(Number(row.dataset.favoriteId)));
+        },
+        async end() {
+          delete item.dataset.dragging;
+          if (favoriteEntries.every((entry, index) => entry.id === original[index].id)) {
+            restore();
+            status.textContent = '收藏顺序未改变。';
+            return;
+          }
+          item.disabled = true;
+          status.textContent = '正在保存收藏顺序…';
+          try {
+            const result = await request('favorites/order', { ids: favoriteEntries.map((entry) => entry.id) });
+            renderFavorites(result.favorites);
+            status.textContent = '收藏顺序已保存。';
+          } catch (error) {
+            renderFavorites(original);
+            if (error.status === 401) showSession(false);
+            showError(error);
+            if (isTransportError(error)) status.textContent = '排序保存结果未确认，请刷新核对。';
+          } finally {
+            setBusy(false);
+          }
+        },
+        cancel() {
+          restore();
+          status.textContent = '已取消排序。';
+        },
+      });
+    item.addEventListener('contextmenu', (event) => event.preventDefault());
+    row.append(item);
     return row;
   });
   favoriteList.replaceChildren(...rows);
@@ -351,7 +429,7 @@ async function changeFavorite(entry, removing) {
       renderFavorites(favoriteEntries.filter((item) => item.id !== entry.id));
     } else {
       const result = await request('favorites', { message: entry.content });
-      renderFavorites([result, ...favoriteEntries.filter((item) => item.id !== result.id)]);
+      if (!favoriteEntries.some((item) => item.id === result.id)) renderFavorites([result, ...favoriteEntries]);
     }
     status.textContent = removing ? '已取消收藏。' : '已收藏，可在收藏区反复发送。';
   } catch (error) {
@@ -598,7 +676,9 @@ input:focus, textarea:focus { outline: 2px solid #548778; outline-offset: 2px; }
 #saved-list { display: grid; gap: 10px; max-height: 40vh; overflow-y: auto; padding: 3px; }
 .history-item.saved-item { background: #fff6d9; border-color: #e7ce86; }
 .history-item.saved-item:hover { background: #ffedb6; border-color: #c9a94c; }
-.saved-label { display: block; color: #916916; font-size: 12px; margin-bottom: 8px; }
+.gesture-label { display: block; font-size: 12px; margin-bottom: 4px; }
+.gesture-label:empty { display: none; }
+.saved-item .gesture-label { color: #916916; }
 .saved-row { display: flex; gap: 8px; min-width: 0; }
 .saved-row .history-item { flex: 1; width: auto; min-width: 0; touch-action: auto; }
 .delete-saved { background: #fff0ed; color: #a33b2d; padding: 10px; font-size: 13px; }
@@ -607,10 +687,12 @@ input:focus, textarea:focus { outline: 2px solid #548778; outline-offset: 2px; }
 .history-item { touch-action: auto; }
 .history-item[data-swipe="favorite"] { background: #e9e2ff; border-color: #9273c0; }
 .favorite-panel { border-bottom: 1px solid #e1d9ed; padding-bottom: 20px; margin-bottom: 24px; }
-#favorite-list { display: grid; gap: 10px; max-height: 40vh; overflow-y: auto; padding: 3px; }
-.history-item.favorite-item { background: #f1ebff; border-color: #c9b4e9; }
+#favorite-list { display: grid; gap: 10px; padding: 3px; }
+.history-item.favorite-item { padding: 10px 12px; user-select: none; -webkit-touch-callout: none; background: #f1ebff; border-color: #c9b4e9; }
+.history-item.favorite-item[data-swipe="delete"] { background: #ffe1db; border-color: #ce7667; }
+.favorite-item[data-dragging="true"] { opacity: .7; outline: 2px solid #9273c0; cursor: grabbing; }
 .history-item[data-swipe="edit"] { background: #e1f2e4; border-color: #75a580; }
-.favorite-item > span:first-child { display: block; color: #74528f; font-size: 12px; margin-bottom: 8px; }
+.favorite-item .gesture-label { color: #74528f; }
 button { border: 0; border-radius: 10px; background: #235c4a; color: #fff; padding: 12px 30px; font: inherit; cursor: pointer; }
 button:disabled { opacity: .5; cursor: wait; }
 #status { min-height: 24px; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
@@ -661,6 +743,7 @@ def web_app(
     favorites: Callable[[], list[dict]],
     add_favorite: Callable[[str], dict],
     remove_favorite: Callable[[int], None],
+    reorder_favorites: Callable[[list[int]], list[dict]],
 ) -> web.Application:
     response_headers = {
         "Cache-Control": "no-store",
@@ -820,6 +903,14 @@ def web_app(
             raise web.HTTPBadRequest(text="请输入要收藏的消息")
         return web.json_response(add_favorite(message))
 
+    async def order_favorites(request):
+        require_session(request)
+        payload = await json_body(request)
+        ids = payload.get("ids")
+        if not isinstance(ids, list) or any(type(value) is not int or value < 1 or value > 9223372036854775807 for value in ids) or len(set(ids)) != len(ids):
+            raise web.HTTPBadRequest(text="收藏顺序必须是不重复的正整数编号列表")
+        return web.json_response({"favorites": reorder_favorites(ids)})
+
     async def delete_favorite(request):
         require_session(request)
         favorite_id = request.match_info["favorite_id"]
@@ -837,6 +928,7 @@ def web_app(
     application.router.add_post("/send/api/logout", logout)
     application.router.add_get("/send/api/messages", recent_messages)
     application.router.add_post("/send/api/messages", send)
+    application.router.add_post("/send/api/favorites/order", order_favorites)
     application.router.add_post("/send/api/favorites", favorite_message)
     application.router.add_delete("/send/api/favorites/{favorite_id}", delete_favorite)
     application.router.add_post("/send/api/saved", save_message)
@@ -890,12 +982,23 @@ async def bridge_loop(
             created_at TEXT NOT NULL,
             content TEXT NOT NULL UNIQUE
         )""")
+        db.execute("CREATE TABLE IF NOT EXISTS favorite_order (favorite_id INTEGER PRIMARY KEY, position INTEGER NOT NULL)")
         db.execute("CREATE TABLE IF NOT EXISTS deleted_saved_messages (id TEXT PRIMARY KEY)")
         db.commit()
 
         def favorites() -> list[dict]:
-            rows = db.execute("SELECT id, created_at, content FROM favorite_messages ORDER BY created_at DESC, id DESC").fetchall()
+            rows = db.execute("SELECT f.id, f.created_at, f.content FROM favorite_messages f LEFT JOIN favorite_order o ON o.favorite_id = f.id ORDER BY o.position ASC, f.created_at DESC, f.id DESC").fetchall()
             return [{"id": row[0], "created_at": row[1], "content": row[2]} for row in rows]
+
+        def reorder_favorites(ids: list[int]) -> list[dict]:
+            current = {row[0] for row in db.execute("SELECT id FROM favorite_messages")}
+            if set(ids) != current:
+                raise web.HTTPConflict(text="收藏列表已改变，请刷新后重新排序")
+            with db:
+                db.execute("DELETE FROM favorite_order")
+                db.executemany("INSERT INTO favorite_order (favorite_id, position) VALUES (?, ?)",
+                               [(favorite_id, position) for position, favorite_id in enumerate(ids)])
+            return favorites()
 
         def add_favorite(message: str) -> dict:
             created_at = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
@@ -905,6 +1008,7 @@ async def bridge_loop(
             return {"id": row[0], "created_at": row[1], "content": row[2]}
 
         def remove_favorite(favorite_id: int) -> None:
+            db.execute("DELETE FROM favorite_order WHERE favorite_id = ?", (favorite_id,))
             db.execute("DELETE FROM favorite_messages WHERE id = ?", (favorite_id,))
             db.commit()
 
@@ -1003,7 +1107,7 @@ async def bridge_loop(
             select_subprotocol=lambda connection, offered: RECEIVER_PROTOCOL if RECEIVER_PROTOCOL in offered else None,
         ):
             print(f"msg-bridge b listening on ws://{host}:{port}; storing messages in {db_path}")
-            runner = web.AppRunner(web_app(password, forward, history, receipt, saved, save, remove_saved, favorites, add_favorite, remove_favorite)) if password is not None else None
+            runner = web.AppRunner(web_app(password, forward, history, receipt, saved, save, remove_saved, favorites, add_favorite, remove_favorite, reorder_favorites)) if password is not None else None
             try:
                 if runner:
                     await runner.setup()
