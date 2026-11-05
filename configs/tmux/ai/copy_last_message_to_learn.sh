@@ -11,11 +11,16 @@ source_pane="${1:?$usage}"
 mode="${2:-replace}"
 case "$mode" in replace|append) ;; *) echo "$usage" >&2; exit 2 ;; esac
 
+# The status-line message is the failure report. Run from a key (run-shell -b),
+# a non-zero exit would add tmux's own "'...' returned 1", which replaces this
+# message at once and hides the reason, so it exits 0 there. From a shell
+# (stderr a terminal) it exits 1 as usual.
 fail() {
   local message="$1"
-  tmux display-message "prefix+C-o: $message"
+  tmux display-message -d 8000 "prefix+C-o: $message"
   printf 'prefix+C-o: %s\n' "$message" >&2
-  exit 1
+  [[ -t 2 ]] && exit 1
+  exit 0
 }
 
 source_root="$(tmux display-message -p -t "$source_pane" '#{pane_pid}' 2>/dev/null)" ||
