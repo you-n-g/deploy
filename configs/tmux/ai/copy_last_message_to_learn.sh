@@ -6,11 +6,13 @@ source "$script_dir/lib.sh"
 source "$script_dir/../script/nvim_pane_lib.sh"
 
 # MODE: replace overwrites msg.md (the default), append adds the response at
-# its end after a --- rule. prefix + C-o picks one from a menu.
-usage="usage: copy_last_message_to_learn.sh SOURCE_PANE [replace|append]"
+# its end after a --- rule, feishu sends it to the Feishu group bot instead (a
+# Markdown card through the feishu-bot skill, with the source pane named).
+# prefix + C-o picks one from a menu.
+usage="usage: copy_last_message_to_learn.sh SOURCE_PANE [replace|append|feishu]"
 source_pane="${1:?$usage}"
 mode="${2:-replace}"
-case "$mode" in replace|append) ;; *) echo "$usage" >&2; exit 2 ;; esac
+case "$mode" in replace|append|feishu) ;; *) echo "$usage" >&2; exit 2 ;; esac
 
 # The status-line message is the failure report. Run from a key (run-shell -b),
 # a non-zero exit would add tmux's own "'...' returned 1", which replaces this
@@ -95,7 +97,17 @@ case "$agent_kind" in
   vim) copy_vim ;;
   *) fail "unsupported AI agent in $source_pane: $agent_kind" ;;
 esac
-if [[ "$mode" == append && -s "$target_file" ]]; then
+if [[ "$mode" == feishu ]]; then
+  source_label="$(tmux display-message -p -t "$source_pane" '#S:#W.#{pane_index}')"
+  { cat "$response_file"; printf '\n\n---\n来源 TMA：%s\n' "$source_label"; } >"$response_file.md"
+  # python3 here is 3.6; the helper needs 3.7+.
+  if ! error="$(python3.11 "$HOME/.claude/skills/feishu-bot/scripts/feishu_bot_send.py" markdown --title "$source_label" "$response_file.md" 2>&1)"; then
+    rm -f "$response_file.md"
+    fail "Feishu send failed: $(printf '%s' "$error" | tail -n 1)"
+  fi
+  rm -f "$response_file.md"
+  tmux display-message "Sent latest $agent_kind text from $source_label to Feishu"
+elif [[ "$mode" == append && -s "$target_file" ]]; then
   # A Markdown rule between responses (blank lines around it, so it is not
   # read as a setext heading underline).
   { printf '\n\n---\n\n'; cat "$response_file"; } >>"$target_file" || fail "cannot append to $target_file"
