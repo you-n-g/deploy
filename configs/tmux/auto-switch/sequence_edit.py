@@ -15,6 +15,7 @@ FIELD_SEP = "\t"
 # the sequence is active, and sequence.sh folds it into the saved snapshot.
 NOTE_SEPARATOR = "---"
 NOTE_OPTION = "@auto_switch_ranked_panes_note"
+RANKED_OPTION = "@auto_switch_ranked_panes"
 # A disk mirror of NOTE_OPTION, so the note survives a tmux crash: whenever the
 # option is empty (as it is in a fresh tmux), the editor loads this copy.
 NOTE_BACKUP = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "tmux/auto-switch-note.md"
@@ -363,6 +364,23 @@ def edit_file_cells(path: str) -> Dict[str, Tuple[str, str]]:
     return cells
 
 
+def edit_file_order_and_note(path: str) -> Tuple[List[str], str]:
+    """The pane ids in the order written, and the note below the separator."""
+    order: List[str] = []
+    note_lines: List[str] = []
+    in_note = False
+    with open(path, encoding="utf-8") as file:
+        for line in file:
+            line = line.rstrip("\n")
+            if in_note:
+                note_lines.append(line)
+            elif line.strip() == NOTE_SEPARATOR:
+                in_note = True
+            elif line.partition("#")[0].strip():
+                order.append(line.partition("#")[0].strip())
+    return order, "\n".join(note_lines).strip("\n")
+
+
 def apply_edit_file(path: str, base_path: Optional[str] = None) -> str:
     panes = load_panes()
     ranked, pending_reasons, attributes, note = parse_edit_file(path, panes)
@@ -371,7 +389,12 @@ def apply_edit_file(path: str, base_path: Optional[str] = None) -> str:
     # the pane while the editor was open, and writing the stale value back would
     # undo that. Only cells the user changed are applied.
     base = edit_file_cells(base_path) if base_path else {}
-    write_note(note)
+    # The same for the order and the note: prefix a n, a fork put first or a
+    # prepend from a script may change the sequence while the editor is open.
+    # Left as opened, they are not the user's edit, and the live ones stay.
+    base_order, base_note = edit_file_order_and_note(base_path) if base_path else (None, None)
+    if note != base_note:
+        write_note(note)
     refresh_script = Path.home() / "deploy/configs/tmux/script/refresh_status_lines.sh"
 
     for pane in ranked:
@@ -405,6 +428,8 @@ def apply_edit_file(path: str, base_path: Optional[str] = None) -> str:
         if changed:
             subprocess.run([os.fspath(refresh_script), pane], check=True)
 
+    if base_order is not None and ranked == [resolve_pane(p, panes) for p in base_order]:
+        return normalize_sequence(tmux_output("show-option", "-gqv", RANKED_OPTION))
     return " ".join(ranked)
 
 
