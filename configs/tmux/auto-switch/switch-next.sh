@@ -9,6 +9,10 @@ Usage:
 Read a ranked pane list from a tmux global option, switch the user's tmux
 client(s) to the first currently usable pane (AI or ordinary).
 
+The pane it lands on is recorded in @auto_switch_target (unset when no pane is
+usable), so a caller without a tmux client -- the cc-auto-switch skill routing
+replies from a chat -- knows where it went.
+
 The ranked list option is whitespace-separated pane ids. Default:
   @auto_switch_ranked_panes
 USAGE
@@ -36,7 +40,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 ranked="$(tmux show-option -gqv "$ranked_option" 2>/dev/null || true)"
-[[ -n "$ranked" ]] || { tmux display-message "auto-switch: no ranked panes in $ranked_option"; exit 0; }
+[[ -n "$ranked" ]] || { tmux set-option -guq @auto_switch_target; tmux display-message "auto-switch: no ranked panes in $ranked_option"; exit 0; }
 
 skip_pane_id=""
 if [[ -n "$skip_pane_target" ]]; then
@@ -79,9 +83,11 @@ for candidate in $ranked; do
 done
 
 if [[ -z "$target" ]]; then
+  tmux set-option -guq @auto_switch_target
   tmux display-message "auto-switch: no usable pane in ranked list"
   exit 0
 fi
+tmux set-option -gq @auto_switch_target "$target"
 
 while IFS=$'\t' read -r client readonly control_mode; do
   [[ -n "$client" ]] || continue
