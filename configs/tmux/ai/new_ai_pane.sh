@@ -13,14 +13,23 @@
 # The request is typed only once the agent is up -- its SessionStart hook has
 # set @ai_agent_running (track_ai_agent_state.sh init) -- so it is not lost to
 # a TUI still starting. prefix c s / v / f / t make the AI; prefix t c s / v /
-# f / t make it and send PANE (--send-target).
+# f / t make it and send PANE (--send-target). --prepend-sequence also puts the
+# new AI first in the auto-switch pane list (prefix c T).
 #
-# usage: new_ai_pane.sh [--send-target] stacked|side-by-side|float|window PANE
+# usage: new_ai_pane.sh [--send-target] [--prepend-sequence] stacked|side-by-side|float|window PANE
 set -euo pipefail
 
-usage="usage: new_ai_pane.sh [--send-target] stacked|side-by-side|float|window PANE"
+usage="usage: new_ai_pane.sh [--send-target] [--prepend-sequence] stacked|side-by-side|float|window PANE"
 send_target=0
-[[ "${1:-}" != --send-target ]] || { send_target=1; shift; }
+prepend=0
+while [[ "${1:-}" == --* ]]; do
+  case "$1" in
+    --send-target) send_target=1 ;;
+    --prepend-sequence) prepend=1 ;;
+    *) echo "$usage" >&2; exit 2 ;;
+  esac
+  shift
+done
 layout="${1:?$usage}"
 host="$(tmux display-message -p -t "${2:?$usage}" '#{pane_id}')"
 start_timeout_tenths=600
@@ -57,6 +66,7 @@ esac
 
 tmux select-window -t "$pane"
 tmux select-pane -t "$pane"
+(( prepend )) && "$(dirname -- "${BASH_SOURCE[0]}")/../auto-switch/sequence.sh" prepend-current "$pane"
 (( send_target )) || exit 0
 
 for (( i = 0; i < start_timeout_tenths; i++ )); do
