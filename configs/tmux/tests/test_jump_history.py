@@ -222,7 +222,7 @@ class JumpHistoryTest(unittest.TestCase):
         # The insert script passes it through (prefix + t L).
         pane = self.a.split(":.")[1]
         subprocess.check_call([INSERT_SCRIPT, "--other-session", self.socket, self.client, pane])
-        expected = "请capture我的Tmux的这个pane[" + self.target(d) + "]的内容"
+        expected = "请capture我的Tmux的这个pane[" + self.target(d) + "]（窗口 "
         self.wait_for(lambda: expected in self.tmux("capture-pane", "-p", "-t", pane))
 
     def test_join_previous_moves_pane_into_previous_window(self):
@@ -240,7 +240,7 @@ class JumpHistoryTest(unittest.TestCase):
         self.visit(self.b)
         pane = self.b.split(":.")[1]
         subprocess.check_call([INSERT_SCRIPT, self.socket, self.client, pane])
-        expected = "请capture我的Tmux的这个pane[" + self.target(self.c) + "]的内容"
+        expected = "请capture我的Tmux的这个pane[" + self.target(self.c) + "]（窗口 "
         self.wait_for(lambda: expected in self.tmux("capture-pane", "-p", "-t", pane))
         # No Enter: the text stays on the prompt line, so the shell never runs it.
         self.assertNotIn("not found", self.tmux("capture-pane", "-p", "-t", pane))

@@ -15,4 +15,4 @@ client="${2:?usage: insert_previous_target.sh SOCKET CLIENT PANE}"
 pane="${3:?usage: insert_previous_target.sh SOCKET CLIENT PANE}"
 
 target="$(python3 "$(dirname "${BASH_SOURCE[0]}")/jump_history.py" --socket "$socket" "${scope[@]}" previous "$client")"
-tmux -S "$socket" send-keys -t "$pane" -l "请capture我的Tmux的这个pane[$target]的内容"
+tmux -S "$socket" send-keys -t "$pane" -l "$("$(dirname "${BASH_SOURCE[0]}")/capture_request.sh" -S "$socket" "$target")"

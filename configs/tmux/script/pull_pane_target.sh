@@ -29,9 +29,7 @@ case "$scope" in
 esac
 
 insert_request() {
-  local target
-  target="$(tmux display-message -p -t "$1" '#{session_name}:#{window_index}.#{pane_index}')"
-  tmux send-keys -t "$pane" -l "请capture我的Tmux的这个pane[$target]的内容"
+  tmux send-keys -t "$pane" -l "$("$(dirname -- "${BASH_SOURCE[0]}")/capture_request.sh" "$1")"
 }
 
 if [[ "$scope" == *-ai ]]; then

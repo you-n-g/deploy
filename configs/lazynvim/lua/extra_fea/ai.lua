@@ -252,7 +252,13 @@ local contents = {
         print("No current tmux target found")
         return
       end
-      callback(string.format("请capture我的Tmux的这个pane[%s]的内容", tmux_target))
+      -- The shared wording (target, window name, pane id) from deploy's tmux helper.
+      local request = vim.fn.system({ vim.fn.expand("~/deploy/configs/tmux/script/capture_request.sh"), tmux_target })
+      if vim.v.shell_error ~= 0 then
+        vim.notify("capture_request.sh failed: " .. request, vim.log.levels.ERROR)
+        return
+      end
+      callback(request)
     end,
   },
 }

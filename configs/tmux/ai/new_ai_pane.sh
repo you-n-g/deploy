@@ -66,6 +66,6 @@ for (( i = 0; i < start_timeout_tenths; i++ )); do
 done
 (( i < start_timeout_tenths )) || fail "$tool_cmd in $pane did not start within $(( start_timeout_tenths / 10 ))s"
 
-tmux send-keys -t "$pane" -- "请capture我的Tmux的这个pane[$target]的内容"
+tmux send-keys -t "$pane" -l -- "$("$(dirname -- "${BASH_SOURCE[0]}")/../script/capture_request.sh" "$host")"
 tmux select-window -t "$pane"
 tmux select-pane -t "$pane"

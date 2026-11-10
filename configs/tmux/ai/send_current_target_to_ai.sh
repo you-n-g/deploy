@@ -38,7 +38,7 @@ else
 fi
 [[ -z "$AI_PANE_ID" ]] && exit 0
 
-tmux send-keys -t "$AI_PANE_ID" -- "请capture我的Tmux的这个pane[$CURRENT_TARGET]的内容"
+tmux send-keys -t "$AI_PANE_ID" -l -- "$("$SCRIPT_DIR/../script/capture_request.sh" "$CURRENT_TARGET")"
 
 if [[ "$ALL_SESSIONS" == true && -n "$TMUX" ]]; then
     tmux switch-client -t "$AI_PANE_ID"
