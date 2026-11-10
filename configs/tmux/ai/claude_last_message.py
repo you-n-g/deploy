@@ -7,6 +7,9 @@ Claude Code has no "copy last response" key like Codex's Ctrl+O, so the text is
 taken from the session transcript instead. The pid -> session mapping comes from
 ~/.claude/sessions/<pid>.json, which Claude Code maintains for every live
 interactive session; the transcript lives under ~/.claude/projects/*/<sessionId>.jsonl.
+A pane parked on a background job (parkedJobId in that file) shows the job's
+conversation, not its own: the job's transcript is the one whose session id
+starts with the job's short id (as claude_agent_state_hook.sh maps it).
 
 A streamed response is stored as several JSONL rows sharing one message.id, one
 content block per row. The output is every text block of the last non-sidechain
@@ -33,11 +36,16 @@ def main():
     if not os.path.isfile(state_path):
         fail("no Claude session state for pid %s: %s" % (pid, state_path))
     with open(state_path) as fh:
-        session_id = json.load(fh)["sessionId"]
+        state = json.load(fh)
+    parked = state.get("parkedJobId")
+    if parked:
+        pattern, what = "%s-*.jsonl" % parked, "background job %s (pane parked on it)" % parked
+    else:
+        pattern, what = "%s.jsonl" % state["sessionId"], "session %s" % state["sessionId"]
 
-    transcripts = glob.glob(os.path.join(config_dir, "projects", "*", "%s.jsonl" % session_id))
+    transcripts = glob.glob(os.path.join(config_dir, "projects", "*", pattern))
     if len(transcripts) != 1:
-        fail("expected one transcript for session %s, found %d" % (session_id, len(transcripts)))
+        fail("expected one transcript for %s, found %d" % (what, len(transcripts)))
 
     # message.id -> text blocks, plus the id of the last message that had text.
     texts = {}
