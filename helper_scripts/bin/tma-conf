@@ -11,8 +11,9 @@ Each setting is a tmux global option that the scripts read when they run, so a
 change takes effect at once. Like llm-conf's options they live in the tmux
 server: a server restart drops them back to their defaults.
 
-To add a setting: append a Setting to SETTINGS and read its option where it is
-used. One tab per setting; Enter / right applies the highlighted choice.
+To add a setting: append a Setting (one of several choices: Enter / right picks
+the highlighted one) or a Switches group (on/off switches sharing a tab: Space
+toggles) to SETTINGS, and read its option where it is used.
 """
 
 from __future__ import annotations
@@ -23,7 +24,7 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from textual.app import App, ComposeResult
-from textual.widgets import Footer, Header, OptionList, Static, TabbedContent, TabPane
+from textual.widgets import Footer, Header, OptionList, SelectionList, Static, TabbedContent, TabPane
 from textual.widgets.option_list import Option
 
 
@@ -33,6 +34,22 @@ class Setting:
     title: str
     option: str  # tmux global option; unset is the first choice
     choices: tuple[tuple[str, str], ...]  # (value, label); the first is the default
+    help: str
+
+
+@dataclass(frozen=True)
+class Switch:
+    key: str  # picks the switch in --set
+    label: str
+    option: str  # tmux global option: "on" / "off", unset = default
+    default: bool
+
+
+@dataclass(frozen=True)
+class Switches:
+    tab: str
+    title: str
+    switches: tuple[Switch, ...]
     help: str
 
 
@@ -52,6 +69,23 @@ SETTINGS = (
             "After an auto switch (prefix a a, the loop of prefix A), the pane you left floats in the\n"
             "top-right corner of the one you land on for a few seconds. This is its width; the height\n"
             "stays 45% of the window. Read by auto-switch/switch-next.sh."
+        ),
+    ),
+    Switches(
+        tab="tma-count",
+        title="TMA windows",
+        switches=(
+            Switch("tma-running", "count them in running  (N)", "@status_count_tma_running", True),
+            Switch("tma-background", "count them in background  (~N)", "@status_count_tma_background", True),
+            Switch("tma-unread", "count them in unread  (!N)", "@status_count_tma_unread", False),
+            Switch("tma-toast", "pop the task-done toast for them", "@toast_tma_created", True),
+        ),
+        help=(
+            "How windows a TMA Agent opened (@tma_created) take part, one switch each; Space toggles.\n"
+            "Counts: the status line's bottom left shows N running, ~N with background work, !N unread.\n"
+            "By default they count as running / background but not as unread: their orchestrator reads\n"
+            "them, not you (script/print_ai_status.sh). Toast: whether one finishing a turn out of sight\n"
+            "pops the task-done toast, on by default (script/track_ai_agent_state.sh)."
         ),
     ),
 )
@@ -79,6 +113,26 @@ def apply(setting: Setting, value: str) -> None:
         tmux("set-option", "-gu", setting.option)
     else:
         tmux("set-option", "-g", setting.option, value)
+    tmux("refresh-client", "-S")  # redraw the status line now, not at the next tick
+
+
+def is_on(switch: Switch) -> bool:
+    value = tmux("show-option", "-gqv", switch.option)
+    if value not in ("", "on", "off"):
+        raise ToolError(f"{switch.option} is {value!r}, expected on / off")
+    return switch.default if not value else value == "on"
+
+
+def set_switch(switch: Switch, on: bool) -> None:
+    if on == switch.default:
+        tmux("set-option", "-gu", switch.option)
+    else:
+        tmux("set-option", "-g", switch.option, "on" if on else "off")
+    tmux("refresh-client", "-S")
+
+
+def all_switches() -> dict[str, Switch]:
+    return {sw.key: sw for s in SETTINGS if isinstance(s, Switches) for sw in s.switches}
 
 
 class TmaConf(App[None]):
@@ -100,16 +154,25 @@ class TmaConf(App[None]):
             for s in SETTINGS:
                 with TabPane(s.title, id=s.tab):
                     yield Static(id=f"{s.tab}-status", classes="status")
-                    yield OptionList(*(Option(label, id=value) for value, label in s.choices),
-                                     id=f"{s.tab}-choices", classes="choices")
+                    if isinstance(s, Switches):
+                        yield SelectionList[str](*((sw.label, sw.key, is_on(sw)) for sw in s.switches),
+                                                 id=f"{s.tab}-choices", classes="choices")
+                    else:
+                        yield OptionList(*(Option(label, id=value) for value, label in s.choices),
+                                         id=f"{s.tab}-choices", classes="choices")
         yield Footer()
 
     def on_mount(self) -> None:
         self.refresh_all()
-        self.query_one(f"#{SETTINGS[0].tab}-choices", OptionList).focus()
+        self.query_one(f"#{SETTINGS[0].tab}-choices").focus()
 
     def refresh_all(self) -> None:
         for s in SETTINGS:
+            if isinstance(s, Switches):
+                now = "    ".join(f"{sw.key} {'on' if is_on(sw) else 'off'}" for sw in s.switches)
+                options = ", ".join(sw.option for sw in s.switches)
+                self.query_one(f"#{s.tab}-status", Static).update(f"{s.help}\n\nNow: {now}    (tmux options {options})")
+                continue
             value = current(s)
             label = dict(s.choices).get(value, f"{value} (not a listed choice)")
             self.query_one(f"#{s.tab}-status", Static).update(
@@ -131,38 +194,69 @@ class TmaConf(App[None]):
 
     def action_apply(self) -> None:
         tab = self.query_one(TabbedContent).active
+        if isinstance(self.setting(tab), Switches):
+            return  # Space toggles a switch
         options = self.query_one(f"#{tab}-choices", OptionList)
         if options.highlighted is not None:
             self.choose(tab, options.get_option_at_index(options.highlighted).id)
 
     def action_show_tab(self, tab: str) -> None:
         self.query_one(TabbedContent).active = tab
-        self.query_one(f"#{tab}-choices", OptionList).focus()
+        self.query_one(f"#{tab}-choices").focus()
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        if isinstance(event.option_list, SelectionList):
+            return
         self.choose(event.option_list.id.removesuffix("-choices"), event.option.id)
+
+    def on_selection_list_selection_toggled(self, event: SelectionList.SelectionToggled) -> None:
+        switch = all_switches()[event.selection.value]
+        on = event.selection.value in event.selection_list.selected
+        try:
+            set_switch(switch, on)
+        except ToolError as error:
+            self.notify(str(error), severity="error")
+            return
+        self.refresh_all()
+        self.notify(f"{switch.label.split('  ')[0]} → {'on' if on else 'off'}")
 
 
 def main() -> int:
     args = sys.argv[1:]
+    switches = all_switches()
     if args in (["-h"], ["--help"]):
         print(__doc__.split("\n\n")[0])
         print("\nusage: tma-conf                  open the settings TUI")
         print("       tma-conf --show           print every setting")
-        print("       tma-conf --set TAB VALUE  set one without the TUI")
+        print("       tma-conf --set KEY VALUE  set one without the TUI")
         for s in SETTINGS:
-            print(f"\n  {s.tab}: {' | '.join(v for v, _ in s.choices)}")
+            if isinstance(s, Switches):
+                for sw in s.switches:
+                    print(f"\n  {sw.key}: on | off  (default {'on' if sw.default else 'off'})")
+            else:
+                print(f"\n  {s.tab}: {' | '.join(v for v, _ in s.choices)}")
         return 0
     if args == ["--show"]:
         for s in SETTINGS:
-            print(f"{s.tab}\t{current(s)}")
+            if isinstance(s, Switches):
+                for sw in s.switches:
+                    print(f"{sw.key}\t{'on' if is_on(sw) else 'off'}")
+            else:
+                print(f"{s.tab}\t{current(s)}")
         return 0
     if len(args) == 3 and args[0] == "--set":
-        tabs = {s.tab: s for s in SETTINGS}
-        if args[1] not in tabs:
-            raise ToolError(f"unknown setting {args[1]!r}; known: {list(tabs)}")
-        apply(tabs[args[1]], args[2])
-        print(f"{args[1]}\t{current(tabs[args[1]])}")
+        key, value = args[1], args[2]
+        if key in switches:
+            if value not in ("on", "off"):
+                raise ToolError(f"{key}: {value!r} is not on / off")
+            set_switch(switches[key], value == "on")
+            print(f"{key}\t{'on' if is_on(switches[key]) else 'off'}")
+            return 0
+        tabs = {s.tab: s for s in SETTINGS if isinstance(s, Setting)}
+        if key not in tabs:
+            raise ToolError(f"unknown setting {key!r}; known: {list(tabs) + list(switches)}")
+        apply(tabs[key], value)
+        print(f"{key}\t{current(tabs[key])}")
         return 0
     if args:
         raise ToolError(f"unknown arguments {args}; see tma-conf --help")

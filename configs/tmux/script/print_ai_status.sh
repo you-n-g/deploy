@@ -14,6 +14,22 @@ waiting_in=0
 waiting_out=0
 ranked=" $(tmux show-option -gqv @auto_switch_ranked_panes 2>/dev/null || true) "
 blacklist_regexes="$(_tmuxg_session_blacklist_regexes)"
+# Whether windows a TMA agent made (@tma_created, mark_tma_window.sh) count in
+# running / background / unread: tma-conf's three switches, "on" / "off", unset
+# = the default (running and background yes, unread no -- their orchestrator
+# reads them, not the user).
+tma_switch() {  # OPTION DEFAULT VARIABLE: sets VARIABLE to 1 / 0
+  local value
+  value="$(tmux show-option -gqv "$1" 2>/dev/null || true)"
+  case "${value:-$2}" in
+    on) printf -v "$3" 1 ;;
+    off) printf -v "$3" 0 ;;
+    *) echo "#[fg=red]$1=$value?"; exit 0 ;;  # a bad value shows, not a silent count
+  esac
+}
+tma_switch @status_count_tma_running on tma_running
+tma_switch @status_count_tma_background on tma_background
+tma_switch @status_count_tma_unread off tma_unread
 show_orchestrator=0
 if _tmuxg_show_orchestrator_enabled; then
   show_orchestrator=1
@@ -26,18 +42,21 @@ while IFS='|' read -r session_name pane_id window_name pane_unread pane_running 
   if [ "$show_orchestrator" = "0" ]; then
     _ai_window_is_orchestrator "$window_name" && continue
   fi
+  # Per count, a TMA-made window takes part only if its switch is on.
+  count_running=1 count_background=1 count_unread=1
+  if [ -n "$tma_created" ]; then
+    count_running="$tma_running" count_background="$tma_background" count_unread="$tma_unread"
+  fi
   # Background and unread are orthogonal: a background pane with an unread
   # turn counts in both.
-  [ "$pane_background" = "1" ] && background=$((background + 1))
+  [ "$pane_background" = "1" ] && [ "$count_background" = 1 ] && background=$((background + 1))
   if [ "$pane_background" = "1" ] && [ "$pane_unread" != "1" ]; then
     :
   elif [ "$pane_running" = "1" ]; then
-    running=$((running + 1))
+    [ "$count_running" = 1 ] && running=$((running + 1))
   elif [ "$pane_done" = "1" ]; then
     : # done outranks unread, as in the status symbols, so it is not waiting
-  elif [ -n "$tma_created" ]; then
-    : # a window a TMA agent made (mark_tma_window.sh): its orchestrator reads it, not the user
-  elif [ "$pane_unread" = "1" ]; then
+  elif [ "$pane_unread" = "1" ] && [ "$count_unread" = 1 ]; then
     waiting=$((waiting + 1))
     case "$ranked" in
       *" $pane_id "*) waiting_in=$((waiting_in + 1)) ;;

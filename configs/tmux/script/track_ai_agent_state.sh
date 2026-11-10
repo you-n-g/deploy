@@ -685,11 +685,23 @@ esac
 setsid "$SCRIPT_DIR/refresh_status_lines.sh" "$pane_id" </dev/null >/dev/null \
   2>>"$HOME/.cache/tmux-status-refresh.err" &
 
+# tma-conf's switch @toast_tma_created ("on" / "off", unset = on): whether a
+# window a TMA agent made (@tma_created) pops the task-done toast.
+tma_window_toasts() {
+  [ -n "$(tmux show-option -wqv -t "$window_id" @tma_created 2>/dev/null)" ] || return 0
+  case "$(tmux show-option -gqv @toast_tma_created 2>/dev/null)" in
+    ''|on) return 0 ;;
+    off) return 1 ;;
+    *) tmux display-message "@toast_tma_created must be on / off"; return 0 ;;
+  esac
+}
+
 # Last, so the state and status lines above are already settled if it fails.
 # No attached client means nobody to show it to. The orchestrator window only
 # toasts while the orchestrator switch has it shown.
 if [ "$show_done_toast" = "1" ] \
   && _ai_window_participates "$(tmux display-message -p -t "$window_id" '#W')" \
+  && tma_window_toasts \
   && host_pane="$(current_user_pane)"; then
   "$SCRIPT_DIR/show_done_toast.sh" "$pane_id" "$host_pane"
 fi
