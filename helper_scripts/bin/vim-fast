@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# A vim that starts at once, for editing a prompt from Claude Code / Codex
+# (Ctrl+G, through VISUAL set in clauder / codexr in rcfile.sh). The system vim
+# on local disk -- the usual nvim lives on a network filesystem and loads the full config --
+# with a small vimrc (configs/vim/fast.vimrc), no viminfo, no swap file.
+exec /usr/bin/vim -u "$HOME/deploy/configs/vim/fast.vimrc" -i NONE -n "$@"

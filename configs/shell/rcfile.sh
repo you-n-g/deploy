@@ -389,6 +389,9 @@ function geminir() {
 function codexr() {
     local provider
     provider=$(_codex_default_provider)
+    # Ctrl+G opens VISUAL: a vim that starts at once (vim-fast), not the full
+    # nvim setup EDITOR names. Exported for this call only.
+    local -x VISUAL="$HOME/deploy/helper_scripts/bin/vim-fast"
 
     # TMUX_AI_MODEL names the model without naming the tool, so a launcher that
     # resolves the tool from TMUX_AI_TOOL can set one variable and have it land
@@ -812,6 +815,9 @@ function clauder() {
     fi
     local CLAUDE_MODEL="$model"
     local CLAUDE_SETTINGS_FILE="$settings_file"
+    # Ctrl+G opens VISUAL: a vim that starts at once (vim-fast), not the full
+    # nvim setup EDITOR names. Exported for this call only.
+    local -x VISUAL="$HOME/deploy/helper_scripts/bin/vim-fast"
 
     if [[ "$(uname)" == "Linux" ]]; then
         claudeyolo "$@"
