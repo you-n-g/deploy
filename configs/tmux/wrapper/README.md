@@ -59,6 +59,7 @@ Gemini 当前具备启动、headless、hooks 和 TUI 状态检测；本次没有
 框架还调用以下共享操作：`selected_backend`（读 `TMUX_AI_TOOL`，未设置或空值时为 Codex）、
 `session_names PANES...`（输出 `pane<TAB>名称`）、`background_processes PID`、`mark_created WINDOW`，以及
 `global_window_name` / `global_window_command` / `livesync_command` / `image_staging_dir` 这些现有工作流的默认配置。
+`ai_pane_pids PANE_PIDS` 接收换行分隔的 pane 根 PID，输出含交互式 AI 的根 PID，包含 broker 排除。
 
 ## 新增后端
 
@@ -90,7 +91,8 @@ tma_example_launch_command() {
 ## 共享快速路径与兼容入口
 
 `default/process.sh` 从目录生成原生进程名匹配规则，同时保留 Gemini 的 node/MainThread 识别。
-`_find_ai_pid` 用于单 pane，`_ai_process_snapshot` / `_ai_pane_pid_set` 用于一次扫描多个 pane。
+`_find_ai_pid` 用于单 pane；`ai_pane_pids` 的 Linux 快速路径在 `pane_processes.py` 中，只遍历 pane 子树，遇到 AI 或 broker 就停止该分支。
+`_ai_process_snapshot` / `_ai_pane_pid_set` 保留给显式进程快照及非 Linux 路径使用。
 `default/session_names.py` 保留原有批量会话名称解析；`mark_created.sh` 和 `background_processes.sh` 也是共享批量路径。
 这些文件允许集中写 `codex|claude|gemini` 等判断，避免逐 pane 启动多个解释器。
 新后端有特殊进程名、会话格式或祖先进程规则时，在此补充相应识别；框架不变。

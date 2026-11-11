@@ -2,6 +2,8 @@
 
 后端差异统一放在 [`wrapper/`](wrapper/README.md)：`codex/`、`claude/`、`gemini/` 各自实现接口，缺少实现时使用 `default/`；执行失败直接报错。共享批量扫描和必要的后端硬编码也放在 `default/`。新增后端无需修改布局、状态管理和 auto-switch 框架，接口与扩展方法见该说明。
 
+`prefix + C-g` 的全局选择器先打开界面，再异步装入实时列表；加载途中可以输入搜索词或取消。默认光标落在列表中第一条未读，没有未读时选第一条空闲 pane；只有一个候选时直接选中，没有候选时返回。pane 状态标记一次批量读取，由 `ai/pane_list.awk` 统一渲染。
+
 # 访问历史
 
 - `prefix + Ctrl-[`：回到上一次访问的位置。
@@ -72,7 +74,7 @@ pane 的状态存在 pane option 里（`@ai_agent_running` / `_background` / `_p
 | --- | --- | --- |
 | 底部窗口列表 | `script/refresh_status_right.sh` 的 `decorate_window_status` | tmux 格式串里的 `state_symbol`；脚本只装饰一次，已运行的 tmux 要手动改 `window-status-format` / `window-status-current-format` 或重启 |
 | 左下角计数 | `script/print_ai_status.sh` | running / `~`background / `!`unread 的数量 |
-| `prefix + g` / `C-g` 选择器 | `ai/lib.sh` 的 `_ai_pane_fzf_list` | 符号、`[unread]` 这类标签、排序键；图例在 `ai/get_ai_pane.sh` 的 header；光标起点在 `_fzf_start_pos` 按标签找 |
+| `prefix + g` / `C-g` 选择器 | `ai/pane_list.awk`（`ai/lib.sh` 批量读取状态） | 符号、`[unread]` 这类标签、排序键；图例在 `ai/get_ai_pane.sh` 的 header；光标起点在 `_fzf_start_pos` 按标签找 |
 | `prefix + C-a` 序列编辑器 | `auto-switch/sequence_edit.py` 的 `state_label`（状态写成单词）、`auto-switch/sequence.sh` 的 vim 高亮（`AutoSwitchState*`）和 `format_sequence.py` 的 `state_symbol`（加载 / 显示序列时消息里的符号） | |
 | 终端标题 | `script/print_terminal_title.sh` | |
 | 下一个 auto-switch 目标提示 | `auto-switch/print-waiting-hint.sh` | |

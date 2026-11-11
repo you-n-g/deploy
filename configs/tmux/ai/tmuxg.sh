@@ -5,7 +5,6 @@
 # Tool/model/effort overrides apply only when creating a new window.
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-source "$SCRIPT_DIR/lib.sh"
 
 QUIET=false
 ALL_SESSIONS=false
@@ -42,6 +41,7 @@ done
 [[ "$QUIET" == true ]] && trap 'exit 0' EXIT
 
 _create_new_ai_window() {
+    source "$SCRIPT_DIR/../wrapper/dispatch.sh"
     local tool workdir cmd window_name launch
     tool="$TOOL"
     [[ -n "$tool" ]] || tool="$(tma_call default selected_backend)"

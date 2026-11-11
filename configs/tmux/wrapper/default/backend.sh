@@ -56,3 +56,16 @@ tma_default_foreground_busy() {
 tma_default_session_names() { python3 "$TMA_WRAPPER_ROOT/default/session_names.py" "$@"; }
 tma_default_background_processes() { bash "$TMA_WRAPPER_ROOT/default/background_processes.sh" "$1"; }
 tma_default_mark_created() { bash "$TMA_WRAPPER_ROOT/default/mark_created.sh" "$1"; }
+
+tma_default_ai_pane_pids() {
+  local pane_pids="$1" snapshot
+  if [[ -r /proc/1/stat ]]; then
+    python3 "$TMA_WRAPPER_ROOT/default/pane_processes.py" "$AI_PROC_PAT" "$AI_SERVICE_PROC_NAME" <<<"$pane_pids"
+  else
+    snapshot="$(_ai_process_snapshot)" || return
+    _ai_pane_pid_set "$pane_pids" "$snapshot" |
+      while IFS=$'\t' read -r pane_pid ai_pid; do
+        _ai_pid_under_service "$ai_pid" "$pane_pid" || printf '%s\n' "$pane_pid"
+      done
+  fi
+}

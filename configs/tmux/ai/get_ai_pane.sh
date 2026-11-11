@@ -97,17 +97,30 @@ _get_auto_switch_pane_rows() {
 }
 
 _get_fzf_list() {
-    local current_target rows
+    local current_target rows list position
 
     current_target="$(_current_target)"
-    rows=$(_get_ai_pane_rows)
-    [[ -n "$rows" ]] || return 1
+    rows="$(_get_ai_pane_rows)" || return
+    if [[ -z "$rows" ]]; then
+        [[ -n "$INITIAL_STATE_FILE" ]] || return 1
+        printf 'abort' > "$INITIAL_STATE_FILE"
+        return 0
+    fi
 
     if [[ "$AUTO_SWITCH_LIST" == true ]]; then
-        printf '%s\n' "$rows" | AI_PANE_FZF_PRESERVE_ORDER=1 _ai_pane_fzf_list "$current_target" "$(date +%s)"
+        list="$(printf '%s\n' "$rows" | AI_PANE_FZF_PRESERVE_ORDER=1 _ai_pane_fzf_list "$current_target")" || return
     else
-        printf '%s\n' "$rows" | _ai_pane_fzf_list "$current_target" "$(date +%s)"
+        list="$(printf '%s\n' "$rows" | _ai_pane_fzf_list "$current_target")" || return
     fi
+    if [[ -n "$INITIAL_STATE_FILE" ]]; then
+        if [[ "$list" != *$'\n'* ]]; then
+            printf 'first+accept' > "$INITIAL_STATE_FILE"
+        else
+            position="$(_fzf_start_pos "$list")"
+            printf 'pos(%s)+unbind(load)' "$position" > "$INITIAL_STATE_FILE"
+        fi
+    fi
+    printf '%s\n' "$list"
 }
 
 _fzf_start_pos() {
@@ -119,12 +132,10 @@ _fzf_start_pos() {
             /\[current\]/ || /\[running\]/ || /\[pending:/ { next }
             /\[background\]/ && !/\[unread\]/ { next }
             first == 0 { first = NR }
-            /\[unread\]/ && $4 == "news" && unread_news == 0 { unread_news = NR }
             /\[unread\]/ && unread == 0 { unread = NR }
             /\[idle\]/ && ready == 0 { ready = NR }
             END {
-                if (unread_news > 0) print unread_news
-                else if (unread > 0) print unread
+                if (unread > 0) print unread
                 else if (ready > 0) print ready
                 else if (first > 0) print first
                 else print 1
@@ -206,6 +217,7 @@ ALL_SESSIONS=false
 AUTO_SWITCH_LIST=false
 INCLUDE_ORCHESTRATOR=false
 ORCHESTRATOR_VISIBILITY_OPTION=""
+INITIAL_STATE_FILE=""
 while [[ "$1" == -* ]]; do
     case "$1" in
         -i) RETURN_ID=true; shift ;;
@@ -222,6 +234,7 @@ while [[ "$1" == -* ]]; do
             shift 2
             ;;
         --auto-switch-list) AUTO_SWITCH_LIST=true; ALL_SESSIONS=true; shift ;;
+        --initial-state) INITIAL_STATE_FILE="${2:?--initial-state requires a path}"; shift 2 ;;
         --fzf-list)
             shift
             while [[ "${1:-}" == -* ]]; do
@@ -245,7 +258,7 @@ while [[ "$1" == -* ]]; do
             SESSION=${1:-$(tmux display-message -p '#S' 2>/dev/null)}
             [[ "$ALL_SESSIONS" == true || -n "$SESSION" ]] || exit 1
             _get_fzf_list
-            exit 0
+            exit $?
             ;;
         --reset-pane-attribute)
             if [[ -z "$2" ]]; then
@@ -272,42 +285,50 @@ if [[ "$ALL_SESSIONS" != true ]]; then
     [[ -z "$SESSION" ]] && exit 1
 fi
 
-ROWS=$(_get_ai_pane_rows)
-[[ -n "$ROWS" ]] || exit 1
+# Global non-interactive pickers can open before the real-time scan finishes.
+# fzf owns the reload process, including cancellation; local/list-only callers
+# retain their no-pane and single-pane fast paths.
+ASYNC_LIST=false
+[[ "$ALL_SESSIONS" == true && "$AUTO_SWITCH_LIST" == false && "$LIST_ALL" == false && ! -t 0 ]] && ASYNC_LIST=true
+if [[ "$ASYNC_LIST" == false ]]; then
+    ROWS=$(_get_ai_pane_rows)
+    [[ -n "$ROWS" ]] || exit 1
 
-if [[ "$LIST_ALL" == true ]]; then
-    while IFS=$'\t' read -r _last_visit _sess_win wname pane_id _pane_pid _wact_raw _unread _running _background _pending _pane_path _attribute; do
-        if [[ "$RETURN_ID" == true ]]; then
-            printf '%s\n' "$pane_id"
-        else
-            pane_target=$(_pane_target "$pane_id")
-            if [[ -z "$pane_target" ]]; then
-                echo "Failed to format AI pane target for $pane_id" >&2
-                exit 1
+    if [[ "$LIST_ALL" == true ]]; then
+        while IFS=$'\t' read -r _last_visit _sess_win wname pane_id _pane_pid _wact_raw _unread _running _background _pending _pane_path _attribute; do
+            if [[ "$RETURN_ID" == true ]]; then
+                printf '%s\n' "$pane_id"
+            else
+                pane_target=$(_pane_target "$pane_id")
+                if [[ -z "$pane_target" ]]; then
+                    echo "Failed to format AI pane target for $pane_id" >&2
+                    exit 1
+                fi
+                printf '%s (%s)\n' "$pane_target" "$wname"
             fi
-            printf '%s (%s)\n' "$pane_target" "$wname"
-        fi
-    done <<< "$ROWS"
-    exit 0
-fi
+        done <<< "$ROWS"
+        exit 0
+    fi
 
-COUNT=$(echo "$ROWS" | wc -l | tr -d ' ')
+    COUNT=$(echo "$ROWS" | wc -l | tr -d ' ')
 
-if [[ "$COUNT" -eq 1 ]]; then
-    IFS=$'\t' read -r _last_visit _sess_win _wname pane_id _pane_pid _wact_raw _unread _running _background _pending _pane_path _attribute <<< "$ROWS"
-    _output_pane "$pane_id"
-    exit 0
-fi
+    if [[ "$COUNT" -eq 1 ]]; then
+        IFS=$'\t' read -r _last_visit _sess_win _wname pane_id _pane_pid _wact_raw _unread _running _background _pending _pane_path _attribute <<< "$ROWS"
+        _output_pane "$pane_id"
+        exit 0
+    fi
 
-if [[ "$AUTO_SWITCH_LIST" == true ]]; then
-    LIST=$(echo "$ROWS" | AI_PANE_FZF_PRESERVE_ORDER=1 _ai_pane_fzf_list "$(_current_target)")
-else
-    LIST=$(echo "$ROWS" | _ai_pane_fzf_list "$(_current_target)")
+    if [[ "$AUTO_SWITCH_LIST" == true ]]; then
+        LIST=$(echo "$ROWS" | AI_PANE_FZF_PRESERVE_ORDER=1 _ai_pane_fzf_list "$(_current_target)")
+    else
+        LIST=$(echo "$ROWS" | _ai_pane_fzf_list "$(_current_target)")
+    fi
 fi
 
 LISTFILE=$(mktemp)
-trap "rm -f '$LISTFILE'" EXIT
-printf '%s\n' "$LIST" > "$LISTFILE"
+INITIAL_STATE_FILE=$(mktemp)
+trap "rm -f '$LISTFILE' '$INITIAL_STATE_FILE'" EXIT
+[[ "$ASYNC_LIST" == true ]] || printf '%s\n' "$LIST" > "$LISTFILE"
 
 printf -v RESET_BIND_CMD '%q --reset-pane-attribute {1}' "$SCRIPT_DIR/get_ai_pane.sh"
 if [[ "$AUTO_SWITCH_LIST" == true ]]; then
@@ -324,20 +345,24 @@ TOGGLE_ORCHESTRATOR_BIND="ctrl-o:execute-silent($TOGGLE_ORCHESTRATOR_BIND_CMD)+r
 HEADER="$(_fzf_header)"
 printf -v HEADER_ARG '%q' "$HEADER"
 
-if [[ "$AUTO_SWITCH_LIST" == true ]]; then
-    START_POS=1
-else
-    START_POS=$(
-        _fzf_start_pos "$LIST"
-    )
-fi
-
-START_BIND_ARGS=()
 START_BIND_ARGS=(--bind "change:first")
 printf -v START_BIND_CMD ' --bind %q' "change:first"
-if (( START_POS > 1 )); then
-    START_BIND_ARGS=(--sync --bind "start:pos($START_POS),load:pos($START_POS),change:first")
-    printf -v START_BIND_CMD ' --sync --bind %q' "start:pos($START_POS),load:pos($START_POS),change:first"
+if [[ "$ASYNC_LIST" == true ]]; then
+    _get_ai_pane_cmd INITIAL_CMD --initial-state "$INITIAL_STATE_FILE" --fzf-list -A
+    # Initial empty input can emit load before reload completes. Only apply the
+    # initial cursor once the producer wrote its action. A query typed while
+    # loading starts at its first match, preserving change:first behavior.
+    printf -v INITIAL_LOAD 'if [ -s %q ]; then action=$(cat %q); if [ "$action" = abort ] || [ -z "$FZF_QUERY" ]; then printf "%%s" "$action"; else printf "first+unbind(load)"; fi; fi' \
+        "$INITIAL_STATE_FILE" "$INITIAL_STATE_FILE"
+    printf -v START_BIND_CMD ' --no-sync --bind %q --bind %q' \
+        "start:reload($INITIAL_CMD),load:transform($INITIAL_LOAD)" "change:first"
+else
+    START_POS=1
+    [[ "$AUTO_SWITCH_LIST" == true ]] || START_POS="$(_fzf_start_pos "$LIST")"
+    if (( START_POS > 1 )); then
+        START_BIND_ARGS=(--sync --bind "start:pos($START_POS),load:pos($START_POS),change:first")
+        printf -v START_BIND_CMD ' --sync --bind %q' "start:pos($START_POS),load:pos($START_POS),change:first"
+    fi
 fi
 
 if [[ -t 0 ]]; then
@@ -352,7 +377,7 @@ if [[ -t 0 ]]; then
 else
     RESULTFILE=$(mktemp)
     CHANNEL="get_ai_pane_$$"
-    trap "rm -f '$LISTFILE' '$RESULTFILE'" EXIT
+    trap "rm -f '$LISTFILE' '$RESULTFILE' '$INITIAL_STATE_FILE'" EXIT
 
     tmux display-popup -E -w 100% -h 100% "\
         trap 'tmux wait-for -S \"$CHANNEL\"' EXIT; \
@@ -369,6 +394,9 @@ else
     SELECTED=$(cat "$RESULTFILE")
 fi
 
-[[ -z "$SELECTED" ]] && exit 2
+if [[ -z "$SELECTED" ]]; then
+    [[ "$(cat "$INITIAL_STATE_FILE")" != abort ]] || exit 1
+    exit 2
+fi
 PANE_ID=$(echo "$SELECTED" | cut -d' ' -f1)
 _output_pane "$PANE_ID"

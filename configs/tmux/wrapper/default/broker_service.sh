@@ -59,10 +59,12 @@ _ai_pid_under_service() {
     local stat
     local -a argv
 
-    while [[ -n "$pid" && "$pid" != "$pane_pid" && "$pid" != 1 ]]; do
+    while [[ -n "$pid" && "$pid" != 1 ]]; do
         argv=()
         mapfile -d '' -t argv <"/proc/$pid/cmdline" 2>/dev/null
         _ai_service_argv_matches "${argv[0]:-}" "${argv[1]:-}" && return 0
+        # A broker can be the pane's direct process (no shell ancestor).
+        [[ "$pid" != "$pane_pid" ]] || break
 
         # Cut after the last ")" to skip comm, which can hold spaces and
         # parentheses -- node names its threads things like "Bun Pool 55". What

@@ -212,8 +212,9 @@ def resolve_pane(target: str, panes: Dict[str, Dict[str, str]]) -> str:
     return pane_id
 
 
-def normalize_sequence(ranked: str) -> str:
-    panes = load_panes()
+def normalize_sequence(ranked: str, panes: Optional[Dict[str, Dict[str, str]]] = None) -> str:
+    if panes is None:
+        panes = load_panes()
     seen: Set[str] = set()
     out: List[str] = []
     for candidate in ranked.split():
@@ -241,8 +242,12 @@ def edit_row(row: Dict[str, str], session_name: str) -> Dict[str, str]:
     }
 
 
-def write_edit_file(ranked: str, output_path: str, note: str) -> None:
-    panes = load_panes()
+def write_edit_file(
+    ranked: str, output_path: str, note: str,
+    panes: Optional[Dict[str, Dict[str, str]]] = None,
+) -> None:
+    if panes is None:
+        panes = load_panes()
     session_names = load_session_names(ranked.split())
     rows: List[Dict[str, str]] = []
     for pane in ranked.split():
@@ -290,6 +295,27 @@ def write_edit_file(ranked: str, output_path: str, note: str) -> None:
         file.write(f"{NOTE_SEPARATOR}\n")
         if note:
             file.write(note.strip("\n") + "\n")
+
+
+def prepare_editor(output_path: str, focus_target: str) -> Tuple[str, int, str]:
+    """Normalize, render and locate the cursor with one pane snapshot."""
+    panes = load_panes()
+    raw = tmux_output("show-option", "-gqv", RANKED_OPTION).strip()
+    ranked = normalize_sequence(raw, panes)
+    if ranked != raw:
+        tmux_run("set-option", "-gq", RANKED_OPTION, ranked)
+    write_edit_file(ranked, output_path, active_note(), panes)
+
+    ordered = ranked.split()
+    focus_pane = resolve_pane(focus_target, panes) if focus_target else ""
+    if focus_pane in ordered:
+        return ranked, ordered.index(focus_pane) + 1, focus_pane
+    if focus_pane in panes:
+        window = panes[focus_pane]["window_id"]
+        for line, pane in enumerate(ordered, 1):
+            if panes[pane]["window_id"] == window:
+                return ranked, line, ""
+    return ranked, 1, ""
 
 
 def parse_edit_comment(comment: str, line_no: int) -> Tuple[str, str]:
@@ -450,6 +476,10 @@ def main() -> None:
     # note of the sequence that happens to be active.
     write_parser.add_argument("--note", default=None)
 
+    prepare_parser = subparsers.add_parser("prepare")
+    prepare_parser.add_argument("output")
+    prepare_parser.add_argument("focus_target", nargs="?", default="")
+
     subparsers.add_parser("note")
 
     set_note_parser = subparsers.add_parser("set-note")
@@ -471,6 +501,9 @@ def main() -> None:
     elif args.command == "write":
         note = active_note() if args.note is None else args.note
         write_edit_file(args.ranked, args.output, note)
+    elif args.command == "prepare":
+        ranked, line, focus_pane = prepare_editor(args.output, args.focus_target)
+        print(ranked, line, focus_pane, sep="\n")
     elif args.command == "note":
         print(active_note(), end="")
     elif args.command == "set-note":

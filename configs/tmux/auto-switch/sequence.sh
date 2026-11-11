@@ -349,52 +349,6 @@ load_saved_sequence() {
   message="loaded saved ranked panes #$wanted: $(format_sequence "$selected_normalized")"
 }
 
-pane_line_in_edit_file() {
-  local file="$1" pane="$2"
-
-  awk -v pane="$pane" '$1 == pane { print NR; exit }' "$file"
-}
-
-first_edit_pane_line() {
-  local file="$1" ranked="$2" pane line
-
-  for pane in $ranked; do
-    line="$(pane_line_in_edit_file "$file" "$pane")"
-    if [[ -n "$line" ]]; then
-      printf '%s\n' "$line"
-      return 0
-    fi
-  done
-
-  printf '1\n'
-}
-
-edit_focus_line() {
-  local file="$1" ranked="$2" focus_target="$3" focus_pane focus_window window_panes pane line
-
-  [[ -n "$focus_target" ]] || { first_edit_pane_line "$file" "$ranked"; return 0; }
-  focus_pane="$(resolve_pane "$focus_target" || true)"
-  [[ -n "$focus_pane" ]] || { first_edit_pane_line "$file" "$ranked"; return 0; }
-
-  line="$(pane_line_in_edit_file "$file" "$focus_pane")"
-  [[ -z "$line" ]] || { printf '%s\n' "$line"; return 0; }
-
-  focus_window="$(tmux display-message -p -t "$focus_pane" '#{window_id}' 2>/dev/null || true)"
-  [[ -n "$focus_window" ]] || { first_edit_pane_line "$file" "$ranked"; return 0; }
-  window_panes="$(tmux list-panes -t "$focus_window" -F '#{pane_id}')"
-
-  for pane in $ranked; do
-    case $'\n'"$window_panes"$'\n' in
-      *$'\n'"$pane"$'\n'*) ;;
-      *) continue ;;
-    esac
-    line="$(pane_line_in_edit_file "$file" "$pane")"
-    [[ -z "$line" ]] || { printf '%s\n' "$line"; return 0; }
-  done
-
-  first_edit_pane_line "$file" "$ranked"
-}
-
 # With a third argument the note is pinned to it; without one the helper reads
 # the active sequence's note out of the option.
 write_edit_file() {
@@ -431,25 +385,25 @@ wait_after_error() {
 }
 
 edit_sequence() {
-  local tmp selected_file vim_script vim_selected_file vim_script_file editor editor_name focus_line focus_pane vim_focus_match selected_pane resolved_selected_pane
-  local -a editor_argv
+  local tmp selected_file vim_script vim_selected_file vim_script_file editor editor_name focus_line focus_pane vim_focus_match selected_pane resolved_selected_pane prepared
+  local -a editor_argv editor_state
 
   tmp="$(mktemp "/tmp/auto-switch-sequence.XXXXXX")"
   selected_file="$(mktemp "/tmp/auto-switch-selected.XXXXXX")"
   vim_script="$(mktemp "/tmp/auto-switch-edit.XXXXXX.vim")"
   trap 'rm -f "$tmp" "$tmp.base" "$selected_file" "$vim_script"' RETURN
 
-  # current_ranked_sequence already returns the normalized sequence, and
-  # normalize is idempotent — re-normalizing here only bought another helper
-  # process on the `prefix C-a` path.
-  ranked="$(current_ranked_sequence)"
-  write_edit_file "$tmp" "$ranked"
+  # One helper process shares the pane snapshot across normalization, rendering
+  # and cursor placement. The final field is empty unless a row is highlighted.
+  prepared="$(run_sequence_edit prepare "$tmp" "$edit_focus_target")"
+  mapfile -t editor_state <<< "$prepared"
+  ranked="${editor_state[0]}"
+  focus_line="${editor_state[1]}"
+  focus_pane="${editor_state[2]:-}"
   # What the editor opened with: apply writes back only the cells changed from it.
   cp "$tmp" "$tmp.base"
-  focus_line="$(edit_focus_line "$tmp" "$ranked" "$edit_focus_target")"
-  focus_pane="$(resolve_pane "$edit_focus_target" || true)"
   vim_focus_match=""
-  if [[ -n "$focus_pane" && -n "$(pane_line_in_edit_file "$tmp" "$focus_pane")" ]]; then
+  if [[ -n "$focus_pane" ]]; then
     vim_focus_match="call matchadd('AutoSwitchCurrentPane', '^\\V${focus_pane}\\m\\ze\\s', 100)"
   fi
   vim_selected_file="${selected_file//\'/''}"

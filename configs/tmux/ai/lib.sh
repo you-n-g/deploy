@@ -8,9 +8,6 @@ TMUX_SEND_TARGET_SHOW_ORCHESTRATOR_OPTION="@tmux-send-target-show-orchestrator"
 TMUXG_SESSION_BLACKLIST_REGEX_OPTION="@tmuxg-session-blacklist-regex"
 _AI_FZF_PREVIEW_HEIGHT=85%  # fzf preview-window height for AI-window selectors
 _AI_FZF_SESSION_COLOR_CODES=(31 32 33 34 35 36 91 92 93 94 95 96)
-_ai_fzf_session_color_names=()
-_ai_fzf_session_color_values=()
-_ai_fzf_used_session_color_codes=()
 
 _ai_session_id_for_pane() {
     local pane_id="${1:?usage: _ai_session_id_for_pane PANE_ID}"
@@ -260,84 +257,6 @@ _clear_ai_pane_state() {
     tmux set-option -pqu -t "$pane_id" @ai_agent_attribute 2>/dev/null || true
 }
 
-_ai_fzf_reset_session_colors() {
-    _ai_fzf_session_color_names=()
-    _ai_fzf_session_color_values=()
-    _ai_fzf_used_session_color_codes=()
-}
-
-_ai_fzf_get_session_color() {
-    local session_name="$1"
-    local out_var="$2"
-    local i
-
-    for ((i = 0; i < ${#_ai_fzf_session_color_names[@]}; i++)); do
-        if [[ "${_ai_fzf_session_color_names[$i]}" == "$session_name" ]]; then
-            printf -v "$out_var" '%s' "${_ai_fzf_session_color_values[$i]}"
-            return 0
-        fi
-    done
-
-    printf -v "$out_var" '%s' ""
-    return 1
-}
-
-_ai_fzf_set_session_color() {
-    local session_name="$1"
-    local color="$2"
-
-    _ai_fzf_session_color_names+=("$session_name")
-    _ai_fzf_session_color_values+=("$color")
-    _ai_fzf_used_session_color_codes+=("$color")
-}
-
-_ai_fzf_color_is_used() {
-    local color="$1"
-    local used
-
-    for used in "${_ai_fzf_used_session_color_codes[@]}"; do
-        [[ "$used" == "$color" ]] && return 0
-    done
-
-    return 1
-}
-
-_ai_fzf_session_color_code() {
-    local session_name="$1"
-    local out_var="$2"
-    local color
-    local start offset candidate color_count
-
-    _ai_fzf_get_session_color "$session_name" color
-    [[ -n "$color" ]] && { printf -v "$out_var" '%s' "$color"; return; }
-
-    color_count="${#_AI_FZF_SESSION_COLOR_CODES[@]}"
-    start=$((${#_ai_fzf_session_color_names[@]} % color_count))
-
-    for ((offset = 0; offset < color_count; offset++)); do
-        candidate="${_AI_FZF_SESSION_COLOR_CODES[$(((start + offset) % color_count))]}"
-        if ! _ai_fzf_color_is_used "$candidate"; then
-            color="$candidate"
-            break
-        fi
-    done
-
-    [[ -z "$color" ]] && color="${_AI_FZF_SESSION_COLOR_CODES[$start]}"
-    _ai_fzf_set_session_color "$session_name" "$color"
-    printf -v "$out_var" '%s' "$color"
-}
-
-_ai_fzf_colored_session_target() {
-    local sess_win="$1"
-    local out_var="$2"
-    local session_name="${sess_win%:*}"
-    local window_index="${sess_win##*:}"
-    local session_color
-
-    _ai_fzf_session_color_code "$session_name" session_color
-    printf -v "$out_var" '\033[%sm%s\033[0m:%s' "$session_color" "$session_name" "$window_index"
-}
-
 _ai_ranked_pane_id_set() {
     local ranked candidate resolved seen=""
 
@@ -374,19 +293,14 @@ _ai_ranked_pane_id_set() {
 #   $11 pane_current_path
 #   $12 attribute      short description generated once after first stop
 _ai_pane_rows() {
-    local pane_rows pane_pids ps_cache ai_pane_pids
+    local pane_rows pane_pids ai_pane_pids
 
     pane_rows=$(tmux list-panes "$@" \
         -F $'#{?@last_visit,#{@last_visit},#{window_activity}}\t#{session_name}:#{window_index}.#{pane_index}\t#{window_name}\t#{window_id}\t#{pane_id}\t#{pane_pid}\t#{pane_active}\t#{window_activity}\t#{@ai_agent_unread}\t#{@ai_agent_running}\t#{@ai_agent_background}\t#{@ai_agent_pending}\t#{pane_current_path}\t#{@ai_agent_attribute}' 2>/dev/null) || return 1
     pane_pids=$(printf '%s\n' "$pane_rows" | awk -F '\t' '{ print $6 }')
-    ps_cache="$(_ai_process_snapshot)" || return 1
-    # Same question _has_ai_proc answers one pane at a time, batched over the ps
-    # snapshot: which of these panes is an AI window? It has to stay in sync with
-    # that function, so it applies the same broker exclusion.
-    ai_pane_pids=$(_ai_pane_pid_set "$pane_pids" "$ps_cache" |
-        while IFS=$'\t' read -r pane_pid ai_pid; do
-            _ai_pid_under_service "$ai_pid" "$pane_pid" || printf '%s\n' "$pane_pid"
-        done)
+    # Shared batch recognition includes broker exclusion and backend process
+    # rules. On Linux it only visits pane subtrees, stopping at each agent.
+    ai_pane_pids="$(tma_call default ai_pane_pids "$pane_pids")" || return
 
     awk -F '\t' '
         FNR == NR {
@@ -438,157 +352,21 @@ _ai_pane_rows() {
 #   %13 work:3.1 ● gemini          [act 0s]  [pane %13 marked switcher]
 #   %14 learn:0.0 ◉ codex          [act 1m] [unread]  [pane %14]
 _ai_pane_fzf_list() {
-    local current_target="${1:-}"
-    local now="${2:-$(date +%s)}"
-    local marked_pane_id=""
-    local switcher_pane_id=""
-    local input_index=0
-    local ranked_pane_ids=""
+    local current_target="${1:-}" now="${2:-$(date +%s)}"
+    local switcher_pane_id ranked_pane_ids metadata script_dir
 
-    marked_pane_id="$(tmux display-message -p -t '{marked}' '#{pane_id}' 2>/dev/null || true)"
     switcher_pane_id="$(tmux show-option -gqv @tma_window_switcher_pane 2>/dev/null || true)"
     if [[ -n "$switcher_pane_id" ]]; then
         switcher_pane_id="$(tmux display-message -p -t "$switcher_pane_id" '#{pane_id}' 2>/dev/null || true)"
     fi
     ranked_pane_ids="$(_ai_ranked_pane_id_set)"
-    local done_pane_ids
-    done_pane_ids=" $(_ai_done_pane_ids | tr '\n' ' ') "
-    local woke_pane_ids
-    woke_pane_ids=" $(_ai_woke_pane_ids | tr '\n' ' ') "
-    local muted_pane_ids
-    muted_pane_ids=" $(tmux list-panes -a -F '#{?@ai_agent_muted,#{pane_id},}' 2>/dev/null | grep . | tr '\n' ' ') "
-    local tma_pane_ids
-    tma_pane_ids=" $(_ai_tma_pane_ids | tr '\n' ' ') "
+    metadata="$(tmux list-panes -a -F $'#{pane_id}\t#{pane_marked}\t#{?@ai_agent_done,1,0}\t#{?@ai_agent_woke,1,0}\t#{?@ai_agent_muted,1,0}\t#{?@tma_created,1,0}')" || return
+    script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-    _ai_fzf_reset_session_colors
-
-    while IFS=$'\t' read -r wvisit sess_win wname wid pane_pid wact_raw unread_flag running_flag background_flag pending_flag pane_path attribute; do
-        local sort_key status rel_visit rel_act time_info colored_sess_win
-        local display_wname path_info
-        input_index=$((input_index + 1))
-        local is_unread=0
-        [[ "$unread_flag" == "1" ]] && is_unread=1
-
-        local is_busy=false
-        [[ "$running_flag" == "1" ]] && is_busy=true
-        local has_background=false
-        [[ "$background_flag" == "1" ]] && has_background=true
-        local is_pending=false
-        [[ -n "$pending_flag" && "$pending_flag" != "0" ]] && is_pending=true
-
-        local is_done=false
-        [[ "$done_pane_ids" == *" $wid "* ]] && is_done=true
-
-        if [[ "$sess_win" == "$current_target" ]]; then
-            sort_key=0
-            if $is_pending; then
-                status=$'\033[35m⏸\033[0m '
-            elif $has_background; then
-                status=$'\033[36m➲\033[0m '
-            elif $is_busy; then
-                status=$'\033[36m▶\033[0m '
-            elif $is_done; then
-                status=$'\033[32m✓\033[0m '
-            else
-                status=$'\033[36m▷\033[0m '
-            fi
-        elif $is_pending; then
-            sort_key=07
-            status=$'\033[35m⏸\033[0m '
-        elif $has_background && (( is_unread )); then
-            # Background work still going, but the turn ended out of sight
-            # with something to read: it sorts with the unread panes.
-            sort_key=09
-            status=$'\033[33m◓\033[0m '
-        elif $has_background; then
-            sort_key=06
-            status=$'\033[33m◒\033[0m '
-        elif $is_busy; then
-            sort_key=05
-            status=$'\033[33m●\033[0m '
-        elif $is_done; then
-            # Done sits with the panes that need no attention (above), ahead
-            # of unread and idle, where the picker's cursor starts.
-            sort_key=08
-            status=$'\033[32m✓\033[0m '
-        elif (( is_unread )) && [[ "$woke_pane_ids" == *" $wid "* ]]; then
-            sort_key=09
-            status=$'\033[33m☀\033[0m '
-        elif (( is_unread )); then
-            sort_key=09
-            status=$'\033[33m◉\033[0m '
-        else
-            sort_key=1
-            status=$'\033[32m○\033[0m '
-        fi
-
-        _format_relative_age "$((now - wvisit))" rel_visit
-        _format_relative_age "$((now - wact_raw))" rel_act
-        _ai_fzf_colored_session_target "$sess_win" colored_sess_win
-
-        if (( wvisit == wact_raw )); then
-            time_info="[va ${rel_act}]"
-        else
-            time_info="[v ${rel_visit} | a ${rel_act}]"
-        fi
-
-        local pending_mark=""
-        local state_tags=""
-        [[ "$sess_win" == "$current_target" ]] && state_tags+=" [current]"
-        if $is_pending; then
-            local pending_label
-            _ai_pending_reason_label "$pending_flag" pending_label
-            pending_mark=$' \033[35m[pending:'"${pending_label}"$']\033[0m'
-        elif $has_background; then
-            state_tags+=" [background]"
-            (( is_unread )) && state_tags+=$' \033[33m[unread]\033[0m'
-        elif $is_busy; then
-            state_tags+=" [running]"
-        elif $is_done; then
-            state_tags+=$' \033[32m[done]\033[0m'
-        elif (( is_unread )); then
-            state_tags+=$' \033[33m[unread]\033[0m'
-            [[ "$woke_pane_ids" == *" $wid "* ]] && state_tags+=$' \033[33m[woke]\033[0m'
-        else
-            state_tags+=" [idle]"
-        fi
-        [[ "$muted_pane_ids" == *" $wid "* ]] && state_tags+=" [muted]"
-        local is_ranked=false
-        case "$ranked_pane_ids" in
-            *" $wid "*) is_ranked=true ;;
-        esac
-
-        local attribute_info=""
-        [[ -n "$attribute" ]] && attribute_info="  ${attribute}"
-        display_wname="$wname"
-        if $is_ranked; then
-            display_wname=$'\033[1;91m'"${display_wname}"$'\033[0m'
-        fi
-        # A window a TMA agent made says so next to its name, in the cyan of
-        # its window-list symbol.
-        if [[ "$tma_pane_ids" == *" $wid "* ]]; then
-            display_wname="${display_wname} "$'\033[36m[agent]\033[0m'
-        fi
-        path_info=""
-        [[ -n "$pane_path" ]] && path_info="  ${pane_path}"
-
-        local pane_marker="pane ${wid}"
-        [[ -n "$marked_pane_id" && "$wid" == "$marked_pane_id" ]] && pane_marker="${pane_marker} marked"
-        [[ -n "$switcher_pane_id" && "$wid" == "$switcher_pane_id" ]] && pane_marker="${pane_marker} switcher"
-        # Within one state, the windows a TMA agent made come after the
-        # user's own: they mostly need less attention.
-        if [[ "$tma_pane_ids" == *" $wid "* ]]; then
-            sort_key="${sort_key}1"
-        else
-            sort_key="${sort_key}0"
-        fi
-        if [[ "${AI_PANE_FZF_PRESERVE_ORDER:-}" == "1" ]]; then
-            printf -v sort_key '%08d' "$input_index"
-        fi
-
-        printf '%s\t%s\t%s %s %b%s\033[2m%s\033[0m  \033[2m%s%s%s\033[0m  \033[2m[%s]\033[0m\033[2m%s\033[0m\n' \
-            "$sort_key" "$wvisit" "$wid" "$colored_sess_win" "$status" "$display_wname" "$attribute_info" "$time_info" "$pending_mark" "$state_tags" "$pane_marker" "$path_info"
-    done |
-    sort -t $'\t' -k1,1 -k2,2nr |
-    cut -f3-
+    awk -v current="$current_target" -v now="$now" -v switcher="$switcher_pane_id" \
+        -v ranked="$ranked_pane_ids" -v palette="${_AI_FZF_SESSION_COLOR_CODES[*]}" \
+        -v preserve="${AI_PANE_FZF_PRESERVE_ORDER:-0}" -f "$script_dir/pane_list.awk" \
+        <(printf '%s\n' "$metadata") - |
+        sort -t $'\t' -k1,1 -k2,2nr |
+        cut -f3-
 }
