@@ -382,6 +382,22 @@ function _start_codex_tui_output_tracker() {
 
 # gemini with rename
 function geminir() {
+    local arg approval_mode_set=0
+    for arg in "$@"; do
+        case "$arg" in
+            --approval-mode|--approval-mode=*|-y|--yolo|--yolo=*|--no-yolo)
+                approval_mode_set=1
+                break
+                ;;
+            --) break ;;
+        esac
+    done
+    if (( ! approval_mode_set )); then
+        set -- --approval-mode yolo "$@"
+    fi
+    if [[ -n "${TMUX_AI_MODEL:-}" ]]; then
+        set -- --model "$TMUX_AI_MODEL" "$@"
+    fi
     _with_tmux_rename "$MYPROXY_GEMINI" gemini "$@"
 }
 

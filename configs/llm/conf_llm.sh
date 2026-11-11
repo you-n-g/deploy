@@ -169,10 +169,19 @@ deploy_codex() {
     "$SCRIPT_DIR/config_codex.py" defaults
 }
 
+deploy_gemini() {
+    [ -f "$GLOBAL_AGENTS_MD" ] || { echo "Missing global AGENTS.md: $GLOBAL_AGENTS_MD" >&2; exit 1; }
+    mkdir -p "$HOME/.gemini"
+    ln -snf "$GLOBAL_AGENTS_MD" "$HOME/.gemini/GEMINI.md"
+    echo "Linked: ~/.gemini/GEMINI.md -> $GLOBAL_AGENTS_MD"
+    python3 "$SCRIPT_DIR/config_gemini.py"
+}
+
 deploy_llm_configs() {
     deploy_sgpt_prompt
     deploy_claude
     deploy_codex
+    deploy_gemini
 }
 
 install_agents() {
@@ -218,10 +227,14 @@ Commands:
   configs          Link LLM CLI configs and install Codex/Claude hooks.
   codex            Link ~/.codex/AGENTS.md, install hooks, and apply Codex defaults.
   claude           Link ~/.claude/CLAUDE.md and install Claude hooks.
+  gemini           Link ~/.gemini/GEMINI.md and apply Gemini defaults.
   sgpt-prompt      Link only ~/.sgpt.md.
   install-agents   Install gemini, codex, and claude CLIs if missing.
   claude-hud       Print the manual claude-hud setup commands.
   help             Show this help.
+
+Gemini gateway setup (reuse an existing Claude gateway credential):
+  python3 "$SCRIPT_DIR/config_gemini.py" --gateway-provider "\$HOME/.claude/providers/gateway.json"
 EOF
 }
 
@@ -241,6 +254,7 @@ run_command() {
         configs) deploy_llm_configs ;;
         codex) deploy_codex ;;
         claude) deploy_claude ;;
+        gemini) deploy_gemini ;;
         sgpt-prompt) deploy_sgpt_prompt ;;
         install-agents) install_agents ;;
         claude-hud) print_claude_hud_instructions ;;
