@@ -1,0 +1,1 @@
+../../tmux/wrapper/gemini/GEMINI_CLI.md

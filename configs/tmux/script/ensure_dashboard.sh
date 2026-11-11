@@ -11,7 +11,7 @@
 set -euo pipefail
 
 pane="${1:?usage: ensure_dashboard.sh PANE}"
-launch="$HOME/.claude/skills/dashboard/scripts/launch.sh"
+launch="$HOME/deploy/configs/llm/merged-skills/dashboard/scripts/launch.sh"
 
 window="$(tmux list-windows -a -F '#{session_name} #{window_id} #{window_name}' | awk '$3 == "dashboard" { print $1, $2; exit }')"
 if [[ -n "$window" ]]; then

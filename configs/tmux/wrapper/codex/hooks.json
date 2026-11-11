@@ -1,0 +1,53 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "_comment": "compact is deliberately absent. Codex re-fires SessionStart after compacting, mid-turn, and init clears @ai_agent_running -- which then only comes back on the next UserPromptSubmit that never arrives, so a working pane sits marked idle. Same reason the Claude side matches startup|resume|clear.",
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/deploy/configs/tmux/wrapper/codex/hook.sh\" init",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "_comment": "A turn can resume without a UserPromptSubmit -- after a compaction, or when a queued message is picked up -- and nothing else would mark the pane running again. Every such continuation reaches a tool call. Guarded by a single tmux read so the common already-running case costs nothing.",
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/deploy/configs/tmux/wrapper/codex/hook.sh\" pretool",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "_comment": "The only event carrying the submitted text, so it feeds the prompt log. Codex names the field `prompt`, same as Claude does, so both sides hand the tracker the same AI_AGENT_PROMPT, with the session id and cwd beside it. Extracted here rather than in the tracker because the tracker has a dozen callers that pipe it no JSON, and a blocking read on this path would stall the pane. The adapter extracts the JSON fields before calling the shared tracker.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/deploy/configs/tmux/wrapper/codex/hook.sh\" running",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/deploy/configs/tmux/wrapper/codex/hook.sh\" stop",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

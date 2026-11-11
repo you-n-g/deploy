@@ -1,3 +1,7 @@
+# Backend wrappers
+
+后端差异统一放在 [`wrapper/`](wrapper/README.md)：`codex/`、`claude/`、`gemini/` 各自实现接口，缺少实现时使用 `default/`；执行失败直接报错。共享批量扫描和必要的后端硬编码也放在 `default/`。新增后端无需修改布局、状态管理和 auto-switch 框架，接口与扩展方法见该说明。
+
 # 访问历史
 
 - `prefix + Ctrl-[`：回到上一次访问的位置。
@@ -55,6 +59,12 @@ tmux 3.7b 有个 bug：在 zoom 状态的 window 里用 `new-pane` 建的 floati
 另一个坑：window 处于 zoom 时，tmux 把浮窗的 `#{pane_floating_flag}` 报成 0。要按这个标志区分浮窗和分屏的脚本（`float_to_split.sh`、`split_to_float.sh`）都先取消 zoom 再判断。
 
 # AI pane 状态标识
+
+Gemini CLI 通过 `bash ~/deploy/configs/llm/conf_llm.sh gemini` 安装 TMA hooks，重新启动 `geminir` 后生效。`BeforeAgent` 标记运行并记录 prompt，`BeforeModel` / `BeforeTool` / `PreCompress` 补充恢复运行，`AfterAgent` 标记空闲/未读，工具审批通知让 pane 回到可切入状态。事件统一交给 `track_ai_agent_state.sh`，沿用 auto-switch、pending 依赖释放和 watcher 的 background 校正。`geminir` 同时启动已有的 TUI tracker，处理取消或异常后没有结束 hook 的情况。
+
+单独新建 Gemini 窗口可用 `tmuxg --force-new --tool gemini`；若希望 `prefix + c` 等新建入口默认使用 Gemini，执行 `tmux set-environment -g TMUX_AI_TOOL gemini`。Linux 下 Gemini 的进程名通常是 `node` / `MainThread`，AI 列表按其 CLI 入口识别。
+
+Gemini 的 `cli_help` 内置代理继承当前会话模型，避免网关拒绝它默认使用的 Flash。全局 `AGENTS.md` 仍由 `~/.gemini/GEMINI.md` 链接加载；另加 `GEMINI_CLI.md` 说明当前 CLI 的 shell 命令替换限制与可用写法。
 
 pane 的状态存在 pane option 里（`@ai_agent_running` / `_background` / `_pending` / `_done` / `_unread` / `_woke`，含义见 `script/track_ai_agent_state.sh` 文件头），窗口是否由 Agent 创建存在 window option `@tma_created`。状态只由 `track_ai_agent_state.sh` 写；下面这些地方各自读它、各自画符号，加一种状态或改一个符号时要逐个改：
 

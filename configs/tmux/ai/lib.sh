@@ -1,12 +1,8 @@
 #!/bin/bash
 # Shared helpers for AI window detection
 
-# Panes that only host a broker service are not AI windows. Drop this line to
-# turn the exclusion off; see the file for what it covers.
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/lib/broker_service.sh"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../wrapper/dispatch.sh"
 
-AI_PROC_PAT='(^|/)(claude|gemini|codex)$'
-_AI_CODEX_SESSION_ID_RE='[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
 TMUXG_SHOW_ORCHESTRATOR_OPTION="@tmuxg-show-orchestrator"
 TMUX_SEND_TARGET_SHOW_ORCHESTRATOR_OPTION="@tmux-send-target-show-orchestrator"
 TMUXG_SESSION_BLACKLIST_REGEX_OPTION="@tmuxg-session-blacklist-regex"
@@ -15,195 +11,6 @@ _AI_FZF_SESSION_COLOR_CODES=(31 32 33 34 35 36 91 92 93 94 95 96)
 _ai_fzf_session_color_names=()
 _ai_fzf_session_color_values=()
 _ai_fzf_used_session_color_codes=()
-
-_ai_proc_name_matches() {
-    case "$1" in
-        claude|gemini|codex|*/claude|*/gemini|*/codex) return 0 ;;
-        *) return 1 ;;
-    esac
-}
-
-_find_ai_pid_procfs() {
-    local root="$1"
-    local queue=("$root")
-    local seen=" "
-    local pid comm children child
-
-    while ((${#queue[@]} > 0)); do
-        pid="${queue[0]}"
-        queue=("${queue[@]:1}")
-
-        [[ "$seen" == *" $pid "* ]] && continue
-        seen+="$pid "
-
-        if [[ -r "/proc/$pid/comm" ]]; then
-            comm=""
-            IFS= read -r comm <"/proc/$pid/comm" || true
-            if _ai_proc_name_matches "$comm"; then
-                printf '%s %s\n' "$pid" "$comm"
-                return 0
-            fi
-        fi
-
-        if [[ -r "/proc/$pid/task/$pid/children" ]]; then
-            children=""
-            IFS= read -r children <"/proc/$pid/task/$pid/children" || true
-            for child in $children; do
-                queue+=("$child")
-            done
-        fi
-    done
-
-    return 1
-}
-
-# Find the first AI process in the subtree rooted at a pane PID.
-# Prints "PID COMM" (e.g. "12345 claude") and returns 0, or returns 1 if none.
-# For loops, pass one process snapshot to avoid repeated process-table scans:
-#   ps_cache=$(_ai_process_snapshot)
-#   _has_ai_proc "$pane_pid" "$ps_cache"
-_find_ai_pid() {
-    if [[ $# -lt 2 && -r "/proc/$1/task/$1/children" ]]; then
-        _find_ai_pid_procfs "$1"
-        return
-    fi
-
-    local ps_data="${2:-$(_ai_process_snapshot)}"
-    echo "$ps_data" | awk -v root="$1" -v pat="$AI_PROC_PAT" '
-        { children[$2] = children[$2] " " $1; name[$1] = $3 }
-        END {
-            q[1] = root
-            n = 1
-            while (n > 0) {
-                new_n = 0
-                for (i = 1; i <= n; i++) {
-                    p = q[i]; if (p == "") continue
-                    if (name[p] ~ pat) { print p " " name[p]; exit 0 }
-                    m = split(children[p], t, " ")
-                    for (j = 1; j <= m; j++) if (t[j] != "") nq[++new_n] = t[j]
-                }
-                n = new_n; for (k=1;k<=n;k++) q[k]=nq[k]; delete nq
-            }
-            exit 1
-        }'
-}
-
-# Check if a pane has an AI process (boolean wrapper around _find_ai_pid).
-# This answers "is this an AI window?" one pane at a time; _ai_pane_rows answers
-# it in batch. Both have to apply lib/broker_service.sh, or a broker pane drops
-# out of the renames but stays in the pickers.
-_has_ai_proc() {
-    local found
-
-    if [[ $# -ge 2 ]]; then
-        found="$(_find_ai_pid "$1" "$2")" || return 1
-    else
-        found="$(_find_ai_pid "$1")" || return 1
-    fi
-
-    ! _ai_pid_under_service "${found%% *}" "$1"
-}
-
-_first_codex_session_id() {
-    grep -oE "$_AI_CODEX_SESSION_ID_RE" | head -1 || true
-}
-
-_codex_session_id_from_args() {
-    ps -p "$1" -o args= 2>/dev/null | _first_codex_session_id
-}
-
-_codex_session_id_from_proc_fd() {
-    find "/proc/$1/fd" -maxdepth 1 -type l -printf '%l\n' 2>/dev/null |
-        _first_codex_session_id
-}
-
-_codex_session_id_from_lsof() {
-    local lsof_output
-
-    if command -v timeout >/dev/null 2>&1; then
-        lsof_output=$(timeout 3 lsof -p "$1" 2>/dev/null || true)
-    else
-        lsof_output=$(lsof -p "$1" 2>/dev/null || true)
-    fi
-    printf '%s\n' "$lsof_output" | awk '{print $NF}' | _first_codex_session_id
-}
-
-_codex_session_id_for_pid() {
-    local ai_pid="${1:?usage: _codex_session_id_for_pid AI_PID}"
-    local session_id=""
-
-    # Forked Codex keeps the source id in argv; the open jsonl fd is active.
-    if [[ -d "/proc/$ai_pid/fd" ]]; then
-        session_id=$(_codex_session_id_from_proc_fd "$ai_pid")
-    fi
-    if [[ -z "$session_id" ]] && command -v lsof >/dev/null 2>&1; then
-        session_id=$(_codex_session_id_from_lsof "$ai_pid")
-    fi
-    if [[ -z "$session_id" ]]; then
-        session_id=$(_codex_session_id_from_args "$ai_pid")
-    fi
-
-    [[ -n "$session_id" ]] || return 1
-    printf '%s\n' "$session_id"
-}
-
-# Claude Code tracks each live session in <config>/sessions/<pid>.json. Unlike
-# older versions, that file stays current: `sessionId` is rewritten on /clear,
-# and status/updatedAt are refreshed as the session runs. It also records the
-# owning tmux pane and the process start time, both of which we verify so a
-# stale file from a recycled pid can't hand back the wrong session.
-# The file only appears once the session has real content, so a freshly started
-# claude with no turns yet legitimately has no id to report.
-#
-# `sessionId` is not always the conversation on screen, though. When the session
-# parks itself on a background job the pane keeps showing the job -- that is what
-# the `← for agents` footer and the job's name in the divider mean -- while
-# `sessionId` still names the parked session behind it. The pane's own state file
-# records which job took the screen, so follow it; the job's session is what the
-# user means by "this session".
-_claude_session_id_for_pid() {
-    local ai_pid="${1:?usage: _claude_session_id_for_pid AI_PID}"
-    local expect_pane="${2:-}"
-    local config_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-    local state_file="$config_dir/sessions/$ai_pid.json"
-    local proc_start=""
-
-    [[ -r "$state_file" ]] || return 1
-    [[ -r "/proc/$ai_pid/stat" ]] && proc_start=$(awk '{print $22}' "/proc/$ai_pid/stat" 2>/dev/null)
-
-    python3 -c '
-import json, os, sys
-
-path, expect_pane, proc_start, jobs_dir = sys.argv[1:5]
-with open(path) as handle:
-    state = json.load(handle)
-
-# "session:@window.%pane" -> "%pane"; only the pane id is stable across renames.
-pane = (state.get("tmux") or "").rpartition(".")[2]
-if expect_pane and pane and pane != expect_pane:
-    sys.exit(1)
-
-recorded_start = state.get("procStart")
-if proc_start and recorded_start is not None and str(recorded_start) != proc_start:
-    sys.exit(1)
-
-# The pane parked on a background job: fork the job, which is what is on screen.
-# A missing job record means we cannot tell what the pane is showing, so report
-# nothing rather than hand back the parked session.
-job_id = state.get("parkedJobId")
-if job_id:
-    with open(os.path.join(jobs_dir, job_id, "state.json")) as handle:
-        job = json.load(handle)
-    session_id = job.get("resumeSessionId") or job.get("sessionId") or ""
-else:
-    session_id = state.get("sessionId") or ""
-
-if not session_id:
-    sys.exit(1)
-
-print(session_id)
-' "$state_file" "$expect_pane" "$proc_start" "$config_dir/jobs"
-}
 
 _ai_session_id_for_pane() {
     local pane_id="${1:?usage: _ai_session_id_for_pane PANE_ID}"
@@ -214,11 +21,7 @@ _ai_session_id_for_pane() {
     ai_pid="${result%% *}"
     ai_name=$(basename "${result##* }")
 
-    case "$ai_name" in
-        codex) _codex_session_id_for_pid "$ai_pid" ;;
-        claude) _claude_session_id_for_pid "$ai_pid" "$pane_id" ;;
-        *) return 1 ;;
-    esac
+    tma_call "$ai_name" session_id "$ai_pid" "$pane_id"
 }
 
 _find_ai_pane_in_window() {
@@ -549,60 +352,6 @@ _ai_ranked_pane_id_set() {
     done
 
     printf ' %s ' "$seen"
-}
-
-# Print "PANE_PID<TAB>AI_PID" for every AI process found under one of the given
-# pane pids. The AI pid comes along because the caller still has to ask
-# _ai_pid_under_service whether that process belongs to the pane or to a broker,
-# and the ps snapshot carries no argv to answer it here.
-_ai_pane_pid_set() {
-    local pane_pids="$1"
-    local ps_data="$2"
-
-    awk -v pat="$AI_PROC_PAT" '
-    FNR == NR {
-        if ($1 ~ /^[0-9]+$/) pane_pid[$1] = 1
-        next
-    }
-    {
-        line = $0
-        sub(/^[[:space:]]+/, "", line)
-        split(line, proc, /[[:space:]]+/)
-        if (proc[1] !~ /^[0-9]+$/) next
-        parent[proc[1]] = proc[2]
-        name[proc[1]] = proc[3]
-    }
-    END {
-        for (pid in name) {
-            if (name[pid] !~ pat) continue
-            current = pid
-            while (current in parent) {
-                if (current in pane_pid) {
-                    found[current "\t" pid] = 1
-                    break
-                }
-                current = parent[current]
-            }
-        }
-        for (pair in found) print pair
-    }
-    ' <(printf '%s\n' "$pane_pids") <(printf '%s\n' "$ps_data")
-}
-
-_ai_process_snapshot() {
-    if [[ -r /proc/1/stat ]]; then
-        perl -e '
-            for my $stat_file (glob "/proc/[0-9]*/stat") {
-                open my $fh, "<", $stat_file or next;
-                my $line = <$fh>;
-                next unless defined $line;
-                next unless $line =~ /^(\d+) \((.*)\) \S+ (\d+) /;
-                print "$1 $3 $2\n";
-            }
-        '
-    else
-        ps -ax -o pid,ppid,comm 2>/dev/null
-    fi
 }
 
 # Print unique AI panes as tab-separated rows, sorted by last_visit desc.

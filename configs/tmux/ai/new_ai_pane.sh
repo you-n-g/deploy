@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start a new AI (the TMUX_AI_TOOL wrapper, codexr / clauder) next to PANE and
+# Start a new AI (the TMUX_AI_TOOL wrapper, backend launch command) next to PANE and
 # focus it. With --send-target it is also handed PANE the way prefix t a does:
 # the capture request is typed into its prompt (no Enter). LAYOUT is where the
 # AI goes:
@@ -35,12 +35,9 @@ host="$(tmux display-message -p -t "${2:?$usage}" '#{pane_id}')"
 start_timeout_tenths=600
 fail() { tmux display-message "新 AI：$1"; exit 1; }
 
-ai_tool="$(tmux show-environment -g TMUX_AI_TOOL | sed 's/^TMUX_AI_TOOL=//')"
-case "$ai_tool" in
-  codex)  tool_cmd="codexr" ;;
-  claude) tool_cmd="clauder" ;;
-  *) fail "unsupported TMUX_AI_TOOL: $ai_tool" ;;
-esac
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../wrapper/dispatch.sh"
+ai_tool="$(tma_call default selected_backend)"
+tool_cmd="$(tma_call "$ai_tool" launch_command "" "")"
 
 IFS=$'\t' read -r target session path win_w win_h < <(tmux display-message -p -t "$host" \
   '#{session_name}:#{window_index}.#{pane_index}	#{session_id}	#{pane_current_path}	#{window_width}	#{window_height}')

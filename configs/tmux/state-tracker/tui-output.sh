@@ -94,58 +94,26 @@ seconds_since_activity() {
 # occurs during live API stalls (up to 69s in 2acdf66). Retire this proxy once
 # native state reliably distinguishes active, cancelled and failed turns.
 # The interrupt footer stays during live stalls and disappears on ESC.
-FOREGROUND_WORKING_RE='esc[[:space:]]+to[[:space:]]+(interrupt|interupt)|press[[:space:]]+esc|(^|[[:space:]])(working|baking)[[:space:]]*\('
-
 has_foreground_working_marker() {
-  printf '%s\n' "$1" | grep -Eiq "$FOREGROUND_WORKING_RE"
+  tma_call "$active_backend" foreground_busy "$1"
 }
 
 detect_tui_state() {
-  local recent="$1"
-
-  # This tracker is only a supplement for transitions normal hooks cannot see.
-  # Regular Codex/Claude running and idle state should come from their hooks.
-  # Do not use this script as a generic screen-state fallback. In particular,
-  # do not infer generic idle from arbitrary TUI text; the only idle repair here
-  # is the stale-running timeout below for known interrupt paths.
-  #
-  # TODO NOTE (compaction): prefer a native turn-start event before preprocessing
-  # or PreCompact. In Codex 0.167.1, compaction delayed UserPromptSubmit by 62s
-  # (09d9346). PreCompact exists, but our probe found that an already loaded
-  # thread retained its hook configuration after editing hooks.json. Verify
-  # hook wiring/reload for existing sessions, then retire this text detector.
-  # The current gap is event timing plus local hook deployment.
-  # Match the live timer/footer on one line, never "Context compacted" history.
-  if printf '%s\n' "$recent" | grep -Eiq \
-    '^[[:space:]]*[^[:alnum:][:space:]]?[[:space:]]*Compacting context[[:space:]]*\([^)]*esc[[:space:]]+to[[:space:]]+interrupt'; then
-    printf 'compacting\n'
-    return
-  fi
-
-  # TODO NOTE (goal continuation): wire a native start/resume event for every
-  # foreground turn, including automatic /goal continuations; evaluate
-  # PreModelRequest. Observed resumes repaint Working without UserPromptSubmit,
-  # and our PreToolUse hook waits for the first tool. Remove this detector once
-  # native coverage is verified for both model-only and tool-using resumes.
-  if printf '%s\n' "$recent" | grep -Eiq \
-    'pursuing[[:space:]]+goal|<goal_context>|active[[:space:]]+thread[[:space:]]+goal|tasks[[:space:]]+[0-9]+/[0-9]+' \
-    && has_foreground_working_marker "$recent"; then
-    printf 'running\n'
-  fi
+  # Backend detectors supplement gaps in native hooks. They do not infer idle
+  # from arbitrary screen text; stale-running repair below handles interrupts.
+  tma_call "$active_backend" tui_state "$1"
 }
 
 ensure_state() {
-  local desired_state="$1"
-
+  local desired_state source
+  IFS=$'\t' read -r desired_state source <<<"$1"
   case "$desired_state" in
-    running|compacting)
-      if [[ "$running" != "1" ]]; then
-        local source="tui-output:goal-running"
-        [[ "$desired_state" != "compacting" ]] || source="tui-output:compacting"
+    running)
+      if [[ "$running" != 1 ]]; then
         AI_AGENT_STATE_SOURCE="$source" "$TRACK_SCRIPT" running "$pane_id"
       fi
       ;;
-    *) ;;
+    *) echo "Unsupported backend TUI state: $desired_state" >&2; return 1 ;;
   esac
 }
 
@@ -208,12 +176,18 @@ maybe_mark_stale_running_idle() {
   # Leave loop state untouched; the main loop recomputes it after detectors run.
 }
 
-pane_has_ai_proc() {
-  local pane_pid
+select_active_backend() {
+  local found
+  found="$(_find_ai_pid "$1")" || return 1
+  _ai_pid_under_service "${found%% *}" "$1" && return 1
+  active_backend="${found##* }"
+  active_backend="${active_backend##*/}"
+}
 
-  pane_pid="$(tmux display-message -p -t "$pane_id" '#{pane_pid}' 2>/dev/null || true)"
-  [[ -n "$pane_pid" ]] || return 1
-  _has_ai_proc "$pane_pid"
+pane_has_ai_proc() {
+  local root
+  root="$(tmux display-message -p -t "$pane_id" '#{pane_pid}')" || return
+  select_active_backend "$root"
 }
 
 wait_for_ai_proc() {
@@ -257,7 +231,7 @@ captured_activity=""
 captured_at=0
 recent=""
 
-while read_pane && _has_ai_proc "$pane_pid"; do
+while read_pane && select_active_backend "$pane_pid"; do
   ai_state="$(current_ai_state)"
   emit_busy_to_idle "$last_ai_state" "$ai_state"
   last_ai_state="$ai_state"

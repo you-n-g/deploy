@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Turn a tiled Claude pane into a floating pane of the same window.
+# Turn a tiled resumable AI pane into a floating pane of the same window.
 #
 # tmux 3.7b cannot make an existing pane floating (join-pane / move-pane -f
 # means full width or height, not floating), so the pane is recreated: a new
-# floating pane resumes the same Claude session (`clauder --resume <id>`) once
+# floating pane resumes the same agent session once
 # the old process has exited, and the old pane is killed. The process does not
 # survive, which is why this refuses a pane that is running or has background
-# work, and only Claude panes qualify: nothing else can be resumed.
+# work. The backend must implement the relocate operation.
 #
 # The new pane takes over the old one's identity where it is referenced by
 # pane id: its @ai_agent_* options and @last_visit, its place in the active
@@ -18,6 +18,7 @@
 set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$script_dir/../ai/lib.sh"
 fail() { tmux display-message "split_to_float: $1"; exit 1; }
 
 old="$(tmux display-message -p -t "${1:?usage: split_to_float.sh PANE}" '#{pane_id}')"
@@ -30,22 +31,13 @@ tiled="$(tmux list-panes -t "$window" -f '#{!=:#{pane_floating_flag},1}' -F x | 
 (( tiled > 1 )) || fail "这是窗口里唯一的分屏，变成浮窗后底下就没有 pane 了"
 [[ "$(tmux show-option -pqv -t "$old" @ai_agent_running)" != 1 \
   && "$(tmux show-option -pqv -t "$old" @ai_agent_background)" != 1 ]] \
-  || fail "Claude 正在运行或有后台任务，等它停下再转"
+  || fail "Agent 正在运行或有后台任务，等它停下再转"
 
-# The claude process under the pane, and the session it has open.
-claude_pid="$(ps -u "$USER" -o pid=,ppid=,comm= | awk -v root="$pane_pid" '
-  { parent[$1] = $2; name[$1] = $3 }
-  END {
-    for (pid in name) {
-      if (name[pid] != "claude") continue
-      for (p = pid; p in parent; p = parent[p]) if (p == root) { print pid; exit }
-    }
-  }')"
-[[ -n "$claude_pid" ]] || fail "不是 Claude pane，只有 Claude 会话能接回"
-session_file="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions/$claude_pid.json"
-[[ -f "$session_file" ]] || fail "找不到 $session_file"
-session_id="$(jq -r '.sessionId' "$session_file")"
-cwd="$(jq -r '.cwd' "$session_file")"
+agent="$(_find_ai_pid "$pane_pid")" || fail "找不到可识别的 AI 进程"
+agent_pid="${agent%% *}"
+backend="${agent##* }"; backend="${backend##*/}"
+relocation="$(tma_call "$backend" relocate "$agent_pid" "$old")" || fail "$backend 无法在新 pane 恢复当前会话"
+IFS=$'\t' read -r cwd resume_command <<<"$relocation"
 
 # The top-right quarter of the window, as ensure_float_ai_pane.sh places the
 # floating AI pane. The command waits for the old process to exit so two
@@ -53,7 +45,7 @@ cwd="$(jq -r '.cwd' "$session_file")"
 read -r win_w win_h < <(tmux display-message -p -t "$old" '#{window_width} #{window_height}')
 fw=$(( win_w / 2 )); fh=$(( win_h / 2 ))
 printf -v cmd 'while kill -0 %s 2>/dev/null; do sleep 0.2; done; TMUX_AI_DISABLE_RENAME=1 exec zsh -ic %q' \
-  "$claude_pid" "clauder --resume $session_id"
+  "$agent_pid" "$resume_command"
 new="$("$script_dir/new_float_pane.sh" "$old" -x "$fw" -y "$fh" \
   -X "$(( win_w - fw - 1 ))" -Y 1 -c "$cwd" "$cmd")"
 

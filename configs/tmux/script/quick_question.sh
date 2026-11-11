@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../wrapper/dispatch.sh"
 
 usage() {
   cat >&2 <<'USAGE'
 Usage:
   quick_question.sh <session> <path>
 
-Create a quick-question codex-remote window in the current tmux session, then
+Create a quick-question window using the shared remote profile in the current tmux session, then
 prepend the new pane to @auto_switch_ranked_panes.
 USAGE
 }
@@ -17,7 +18,7 @@ path="${2:-$HOME}"
 [[ -n "$session" ]] || { usage; exit 2; }
 
 ranked_option="@auto_switch_ranked_panes"
-livesync_command="${TMA_LIVESYNC_COMMAND:-codex-remote -C ~/vaults/livesync-headless bj.vm.213428.xyz}"
+livesync_command="$(tma_call default livesync_command)"
 printf -v shell_command 'TMUX_AI_WINDOW_NAME=quick-question zsh -ic %q' "$livesync_command"
 
 pane="$(

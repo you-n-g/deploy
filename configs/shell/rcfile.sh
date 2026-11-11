@@ -382,6 +382,7 @@ function _start_codex_tui_output_tracker() {
 
 # gemini with rename
 function geminir() {
+    _start_ai_tui_output_tracker
     local arg approval_mode_set=0
     for arg in "$@"; do
         case "$arg" in

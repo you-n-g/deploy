@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Print the floating AI pane of HOST_PANE's window, creating it when there is
-# none. A new one runs the TMUX_AI_TOOL wrapper (codexr / clauder) in the
+# none. A new one runs the TMUX_AI_TOOL wrapper (backend launch command) in the
 # top-right quarter of the window, unfocused, and is printed only once the
 # agent is up: its SessionStart hook has set @ai_agent_running
 # (track_ai_agent_state.sh init), so text sent right after is not lost to a
@@ -21,12 +21,9 @@ while read -r pane tag; do
   fi
 done < <(tmux list-panes -t "$window" -F '#{pane_id} #{@float_ai}')
 
-ai_tool="$(tmux show-environment -g TMUX_AI_TOOL | sed 's/^TMUX_AI_TOOL=//')"
-case "$ai_tool" in
-  codex)  tool_cmd="codexr" ;;
-  claude) tool_cmd="clauder" ;;
-  *) echo "Unsupported TMUX_AI_TOOL: $ai_tool" >&2; exit 1 ;;
-esac
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../wrapper/dispatch.sh"
+ai_tool="$(tma_call default selected_backend)"
+tool_cmd="$(tma_call "$ai_tool" launch_command "" "")"
 
 read -r win_w win_h path < <(tmux display-message -p -t "$host" '#{window_width} #{window_height} #{pane_current_path}')
 pw=$(( win_w / 2 )); ph=$(( win_h / 2 ))

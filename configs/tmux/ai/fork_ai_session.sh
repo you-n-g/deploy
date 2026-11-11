@@ -1,6 +1,6 @@
 #!/bin/bash
 # Fork an AI session into a new tmux window and switch to it.
-# Supports Claude Code (clauder) and Codex (codexr).
+# Backend-specific session and launch behavior comes from wrapper/.
 #
 # Usage: fork_ai_session.sh [-q] [--target PANE] [--suffix SUFFIX] [--disable-tmux-rename] [--join-back stacked|side-by-side] [--float] [--prepend-sequence] [window_name]
 #   window_name  — name of a window in the CURRENT session whose AI pane to
@@ -59,107 +59,6 @@ TARGET_WIN_NAME="${1:-}"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source "$SCRIPT_DIR/lib.sh"
 
-_shell_join() {
-    local arg
-
-    for arg in "$@"; do
-        printf '%q ' "$arg"
-    done
-}
-
-_find_codex_remote_pid() {
-    local root="$1"
-    local queue=("$root")
-    local seen=" "
-    local pid children child args arg
-
-    while ((${#queue[@]} > 0)); do
-        pid="${queue[0]}"
-        queue=("${queue[@]:1}")
-
-        [[ "$seen" == *" $pid "* ]] && continue
-        seen+="$pid "
-
-        if [[ -r "/proc/$pid/cmdline" ]]; then
-            args=()
-            mapfile -d '' -t args <"/proc/$pid/cmdline" || true
-            for arg in "${args[@]}"; do
-                if [[ "$(basename -- "$arg")" == "codex-remote" ]]; then
-                    printf '%s\n' "$pid"
-                    return 0
-                fi
-            done
-        fi
-
-        if [[ -r "/proc/$pid/task/$pid/children" ]]; then
-            children=""
-            IFS= read -r children <"/proc/$pid/task/$pid/children" || true
-            for child in $children; do
-                queue+=("$child")
-            done
-        fi
-    done
-
-    return 1
-}
-
-_codex_remote_fork_cmd() {
-    local codex_remote_pid="$1"
-    local session_id="$2"
-    local cmdline=()
-    local script_index=-1
-    local script_path
-    local args=()
-    local preserved=()
-    local target_index=-1
-    local i arg
-
-    mapfile -d '' -t cmdline <"/proc/$codex_remote_pid/cmdline"
-    for i in "${!cmdline[@]}"; do
-        if [[ "$(basename -- "${cmdline[$i]}")" == "codex-remote" ]]; then
-            script_index="$i"
-            break
-        fi
-    done
-    [[ "$script_index" -ge 0 ]] || return 1
-
-    script_path="${cmdline[$script_index]}"
-    args=("${cmdline[@]:script_index + 1}")
-
-    i=0
-    while ((i < ${#args[@]})); do
-        arg="${args[$i]}"
-        case "$arg" in
-            --)
-                target_index=$((i + 1))
-                break
-                ;;
-            --resume|--fork|--local-port|--remote-port)
-                i=$((i + 2))
-                ;;
-            -C|--remote-cwd|-c|--config|--reconnect-delay|--codex-bin|--remote-codex-bin|--timeout)
-                [[ $((i + 1)) -lt ${#args[@]} ]] || return 1
-                preserved+=("$arg" "${args[$((i + 1))]}")
-                i=$((i + 2))
-                ;;
-            --no-ai-status-bridge|--no-auto-reconnect)
-                preserved+=("$arg")
-                i=$((i + 1))
-                ;;
-            -*)
-                return 1
-                ;;
-            *)
-                target_index="$i"
-                break
-                ;;
-        esac
-    done
-    [[ "$target_index" -ge 0 && "$target_index" -lt ${#args[@]} ]] || return 1
-
-    _shell_join "$script_path" "${preserved[@]}" --fork "$session_id" "${args[@]:target_index}"
-}
-
 # Must be inside tmux
 if [[ -z "$TMUX" ]]; then
     echo "Not inside tmux." >&2
@@ -196,7 +95,6 @@ if [[ -n "$TARGET_WIN_NAME" ]]; then
         exit 1
     fi
     # Pick the first pane with an AI process in the target window.
-    _ps_cache=$(ps -ax -o pid,ppid,comm 2>/dev/null)
     pane_pid=""
     workdir=""
     source_pane_id=""
@@ -229,46 +127,10 @@ ai_pid="${result%% *}"
 ai_name=$(basename "${result##* }")
 fork_name="${base_name}${SUFFIX}"
 
-case "$ai_name" in
-    claude)
-        # <config>/sessions/<pid>.json now tracks the live session id (it is
-        # rewritten on /clear) and records the owning pane, so we can fork this
-        # exact session instead of making the user confirm the top row of the
-        # time-sorted Resume picker. See _claude_session_id_for_pid for the
-        # checks that keep a stale file from resolving to the wrong session.
-        session_id=$(_claude_session_id_for_pid "$ai_pid" "$source_pane_id" || true)
-        if [[ -n "$session_id" ]]; then
-            cmd="clauder --resume '$session_id' --fork-session"
-        else
-            # Either the session has no turns yet (no state file until it does)
-            # or the file didn't match this pane. Say which pane we gave up on
-            # and hand over to the picker rather than forking the wrong session.
-            tmux display-message "Fork: no live session id for $source_pane_id; using Resume picker"
-            cmd="clauder --resume --fork-session"
-        fi
-        ;;
-    codex)
-        session_id=$(_ai_session_id_for_pane "$source_pane_id" || true)
-        if [[ -z "$session_id" ]]; then
-            tmux display-message "Fork: failed to resolve Codex session id for $source_pane_id"
-            exit 1
-        fi
-        codex_remote_pid=$(_find_codex_remote_pid "$pane_pid" || true)
-        if [[ -n "$codex_remote_pid" ]]; then
-            cmd=$(_codex_remote_fork_cmd "$codex_remote_pid" "$session_id" || true)
-            if [[ -z "$cmd" ]]; then
-                tmux display-message "Fork: failed to rebuild codex-remote fork command"
-                exit 1
-            fi
-        else
-            cmd="codexr fork '$session_id'"
-        fi
-        ;;
-    *)
-        tmux display-message "Fork: unsupported AI tool ($ai_name)"
-        exit 1
-        ;;
-esac
+if ! cmd="$(tma_call "$ai_name" fork_command "$ai_pid" "$source_pane_id" "$pane_pid")"; then
+    tmux display-message "Fork: cannot fork $ai_name in $source_pane_id"
+    exit 1
+fi
 
 if [[ "$DISABLE_TMUX_RENAME" == true ]]; then
     printf -v launch_cmd 'TMUX_AI_DISABLE_RENAME=1 zsh -ic %q' "$cmd"

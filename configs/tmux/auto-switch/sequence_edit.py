@@ -283,7 +283,7 @@ def write_edit_file(ranked: str, output_path: str, note: str) -> None:
         file.write("# Vim shortcut: visual-mode Alt-j / Alt-k move the whole selected block down / up.\n")
         file.write("# Vim shortcut: Alt-a / Alt-e send the current line (normal) or the selected block (visual) to the top / bottom.\n")
         file.write('# Attribute column updates @ai_agent_attribute; write "no attribute" to clear.\n')
-        file.write("# Session column is the live Codex/Claude display name and is informational only.\n")
+        file.write("# Session column is the live agent display name and is informational only.\n")
         file.write('# Pending column updates @ai_agent_pending; empty clears it, "/" means no reason was provided.\n')
         file.write("# Earlier columns are informational only. Long lines intentionally do not wrap in vim.\n")
         file.write(f'# Everything below the "{NOTE_SEPARATOR}" line is a free-form note saved with this sequence.\n')

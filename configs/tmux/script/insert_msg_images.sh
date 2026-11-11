@@ -25,6 +25,7 @@
 #
 # usage: insert_msg_images.sh [--last] PANE
 set -euo pipefail
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../wrapper/dispatch.sh"
 
 usage="usage: insert_msg_images.sh [--last] PANE"
 last=0
@@ -32,7 +33,7 @@ last=0
 pane="${1:?$usage}"
 vault="${LEARN_MSG_DIR:-$HOME/vaults/livesync-headless}"
 msg="$vault/msg.md"
-out_dir="$HOME/tmp/claude-images"
+out_dir="$(tma_call default image_staging_dir)"
 max_age=1800
 fail() {
   tmux display-message -d 8000 "msg 图片：$1"

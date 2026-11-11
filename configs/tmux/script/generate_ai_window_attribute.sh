@@ -43,13 +43,8 @@ failure_message() {
 session_id="$(tmux display-message -p -t "$window_id" '#{session_id}')"
 tmux_socket="$(tmux display-message -p '#{socket_path}')"
 
-# Which AI CLI headless_ai.sh runs, for error messages: the tmux global
-# TMUX_AI_TOOL, codex unless it says claude.
-ai_tool="$(tmux show-environment -g TMUX_AI_TOOL 2>/dev/null | sed 's/^TMUX_AI_TOOL=//')"
-case "$ai_tool" in
-  claude) ai_tool="claude" ;;
-  *) ai_tool="codex" ;;
-esac
+source "$SCRIPT_DIR/../wrapper/dispatch.sh"
+ai_tool="$(tma_call default selected_backend)"
 
 cat > "$prompt_file" <<EOF
 你在给一个 tmux AI agent window 生成属性描述，供窗口列表展示。

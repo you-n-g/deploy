@@ -7,9 +7,7 @@ CUSTOM_SKILLS_DIR="$SCRIPT_DIR/skills"
 EXTERNAL_REPOS_DIR="$SCRIPT_DIR/external"
 MERGED_SKILLS_DIR="$SCRIPT_DIR/merged-skills"
 OBSIDIAN_SKILLS_DIR="$EXTERNAL_REPOS_DIR/obsidian-skills"
-FARSIDE_DIR="$HOME/farside"
-GLOBAL_CLAUDE_MD="$FARSIDE_DIR/CLAUDE.md"
-GLOBAL_AGENTS_MD="$FARSIDE_DIR/AGENTS.md"
+source "$SCRIPT_DIR/../tmux/wrapper/dispatch.sh"
 
 ensure_dirs() {
     mkdir -p "$CUSTOM_SKILLS_DIR"
@@ -113,8 +111,9 @@ apply_skill_exclusions() {
 
 link_skills_for_tool() {
     local tool_name=$1
-    local target_dir="$HOME/.$tool_name/skills"
-    mkdir -p "$HOME/.$tool_name"
+    local target_dir
+    target_dir="$(tma_call "$tool_name" skills_dir)" || return
+    mkdir -p "$(dirname -- "$target_dir")"
 
     if [ -d "$target_dir" ] && ! [ -L "$target_dir" ]; then
         echo "WARNING: '$target_dir' exists as a real directory. Replacing with symlink..."
@@ -135,9 +134,10 @@ link_skills_for_tool() {
 
 link_all_skills() {
     ensure_dirs
-    link_skills_for_tool "gemini"
-    link_skills_for_tool "codex"
-    link_skills_for_tool "claude"
+    local backend
+    while IFS= read -r backend; do
+        link_skills_for_tool "$backend" || return
+    done < <(tma_backends)
     echo "Skills linking complete."
 }
 
@@ -149,48 +149,21 @@ deploy_sgpt_prompt() {
     echo "Linked: ~/.sgpt.md -> $SCRIPT_DIR/.sgpt.md"
 }
 
-# ── Deploy global CLAUDE.md to ~/.claude/CLAUDE.md ───────────────────────────
-deploy_claude() {
-    [ -f "$GLOBAL_CLAUDE_MD" ] || { echo "Missing global CLAUDE.md: $GLOBAL_CLAUDE_MD" >&2; exit 1; }
-    mkdir -p "$HOME/.claude"
-    ln -snf "$GLOBAL_CLAUDE_MD" "$HOME/.claude/CLAUDE.md"
-    echo "Linked: ~/.claude/CLAUDE.md -> $GLOBAL_CLAUDE_MD"
-    "$SCRIPT_DIR/config_claude.py"
-}
-
-# ── Deploy global AGENTS.md to ~/.codex/AGENTS.md ───────────────────────────
-deploy_codex() {
-    [ -f "$GLOBAL_AGENTS_MD" ] || { echo "Missing global AGENTS.md: $GLOBAL_AGENTS_MD" >&2; exit 1; }
-    mkdir -p "$HOME/.codex"
-    ln -snf "$GLOBAL_AGENTS_MD" "$HOME/.codex/AGENTS.md"
-    echo "Linked: ~/.codex/AGENTS.md -> $GLOBAL_AGENTS_MD"
-    ln -snf "$SCRIPT_DIR/codex/hooks.json" "$HOME/.codex/hooks.json"
-    echo "Linked: ~/.codex/hooks.json -> $SCRIPT_DIR/codex/hooks.json"
-    "$SCRIPT_DIR/config_codex.py" defaults
-}
-
-deploy_gemini() {
-    [ -f "$GLOBAL_AGENTS_MD" ] || { echo "Missing global AGENTS.md: $GLOBAL_AGENTS_MD" >&2; exit 1; }
-    mkdir -p "$HOME/.gemini"
-    ln -snf "$GLOBAL_AGENTS_MD" "$HOME/.gemini/GEMINI.md"
-    echo "Linked: ~/.gemini/GEMINI.md -> $GLOBAL_AGENTS_MD"
-    python3 "$SCRIPT_DIR/config_gemini.py"
-}
-
 deploy_llm_configs() {
+    local backend
     deploy_sgpt_prompt
-    deploy_claude
-    deploy_codex
-    deploy_gemini
+    while IFS= read -r backend; do
+        tma_call "$backend" install || return
+    done < <(tma_backends)
 }
 
 install_agents() {
-    command -v gemini &>/dev/null || npm install -g @google/gemini-cli
-    command -v codex  &>/dev/null || npm install -g @openai/codex
-    command -v claude &>/dev/null || curl -fsSL https://claude.ai/install.sh | bash
+    local backend
+    while IFS= read -r backend; do
+        tma_call "$backend" install_cli || return
+    done < <(tma_backends)
 }
 
-# 🙌🏻 得手动一次输入下面的命令
 # https://github.com/jarrodwatts/claude-hud
 # 注意得完成setup会生效：
 print_claude_hud_instructions() {
@@ -222,14 +195,12 @@ Commands:
   external-skills  Clone/update external skill repos and install skill CLIs.
   merge-skills     Link custom/external/Farside skills into merged-skills/.
   skill-exclusions Disable only explicitly excluded skills.
-  link-skills      Link merged-skills/ into ~/.gemini, ~/.codex, and ~/.claude.
+  link-skills      Link merged-skills/ into each registered backend.
   skills           Run external-skills, merge-skills, skill-exclusions, and link-skills.
-  configs          Link LLM CLI configs and install Codex/Claude hooks.
-  codex            Link ~/.codex/AGENTS.md, install hooks, and apply Codex defaults.
-  claude           Link ~/.claude/CLAUDE.md and install Claude hooks.
-  gemini           Link ~/.gemini/GEMINI.md and apply Gemini defaults.
+  configs          Install configs and hooks for all registered backends.
+  <backend>        Install one backend: $(tma_backends | paste -sd "," -).
   sgpt-prompt      Link only ~/.sgpt.md.
-  install-agents   Install gemini, codex, and claude CLIs if missing.
+  install-agents   Install registered backend CLIs if missing.
   claude-hud       Print the manual claude-hud setup commands.
   help             Show this help.
 
@@ -252,14 +223,15 @@ run_command() {
             link_all_skills
             ;;
         configs) deploy_llm_configs ;;
-        codex) deploy_codex ;;
-        claude) deploy_claude ;;
-        gemini) deploy_gemini ;;
         sgpt-prompt) deploy_sgpt_prompt ;;
         install-agents) install_agents ;;
         claude-hud) print_claude_hud_instructions ;;
         help|-h|--help) print_usage ;;
         *)
+            if [[ -f "$TMA_WRAPPER_ROOT/$1/backend.sh" ]]; then
+                tma_call "$1" install
+                return $?
+            fi
             echo "Unknown command: $1" >&2
             print_usage >&2
             return 1

@@ -25,14 +25,11 @@ fail() { echo "retire_agent: $1" >&2; exit 1; }
 read -r running background < <(tmux display-message -p -t "$pane" '#{@ai_agent_running} #{@ai_agent_background}')
 [[ "$running" != 1 && "$background" != 1 ]] || fail "$pane is running or has background work; wait for it to stop"
 
-result="$(_find_ai_pid "$(tmux display-message -p -t "$pane" '#{pane_pid}')")" || fail "$pane runs no Claude/Codex"
+result="$(_find_ai_pid "$(tmux display-message -p -t "$pane" '#{pane_pid}')")" || fail "$pane runs no supported AI backend"
 tool="$(basename "${result##* }")"
 session_id="$(_ai_session_id_for_pane "$pane")" || fail "no session id for $pane ($tool); not closing it"
-case "$tool" in
-  claude) resume="clauder --resume $session_id" ;;
-  codex)  resume="codexr resume $session_id" ;;
-  *) fail "unsupported AI tool: $tool" ;;
-esac
+resume="$(tma_call "$tool" resume_command "$session_id")" || fail "cannot resume $tool"
+
 
 IFS=$'\t' read -r label cwd panes < <(tmux display-message -p -t "$pane" \
   '#{session_name}:#{window_index}.#{pane_index} #{window_name}	#{pane_current_path}	#{window_panes}')

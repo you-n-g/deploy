@@ -82,20 +82,7 @@ label="$(tmux display-message -p -t "$pane" '#{session_name}:#{window_index}.#{p
 # The pane's own background processes -- a job it runs, or a watcher it started
 # to wait on something outside (a Slurm job, a file) -- each a candidate for a
 # pid wait (pend_until.sh pid). The agent and its shells are left out.
-processes="$(ps -u "$USER" -o pid=,ppid=,args= | awk -v root="$(tmux display-message -p -t "$pane" '#{pane_pid}')" '
-  { pid = $1; parent[pid] = $2; $1 = $2 = ""; args[pid] = substr($0, 3) }
-  END {
-    for (pid in args) {
-      for (p = parent[pid]; p in parent; p = parent[p]) if (p == root) break
-      a = args[pid]
-      # The agent itself and the shells around it; and sleep, the momentary
-      # child of a watcher loop.
-      if (p != root || a ~ /(^|\/)(claude|codex|node)( |$)|^-?zsh( |$)|zsh -ic|^sleep /) continue
-      # A Claude Code background shell: show the command it evals.
-      if (a ~ /shell-snapshots/ && match(a, /eval .*/)) a = substr(a, RSTART + 5)
-      printf "%s  %s\n", pid, substr(a, 1, 160)
-    }
-  }')"
+processes="$(tma_call default background_processes "$(tmux display-message -p -t "$pane" '#{pane_pid}')")"
 
 prompt="$(mktemp)"
 answer="$(mktemp)"

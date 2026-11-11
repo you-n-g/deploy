@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -eu
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../wrapper/dispatch.sh"
 
 button="${1:-}"
 session="${2:-}"
@@ -39,7 +40,7 @@ new_livesync_remote_window() {
     exit 1
   fi
 
-  livesync_command="${TMA_LIVESYNC_COMMAND:-codex-remote -C ~/vaults/livesync-headless bj.vm.213428.xyz}"
+  livesync_command="$(tma_call default livesync_command)"
   printf -v shell_command 'TMUX_AI_WINDOW_NAME=livesync-headless zsh -ic %q' "$livesync_command"
   tmux new-window -t "${session}:" -n livesync-headless -c "$path" "$shell_command"
 }

@@ -1,0 +1,50 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/deploy/configs/tmux/wrapper/claude/hook.sh\" init",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/deploy/configs/tmux/wrapper/claude/hook.sh\" running",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/deploy/configs/tmux/wrapper/claude/hook.sh\" pretool",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/deploy/configs/tmux/wrapper/claude/hook.sh\" stop",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -204,7 +204,7 @@ log_ai_agent_prompt() {
   [ -n "${AI_AGENT_PROMPT:-}" ] || return 0
 
   sender="user"
-  # Queued by the agent's own CronCreate / ScheduleWakeup (claude_agent_state_hook.sh).
+  # The backend hook identifies prompts queued by the agent's own scheduler.
   [ -z "${AI_AGENT_SCHEDULED:-}" ] || sender="schedule"
   from=""
   to=""

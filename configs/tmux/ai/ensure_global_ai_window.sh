@@ -11,8 +11,8 @@
 # Usage: ensure_global_ai_window.sh [-q] [--cmd CMD] [--window-name NAME] [session_name]
 # -q: quiet mode — always exit 0 (suppress non-zero exit codes).
 #     Useful when called from tmux run-shell to avoid status-bar flash.
-# --cmd: shell command to run in the window (default: codexr)
-# --window-name: tmux window name (default: codex-tmp)
+# --cmd: shell command to run in the window (default: shared global-window profile)
+# --window-name: tmux window name (default: shared global-window profile)
 
 QUIET=false
 OVERRIDE_CMD=""
@@ -33,7 +33,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 source "$SCRIPT_DIR/lib.sh"
 
 SESSION="${1:-learn}"
-WINDOW_NAME="${OVERRIDE_WINDOW_NAME:-codex-tmp}"
+WINDOW_NAME="${OVERRIDE_WINDOW_NAME:-$(tma_call default global_window_name)}"
 TARGET="${SESSION}:0.0"
 
 _resolve_workdir() {
@@ -60,7 +60,7 @@ WORKDIR="$(_resolve_workdir)"
 WORKDIR="${WORKDIR:-$HOME}"
 
 # Start an interactive zsh so existing shell init loads the AI tool.
-_ai_cmd="${OVERRIDE_CMD:-codexr}"
+_ai_cmd="${OVERRIDE_CMD:-$(tma_call default global_window_command)}"
 printf -v CMD 'TMUX_AI_WINDOW_NAME=%q zsh -ic %q' "$WINDOW_NAME" "$_ai_cmd"
 
 if tmux has-session -t "$SESSION" 2>/dev/null; then

@@ -48,39 +48,6 @@ target_file="$target_dir/msg.md"
 response_file="$(mktemp)"
 trap 'rm -f "$response_file"' EXIT
 
-latest_buffer() {
-  tmux list-buffers -F '#{buffer_name}' 2>/dev/null | head -n 1 || true
-}
-
-# Codex copies its last response to a tmux buffer on Ctrl+O; grab that buffer.
-copy_codex() {
-  local before_buffer copied_buffer attempt
-  before_buffer="$(latest_buffer)"
-  tmux send-keys -t "$source_pane" C-o
-
-  copied_buffer=""
-  for ((attempt = 0; attempt < 40; attempt++)); do
-    copied_buffer="$(latest_buffer)"
-    [[ -n "$copied_buffer" && "$copied_buffer" != "$before_buffer" ]] && break
-    sleep 0.05
-  done
-  [[ -n "$copied_buffer" && "$copied_buffer" != "$before_buffer" ]] ||
-    fail "Codex did not copy a completed response within 2 seconds"
-
-  tmux save-buffer -b "$copied_buffer" "$response_file" || fail "cannot save the copied buffer"
-}
-
-# Claude Code has no such key (Ctrl+O is transcript mode), so read the last
-# response from the session transcript and put it in a tmux buffer as well, so
-# both agents leave the same thing behind.
-copy_claude() {
-  local error
-  if ! error="$(python3 "$script_dir/claude_last_message.py" "$agent_pid" 2>&1 >"$response_file")"; then
-    fail "$error"
-  fi
-  tmux load-buffer -b "claude-last-message-${source_pane#%}" "$response_file"
-}
-
 # A Vim pane: its visual selection, or the whole buffer (vim_selection_or_buffer.lua,
 # run in that nvim over its RPC socket).
 copy_vim() {
@@ -91,17 +58,19 @@ copy_vim() {
   [[ -s "$response_file" ]] || fail "the Vim buffer / selection is empty"
 }
 
-case "$agent_kind" in
-  codex) copy_codex ;;
-  claude) copy_claude ;;
-  vim) copy_vim ;;
-  *) fail "unsupported AI agent in $source_pane: $agent_kind" ;;
-esac
+if [[ "$agent_kind" == vim ]]; then
+  copy_vim
+else
+  if ! error="$(tma_call "$agent_kind" last_message "$source_pane" "$agent_pid" 2>&1 >"$response_file")"; then
+    fail "$error"
+  fi
+  tmux load-buffer -b "tma-last-message-${source_pane#%}" "$response_file"
+fi
 if [[ "$mode" == feishu ]]; then
   source_label="$(tmux display-message -p -t "$source_pane" '#S:#W.#{pane_index}')"
   { cat "$response_file"; printf '\n\n---\n来源 TMA：%s\n' "$source_label"; } >"$response_file.md"
   # python3 here is 3.6; the helper needs 3.7+.
-  if ! error="$(python3.11 "$HOME/.claude/skills/feishu-bot/scripts/feishu_bot_send.py" markdown --title "$source_label" "$response_file.md" 2>&1)"; then
+  if ! error="$(python3.11 "$HOME/deploy/configs/llm/merged-skills/feishu-bot/scripts/feishu_bot_send.py" markdown --title "$source_label" "$response_file.md" 2>&1)"; then
     rm -f "$response_file.md"
     fail "Feishu send failed: $(printf '%s' "$error" | tail -n 1)"
   fi

@@ -11,7 +11,7 @@ target="$(tmux show-option -gqv @lm_progress)"
 [[ "$target" != 1 ]] || target=mean
 # One cache per target, so switching targets shows the new one at once.
 cache="$HOME/.cache/dashboard/lm-progress-$target.txt"
-dashboard="$HOME/.claude/skills/dashboard/scripts/dashboard.py"
+dashboard="$HOME/deploy/configs/llm/merged-skills/dashboard/scripts/dashboard.py"
 
 if [[ -z "$(find "$cache" -newermt '-30 seconds' 2>/dev/null)" ]]; then
   mkdir -p "$(dirname "$cache")"
