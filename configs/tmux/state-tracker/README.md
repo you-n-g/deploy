@@ -32,6 +32,11 @@ Trackers should call:
 Only call it when the current pane attributes do not already match the inferred
 state. This keeps status refreshes and auto-switch events quiet.
 
+Hook events and tracker reports pass through the **Native Agent event correction**
+section in `track_ai_agent_state.sh` before state is applied. That section checks
+external work, currently mapping `idle` to `background` when a watch-target wakeup
+is still alive. See [原生 Agent 事件校正层](../README.md#ai-pane-状态标识).
+
 Common states:
 
 - `running`: the TUI is actively working on a foreground turn.

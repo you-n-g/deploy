@@ -70,4 +70,10 @@ pane 的状态存在 pane option 里（`@ai_agent_running` / `_background` / `_p
 
 状态不是互斥的：unread 和 background 正交，后台还在跑、但这一轮在用户不在看时结束的 pane 两个都是，画成 ◓（带 unread 的 ◒），auto-switch 也会落到它上面；只有 background、没有 unread 的 pane 仍然被跳过。
 
+**原生 Agent 事件校正层**是 `script/track_ai_agent_state.sh` 中标为 `Native Agent event correction` 的区段。原生 hook 报告的是前台回合事件：例如 Stop 传入 `idle`，此时仍可能有外部 watcher 等待唤醒。该区段结合外部工作状态校正事件，再交给后面的 `case` 应用 pane 状态和相关副作用；TUI tracker 补充的事件也经过这里。
+
+当前校正规则是 `idle + 存活的 watch-target wakeup → background`。后续沿用正常的 background 转换：不在眼前且未静音就标未读，切入查看后清除未读。用 `python3 -m unittest configs/tmux/tests/test_background_state.py` 验证这条路径和状态切换顺序。
+
+`prefix + u` 再按 `R`：将当前 tmux server 所有 session 的 TMA 标为已读，清除 unread / woke 标记，保留 running、background、pending、done 和最近访问记录。
+
 改完跑 `python3 -m unittest configs/tmux/tests/test_state_symbols.py`：它检查画了某个符号的文件把同一族的符号都画了（比如有 unread 的 ◉ 就要有 woke 的 ☀），以及序列编辑器认识每种状态。加了新符号就把它补进测试里的 `FAMILIES` / `WORD_FILES`。

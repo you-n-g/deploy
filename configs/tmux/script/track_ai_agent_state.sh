@@ -17,7 +17,8 @@ set -eu
 #   "1" means the AI pane stopped while it was not visible to the user. It is
 #   cleared when the user visits a live AI pane or when the pane stops while
 #   already visible. Orthogonal to @ai_agent_background: a turn that stops out
-#   of sight with background work still going is both (◓).
+#   of sight with background work still going is both (◓). read-all clears
+#   unread and woke across all sessions without changing task or visit state.
 # - @ai_agent_pending:
 #   Non-empty means the pane is intentionally waiting on an external condition
 #   and should not be selected by auto-switch. The value is the pending reason;
@@ -108,11 +109,11 @@ set -eu
 #   Optional path for the prompt log. If unset, rows go to
 #   ~/.cache/tmux-ai-prompts.jsonl.
 
-state="${1:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending|toggle-pending|wake|toggle-mute|done|toggle-done TARGET [PENDING_REASON]}"
+state="${1:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|read-all|pending|toggle-pending|wake|toggle-mute|done|toggle-done TARGET [PENDING_REASON]}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../ai/lib.sh"
 
-target="${2:-${TMUX_PANE:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|pending|toggle-pending|wake|toggle-mute|done|toggle-done TARGET [PENDING_REASON]}}"
+target="${2:-${TMUX_PANE:?usage: track_ai_agent_state.sh init|running|background|idle|visit|unread|read-all|pending|toggle-pending|wake|toggle-mute|done|toggle-done TARGET [PENDING_REASON]}}"
 if ! pane_id="$(tmux display-message -p -t "$target" '#{pane_id}')" || [ -z "$pane_id" ]; then
   if [ "$state" = "visit" ]; then
     exit 0
@@ -124,7 +125,8 @@ fi
 # any list. The states that go through is_live_ai_pane below would catch this
 # too, but init/running/background/idle do not, and those are exactly the ones a
 # brokered session fires. See _pane_hosts_ai_service.
-if _pane_hosts_ai_service "$(tmux display-message -p -t "$pane_id" '#{pane_pid}')"; then
+if [ "$state" != "read-all" ] \
+  && _pane_hosts_ai_service "$(tmux display-message -p -t "$pane_id" '#{pane_pid}')"; then
   exit 0
 fi
 
@@ -468,6 +470,16 @@ notify_orchestrator_on_idle() {
   tmux set-option -pq -t "$pane_id" @ai_agent_orchestrator_idle_notified_activity "$activity"
 }
 
+# === Native Agent event correction / 原生 Agent 事件校正 ===
+# Hooks report the foreground turn's lifecycle. Reconcile that report with
+# external work here, before logging and applying pane state. TUI tracker
+# repairs enter through the same path.
+# Stop + a live watch-target wakeup means background work remains. The normal
+# background transition below owns unread/visibility rules and write ordering.
+if [ "$state" = "idle" ] && has_pending_watch_target_wakeup; then
+  state=background
+fi
+
 log_ai_agent_state
 log_ai_agent_prompt
 
@@ -571,15 +583,7 @@ case "$state" in
     ;;
   idle)
     tmux set-option -pq -t "$pane_id" @ai_agent_running 0
-    if has_pending_watch_target_wakeup; then
-      # The foreground turn stopped only because watch-target is waiting for
-      # its next one-shot wakeup. Keep the pane in background until that
-      # wakeup submits the next turn.
-      tmux set-option -pq -t "$pane_id" @ai_agent_background 1
-      tmux set-option -pq -t "$pane_id" @ai_agent_unread 0
-      tmux set-option -pqu -t "$pane_id" @ai_agent_woke 2>/dev/null || true
-      tmux set-option -pqu -t "$pane_id" @ai_agent_pending 2>/dev/null || true
-    elif apply_pend_next; then
+    if apply_pend_next; then
       : # now pending on the agent it dispatched to
     else
       tmux set-option -pqu -t "$pane_id" @ai_agent_background 2>/dev/null || true
@@ -608,6 +612,17 @@ case "$state" in
         _clear_ai_pane_state "$pane_id"
       fi
     fi
+    ;;
+  read-all)
+    unread_panes="$(tmux list-panes -a \
+      -f '#{||:#{==:#{@ai_agent_unread},1},#{==:#{@ai_agent_woke},1}}' \
+      -F '#{pane_id}')"
+    while IFS= read -r unread_pane; do
+      [ -n "$unread_pane" ] || continue
+      tmux set-option -pq -t "$unread_pane" @ai_agent_unread 0 \; \
+        set-option -pqu -t "$unread_pane" @ai_agent_woke
+    done <<< "$unread_panes"
+    tmux display-message '所有 session 的 TMA 已标为已读'
     ;;
   unread)
     if is_live_ai_pane; then
