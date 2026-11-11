@@ -47,9 +47,10 @@ capture_recent_output() {
 #   loop. Genuinely per-pane, at the cost of carrying state across iterations.
 #   tmux has no #{pane_activity}, so there is no stateless way to get this.
 #
-# QUIET_SOURCE picks the one maybe_mark_stale_running_idle consults. Keep both
-# working: window-activity becomes the better answer again the moment tmux
-# grows a per-pane clock, or for setups that never split an AI window.
+# TODO NOTE (pane activity): replace screen diffing with a native per-pane
+# activity clock when tmux exposes one. Its current window clock mixes sibling
+# output; this limitation belongs to tmux, not the coding agent. QUIET_SOURCE
+# selects the measure maybe_mark_stale_running_idle consults.
 QUIET_SOURCE="${TMUX_AI_STATE_TRACKER_QUIET_SOURCE:-pane-output}"
 
 # From the last read_pane.
@@ -88,9 +89,11 @@ seconds_since_activity() {
   esac
 }
 
-# The footer a TUI keeps on screen for as long as the foreground turn is still
-# interruptible. Codex drops it the instant ESC lands, which is exactly the
-# interrupt path the stale-running timeout below exists for.
+# TODO NOTE (turn liveness): prefer a structured active-turn state over footer
+# text. Our hook-derived state can miss termination, while output silence also
+# occurs during live API stalls (up to 69s in 2acdf66). Retire this proxy once
+# native state reliably distinguishes active, cancelled and failed turns.
+# The interrupt footer stays during live stalls and disappears on ESC.
 FOREGROUND_WORKING_RE='esc[[:space:]]+to[[:space:]]+(interrupt|interupt)|press[[:space:]]+esc|(^|[[:space:]])(working|baking)[[:space:]]*\('
 
 has_foreground_working_marker() {
@@ -106,9 +109,12 @@ detect_tui_state() {
   # do not infer generic idle from arbitrary TUI text; the only idle repair here
   # is the stale-running timeout below for known interrupt paths.
   #
-  # Codex can compact before UserPromptSubmit. Its live interruptible footer
-  # is already visible then, so publish running now rather than making
-  # auto-switch wait for compaction and the delayed submit hook to finish.
+  # TODO NOTE (compaction): prefer a native turn-start event before preprocessing
+  # or PreCompact. In Codex 0.167.1, compaction delayed UserPromptSubmit by 62s
+  # (09d9346). PreCompact exists, but our probe found that an already loaded
+  # thread retained its hook configuration after editing hooks.json. Verify
+  # hook wiring/reload for existing sessions, then retire this text detector.
+  # The current gap is event timing plus local hook deployment.
   # Match the live timer/footer on one line, never "Context compacted" history.
   if printf '%s\n' "$recent" | grep -Eiq \
     '^[[:space:]]*[^[:alnum:][:space:]]?[[:space:]]*Compacting context[[:space:]]*\([^)]*esc[[:space:]]+to[[:space:]]+interrupt'; then
@@ -116,10 +122,11 @@ detect_tui_state() {
     return
   fi
 
-  # The other gap is goal-mode automatic continuation:
-  # Codex can repaint "Working" without a fresh UserPromptSubmit hook event.
-  # In that case, goal text plus foreground-working text is enough to repair
-  # the running marker.
+  # TODO NOTE (goal continuation): wire a native start/resume event for every
+  # foreground turn, including automatic /goal continuations; evaluate
+  # PreModelRequest. Observed resumes repaint Working without UserPromptSubmit,
+  # and our PreToolUse hook waits for the first tool. Remove this detector once
+  # native coverage is verified for both model-only and tool-using resumes.
   if printf '%s\n' "$recent" | grep -Eiq \
     'pursuing[[:space:]]+goal|<goal_context>|active[[:space:]]+thread[[:space:]]+goal|tasks[[:space:]]+[0-9]+/[0-9]+' \
     && has_foreground_working_marker "$recent"; then
@@ -167,6 +174,11 @@ emit_busy_to_idle() {
   fi
 }
 
+# TODO NOTE (turn termination): prefer native Interrupt/Stop/error events.
+# Observed ESC and API-error exits skipped Stop and left running set (2acdf66).
+# Codex 0.167.1 exposes Interrupt, but our hooks do not wire it yet. Verify its
+# cancellation coverage and a terminal event for API failures, then retire the
+# quiet-time + missing-footer heuristic for those paths.
 # Side-effect detector: mark a stale running pane idle when the timeout matches.
 # It always returns 0 so the main loop can run other independent detectors.
 maybe_mark_stale_running_idle() {
