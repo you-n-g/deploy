@@ -29,9 +29,12 @@ case "${3:?$usage}" in
 esac
 [[ "$target" != "$here" ]] || { tmux display-message "目标就是当前 session"; exit 1; }
 
+# The picker float also counts as another pane: break-pane creates a fresh
+# window and otherwise names it after the process, losing the original title.
+window_name="$(tmux display-message -p -t "$pane" '#{window_name}')"
 # Switch first: when PANE is the last one of its session, moving it destroys
 # that session, which would detach a client still showing it.
 tmux switch-client -c "$client" -t "$target"
 # -a after {end}: a new window behind the highest-numbered one.
-new="$(tmux break-pane -a -P -F '#{pane_id}' -s "$pane" -t "$target:{end}")"
+new="$(tmux break-pane -a -P -F '#{pane_id}' -n "$window_name" -s "$pane" -t "$target:{end}")"
 tmux switch-client -c "$client" -t "$new"
