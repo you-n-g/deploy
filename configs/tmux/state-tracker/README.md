@@ -46,11 +46,16 @@ Common states:
 ## Existing Trackers
 
 - `tui-output.sh`: captures recent TUI output only to supplement transitions
-  normal Codex/Claude hooks cannot see. It repairs goal-mode `running` state
-  when goal text and foreground-working text appear together. It also marks a
-  stuck foreground `running` pane idle after 10 seconds without tmux window
-  activity, which covers interrupt paths such as ESC where the Stop hook does
-  not fire. It never converts `background` to `idle`. TUI-observed idle edges
+  normal Codex/Claude hooks cannot see. Codex can compact before its
+  `UserPromptSubmit` hook: the live `Compacting context (... esc to interrupt)`
+  footer reports `running` with source `tui-output:compacting`, so auto-switch
+  can react on the next poll (every second by default). A completed
+  `Context compacted` history line does not qualify. The later submit hook
+  does not emit a second running edge. The tracker also repairs goal-mode
+  `running` when goal text and foreground-working text appear together.
+  It marks a stuck foreground `running` pane idle after 10 seconds of unchanged
+  pane output with no interruptible footer, covering ESC paths where the Stop
+  hook does not fire. It never converts `background` to `idle`. TUI-observed idle edges
   use `AI_AGENT_STATE_SOURCE=tui-output:busy-to-idle` or
   `AI_AGENT_STATE_SOURCE=tui-output:stale-running-idle`; orchestrator
   notification code uses those sources to distinguish TUI-observed idle from

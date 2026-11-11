@@ -106,7 +106,17 @@ detect_tui_state() {
   # do not infer generic idle from arbitrary TUI text; the only idle repair here
   # is the stale-running timeout below for known interrupt paths.
   #
-  # The narrow gap this script covers is goal-mode automatic continuation:
+  # Codex can compact before UserPromptSubmit. Its live interruptible footer
+  # is already visible then, so publish running now rather than making
+  # auto-switch wait for compaction and the delayed submit hook to finish.
+  # Match the live timer/footer on one line, never "Context compacted" history.
+  if printf '%s\n' "$recent" | grep -Eiq \
+    '^[[:space:]]*[^[:alnum:][:space:]]?[[:space:]]*Compacting context[[:space:]]*\([^)]*esc[[:space:]]+to[[:space:]]+interrupt'; then
+    printf 'compacting\n'
+    return
+  fi
+
+  # The other gap is goal-mode automatic continuation:
   # Codex can repaint "Working" without a fresh UserPromptSubmit hook event.
   # In that case, goal text plus foreground-working text is enough to repair
   # the running marker.
@@ -121,9 +131,11 @@ ensure_state() {
   local desired_state="$1"
 
   case "$desired_state" in
-    running)
+    running|compacting)
       if [[ "$running" != "1" ]]; then
-        AI_AGENT_STATE_SOURCE="tui-output:goal-running" "$TRACK_SCRIPT" running "$pane_id"
+        local source="tui-output:goal-running"
+        [[ "$desired_state" != "compacting" ]] || source="tui-output:compacting"
+        AI_AGENT_STATE_SOURCE="$source" "$TRACK_SCRIPT" running "$pane_id"
       fi
       ;;
     *) ;;
