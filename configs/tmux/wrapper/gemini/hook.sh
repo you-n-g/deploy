@@ -12,6 +12,15 @@ fi
 
 input="$(cat)"
 event="$(jq -er '.hook_event_name' <<<"$input")"
+# Gemini opens/closes its log for each append, so file descriptors cannot map
+# an idle pane to a session. Native hooks provide both the id and exact path.
+source "$SCRIPT_DIR/../dispatch.sh"
+if [[ "$event" == SessionEnd ]]; then
+  tmux set-option -pu -t "$target" @tma_gemini_session
+else
+  process="$(_find_ai_pid "$(tmux display-message -p -t "$target" '#{pane_pid}')")"
+  python3 "$SCRIPT_DIR/session.py" record "$target" "${process%% *}" <<<"$input"
+fi
 export AI_AGENT_STATE_SOURCE="gemini-hook:$event"
 # Only BeforeAgent supplies a new user prompt to the prompt log.
 unset AI_AGENT_PROMPT

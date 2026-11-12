@@ -65,6 +65,8 @@ while True:
         directory.mkdir(parents=True)
         name = 'rollout-2026-11-11T00-00-00-' + SESSION + '.jsonl' if backend == 'codex' else SESSION + '.jsonl'
         self.log = directory / name
+        if backend == 'gemini':
+            rows = [dict(sessionId=SESSION, projectHash='test-project', kind='main')] + rows
         self.log.write_text(''.join(json.dumps(row, ensure_ascii=False) + '\n' for row in rows))
         ready = self.root / 'ready'
         argv = ['env', 'CLAUDE_CONFIG_DIR=' + str(self.config), 'python3', str(self.script),
@@ -77,12 +79,113 @@ while True:
             self.assertLess(time.monotonic(), deadline, 'fake process did not start')
             time.sleep(0.05)
         self.pid = ready.read_text()
+        self.env.update(TMUX_PANE=self.pane,
+                        AI_AGENT_STATE_LOG=str(self.root / 'state.log'),
+                        AI_AGENT_PROMPT_LOG=str(self.root / 'prompts.jsonl'))
+        self.tmux('set-option', '-p', '-t', self.pane, '@ai_agent_attribute', 'test')
+        if backend == 'gemini':
+            self.gemini_hook('SessionStart')
         # There is deliberately no conversation text on the screen or in history.
         self.assertEqual(self.tmux('capture-pane', '-p', '-S', '-', '-t', self.pane), '')
 
     def export(self, format='markdown'):
         return subprocess.run(['bash', str(WRAPPER / 'history.sh'), self.pane, format], env=self.env,
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+
+    def gemini_hook(self, event, **fields):
+        payload = dict(hook_event_name=event, session_id=SESSION,
+                       transcript_path=str(self.log), cwd=str(self.root))
+        payload.update(fields)
+        result = subprocess.run(['bash', str(WRAPPER / 'gemini/hook.sh')], input=json.dumps(payload),
+                                env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                universal_newlines=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_gemini_updates_messages_and_keeps_original_tool_records(self):
+        self.start('gemini', rows=[
+            {'id': 'u1', 'type': 'user', 'content': [{'text': 'Gemini 问题'}, {'inlineData': {'data': 'image data'}}]},
+            {'id': 'a1', 'type': 'gemini', 'content': 'partial answer'},
+            {'id': 'a1', 'type': 'gemini', 'content': 'completed answer',
+             'thoughts': [{'description': 'internal thought'}],
+             'toolCalls': [{'id': 'tool1', 'result': 'original result'}]},
+            {'$patch': {'id': 'a1', 'content': 'patched answer',
+                        'toolCalls': [{'id': 'tool1', 'result': 'updated result'}]}},
+            {'$set': {'lastUpdated': '2026-11-12T00:00:00Z'}}
+        ])
+        self.gemini_hook('BeforeAgent', prompt='Gemini 问题')
+        result = self.export()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Gemini 问题', result.stdout)
+        self.assertEqual(result.stdout.count('patched answer'), 1)
+        self.assertNotIn('partial answer', result.stdout)
+        self.assertNotIn('completed answer', result.stdout)
+        self.assertNotIn('internal thought', result.stdout)
+        self.assertIn('[attachment;', result.stdout)
+        self.assertEqual(self.export('jsonl').stdout, self.log.read_text())
+        self.assertEqual(self.tmux('show-option', '-pqv', '-t', self.pane, '@ai_agent_running'), '1')
+        session = subprocess.check_output(['bash', str(WRAPPER / 'dispatch.sh'), 'gemini',
+                                           'session_id', self.pid, self.pane], env=self.env, universal_newlines=True)
+        self.assertEqual(session.strip(), SESSION)
+
+    def test_gemini_rewind_batch_updates_and_replacement_follow_native_order(self):
+        self.start('gemini', rows=[
+            {'id': 'old', 'type': 'user', 'content': 'before replacement'},
+            {'$set': {'messages': [
+                {'id': 'u1', 'type': 'user', 'content': 'kept question'},
+                {'id': 'a1', 'type': 'gemini', 'content': 'rewound answer'}]}},
+            {'$rewindTo': 'a1'},
+            {'id': 'a2', 'type': 'gemini', 'content': 'new answer'},
+            {'id': 'u2', 'type': 'user', 'content': 'removed question'},
+            {'$patch': {'updates': [{'id': 'a2', 'content': 'final answer'}],
+                        'removeIds': ['u2'], 'orderIds': ['a2', 'u1']}}
+        ])
+        result = self.export()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertLess(result.stdout.index('final answer'), result.stdout.index('kept question'))
+        for text in ('before replacement', 'rewound answer', 'removed question', 'new answer'):
+            self.assertNotIn(text, result.stdout)
+        self.assertEqual(self.export('jsonl').stdout, self.log.read_text())
+
+    def test_gemini_session_switch_follows_hook_instead_of_old_open_log(self):
+        self.start('gemini', rows=[{'id': 'old', 'type': 'user', 'content': 'old session'}])
+        new_log = self.log.parent / "new 'session'.jsonl"
+        new_log.write_text(json.dumps({'sessionId': OTHER_SESSION, 'kind': 'main'}) + '\n' +
+                           json.dumps({'id': 'new', 'type': 'user', 'content': 'resumed session'}) + '\n')
+        self.gemini_hook('SessionStart', session_id=OTHER_SESSION, transcript_path=str(new_log))
+        result = self.export()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('resumed session', result.stdout)
+        self.assertNotIn('old session', result.stdout)
+        self.assertEqual(self.export('jsonl').stdout, new_log.read_text())
+
+    def test_gemini_empty_new_session_and_session_end_do_not_reuse_old_log(self):
+        self.start('gemini', rows=[])
+        self.gemini_hook('SessionStart', session_id=OTHER_SESSION, transcript_path='')
+        result = self.export()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('has not created a transcript', result.stderr)
+        self.assertEqual(result.stdout, '')
+        self.gemini_hook('SessionEnd')
+        result = self.export()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('next native hook', result.stderr)
+        self.assertEqual(result.stdout, '')
+
+    def test_gemini_rejects_stale_process_and_wrong_session_metadata(self):
+        self.start('gemini', rows=[])
+        raw = self.tmux('show-option', '-pqv', '-t', self.pane, '@tma_gemini_session')
+        binding = json.loads(raw)
+        for key in ('pid', 'process_start'):
+            altered = dict(binding)
+            altered[key] = '0'
+            self.tmux('set-option', '-p', '-t', self.pane, '@tma_gemini_session', json.dumps(altered))
+            result = self.export()
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('Stale Gemini session metadata', result.stderr)
+        self.gemini_hook('SessionStart', session_id=OTHER_SESSION)
+        result = self.export()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('does not match', result.stderr)
 
     def test_codex_keeps_pre_compaction_history_without_event_duplicates(self):
         self.start()
@@ -166,8 +269,9 @@ while True:
         self.assertIn('found 0', result.stderr)
 
     def test_unimplemented_backend_does_not_export_the_screen(self):
-        self.start('gemini')
-        result = self.export()
+        self.start()
+        result = subprocess.run(['bash', str(WRAPPER / 'dispatch.sh'), 'default', 'history', self.pane, self.pid],
+                                env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         self.assertEqual(result.returncode, 69, result.stderr)
         self.assertIn('does not support history', result.stderr)
         self.assertEqual(result.stdout, '')

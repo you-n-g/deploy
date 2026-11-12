@@ -54,7 +54,7 @@ python3 -m unittest discover -s configs/tmux/tests -v
 
 # TMA 会话历史
 
-[`wrapper/history.sh`](wrapper/README.md#会话历史导出) 按 pane 定位后端保存的会话日志，可导出 Markdown 对话或完整 JSONL。它不依赖 tmux scrollback，也不需要关闭 Codex 的滚动界面：
+[`wrapper/history.sh`](wrapper/README.md#会话历史导出) 支持 Codex、Claude、Gemini，按 pane 定位后端保存的会话日志，可导出 Markdown 对话或完整 JSONL。它不依赖 tmux scrollback，也不需要关闭 Agent 的滚动界面：
 
 ```sh
 ~/deploy/configs/tmux/wrapper/history.sh "$TMUX_PANE" > /tmp/tma-history.md

@@ -1,4 +1,6 @@
 tma_gemini_command() { printf 'geminir\n'; }
+tma_gemini_session_id() { python3 "$TMA_WRAPPER_ROOT/gemini/session.py" id "$2" "$1"; }
+tma_gemini_history() { python3 "$TMA_WRAPPER_ROOT/gemini/history.py" "$2" "$1" "${3:-markdown}"; }
 tma_gemini_headless_command() {
   printf 'cd -- %q || exit 1; unset TMUX_AI_MODEL; geminir --skip-trust -p "$(cat)" --output-format text > %q' "$2" "$3"
 }

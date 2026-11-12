@@ -56,7 +56,7 @@ stdout 只放结果，诊断写 stderr。`*_command` 返回命令文本，不执
 | `skills_dir` | 无 → skills 链接路径，默认 `~/.<backend>/skills` |
 
 `session_id`、`fork_command`、`relocate`、`last_message`、`history` 等没有通用实现，未实现时明确报不支持。
-Gemini 当前具备启动、headless、hooks 和 TUI 状态检测；本次没有增加它的会话 ID 解析、fork、消息提取或迁移恢复能力。
+Gemini 支持启动、headless、hooks、TUI 状态检测、会话 ID 和历史导出；尚未实现 fork、最近回答提取或迁移恢复。
 
 框架还调用以下共享操作：`selected_backend`（读 `TMUX_AI_TOOL`，未设置或空值时为 Codex）、
 `session_names PANES...`（输出 `pane<TAB>名称`）、`background_processes PID`、`mark_created WINDOW`，以及
@@ -71,9 +71,11 @@ Gemini 当前具备启动、headless、hooks 和 TUI 状态检测；本次没有
 ~/deploy/configs/tmux/wrapper/history.sh 'session:window.0' jsonl > /tmp/tma-history.jsonl
 ```
 
-入口自动识别 pane 的后端，调用 `history`；当前支持 Codex 和 Claude。Markdown 只展开会话文字，JSONL 保留工具调用、工具结果、推理及元数据等全部原始记录。输出是执行时已落盘内容的快照，正在生成但尚未写入日志的内容需稍后再次导出。
+入口自动识别 pane 的后端，调用 `history`；支持 Codex、Claude 和 Gemini。Markdown 只展开会话文字，JSONL 保留工具调用、工具结果、推理及元数据等全部原始记录。输出是执行时已落盘内容的快照，正在生成但尚未写入日志的内容需稍后再次导出。
 
 Codex 复用当前会话 ID 定位，优先读取进程打开的 rollout，保留压缩之前的历史；没有打开文件时按确切会话 ID 在其 Codex 配置目录查找。Claude 复用当前会话/后台 job 的 ID，从 projects 日志中读取。找不到或匹配到多个日志、记录损坏时明确报错，不猜测“最近会话”，也不退回 tmux 屏幕抓取。远程会话的日志需要在保存日志的主机上导出。
+
+Gemini 的原生 hook 将 `session_id`、`transcript_path` 与当前进程 PID/启动时间保存在 pane 的 `@tma_gemini_session` 中。已有窗口在下一次 hook 触发后即可使用，无需重启；尚未收到 hook 时会明确提示。新会话覆盖旧绑定，退出时清除，PID 或启动时间不匹配时报错。Markdown 按 Gemini 的消息 ID、patch、rewind 和排序记录还原当前对话，JSONL 则原样保留回退前后的所有记录。
 
 此入口不受 alternate screen、tmux history-limit 和 capture 的 `tail` 限制。其它后端只需实现自己的 `tma_<backend>_history`，尚未实现的后端返回 69。
 
