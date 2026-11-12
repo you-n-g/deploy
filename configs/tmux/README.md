@@ -54,6 +54,8 @@ python3 -m unittest discover -s configs/tmux/tests -v
 
 # 浮窗与 zoom
 
+通过 `codexr` / `clauder` 启动的 TMA 中，`Ctrl+G` 在窗口底部、水平居中的小浮窗里用 Vim 编辑输入，最大 100 列 × 20 行。普通模式按 `q` 或用 `:wq` 保存退出，内容回到原输入框；`:q!` 放弃未保存的修改。编辑期间调用方会等待，关闭浮窗也会结束等待。当前会话下次按 `Ctrl+G` 即使用新入口。
+
 tmux 3.7b 有个 bug：在 zoom 状态的 window 里用 `new-pane` 建的 floating pane，之后无论是进程退出、`kill-pane`，还是取消 zoom 后再关闭，server 都会在 `layout_destroy_cell` 里段错误退出，所有 session 一起没了。先建浮窗再 zoom 不会触发。
 
 所有浮窗都经 `script/new_float_pane.sh` 创建，它是唯一调用 `tmux new-pane` 的地方（`tests/test_float_panes.py` 会拒绝别处的直接调用）：默认先取消 zoom 再建；后台弹出的不打断 zoom：`--skip-if-zoomed` 时不建、退出码 3（auto-switch 切换预览）；`--zoomed-message TEXT` 同样不建，但先在状态栏显示 TEXT 5 秒（完成 toast）。tmux 修复前不要绕过它。
