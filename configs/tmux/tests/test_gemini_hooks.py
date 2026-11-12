@@ -153,6 +153,7 @@ class GeminiConfigTest(unittest.TestCase):
         custom = {"type": "command", "command": "my-custom-hook"}
         settings = {
             "model": {"name": "my-model"},
+            "context": {"includeDirectories": ["/existing/workspace"]},
             "hooks": {"BeforeAgent": [{"matcher": "*", "hooks": [custom, {
                 "type": "command", "command": config.HOOK_COMMAND}, {
                 "type": "command", "command": "bash ~/deploy/configs/tmux/script/gemini_agent_state_hook.sh"}]}]},
@@ -160,7 +161,10 @@ class GeminiConfigTest(unittest.TestCase):
             "security": {"auth": {"selectedType": "gemini-api-key"}},
         }
         with tempfile.TemporaryDirectory(prefix="gemini-config-", dir="/tmp") as root:
-            config.GEMINI_DIR = Path(root)
+            config.GEMINI_DIR = Path(root) / ".gemini"
+            config.GEMINI_DIR.mkdir()
+            codex_sessions = Path(root) / ".codex" / "sessions"
+            codex_sessions.mkdir(parents=True)
             path = config.GEMINI_DIR / "settings.json"
             path.write_text(json.dumps(settings))
             config.configure()
@@ -168,6 +172,10 @@ class GeminiConfigTest(unittest.TestCase):
             config.configure()
             self.assertEqual(path.read_text(), first)
             result = json.loads(first)
+            self.assertTrue((config.GEMINI_DIR / "tmp").is_dir())
+            self.assertEqual(result["context"]["includeDirectories"],
+                             ["/existing/workspace", str(config.GEMINI_DIR / "tmp"),
+                              str(codex_sessions)])
         self.assertEqual(result["model"], settings["model"])
         self.assertEqual(result["security"], settings["security"])
         self.assertFalse(result["hooksConfig"]["notifications"])

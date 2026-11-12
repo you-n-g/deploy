@@ -68,6 +68,17 @@ def configure(gateway_provider=None):
         context["fileName"] = names
     if "GEMINI_CLI.md" not in names:
         names.append("GEMINI_CLI.md")
+    # Gemini scratch files and TMA conversation logs live outside the project.
+    # Include their directories so ordinary file paths are workspace-local.
+    runtime_dir = GEMINI_DIR / "tmp"
+    workspace_dirs = [runtime_dir]
+    codex_sessions = GEMINI_DIR.parent / ".codex" / "sessions"
+    if codex_sessions.is_dir():
+        workspace_dirs.append(codex_sessions)
+    included = context.setdefault("includeDirectories", [])
+    for directory in workspace_dirs:
+        if str(directory) not in included:
+            included.append(str(directory))
     # The built-in help agent otherwise selects Flash, which this gateway
     # rejects. Follow the session model, including explicit -m overrides.
     overrides = settings.setdefault("agents", {}).setdefault("overrides", {})
@@ -78,6 +89,7 @@ def configure(gateway_provider=None):
     install_agent_hooks(settings)
 
     GEMINI_DIR.mkdir(parents=True, exist_ok=True)
+    runtime_dir.mkdir(exist_ok=True)
     if gateway_env is not None:
         env_path = GEMINI_DIR / ".env"
         content = env_path.read_text() if env_path.exists() else ""

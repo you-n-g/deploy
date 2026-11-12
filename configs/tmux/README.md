@@ -79,6 +79,10 @@ Gemini CLI 通过 `bash ~/deploy/configs/llm/conf_llm.sh gemini` 安装 TMA hook
 
 Gemini 的 `cli_help` 内置代理继承当前会话模型，避免网关拒绝它默认使用的 Flash。全局 `AGENTS.md` 仍由 `~/.gemini/GEMINI.md` 链接加载；另加 `GEMINI_CLI.md` 说明当前 CLI 的 shell 命令替换限制与可用写法。
 
+Gemini 配置将 `~/.gemini/tmp` 和已存在的 `~/.codex/sessions` 加入持久化的 `context.includeDirectories`，让会话临时文件和 TMA 历史日志属于工作区，避免 YOLO 下反复将这些普通文件路径判为不可信参数。新会话自动加载；已运行会话可在空闲时用 `/directory add ~/.gemini/tmp, ~/.codex/sessions` 加载。该设置只解决这些目录中的普通文件路径；Gemini 对可执行脚本、外部参数和被修改的构建文件仍有独立确认。
+
+跨项目任务还需把实际读取、写入的目录加入工作区，例如笔记目录和已有产物目录；启动时用 `--include-directories`，运行中用 `/directory add`。`trustedFolders` 的信任记录不等于工作区成员：即使目录已经受信任，从工具输出取得的工作区外路径仍可能触发确认。常用目录可写入 `context.includeDirectories`；一次性任务目录只加入当前会话。
+
 pane 的状态存在 pane option 里（`@ai_agent_running` / `_background` / `_pending` / `_done` / `_unread` / `_woke`，含义见 `script/track_ai_agent_state.sh` 文件头），窗口是否由 Agent 创建存在 window option `@tma_created`。状态只由 `track_ai_agent_state.sh` 写；下面这些地方各自读它、各自画符号，加一种状态或改一个符号时要逐个改：
 
 | 位置 | 文件 | 画法 |
