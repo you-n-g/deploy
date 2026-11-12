@@ -19,6 +19,11 @@ tma_codex_headless_command() {
   tma_quote_command codexr "${args[@]}" -
 }
 tma_codex_session_id() { _codex_session_id_for_pid "$1"; }
+tma_codex_history() {
+  local pane="$1" pid="$2" session
+  session="$(tma_codex_session_id "$pid" "$pane")" || { echo "Cannot resolve Codex session for $pane" >&2; return 1; }
+  python3 "$TMA_WRAPPER_ROOT/codex/history.py" "$pid" "$session" "$pane" "${3:-markdown}"
+}
 tma_codex_resume_command() { tma_quote_command codexr resume "$1"; }
 tma_codex_fork_command() {
   local pid="$1" pane="$2" root="$3" session remote

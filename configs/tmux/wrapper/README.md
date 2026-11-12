@@ -6,6 +6,7 @@
 ```text
 wrapper/
 ├── dispatch.sh       # 发现后端、选择函数
+├── history.sh        # 按 pane 导出后端会话日志
 ├── default/          # 共享行为、批量进程扫描、会话名称、默认配置
 ├── codex/            # 启动、会话、fork、消息、hooks
 ├── claude/
@@ -47,19 +48,34 @@ stdout 只放结果，诊断写 stderr。`*_command` 返回命令文本，不执
 | `fork_command` | `PID PANE PANE_ROOT_PID` → fork 命令；Codex 在这里保留远程连接参数 |
 | `relocate` | `PID PANE` → `cwd<TAB>resume_command`；用于分屏转浮窗，当前只有 Claude 实现 |
 | `last_message` | `PANE PID` → 最近完整回答文本；框架负责写入目标文件/复制缓冲区 |
+| `history` | `PANE PID [markdown\|jsonl]` → 会话正文 Markdown（默认）或完整原始 JSONL |
 | `tui_state` | `RECENT_SCREEN` → 无输出，或 `running<TAB>事件来源`；补原生 hook 的事件缺口 |
 | `foreground_busy` | `RECENT_SCREEN` → 退出码 0 表示仍在工作，1 表示无工作标记 |
 | `install` | 无 → 部署该后端的配置和 hooks |
 | `install_cli` | 无 → CLI 未安装时安装 |
 | `skills_dir` | 无 → skills 链接路径，默认 `~/.<backend>/skills` |
 
-`session_id`、`fork_command`、`relocate`、`last_message` 等没有通用实现，未实现时明确报不支持。
+`session_id`、`fork_command`、`relocate`、`last_message`、`history` 等没有通用实现，未实现时明确报不支持。
 Gemini 当前具备启动、headless、hooks 和 TUI 状态检测；本次没有增加它的会话 ID 解析、fork、消息提取或迁移恢复能力。
 
 框架还调用以下共享操作：`selected_backend`（读 `TMUX_AI_TOOL`，未设置或空值时为 Codex）、
 `session_names PANES...`（输出 `pane<TAB>名称`）、`background_processes PID`、`mark_created WINDOW`，以及
 `global_window_name` / `global_window_command` / `livesync_command` / `image_staging_dir` 这些现有工作流的默认配置。
 `ai_pane_pids PANE_PIDS` 接收换行分隔的 pane 根 PID，输出含交互式 AI 的根 PID，包含 broker 排除。
+
+## 会话历史导出
+
+```bash
+# 不发按键、不打断当前回合；新旧 Codex 界面都可直接使用。
+~/deploy/configs/tmux/wrapper/history.sh "$TMUX_PANE" > /tmp/tma-history.md
+~/deploy/configs/tmux/wrapper/history.sh 'session:window.0' jsonl > /tmp/tma-history.jsonl
+```
+
+入口自动识别 pane 的后端，调用 `history`；当前支持 Codex 和 Claude。Markdown 只展开会话文字，JSONL 保留工具调用、工具结果、推理及元数据等全部原始记录。输出是执行时已落盘内容的快照，正在生成但尚未写入日志的内容需稍后再次导出。
+
+Codex 复用当前会话 ID 定位，优先读取进程打开的 rollout，保留压缩之前的历史；没有打开文件时按确切会话 ID 在其 Codex 配置目录查找。Claude 复用当前会话/后台 job 的 ID，从 projects 日志中读取。找不到或匹配到多个日志、记录损坏时明确报错，不猜测“最近会话”，也不退回 tmux 屏幕抓取。远程会话的日志需要在保存日志的主机上导出。
+
+此入口不受 alternate screen、tmux history-limit 和 capture 的 `tail` 限制。其它后端只需实现自己的 `tma_<backend>_history`，尚未实现的后端返回 69。
 
 ## 新增后端
 

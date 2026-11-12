@@ -52,6 +52,15 @@ set -g @jump-history-limit 9
 python3 -m unittest discover -s configs/tmux/tests -v
 ```
 
+# TMA 会话历史
+
+[`wrapper/history.sh`](wrapper/README.md#会话历史导出) 按 pane 定位后端保存的会话日志，可导出 Markdown 对话或完整 JSONL。它不依赖 tmux scrollback，也不需要关闭 Codex 的滚动界面：
+
+```sh
+~/deploy/configs/tmux/wrapper/history.sh "$TMUX_PANE" > /tmp/tma-history.md
+~/deploy/configs/tmux/wrapper/history.sh 'session:window.0' jsonl > /tmp/tma-history.jsonl
+```
+
 # 浮窗与 zoom
 
 通过 `codexr` / `clauder` 启动的 TMA 中，`Ctrl+G` 在窗口底部、水平居中的小浮窗里用 Vim 编辑输入，最大 100 列 × 20 行。普通模式按 `q` 或用 `:wq` 保存退出，内容回到原输入框；`:q!` 放弃未保存的修改。编辑期间调用方会等待，关闭浮窗也会结束等待。当前会话下次按 `Ctrl+G` 即使用新入口。

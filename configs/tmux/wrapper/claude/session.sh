@@ -15,7 +15,17 @@
 _claude_session_id_for_pid() {
     local ai_pid="${1:?usage: _claude_session_id_for_pid AI_PID}"
     local expect_pane="${2:-}"
-    local config_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+    local config_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}" entry
+    # Cross-pane callers can have a different config directory from Claude.
+    if [[ -d "/proc/$ai_pid" ]]; then
+        config_dir="$HOME/.claude"
+        while IFS= read -r -d '' entry; do
+            if [[ "$entry" == CLAUDE_CONFIG_DIR=* ]]; then
+                config_dir="${entry#CLAUDE_CONFIG_DIR=}"
+                break
+            fi
+        done <"/proc/$ai_pid/environ" || return
+    fi
     local state_file="$config_dir/sessions/$ai_pid.json"
     local proc_start=""
 

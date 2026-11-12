@@ -19,6 +19,11 @@ tma_claude_headless_command() {
   printf '> %q' "$output"
 }
 tma_claude_session_id() { _claude_session_id_for_pid "$1" "$2"; }
+tma_claude_history() {
+  local pane="$1" pid="$2" session
+  session="$(tma_claude_session_id "$pid" "$pane")" || { echo "Cannot resolve Claude session for $pane" >&2; return 1; }
+  python3 "$TMA_WRAPPER_ROOT/claude/history.py" "$pid" "$session" "$pane" "${3:-markdown}"
+}
 tma_claude_resume_command() { tma_quote_command clauder --resume "$1"; }
 tma_claude_relocate() {
   local session cwd
