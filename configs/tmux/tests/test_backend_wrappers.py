@@ -117,7 +117,7 @@ tma_example_headless_command() { printf 'cat > %q' "$3"; }
         self.assertTrue(output[1].endswith(" example"), output)
         self.assertEqual(output[2].split("\t")[3], pane)
 
-    def test_new_backend_launches_through_framework_and_missing_relocate_leaves_panes(self):
+    def test_new_backend_launches_and_floats_without_restarting(self):
         tmux, pane = self.start_tmux()
         tmux("set-environment", "-g", "TMUX_AI_TOOL", "")
         self.assertEqual(self.call("default", "selected_backend").stdout.strip(), "codex")
@@ -132,11 +132,12 @@ tma_example_headless_command() { printf 'cat > %q' "$3"; }
         subprocess.check_call(["bash", str(TMUX_DIR / "ai/new_ai_pane.sh"), "stacked", pane], env=self.env)
         panes = tmux("list-panes", "-t", "test:", "-F", "#{pane_id}")
         self.assertEqual(len(panes.splitlines()), 2)
+        pid = tmux("display-message", "-p", "-t", pane, "#{pane_pid}")
         result = subprocess.run(["bash", str(TMUX_DIR / "script/split_to_float.sh"), pane],
                                 env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 universal_newlines=True)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("does not support relocate", result.stderr)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(tmux("display-message", "-p", "-t", pane, "#{pane_pid} #{pane_floating_flag}"), pid + " 1")
         self.assertEqual(tmux("list-panes", "-t", "test:", "-F", "#{pane_id}"), panes)
 
     def test_codex_and_claude_wrapper_hooks_preserve_turn_events(self):

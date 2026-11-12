@@ -63,6 +63,24 @@ python3 -m unittest discover -s configs/tmux/tests -v
 
 # 浮窗与 zoom
 
+选中浮窗后，`prefix + Ctrl-W` 打开位置菜单；菜单保持显示，接下来可以连续按键：
+
+| 按键 | 行为 |
+| --- | --- |
+| `h` / `l` | 左／右半屏；与上／下组合为角落；在同侧角落重复该键，展开为半屏 |
+| `k` / `j` | 上／下半屏；与左／右组合为角落；在同侧角落重复该键，展开为半屏 |
+| `c` | 保持尺寸居中，过大时缩小到窗口内；清除方向组合 |
+| `C`（Shift+C） | 尽量保持尺寸和位置，将浮窗移回当前窗口内，过大时才缩小；清除方向组合 |
+| `Esc` / `Enter` / `q` | 关闭菜单，恢复向浮窗程序输入 |
+
+例如打开菜单后按 `h k` 停靠左上角，再按 `l` 改为右上角，再按一次 `l` 展开为右半屏。菜单持续到退出，
+不需要反复按 prefix；重新按 `prefix Ctrl-W` 会重新开始方向组合。
+浮窗边框计入可用区域。实现由 `float-position.conf` 和 `script/float_position.py` 提供。
+
+这项功能使用官方 tmux 3.8 的 `move-pane` / `resize-pane` 接口，无需补丁。
+用 `module add tmux-3.8` 加载后，需要重启 server 才能升级；仅重新加载配置无效。
+`prefix + j → f` 使用 `break-pane -W` 将分屏直接转为浮窗，保留进程、pane ID 和 Agent 会话。
+
 通过 `codexr` / `clauder` 启动的 TMA 中，`Ctrl+G` 在窗口底部、水平居中的小浮窗里用 Vim 编辑输入，最大 100 列 × 20 行。普通模式按 `q` 或用 `:wq` 保存退出，内容回到原输入框；`:q!` 放弃未保存的修改。编辑期间调用方会等待，关闭浮窗也会结束等待。当前会话下次按 `Ctrl+G` 即使用新入口。
 
 tmux 3.7b 有个 bug：在 zoom 状态的 window 里用 `new-pane` 建的 floating pane，之后无论是进程退出、`kill-pane`，还是取消 zoom 后再关闭，server 都会在 `layout_destroy_cell` 里段错误退出，所有 session 一起没了。先建浮窗再 zoom 不会触发。

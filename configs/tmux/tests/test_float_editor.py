@@ -77,7 +77,7 @@ class FloatEditorTest(unittest.TestCase):
         self.assertIsNone(process.poll())
         self.assertEqual(self.tmux("display-message", "-p", "-t", floating,
                                    "#{pane_width}|#{pane_height}|#{pane_active}|#{@jump-history-skip}"),
-                         "100|20|1|1")
+                         "98|18|1|1")
         self.tmux("send-keys", "-t", floating, "gg0C", "edited prompt", "Escape")
         self.assertEqual(self.file.read_text(), "draft prompt\n")
         self.assertIsNone(process.poll())

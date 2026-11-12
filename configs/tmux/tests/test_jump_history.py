@@ -396,7 +396,9 @@ class JumpHistoryTest(unittest.TestCase):
             client = dict(row.split("\t") for row in self.tmux(
                 "list-clients", "-F", "#{client_pid}\t#{client_name}"
             ).splitlines())[str(child)]
+            self.wait_for(lambda: self.state(client).get("entries") == [self.a])
             self.visit(target, client)
+            self.wait_for(lambda: self.state(client).get("entries", [])[-1:] == [target])
             self.wait_for(received.exists)
 
             def table():
