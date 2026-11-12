@@ -5,24 +5,14 @@ import json
 from pathlib import Path
 import sys
 
-from session import resolve
+from session import branch, resolve
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'default'))
 from history import export, snapshot, text_content
 
 
 def messages(rows, leaf):
-    entries = {row['id']: row for row in rows if row['type'] != 'session'}
-    branch = []
-    seen = set()
-    while leaf is not None:
-        if leaf in seen:
-            raise ValueError('Cycle in Pi transcript at ' + leaf)
-        seen.add(leaf)
-        row = entries[leaf]
-        branch.append(row)
-        leaf = row['parentId']
-    for row in reversed(branch):
+    for row in branch(rows, leaf):
         if row['type'] != 'message':
             continue
         message = row['message']

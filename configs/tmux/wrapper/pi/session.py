@@ -31,6 +31,21 @@ def resolve(pane, pid):
     return binding
 
 
+def branch(rows, leaf):
+    """Return the selected root-to-leaf path, including tools and compaction."""
+    entries = {row['id']: row for row in rows if row['type'] != 'session'}
+    selected = []
+    seen = set()
+    while leaf is not None:
+        if leaf in seen:
+            raise ValueError('Cycle in Pi transcript at ' + leaf)
+        seen.add(leaf)
+        row = entries[leaf]
+        selected.append(row)
+        leaf = row['parentId']
+    return list(reversed(selected))
+
+
 if __name__ == '__main__':
     operation, pane, pid = sys.argv[1:]
     if operation == 'record':

@@ -11,6 +11,11 @@ tma_pi_headless_command() {
 }
 tma_pi_session_id() { python3 "$TMA_WRAPPER_ROOT/pi/session.py" id "$2" "$1"; }
 tma_pi_resume_command() { tma_quote_command pi --session "$1"; }
+tma_pi_fork_command() {
+  local session
+  session="$(python3 "$TMA_WRAPPER_ROOT/pi/fork.py" "$2" "$1")" || return
+  tma_pi_resume_command "$session"
+}
 tma_pi_history() { python3 "$TMA_WRAPPER_ROOT/pi/history.py" "$2" "$1" "${3:-markdown}"; }
 tma_pi_last_message() { python3 "$TMA_WRAPPER_ROOT/pi/history.py" "$2" "$1" last; }
 # Pi's native agent_settled covers cancellation, errors and automatic retries.

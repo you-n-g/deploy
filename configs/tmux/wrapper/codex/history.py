@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'default'))
-from history import export, process_setting, text_content, unique_log
+from history import export, process_setting, snapshot, text_content, unique_log
 
 
 def transcript(pid, session):
@@ -55,6 +55,24 @@ def messages(rows):
             yield 'context compacted', timestamp, payload.get('message', 'Context compacted.')
 
 
+def last_message(rows):
+    # The completion event carries the final answer. Later commentary or an
+    # interrupted turn must not replace the last completed response. Reading
+    # it also avoids Ctrl+O's terminal clipboard acknowledgement and races
+    # with unrelated panes creating tmux buffers.
+    for row in reversed(rows):
+        payload = row.get('payload', {})
+        if row.get('type') == 'event_msg' and payload.get('type') == 'task_complete':
+            text = payload.get('last_agent_message')
+            if text and text.strip():
+                return text
+    raise ValueError('No completed Codex response in the current session')
+
+
 if __name__ == '__main__':
     pid, session, pane, format = sys.argv[1:]
-    export(transcript(pid, session), 'codex', session, pane, format, messages)
+    path = transcript(pid, session)
+    if format == 'last':
+        print(last_message(snapshot(path)[1]))
+    else:
+        export(path, 'codex', session, pane, format, messages)

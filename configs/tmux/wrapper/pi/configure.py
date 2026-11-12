@@ -39,11 +39,15 @@ def configure():
     if entry is None:
         entry = {'id': model_id}
         entries.append(entry)
-    entry.update(name=local["name"], reasoning=True, input=['text', 'image'])
-    # Keep Pi's conservative context/output defaults until gateway limits are
-    # documented. Do not invent a model window or token price for the gateway model.
-    settings.update(defaultProvider=provider_id, defaultModel=model_id, defaultProjectTrust='always')
-    settings.setdefault('defaultThinkingLevel', 'medium')
+    # Configure a 1M shared context window, 64K streaming output limit, and
+    # supported thinking levels: https://ai.google.dev/gemini-api/docs/thinking
+    entry.update(name=local["name"], reasoning=True, input=['text', 'image'],
+                  contextWindow=1048576, maxTokens=65536,
+                  thinkingLevelMap={'off': None, 'minimal': None,
+                                    'low': 'low', 'medium': 'medium', 'high': 'high',
+                                    'xhigh': None, 'max': None})
+    settings.update(defaultProvider=provider_id, defaultModel=model_id,
+                    defaultThinkingLevel='high', defaultProjectTrust='always')
     if 'enabledModels' in settings and provider_id + '/' + model_id not in settings['enabledModels']:
         settings['enabledModels'].append(provider_id + '/' + model_id)
     write_json(models_path, models)

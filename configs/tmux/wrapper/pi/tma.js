@@ -42,7 +42,7 @@ export default function (pi) {
   }
   // message_end precedes persistence in Pi. Bind at the next message start
   // and turn boundary, when preceding entries are already in the session tree.
-  for (const event of ["message_start", "turn_end", "agent_end", "session_tree", "session_info_changed"]) {
+  for (const event of ["message_start", "turn_end", "agent_end", "session_tree", "session_info_changed", "model_select", "thinking_level_select"]) {
     pi.on(event, (_event, ctx) => { if (enabled(ctx)) bind(ctx); });
   }
   pi.on("session_shutdown", (event, ctx) => {

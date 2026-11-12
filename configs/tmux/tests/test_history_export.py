@@ -198,6 +198,49 @@ while True:
         self.assertNotIn('test_tool', result.stdout)
         self.assertIn(str(self.log.resolve()), result.stdout)
 
+    def last_message(self):
+        return subprocess.run(['bash', str(WRAPPER / 'dispatch.sh'), 'codex', 'last_message',
+                               self.pane, self.pid], env=self.env, stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE, universal_newlines=True)
+
+    def test_codex_copy_uses_completed_answer_during_a_later_unfinished_turn(self):
+        self.start(rows=[
+            message('assistant', 'earlier answer'),
+            {'type':'event_msg', 'payload':{'type':'task_complete', 'last_agent_message':'earlier answer'}},
+            message('assistant', 'latest **complete** answer\n\n第二段'),
+            {'type':'event_msg', 'payload':{'type':'task_complete', 'last_agent_message':'latest **complete** answer\n\n第二段'}},
+            message('user', 'another request'),
+            message('assistant', 'in-progress commentary'),
+            {'type':'event_msg', 'payload':{'type':'turn_aborted'}},
+        ])
+        # No clipboard buffers or TUI key handler are available in this pane.
+        self.assertEqual(self.tmux('list-buffers'), '')
+        result = self.last_message()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, 'latest **complete** answer\n\n第二段\n')
+        self.assertEqual(self.tmux('list-buffers'), '')
+        self.assertEqual(self.tmux('capture-pane', '-p', '-t', self.pane), '')
+
+    def test_codex_copy_without_a_completed_answer_is_an_explicit_error(self):
+        self.start(rows=[message('user', 'question'), message('assistant', 'still working')])
+        result = self.last_message()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, '')
+        self.assertIn('No completed Codex response', result.stderr)
+
+    def test_copy_menu_writes_exact_answer_without_terminal_clipboard_support(self):
+        answer = 'A complete answer\n\nwith **formatting**.'
+        self.start(rows=[{'type':'event_msg', 'payload':{
+            'type':'task_complete', 'last_agent_message':answer}}])
+        target = self.root / 'destination'
+        target.mkdir()
+        result = subprocess.run(['bash', str(WRAPPER.parent / 'ai/copy_last_message_to_learn.sh'),
+            self.pane, 'replace'], env=dict(self.env, LEARN_MSG_DIR=str(target)),
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((target / 'msg.md').read_text(), answer + '\n')
+        self.assertEqual(self.tmux('save-buffer', '-b', 'tma-last-message-' + self.pane[1:], '-'), answer)
+
     def test_jsonl_is_the_exact_source_including_tools_and_unknown_records(self):
         self.start(rows=[message('user', '请检查'),
                          {'type': 'unknown_future_record', 'payload': {'nested': [1, 2]}},

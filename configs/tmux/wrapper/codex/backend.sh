@@ -36,16 +36,7 @@ tma_codex_fork_command() {
   fi
 }
 tma_codex_last_message() {
-  local pane="$1" before copied attempt
-  before="$(tmux list-buffers -F '#{buffer_name}' | head -n 1)"
-  tmux send-keys -t "$pane" C-o || return
-  for ((attempt = 0; attempt < 40; attempt++)); do
-    copied="$(tmux list-buffers -F '#{buffer_name}' | head -n 1)"
-    [[ -n "$copied" && "$copied" != "$before" ]] && break
-    sleep 0.05
-  done
-  [[ -n "$copied" && "$copied" != "$before" ]] || { echo "No completed response copied within 2 seconds" >&2; return 1; }
-  tmux save-buffer -b "$copied" -
+  tma_codex_history "$1" "$2" last
 }
 tma_codex_tui_state() {
   local recent="$1"

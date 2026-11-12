@@ -30,7 +30,7 @@ class PiConfigTest(unittest.TestCase):
             agent = home / '.pi/agent'
             (agent / 'skills/personal').mkdir(parents=True)
             (agent / 'settings.json').write_text(json.dumps({
-                'theme': 'dark', 'defaultThinkingLevel': 'high', 'enabledModels': ['old/*']}))
+                'theme': 'dark', 'defaultThinkingLevel': 'medium', 'enabledModels': ['old/*']}))
             (agent / 'models.json').write_text(json.dumps({'providers': {
                 'old': {'apiKey': 'keep-me', 'models': [{'id': 'old-model'}]}}}))
             env = dict(os.environ, HOME=str(home))
@@ -51,6 +51,11 @@ class PiConfigTest(unittest.TestCase):
             self.assertEqual(gw_provider['baseUrl'], 'https://gateway.test/v1beta')
             self.assertEqual(len(gw_provider['models']), 1)
             self.assertEqual(gw_provider['models'][0]['id'], 'gateway-model-test')
+            self.assertEqual(gw_provider['models'][0]['contextWindow'], 1048576)
+            self.assertEqual(gw_provider['models'][0]['maxTokens'], 65536)
+            self.assertEqual(gw_provider['models'][0]['thinkingLevelMap'], {
+                'off': None, 'minimal': None, 'low': 'low', 'medium': 'medium',
+                'high': 'high', 'xhigh': None, 'max': None})
             key = subprocess.check_output(['bash', '-c', gw_provider['apiKey'][1:]], env=env, universal_newlines=True)
             self.assertEqual(key.strip(), 'test-secret')
             self.assertTrue((agent / 'skills/personal').is_dir())
@@ -195,6 +200,78 @@ for await (const line of readline.createInterface({input:process.stdin})) {
         self.event('before_agent_start', fields={'prompt':'headless'})
         self.assertEqual(self.option('@tma_pi_session'), '')
         self.assertEqual(self.option('@ai_agent_running'), '')
+
+    def test_fork_preserves_selected_ancestry_and_keeps_source_independent(self):
+        rows = [
+            dict(type='session', version=3, id='pi-session', cwd=str(self.root)),
+            dict(type='model_change', id='m', parentId=None, provider='google-test', modelId='gateway-alias-test'),
+            dict(type='thinking_level_change', id='t', parentId='m', thinkingLevel='high'),
+            dict(type='message', id='u', parentId='t', message={'role':'user', 'content':[
+                {'type':'text', 'text':'original 中文'}, {'type':'image', 'data':'image-data', 'mimeType':'image/png'}]}),
+            dict(type='message', id='a', parentId='u', message={'role':'assistant', 'content':[
+                {'type':'toolCall', 'id':'tool', 'name':'read', 'arguments':{'path':'file'}}]}),
+            dict(type='message', id='r', parentId='a', message={'role':'toolResult', 'toolCallId':'tool',
+                'content':[{'type':'text', 'text':'file contents'}]}),
+            dict(type='compaction', id='c', parentId='r', summary='summary', firstKeptEntryId='u'),
+            dict(type='label', id='l', parentId='c', targetId='u', label='keep this label'),
+            dict(type='message', id='b', parentId='l', message={'role':'assistant', 'content':[{'type':'text','text':'selected'}]}),
+            dict(type='message', id='x', parentId='u', message={'role':'assistant', 'content':[{'type':'text','text':'abandoned'}]}),
+        ]
+        directory = self.root / 'sessions with spaces'
+        directory.mkdir()
+        path = directory / 'source.jsonl'
+        source = ''.join(json.dumps(row) + '\n' for row in rows)
+        path.write_text(source)
+        self.event('session_start', meta={'transcript_path':str(path), 'leaf_id':'b'})
+        args = [str(self.process.pid), self.pane, 'unused-root-pid']
+        result = self.call('fork_command', *args)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        # Exercise Bash quoting in the zsh that actually launches forked panes.
+        command = subprocess.check_output(['zsh', '-f', '-c',
+            'pi() { printf "%s\\0" "$@"; }; ' + result.stdout]).decode().split('\0')[:-1]
+        self.assertEqual(command[0], '--session')
+        fork = Path(command[1])
+        copied = [json.loads(line) for line in fork.read_text().splitlines()]
+        self.assertEqual(fork.parent, directory)
+        self.assertNotEqual(copied[0]['id'], 'pi-session')
+        self.assertEqual(copied[0]['parentSession'], str(path))
+        self.assertEqual(copied[1:], rows[1:-1])
+        self.assertEqual(fork.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(path.read_text(), source)
+        self.assertEqual(json.loads(self.option('@tma_pi_session'))['leaf_id'], 'b')
+        # A second fork has its own ID/file and follows a later tree selection.
+        self.event('session_tree', meta={'leaf_id':'u'})
+        second = self.call('fork_command', *args)
+        self.assertEqual(second.returncode, 0, second.stderr)
+        second_path = Path(shlex.split(second.stdout)[2])
+        second_rows = [json.loads(line) for line in second_path.read_text().splitlines()]
+        self.assertNotEqual(second_path, fork)
+        self.assertEqual(second_rows[1:], rows[1:4])
+        self.assertEqual(path.read_text(), source)
+
+    def test_fork_rejects_wrong_session_and_invalid_ancestry(self):
+        path = self.root / 'source.jsonl'
+        path.write_text(json.dumps(dict(type='session', id='wrong')) + '\n')
+        self.event('session_start', meta={'transcript_path':str(path), 'leaf_id':None})
+        args = [str(self.process.pid), self.pane, 'unused']
+        failed = self.call('fork_command', *args)
+        self.assertNotEqual(failed.returncode, 0)
+        self.assertEqual(failed.stdout, '')
+        self.assertIn('does not match', failed.stderr)
+        path.write_text(json.dumps(dict(type='session', id='pi-session')) + '\n' +
+                        json.dumps(dict(type='label', id='cycle', parentId='cycle')) + '\n')
+        self.event('session_tree', meta={'leaf_id':'cycle'})
+        failed = self.call('fork_command', *args)
+        self.assertNotEqual(failed.returncode, 0)
+        self.assertIn('Cycle in Pi transcript', failed.stderr)
+        self.assertEqual(list(self.root.glob('*.jsonl')), [path])
+
+    def test_model_and_thinking_changes_refresh_the_fork_point(self):
+        self.event('session_start', meta={'leaf_id':'original'})
+        self.event('model_select', meta={'leaf_id':'new-model'})
+        self.assertEqual(json.loads(self.option('@tma_pi_session'))['leaf_id'], 'new-model')
+        self.event('thinking_level_select', meta={'leaf_id':'new-effort'})
+        self.assertEqual(json.loads(self.option('@tma_pi_session'))['leaf_id'], 'new-effort')
 
     def test_history_keeps_compacted_ancestors_but_excludes_abandoned_branch(self):
         rows = [{'type':'session', 'version':3, 'id':'pi-session'}]

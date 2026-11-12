@@ -174,26 +174,6 @@ tma_example_headless_command() { printf 'cat > %q' "$3"; }
         self.assertEqual(self.call("example", "tui_state", footer).stdout, "")
         self.assertEqual(self.call("codex", "tui_state", footer).stdout, "")
 
-    def test_codex_copy_accepts_initially_empty_buffer_list(self):
-        _, pane = self.start_tmux()
-        response = self.root / "response"
-        response.write_text("Latest answer\n")
-        # Simulate the TUI's Ctrl+O handler, without sending keys to any agent.
-        script = '''set -euo pipefail
-source "$1"
-tmux() {
-  if [[ "$1" == send-keys ]]; then command tmux load-buffer "$RESPONSE_FILE"
-  else command tmux "$@"; fi
-}
-tma_call codex last_message "$2"
-'''
-        result = subprocess.run(["bash", "-c", script, "test", str(WRAPPERS / "dispatch.sh"), pane],
-                                env=dict(self.env, RESPONSE_FILE=str(response)),
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout, response.read_text())
-
-
 class ClaudeConfigMigrationTest(unittest.TestCase):
     def test_legacy_path_migrates_hooks_idempotently_without_removing_custom_settings(self):
         spec = importlib.util.spec_from_file_location(

@@ -56,8 +56,10 @@ stdout 只放结果，诊断写 stderr。`*_command` 返回命令文本，不执
 | `skills_dir` | 无 → skills 链接路径，默认 `~/.<backend>/skills` |
 
 `session_id`、`fork_command`、`relocate`、`last_message`、`history` 等没有通用实现，未实现时明确报不支持。
+Codex 的 `last_message` 从当前会话日志的 `task_complete.last_agent_message` 读取最近完整回答，
+不会发送 Ctrl+O 或等待终端剪贴板确认；新回合的中途说明不会覆盖上一条完整回答。
 Gemini 支持启动、headless、hooks、TUI 状态检测、会话 ID 和历史导出；尚未实现 fork、最近回答提取或迁移恢复。
-Pi 支持启动、headless、原生事件、会话 ID、恢复、最近回答和历史导出；尚未实现 fork 和迁移恢复。
+Pi 支持启动、headless、原生事件、会话 ID、恢复、fork、最近回答和历史导出；尚未实现迁移恢复。
 
 ## Pi 与网关配置
 
@@ -69,10 +71,21 @@ tmuxg --force-new --tool pi --reasoning-effort high
 ```
 
 要求已安装 `@earendil-works/pi-coding-agent`（验证版本 0.84.3），并已通过 Gemini 配置生成
-`~/.gemini/.env` 中的 `GOOGLE_GEMINI_BASE_URL` 和 `GEMINI_API_KEY`。安装器保留 Pi 的其它 provider、
-主题和推理强度，将默认模型设为 本机 `~/.config/llm/gateways.local.json` 的 `pi.provider` / `pi.model`；默认推理强度在未配置时为 `medium`。
-凭据通过 Pi 官方 `!command` 机制读取现有文件，不复制进 models.json。上下文和输出上限使用 Pi 的
-保守默认值 128K / 16K，未宣称这是模型的服务端上限。
+`~/.gemini/.env` 中的 `GOOGLE_GEMINI_BASE_URL` 和 `GEMINI_API_KEY`。安装器保留 Pi 的其它 provider 和主题，
+默认 provider、模型 ID 和显示名称从本机 `~/.config/llm/gateways.local.json` 的 `pi` 对象读取
+（`provider`、`model`、`name` 三个字段），默认推理强度设为 `high`。
+此文件不在仓库内；例如 `{"pi":{"provider":"google-gateway","model":"model-id","name":"Gateway Model","aliases":["model-alias"]}}`。
+凭据通过 Pi 官方 `!command` 机制读取现有文件，不复制进 models.json。
+模型参数按 [Gemini Thinking 文档](https://ai.google.dev/gemini-api/docs/thinking)配置为
+`contextWindow=1048576`、`maxTokens=65536`，推理选项为 `low` / `medium` / `high`。
+1M 是输入、思考和输出共用的窗口。
+
+日常编码任务可使用 `medium`，复杂推理任务使用 `high`；通过推理强度控制思考开销，
+避免用过小的输出上限截断思考。当前 Pi 使用流式 GenerateContent，单次输出按 64K 设置。
+
+运行参数建议：保留自动压缩；长任务可将 Pi 的 `compaction.reserveTokens` 设为 `65536`，
+为输出留足空间，将 `httpIdleTimeoutMs` 设为 `1200000`（20 分钟），避免长思考被客户端超时打断。
+这两项是 Pi 全局设置，安装器保留用户现有值；它们与模型的官方容量参数不同。
 
 Pi 默认自动执行工具；`defaultProjectTrust=always` 让新目录也自动信任项目配置，无需启动确认。
 全局 AGENTS.md、共享 skills 和两个扩展安装到 `~/.pi/agent/`；已有 Pi 会话用 `/reload` 加载扩展，
@@ -82,6 +95,10 @@ Pi 默认自动执行工具；`defaultProjectTrust=always` 让新目录也自动
 TMA 扩展只跟踪 tmux 中的交互式 Pi：`before_agent_start` / `agent_start` 标 running，
 `agent_settled` 在自动重试、压缩和排队消息都结束后标 idle，手动压缩成功或取消也会结束 running。
 它不需要从屏幕文字推断状态，headless Pi 不会改父 pane 的状态。
+
+Pi 支持 `prefix + f` 菜单的窗口、分屏和浮窗 fork：复制当前选中分支的已落盘上下文，
+包括工具记录、压缩摘要和模型设置，生成独立会话后启动交互式 Pi。源会话继续保留；
+fork 会沿当前 `/tree` 位置复制，不会误选日志末尾的其它分支。
 
 框架还调用以下共享操作：`selected_backend`（读 `TMUX_AI_TOOL`，未设置或空值时为 Codex）、
 `session_names PANES...`（输出 `pane<TAB>名称`）、`background_processes PID`、`mark_created WINDOW`，以及
