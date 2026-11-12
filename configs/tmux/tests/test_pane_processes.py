@@ -18,7 +18,7 @@ SCANNER_PATH = Path(__file__).resolve().parents[1] / "wrapper/default/pane_proce
 spec = importlib.util.spec_from_file_location("pane_processes", str(SCANNER_PATH))
 scanner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(scanner)
-PATTERN = re.compile(r"(^|/)(codex|gemini)$")
+PATTERN = re.compile(r"(^|/)(codex|gemini|pi)$")
 
 
 class PaneProcessScanTest(unittest.TestCase):
@@ -100,6 +100,23 @@ setInterval(() => {}, 1000);
         with patch.object(scanner, "process_info", wraps=scanner.process_info) as reads:
             self.assertEqual(self.scan(pid), [pid])
         self.assertEqual(reads.call_count, 1)
+
+    def test_pi_entry_points_match_all_process_paths(self):
+        for path in ("bin/pi", "@earendil-works/pi-coding-agent/dist/bundle/cli.js",
+                     "@earendil-works/pi-coding-agent/dist/cli.js"):
+            with self.subTest(path=path):
+                program, ready = self.program(path)
+                pid = self.start(program, [ready])
+                self.assertEqual(self.scan(pid), [pid])
+                script = 'source "$1"; _find_ai_pid "$2"; _find_ai_pid "$2" "$(_ai_process_snapshot)"'
+                output = subprocess.check_output(["bash", "-c", script, "test",
+                    str(SCANNER_PATH.parents[2] / "wrapper/dispatch.sh"), str(pid)], universal_newlines=True)
+                self.assertEqual(output.splitlines(), [str(pid) + " pi"] * 2)
+
+    def test_pi_in_an_unrelated_programs_arguments_is_not_an_agent(self):
+        program, ready = self.program("unrelated.js")
+        pid = self.start(program, [ready], str(self.root / "bin/pi"))
+        self.assertEqual(self.scan(pid), [])
 
 
 if __name__ == "__main__":

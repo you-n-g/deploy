@@ -26,7 +26,7 @@ def is_broker(argv, broker):
 
 
 def agent_name(name, argv):
-    # Same Gemini entry-point rule as process.sh's procfs and snapshot paths.
+    # Same Node entry-point rules as process.sh's procfs and snapshot paths.
     if name not in ("node", "MainThread") or not argv or os.path.basename(argv[0]) != "node":
         return name
     arguments = iter(argv[1:])
@@ -34,6 +34,10 @@ def agent_name(name, argv):
     if (entry == "gemini" or entry.endswith("/bin/gemini")
             or entry.endswith("/@google/gemini-cli/bundle/gemini.js")):
         return "gemini"
+    if (entry == "pi" or entry.endswith("/bin/pi")
+            or entry.endswith("/@earendil-works/pi-coding-agent/dist/cli.js")
+            or entry.endswith("/@earendil-works/pi-coding-agent/dist/bundle/cli.js")):
+        return "pi"
     return name
 
 

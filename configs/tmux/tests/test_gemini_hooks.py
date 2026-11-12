@@ -127,7 +127,7 @@ class GeminiHookTest(unittest.TestCase):
         self.assertIn(self.pane, [row.split("\t")[3] for row in rows])
         # A node program mentioning Gemini as an argument is not Gemini.
         result = subprocess.run(["bash", "-c",
-            'source "$1"; _gemini_argv_matches node unrelated.js /usr/bin/gemini',
+            'source "$1"; _node_ai_backend node unrelated.js /usr/bin/gemini',
             "test", LIB], env=self.env)
         self.assertEqual(result.returncode, 1)
 

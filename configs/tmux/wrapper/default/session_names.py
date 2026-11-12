@@ -8,8 +8,9 @@ from collections import defaultdict, deque
 from pathlib import Path
 from typing import DefaultDict, Dict, Iterable, List, Optional, Tuple
 
+from pane_processes import agent_name
 
-AI_PROCESS_NAMES = {"claude", "codex"}
+AI_PROCESS_NAMES = {"claude", "codex", "pi"}
 SESSION_ID_RE = re.compile(r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}")
 Process = Tuple[int, str, str]
 
@@ -104,6 +105,8 @@ def ai_process(
         if process is None:
             continue
         name = os.path.basename(process[1])
+        if name in ("node", "MainThread"):
+            name = agent_name(name, command_line(pid))
         if name in AI_PROCESS_NAMES and not is_under_broker(pid, pane_pid, processes):
             return pid, name
         queue.extend(children[pid])
@@ -185,6 +188,17 @@ def session_names(pane_ids: List[str]) -> Dict[str, str]:
             names[pane_id] = ""
         elif agent[1] == "codex":
             names[pane_id] = indexed_names.get(codex_ids[pane_id], "")
+        elif agent[1] == "pi":
+            raw = subprocess.check_output(
+                ["tmux", "show-option", "-pqv", "-t", pane_id, "@tma_pi_session"],
+                universal_newlines=True)
+            if not raw.strip():
+                names[pane_id] = ""  # Extension has not loaded yet.
+                continue
+            binding = json.loads(raw)
+            if binding['pid'] != str(agent[0]) or binding['process_start'] != processes[agent[0]][2]:
+                raise RuntimeError('Stale Pi session metadata for ' + pane_id)
+            names[pane_id] = binding['name']
         else:
             names[pane_id] = claude_name(agent[0], pane_id, processes[agent[0]])
     return names

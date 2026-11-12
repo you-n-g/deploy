@@ -4,13 +4,14 @@ AI_PROC_PAT="(^|/)($(tma_backends | paste -sd '|' -))$"
 
 _ai_proc_name_matches() { [[ "$1" =~ $AI_PROC_PAT ]]; }
 
-# Gemini CLI runs as node/MainThread, so identify its entry point, not text in
+# Gemini and Pi run as node/MainThread, so identify the entry point, not text in
 # a prompt or an unrelated node program's arguments.
-_gemini_argv_matches() {
+_node_ai_backend() {
     case "${1:-}" in node|*/node) shift ;; *) return 1 ;; esac
     while [[ "${1:-}" == -* ]]; do shift; done
     case "${1:-}" in
-        gemini|*/bin/gemini|*/@google/gemini-cli/bundle/gemini.js) return 0 ;;
+        gemini|*/bin/gemini|*/@google/gemini-cli/bundle/gemini.js) printf 'gemini\n' ;;
+        pi|*/bin/pi|*/@earendil-works/pi-coding-agent/dist/cli.js|*/@earendil-works/pi-coding-agent/dist/bundle/cli.js) printf 'pi\n' ;;
         *) return 1 ;;
     esac
 }
@@ -19,7 +20,7 @@ _find_ai_pid_procfs() {
     local root="$1"
     local queue=("$root")
     local seen=" "
-    local pid comm children child
+    local pid comm children child backend
     local -a argv
 
     while ((${#queue[@]} > 0)); do
@@ -35,7 +36,7 @@ _find_ai_pid_procfs() {
             if [[ "$comm" == node || "$comm" == MainThread ]]; then
                 argv=()
                 mapfile -d '' -t argv <"/proc/$pid/cmdline" 2>/dev/null || continue
-                if _gemini_argv_matches "${argv[@]}"; then comm=gemini; fi
+                if backend="$(_node_ai_backend "${argv[@]}")"; then comm="$backend"; fi
             fi
             if _ai_proc_name_matches "$comm"; then
                 printf '%s %s\n' "$pid" "$comm"
@@ -157,6 +158,10 @@ _ai_process_snapshot() {
                             $args[0] =~ m{^(gemini|.*/bin/gemini|.*/\@google/gemini-cli/bundle/gemini\.js)$}) {
                             $name = "gemini";
                         }
+                        if ($exe =~ m{(^|/)node$} && @args &&
+                            $args[0] =~ m{^(pi|.*/bin/pi|.*/\@earendil-works/pi-coding-agent/dist/(bundle/)?cli\.js)$}) {
+                            $name = "pi";
+                        }
                     }
                 }
                 print "$pid $parent $name\n";
@@ -167,6 +172,7 @@ _ai_process_snapshot() {
             $4 ~ /(^|\/)node$/ {
                 for (i = 5; i <= NF && $i ~ /^-/; i++) {}
                 if ($i ~ /^(gemini|.*\/bin\/gemini|.*\/@google\/gemini-cli\/bundle\/gemini\.js)$/) $3 = "gemini"
+                if ($i ~ /^(pi|.*\/bin\/pi|.*\/@earendil-works\/pi-coding-agent\/dist\/(bundle\/)?cli\.js)$/) $3 = "pi"
             }
             { print $1, $2, $3 }
         '

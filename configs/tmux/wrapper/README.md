@@ -57,6 +57,31 @@ stdout 只放结果，诊断写 stderr。`*_command` 返回命令文本，不执
 
 `session_id`、`fork_command`、`relocate`、`last_message`、`history` 等没有通用实现，未实现时明确报不支持。
 Gemini 支持启动、headless、hooks、TUI 状态检测、会话 ID 和历史导出；尚未实现 fork、最近回答提取或迁移恢复。
+Pi 支持启动、headless、原生事件、会话 ID、恢复、最近回答和历史导出；尚未实现 fork 和迁移恢复。
+
+## Pi 与网关配置
+
+```bash
+bash configs/llm/conf_llm.sh pi
+pi
+# 在新的 TMA window 中启动；默认模型由本机配置指定，也可显式选择推理强度：
+tmuxg --force-new --tool pi --reasoning-effort high
+```
+
+要求已安装 `@earendil-works/pi-coding-agent`（验证版本 0.84.3），并已通过 Gemini 配置生成
+`~/.gemini/.env` 中的 `GOOGLE_GEMINI_BASE_URL` 和 `GEMINI_API_KEY`。安装器保留 Pi 的其它 provider、
+主题和推理强度，将默认模型设为 本机 `~/.config/llm/gateways.local.json` 的 `pi.provider` / `pi.model`；默认推理强度在未配置时为 `medium`。
+凭据通过 Pi 官方 `!command` 机制读取现有文件，不复制进 models.json。上下文和输出上限使用 Pi 的
+保守默认值 128K / 16K，未宣称这是模型的服务端上限。
+
+Pi 默认自动执行工具；`defaultProjectTrust=always` 让新目录也自动信任项目配置，无需启动确认。
+全局 AGENTS.md、共享 skills 和两个扩展安装到 `~/.pi/agent/`；已有 Pi 会话用 `/reload` 加载扩展，
+默认模型用于新会话。`gateway.js` 扩展把 Pi 0.84 的 `thinkingBudget` 转为网关接受的 `thinkingLevel`，
+同时支持 `pi.model` 及 `pi.aliases` 模型的聊天、压缩和分支摘要，保留其它模型的原生行为。
+
+TMA 扩展只跟踪 tmux 中的交互式 Pi：`before_agent_start` / `agent_start` 标 running，
+`agent_settled` 在自动重试、压缩和排队消息都结束后标 idle，手动压缩成功或取消也会结束 running。
+它不需要从屏幕文字推断状态，headless Pi 不会改父 pane 的状态。
 
 框架还调用以下共享操作：`selected_backend`（读 `TMUX_AI_TOOL`，未设置或空值时为 Codex）、
 `session_names PANES...`（输出 `pane<TAB>名称`）、`background_processes PID`、`mark_created WINDOW`，以及
@@ -71,11 +96,16 @@ Gemini 支持启动、headless、hooks、TUI 状态检测、会话 ID 和历史�
 ~/deploy/configs/tmux/wrapper/history.sh 'session:window.0' jsonl > /tmp/tma-history.jsonl
 ```
 
-入口自动识别 pane 的后端，调用 `history`；支持 Codex、Claude 和 Gemini。Markdown 只展开会话文字，JSONL 保留工具调用、工具结果、推理及元数据等全部原始记录。输出是执行时已落盘内容的快照，正在生成但尚未写入日志的内容需稍后再次导出。
+入口自动识别 pane 的后端，调用 `history`；支持 Codex、Claude、Gemini 和 Pi。Markdown 只展开会话文字，JSONL 保留工具调用、工具结果、推理及元数据等全部原始记录。输出是执行时已落盘内容的快照，正在生成但尚未写入日志的内容需稍后再次导出。
 
 Codex 复用当前会话 ID 定位，优先读取进程打开的 rollout，保留压缩之前的历史；没有打开文件时按确切会话 ID 在其 Codex 配置目录查找。Claude 复用当前会话/后台 job 的 ID，从 projects 日志中读取。找不到或匹配到多个日志、记录损坏时明确报错，不猜测“最近会话”，也不退回 tmux 屏幕抓取。远程会话的日志需要在保存日志的主机上导出。
 
 Gemini 的原生 hook 将 `session_id`、`transcript_path` 与当前进程 PID/启动时间保存在 pane 的 `@tma_gemini_session` 中。已有窗口在下一次 hook 触发后即可使用，无需重启；尚未收到 hook 时会明确提示。新会话覆盖旧绑定，退出时清除，PID 或启动时间不匹配时报错。Markdown 按 Gemini 的消息 ID、patch、rewind 和排序记录还原当前对话，JSONL 则原样保留回退前后的所有记录。
+
+Pi 扩展在 `@tma_pi_session` 绑定 PID/启动时间、会话 ID、日志路径和当前 leaf。
+Markdown 沿当前分支的 parentId 回溯，保留压缩前祖先消息，排除已离开的分支；JSONL 原样保留整棵树。
+绑定在消息开始、turn 结束、切分支及会话生命周期事件更新；正在写入的消息在下一个边界后可导出。
+新会话尚未落盘时会明确报错，退出或切换会话会清理旧绑定。
 
 此入口不受 alternate screen、tmux history-limit 和 capture 的 `tail` 限制。其它后端只需实现自己的 `tma_<backend>_history`，尚未实现的后端返回 69。
 
@@ -108,11 +138,11 @@ tma_example_launch_command() {
 
 ## 共享快速路径与兼容入口
 
-`default/process.sh` 从目录生成原生进程名匹配规则，同时保留 Gemini 的 node/MainThread 识别。
+`default/process.sh` 从目录生成原生进程名匹配规则，同时识别 Gemini 和 Pi 的 node/MainThread 入口。
 `_find_ai_pid` 用于单 pane；`ai_pane_pids` 的 Linux 快速路径在 `pane_processes.py` 中，只遍历 pane 子树，遇到 AI 或 broker 就停止该分支。
 `_ai_process_snapshot` / `_ai_pane_pid_set` 保留给显式进程快照及非 Linux 路径使用。
 `default/session_names.py` 保留原有批量会话名称解析；`mark_created.sh` 和 `background_processes.sh` 也是共享批量路径。
-这些文件允许集中写 `codex|claude|gemini` 等判断，避免逐 pane 启动多个解释器。
+这些文件允许集中写 `codex|claude|gemini|pi` 等判断，避免逐 pane 启动多个解释器。
 新后端有特殊进程名、会话格式或祖先进程规则时，在此补充相应识别；框架不变。
 
 旧的 `configs/llm/config_{claude,gemini}.py`、hook JSON、Gemini 指令文档、`ai/session_names.py` 等路径保留软链接；
