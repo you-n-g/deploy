@@ -42,6 +42,19 @@ note() { [[ "${PEND_UNTIL_QUIET:-}" == 1 ]] || tmux display-message "$1"; }
 
 usage="usage: pend_until.sh [-A] [--after-turn] --timeout DURATION idle|done|pid PANE [TARGET|PID]"
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+# tmux should own only the launcher. Keeping the wait itself as a run-shell
+# job makes an intentional SIGTERM open "terminated by signal 15" in the
+# user's current pane. Detach it as watch-target does; keep diagnostics in a log.
+start_wait_job() {
+  local command="$1" log_file run_command
+
+  log_file="$HOME/.cache/tmux-pend-until.log"
+  mkdir -p "$(dirname "$log_file")"
+  printf -v run_command 'nohup bash -eu -c %q </dev/null >>%q 2>&1 &' "$command" "$log_file"
+  tmux run-shell -b "$run_command"
+}
+
 if [[ "${1:-}" == "--expire" ]]; then
   pane="${2:?$usage}"
   reason="${3:?$usage}"
@@ -94,8 +107,8 @@ if [[ "$mode" == pid ]]; then
     "$script_dir/track_ai_agent_state.sh" pending "$pane" "$reason"
   printf -v expire '%q ' "$script_dir/pend_until.sh" --expire "$pane" "$reason"
   # Release on exit (kill -0 polling: the pid is not our child) or at the deadline.
-  tmux run-shell -b "while kill -0 $pid 2>/dev/null; do sleep 5; done; AI_AGENT_STATE_SOURCE=pid-exit-of:$pid $expire"
-  tmux run-shell -b "sleep $timeout_s; $expire"
+  start_wait_job "while kill -0 $pid 2>/dev/null; do sleep 5; done; AI_AGENT_STATE_SOURCE=pid-exit-of:$pid $expire"
+  start_wait_job "sleep $timeout_s; $expire"
   exit 0
 fi
 
@@ -152,4 +165,4 @@ reason="$prefix $target $label · 最晚 $deadline"
 AI_AGENT_STATE_SOURCE="${AI_AGENT_STATE_SOURCE:-pend-until-$mode}" \
   "$script_dir/track_ai_agent_state.sh" pending "$pane" "$reason"
 printf -v expire '%q ' "$script_dir/pend_until.sh" --expire "$pane" "$reason"
-tmux run-shell -b "sleep $timeout_s; $expire"
+start_wait_job "sleep $timeout_s; $expire"
