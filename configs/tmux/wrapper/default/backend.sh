@@ -12,8 +12,16 @@ tma_default_selected_backend() {
 
 tma_default_command() { printf '%s\n' "$TMA_BACKEND"; }
 tma_default_skills_dir() { printf '%s\n' "$HOME/.$TMA_BACKEND/skills"; }
-tma_default_global_window_name() { printf 'codex-tmp\n'; }
-tma_default_global_window_command() { tma_call codex launch_command "" ""; }
+tma_default_global_window_name() {
+  local backend
+  backend="$(tma_call default selected_backend)" || return
+  printf '%s-tmp\n' "$backend"
+}
+tma_default_global_window_command() {
+  local backend
+  backend="$(tma_call default selected_backend)" || return
+  tma_call "$backend" launch_command "" ""
+}
 tma_default_livesync_command() { printf '%s\n' "${TMA_LIVESYNC_COMMAND:-codex-remote -C ~/vaults/livesync-headless bj.vm.213428.xyz}"; }
 tma_default_image_staging_dir() { printf '%s\n' "$HOME/tmp/claude-images"; }
 

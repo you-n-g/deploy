@@ -69,6 +69,10 @@ class StartupTests(unittest.IsolatedAsyncioTestCase):
                     await pilot.press("2")
                     self.assertEqual(app.query_one(TabbedContent).active, "clauder-tab")
                     self.assertEqual(app.query_one("#clauder-providers", OptionList).option_count, 1)
+                    await pilot.press("4")
+                    self.assertEqual(app.query_one(TabbedContent).active, "ai-tool-tab")
+                    ai_tools = app.query_one("#ai-tools", OptionList)
+                    self.assertIn("pi", [ai_tools.get_option_at_index(i).id for i in range(ai_tools.option_count)])
                     await pilot.press("5")
                     self.assertEqual(app.query_one(TabbedContent).active, "lm-progress-tab")
 

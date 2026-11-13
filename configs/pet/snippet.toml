@@ -483,7 +483,7 @@
   Description = "AI TUI command"
   Output = ""
   Tag = []
-  command = "<disable_rename=|_TMUX_AI_DISABLE_RENAME=1_||__|> <model=|__||_TMUX_AI_MODEL=claude-opus-4-6_||_TMUX_AI_MODEL=claude-sonnet-4-6_||_TMUX_AI_MODEL=gpt-5-codex_|> <tool=|_$(tmux show-environment -g TMUX_AI_TOOL | cut -d= -f2)r_||_clauder_||_codexr_|> <effort=|__||_-c 'model_reasoning_effort=\"low\"'_||_-c 'model_reasoning_effort=\"medium\"'_||_-c 'model_reasoning_effort=\"high\"'_||_--effort low_||_--effort medium_||_--effort high_|>"
+  command = "<disable_rename=|_TMUX_AI_DISABLE_RENAME=1_||__|> <model=|__||_TMUX_AI_MODEL=claude-opus-4-6_||_TMUX_AI_MODEL=claude-sonnet-4-6_||_TMUX_AI_MODEL=gpt-5-codex_|> <tool=|_$(bash ~/deploy/configs/tmux/wrapper/dispatch.sh "$(bash ~/deploy/configs/tmux/wrapper/dispatch.sh default selected_backend)" command)_||_clauder_||_codexr_||_pi_||_geminir_|> <effort=|__||_-c 'model_reasoning_effort=\"low\"'_||_-c 'model_reasoning_effort=\"medium\"'_||_-c 'model_reasoning_effort=\"high\"'_||_--effort low_||_--effort medium_||_--effort high_|>"
 
 [[Snippets]]
   Description = "codex command"

@@ -133,6 +133,11 @@ tma_example_headless_command() { printf 'cat > %q' "$3"; }
         tmux, pane = self.start_tmux()
         tmux("set-environment", "-g", "TMUX_AI_TOOL", "")
         self.assertEqual(self.call("default", "selected_backend").stdout.strip(), "codex")
+        self.assertEqual(self.call("default", "global_window_name").stdout.strip(), "codex-tmp")
+        self.assertEqual(self.call("default", "global_window_command").stdout.strip(), "codexr")
+        tmux("set-environment", "-g", "TMUX_AI_TOOL", "pi")
+        self.assertEqual(self.call("default", "global_window_name").stdout.strip(), "pi-tmp")
+        self.assertEqual(self.call("default", "global_window_command").stdout.strip(), "pi")
         tmux("set-environment", "-g", "TMUX_AI_TOOL", "example")
         (self.wrappers / "example/backend.sh").write_text(
             'tma_example_launch_command() { tma_default_launch_command "$1" "$2" 600; }\n')

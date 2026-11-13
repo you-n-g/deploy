@@ -84,7 +84,8 @@ SCOPES = (
 )
 AI_TOOL_CHOICES = (
     ("codex", "codex — launch Codex with codexr"),
-    ("gemini", "gemini — launch Gemini"),
+    ("pi", "pi — launch Pi"),
+    ("gemini", "gemini — launch Gemini with geminir"),
     ("claude", "claude — launch Claude Code with clauder"),
 )
 
