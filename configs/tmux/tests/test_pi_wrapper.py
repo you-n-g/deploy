@@ -90,15 +90,17 @@ class PiConfigTest(unittest.TestCase):
             package.mkdir(parents=True)
             (package / 'package.json').write_text('{"type":"module","exports":"./index.js"}')
             (package / 'index.js').write_text(
-                'export const googleGenerativeAIApi = () => ({streamSimple: (m,c,o) => o});')
+                'export let lastContext;\n'
+                'export const googleGenerativeAIApi = () => ({streamSimple: (m,c,o) => {lastContext=c; return o;}});')
             script = """
 import assert from 'node:assert/strict';
 import register from './gateway.mjs';
+import { lastContext } from '@earendil-works/pi-ai';
 let provider;
 register({registerProvider: (name, config) => {assert.equal(name, 'google-test'); provider=config;}});
 for (const modelId of ['gateway-alias-test', 'gateway-model-test']) {
   for (const [reasoning, expected] of [['medium','MEDIUM'],['high','HIGH'],['xhigh','HIGH'],[undefined,'LOW']]) {
-    const options = provider.streamSimple({id:modelId}, {}, {
+    const options = provider.streamSimple({id:modelId}, {messages:[]}, {
       reasoning, onPayload: (payload) => ({...payload, preserved:true})
     });
     const result = await options.onPayload({config:{thinkingConfig:{thinkingBudget:8192,includeThoughts:true}}});
@@ -107,6 +109,25 @@ for (const modelId of ['gateway-alias-test', 'gateway-model-test']) {
     assert.ok(result.config.thinkingConfig.includeThoughts);
     assert.ok(result.preserved);
   }
+}
+const signature = Buffer.from('original tool signature').toString('base64');
+const signedCall = {type:'toolCall', id:'call_1', name:'bash', arguments:{command:'pwd'}, thoughtSignature:signature};
+for (const [from, to] of [['gateway-alias-test', 'gateway-model-test'], ['gateway-model-test', 'gateway-alias-test']]) {
+  const message = {role:'assistant', api:'google-generative-ai', provider:'google-test', model:from, content:[signedCall]};
+  const foreignProvider = {...message, provider:'other-provider'};
+  const foreignModel = {...message, model:'gemini-2.5-pro'};
+  const foreignApi = {...message, api:'other-api'};
+  const toolResult = {role:'toolResult', toolCallId:'call_1', content:[{type:'text', text:'/tmp'}]};
+  const context = {messages:[message, foreignProvider, foreignModel, foreignApi, toolResult]};
+  const original = structuredClone(context);
+  provider.streamSimple({id:to, api:message.api, provider:message.provider}, context, {});
+  assert.equal(lastContext.messages[0].model, to);
+  assert.equal(lastContext.messages[0].content[0].thoughtSignature, signature);
+  assert.equal(lastContext.messages[1], foreignProvider);
+  assert.equal(lastContext.messages[2], foreignModel);
+  assert.equal(lastContext.messages[3], foreignApi);
+  assert.equal(lastContext.messages[4], toolResult);
+  assert.deepEqual(context, original);
 }
 const options = {reasoning:'medium'};
 assert.equal(provider.streamSimple({id:'gemini-2.5-pro'}, {}, options), options);

@@ -91,6 +91,7 @@ Pi 默认自动执行工具；`defaultProjectTrust=always` 让新目录也自动
 全局 AGENTS.md、共享 skills 和两个扩展安装到 `~/.pi/agent/`；已有 Pi 会话用 `/reload` 加载扩展，
 默认模型用于新会话。`gateway.js` 扩展把 Pi 0.84 的 `thinkingBudget` 转为网关接受的 `thinkingLevel`，
 同时支持 `pi.model` 及 `pi.aliases` 模型的聊天、压缩和分支摘要，保留其它模型的原生行为。
+同一模型各网关别名切换时保留历史工具调用的 thought signature；只在请求副本中统一模型标识，不改写会话日志。
 
 TMA 扩展只跟踪 tmux 中的交互式 Pi：`before_agent_start` / `agent_start` 标 running，
 `agent_settled` 在自动重试、压缩和排队消息都结束后标 idle，手动压缩成功或取消也会结束 running。
