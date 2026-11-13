@@ -43,6 +43,8 @@ tma_default_headless() (
   local pane="$1" work output command
   work="$(mktemp -d)" || return
   trap 'rm -rf -- "$work"' EXIT
+  # Codex opens -o with O_NOFOLLOW; resolve symlinked TMPDIR components such as ~/tmp.
+  work="$(cd -- "$work" && pwd -P)" || return
   output="$work/answer"
   command="$(tma_call "$TMA_BACKEND" headless_command "$pane" "$work" "$output")" || return
   env -u TMUX -u TMUX_PANE zsh -ic "$command" >/dev/null || return

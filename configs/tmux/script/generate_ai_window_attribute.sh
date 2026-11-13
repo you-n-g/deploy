@@ -68,15 +68,25 @@ run_agent() {
   "$SCRIPT_DIR/headless_ai.sh" "$pane_id" < "$prompt_file" > "$output_file" 2>"$error_file"
 }
 
+fail_attribute() {
+  local message="$1"
+  tmux display-message -d 8000 "AI attribute failed: $message"
+  printf 'AI attribute failed: %s\n' "$message" >&2
+  # Under run-shell -b, a non-zero exit makes tmux immediately overwrite the
+  # status-line reason above with "'...generate_ai_window_attribute.sh' returned 1".
+  [ -t 2 ] && exit 1
+  exit 0
+}
+
 if ! run_agent; then
   message="$(failure_message)"
-  tmux display-message "AI attribute failed: $message"
   case "$message" in
     *"Selected model is at capacity"*)
+      tmux display-message "AI attribute failed: $message"
       exit 0
       ;;
   esac
-  exit 1
+  fail_attribute "$message"
 fi
 
 attribute="$(
@@ -86,8 +96,7 @@ attribute="$(
 )"
 
 if [ -z "$attribute" ]; then
-  tmux display-message "AI attribute failed: empty output"
-  exit 1
+  fail_attribute "empty output"
 fi
 
 tmux set-option -pq -t "$pane_id" @ai_agent_attribute "$attribute"

@@ -88,12 +88,24 @@ tma_example_headless_command() { printf 'cat > %q' "$3"; }
         zsh = self.root / "zsh"
         zsh.write_text('#!/bin/sh\nshift\nexec ' + shlex.quote(shutil.which("zsh")) + ' -f -c "$1"\n')
         zsh.chmod(0o755)
-        env = dict(self.env, PATH=str(self.root) + os.pathsep + os.environ["PATH"])
+        real_tmp = self.root / "real-tmp"
+        real_tmp.mkdir()
+        link_tmp = self.root / "link-tmp"
+        link_tmp.symlink_to(real_tmp)
+        env = dict(self.env, TMPDIR=str(link_tmp), PATH=str(self.root) + os.pathsep + os.environ["PATH"])
         result = subprocess.run(["bash", str(WRAPPERS / "dispatch.sh"), "example", "headless", "%0"],
                                 input="a multiline\nprompt\n", env=env, universal_newlines=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout, "a multiline\nprompt\n")
+        (self.wrappers / "example/backend.sh").write_text(
+            'tma_example_headless_command() { printf \'printf "%%s\\\\n%%s\\\\n" %q %q > %q\' "$2" "$3" "$3"; }\n')
+        result = subprocess.run(["bash", str(WRAPPERS / "dispatch.sh"), "example", "headless", "%0"],
+                                env=env, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        work_arg, out_arg = result.stdout.splitlines()
+        self.assertTrue(work_arg.startswith(str(real_tmp.resolve())), work_arg)
+        self.assertTrue(out_arg.startswith(str(real_tmp.resolve())), out_arg)
         (self.wrappers / "example/backend.sh").write_text(
             "tma_example_headless_command() { printf 'exit 17'; }\n")
         result = subprocess.run(["bash", str(WRAPPERS / "dispatch.sh"), "example", "headless", "%0"],
