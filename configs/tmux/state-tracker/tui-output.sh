@@ -236,9 +236,17 @@ while read_pane && select_active_backend "$pane_pid"; do
   emit_busy_to_idle "$last_ai_state" "$ai_state"
   last_ai_state="$ai_state"
   if [[ "$activity" != "$captured_activity" ]] || (( SECONDS - captured_at >= CAPTURE_EVERY )); then
+    capture_started_at="$(date +%s)"
     recent="$(capture_recent_output)"
     note_pane_output "$recent"
-    captured_activity="$activity"
+    # #{window_activity} has one-second resolution: a capture started during the
+    # activity second can precede a footer repaint later in that same second.
+    # Leave captured_activity unsettled so the next tick captures the final frame.
+    if (( capture_started_at > activity )); then
+      captured_activity="$activity"
+    else
+      captured_activity=""
+    fi
     captured_at=$SECONDS
   fi
   desired_state="$(detect_tui_state "$recent")"
