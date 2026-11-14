@@ -3,9 +3,21 @@
 
 import json
 from pathlib import Path
+import re
 import shlex
 
 from credential import gateway_config
+
+DEFAULT_PACKAGES = ('npm:pi-web-access',)
+
+
+def package_key(entry):
+    source = entry['source'] if isinstance(entry, dict) else entry
+    if source.startswith('npm:'):
+        spec = source[4:].strip()
+        match = re.match(r'^(@?[^@]+(?:/[^@]+)?)(?:@.+)?$', spec)
+        return 'npm:' + (match.group(1) if match else spec)
+    return source
 
 
 def read_json(path):
@@ -50,6 +62,12 @@ def configure():
                     defaultThinkingLevel='high', defaultProjectTrust='always')
     if 'enabledModels' in settings and provider_id + '/' + model_id not in settings['enabledModels']:
         settings['enabledModels'].append(provider_id + '/' + model_id)
+    packages = settings.setdefault('packages', [])
+    existing_packages = {package_key(entry) for entry in packages}
+    for package in DEFAULT_PACKAGES:
+        if package_key(package) not in existing_packages:
+            packages.append(package)
+            existing_packages.add(package_key(package))
     write_json(models_path, models)
     write_json(settings_path, settings)
     print('Pi default: {}/{}; native TMA extension enabled.'.format(provider_id, model_id))

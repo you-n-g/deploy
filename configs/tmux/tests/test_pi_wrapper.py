@@ -30,7 +30,8 @@ class PiConfigTest(unittest.TestCase):
             agent = home / '.pi/agent'
             (agent / 'skills/personal').mkdir(parents=True)
             (agent / 'settings.json').write_text(json.dumps({
-                'theme': 'dark', 'defaultThinkingLevel': 'medium', 'enabledModels': ['old/*']}))
+                'theme': 'dark', 'defaultThinkingLevel': 'medium', 'enabledModels': ['old/*'],
+                'packages': ['npm:pi-timing@1.3.0']}))
             (agent / 'models.json').write_text(json.dumps({'providers': {
                 'old': {'apiKey': 'keep-me', 'models': [{'id': 'old-model'}]}}}))
             env = dict(os.environ, HOME=str(home))
@@ -43,6 +44,12 @@ class PiConfigTest(unittest.TestCase):
             self.assertEqual(settings['defaultThinkingLevel'], 'high')
             self.assertEqual(settings['theme'], 'dark')
             self.assertEqual(settings['enabledModels'], ['old/*', 'google-test/gateway-model-test'])
+            self.assertEqual(settings['packages'], ['npm:pi-timing@1.3.0', 'npm:pi-web-access'])
+            pinned = {'source': 'npm:pi-web-access@0.47.0', 'extensions': []}
+            settings['packages'] = [pinned]
+            (agent / 'settings.json').write_text(json.dumps(settings))
+            subprocess.check_call(['python3', str(PI / 'configure.py')], env=env, stdout=subprocess.DEVNULL)
+            self.assertEqual(json.loads((agent / 'settings.json').read_text())['packages'], [pinned])
             models_text = (agent / 'models.json').read_text()
             self.assertNotIn('test-secret', models_text)
             providers = json.loads(models_text)['providers']
