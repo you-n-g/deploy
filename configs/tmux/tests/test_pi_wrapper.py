@@ -148,9 +148,10 @@ assert.equal(provider.streamSimple({id:'gemini-2.5-pro'}, {}, options), options)
             shutil.copy(str(PI / 'prompt.js'), str(root / 'prompt.js'))
             script = """
 import assert from 'node:assert/strict';
-import { discoverAndLoadExtensions, SessionManager } from '@earendil-works/pi-coding-agent';
-import { visibleWidth } from '@earendil-works/pi-tui';
+import { discoverAndLoadExtensions, initTheme, SessionManager } from '@earendil-works/pi-coding-agent';
+import { stripTerminalSequences, visibleWidth } from '@earendil-works/pi-tui';
 
+initTheme('dark', false);
 const loaded = await discoverAndLoadExtensions(['./prompt.js'], process.cwd());
 assert.deepEqual(loaded.errors, []);
 const ext = loaded.extensions.find((e) => e.path.endsWith('prompt.js'));
@@ -159,40 +160,70 @@ const emit = async (name, event) => {
   for (const fn of ext.handlers.get(name) ?? []) await fn(event, ctx);
 };
 
-let working = 'UNSET';
+let widget;
+let renders = 0;
+const theme = { fg: (_c, s) => s, bold: (s) => s };
+const tui = { terminal: { rows: 24 }, requestRender: () => { renders += 1; } };
 const sm = SessionManager.inMemory('/tmp');
+let overlayLines;
 const ctx = {
   hasUI: true,
   sessionManager: sm,
-  ui: { setWorkingMessage: (msg) => { working = msg; } },
+  ui: {
+    setWidget: (key, factory) => {
+      assert.equal(key, 'prompt');
+      widget = factory(tui, theme);
+    },
+    notify: () => {},
+    custom: async (factory, opts) => {
+      assert.equal(opts.overlay, true);
+      let closed = false;
+      const comp = factory(tui, theme, {}, () => { closed = true; });
+      overlayLines = comp.render(50);
+      comp.handleInput('q');
+      assert.ok(closed);
+    },
+  },
 };
 
-process.env.COLUMNS = '40';
-Object.defineProperty(process.stdout, 'columns', { value: 40, configurable: true, writable: true });
-
 await emit('session_start', { reason: 'startup' });
-assert.equal(working, undefined);
+assert.deepEqual(widget.render(40), []);
 
 await emit('before_agent_start', { prompt: 'first line\\n  second line with extra details that exceed width', images: [] });
-assert.ok(working.startsWith('Working: first line second line'));
-assert.ok(working.endsWith('…'));
-assert.ok(visibleWidth(working) <= 35);
+let lines = widget.render(35);
+assert.equal(lines.length, 1);
+assert.ok(stripTerminalSequences(lines[0]).startsWith('❯ first line second line'));
+assert.ok(stripTerminalSequences(lines[0]).endsWith('…'));
+assert.ok(visibleWidth(lines[0]) <= 35);
 
-process.stdout.columns = 80;
-process.stdout.emit('resize');
-assert.equal(working, 'Working: first line second line with extra details that exceed width');
+// Still visible after agent finishes and dynamically adapts to wider render width
+await emit('agent_end', { messages: [] });
+await emit('agent_settled', {});
+lines = widget.render(80);
+assert.equal(stripTerminalSequences(lines[0]), '❯ first line second line with extra details that exceed width');
 
-const skillPrompt = '<skill name="explain" location="/tmp/SKILL.md">\\nlong body\\n</skill>\\n\\nimpl foo.py';
+const skillPrompt = '<skill name="explain" location="/tmp/SKILL.md">\\nlong body\\n</skill>\\n\\nimpl foo.py\\nline two';
 await emit('before_agent_start', { prompt: skillPrompt, images: [] });
-assert.equal(working, 'Working: /skill:explain impl foo.py');
+assert.equal(stripTerminalSequences(widget.render(80)[0]), '❯ /skill:explain impl foo.py line two');
+
+// /prompt opens full multi-line overlay; /prompt toggle hides/shows widget
+const cmd = ext.commands.get('prompt');
+assert.ok(cmd);
+await cmd.handler('', ctx);
+assert.ok(overlayLines.some((l) => l.includes('/skill:explain')));
+assert.ok(overlayLines.some((l) => l.includes('line two')));
+await cmd.handler('off', ctx);
+assert.deepEqual(widget.render(80), []);
+await cmd.handler('on', ctx);
+assert.equal(widget.render(80).length, 1);
 
 await emit('before_agent_start', { prompt: '   ', images: [{ type: 'image' }] });
-assert.equal(working, 'Working: [image]');
+assert.equal(stripTerminalSequences(widget.render(80)[0]), '❯ [image]');
 
 await emit('message_start', {
   message: { role: 'user', content: [{ type: 'text', text: 'steered mid-run' }] },
 });
-assert.equal(working, 'Working: steered mid-run');
+assert.equal(stripTerminalSequences(widget.render(80)[0]), '❯ steered mid-run');
 
 sm.appendMessage({ role: 'user', content: [{ type: 'text', text: 'branch A prompt' }], timestamp: 1 });
 const a1 = sm.appendMessage({
@@ -202,17 +233,13 @@ const a1 = sm.appendMessage({
 });
 sm.appendMessage({ role: 'user', content: [{ type: 'text', text: 'branch B prompt' }], timestamp: 3 });
 await emit('session_tree', {});
-assert.equal(working, 'Working: branch B prompt');
+assert.equal(stripTerminalSequences(widget.render(80)[0]), '❯ branch B prompt');
 sm.branch(a1);
 await emit('session_tree', {});
-assert.equal(working, 'Working: branch A prompt');
-
-const listenersBefore = process.stdout.listenerCount('resize');
-await emit('session_shutdown', {});
-assert.equal(process.stdout.listenerCount('resize'), listenersBefore - 1);
+assert.equal(stripTerminalSequences(widget.render(80)[0]), '❯ branch A prompt');
+assert.ok(renders > 0);
 """
             subprocess.check_call(['node', '--input-type=module', '-e', script], cwd=directory)
-
 
 
 class PiLifecycleTest(unittest.TestCase):

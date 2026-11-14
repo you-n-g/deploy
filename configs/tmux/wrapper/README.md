@@ -89,7 +89,7 @@ tmuxg --force-new --tool pi --reasoning-effort high
 
 Pi 默认自动执行工具；`defaultProjectTrust=always` 让新目录也自动信任项目配置，无需启动确认。
 全局 AGENTS.md、共享 skills 和三个扩展（`tma.js`、`gateway.js`、`prompt.js`）安装到 `~/.pi/agent/`；已有 Pi 会话用 `/reload` 加载扩展，
-默认模型用于新会话。`prompt.js` 在运行期间把 `Working...` 指示行替换为单行截断的最新用户输入（含 `/skill:name` 折叠、排队消息切换、`/tree` 分支同步与终端缩放自适应）。
+默认模型用于新会话。`prompt.js` 在输入框上方常驻显示单行截断的最新用户输入（运行中与运行结束后均可见，支持 `/skill:name` 折叠、排队消息切换与 `/tree` 分支同步，`/prompt` 可弹窗查看完整内容或 `toggle` 开关）。
 `gateway.js` 扩展把 Pi 0.84 的 `thinkingBudget` 转为网关接受的 `thinkingLevel`，
 同时支持 `pi.model` 及 `pi.aliases` 模型的聊天、压缩和分支摘要，保留其它模型的原生行为。
 同一模型各网关别名切换时保留历史工具调用的 thought signature；只在请求副本中统一模型标识，不改写会话日志。
