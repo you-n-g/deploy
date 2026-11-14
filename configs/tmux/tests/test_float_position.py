@@ -274,6 +274,37 @@ class FloatPositionTest(unittest.TestCase):
         os.write(terminal, b"x")
         self.wait_for(lambda: self.received.read_bytes() == b"x")
 
+    def test_mouse_click_outside_menu_closes_menu_and_keeps_clicked_focus(self):
+        self.tmux("set-option", "-g", "mouse", "on")
+        terminal = self.attach()
+        self.wait_for(lambda: b"\x1b[?1006h" in self.output)
+
+        # Click on the underlying tiled pane: menu closes and focus stays on `self.base`.
+        self.open_menu(terminal)
+        os.write(terminal, b"k")
+        self.wait_for(lambda: self.rect() == (1, 1, 118, 18))
+        os.write(terminal, b"\x1b[<0;5;25M\x1b[<0;5;25m")
+        self.wait_for(lambda: not self.menu_running())
+        self.assertEqual(self.tmux("display-message", "-p", "-t", self.base, "#{pane_active}"), "1")
+        self.assertEqual(self.tmux("display-message", "-p", "-t", self.pane, "#{pane_active}"), "0")
+
+        # Re-select the float, open the menu, and click on the content float itself:
+        # menu closes and input goes straight to `self.pane`.
+        self.tmux("select-pane", "-t", self.pane)
+        self.output.clear()
+        self.open_menu(terminal)
+        os.write(terminal, b"\x1b[<0;10;5M\x1b[<0;10;5m")
+        self.wait_for(lambda: not self.menu_running())
+        self.assertEqual(self.tmux("display-message", "-p", "-t", self.pane, "#{pane_active}"), "1")
+        os.write(terminal, b"m")
+        self.wait_for(lambda: self.received.read_bytes() == b"m")
+
+    def test_switching_window_closes_menu_automatically(self):
+        terminal = self.attach()
+        self.open_menu(terminal)
+        self.tmux("new-window", "-t", "test", "sleep 600")
+        self.wait_for(lambda: not self.menu_running())
+
 
 if __name__ == "__main__":
     unittest.main()

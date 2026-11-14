@@ -74,7 +74,7 @@ python3 -m unittest discover -s configs/tmux/tests -v
 | `Esc` / `Enter` / `q` | 关闭菜单，恢复向浮窗程序输入 |
 
 例如打开菜单后按 `h k` 停靠左上角，再按 `l` 改为右上角，再按一次 `l` 展开为右半屏。菜单持续到退出，
-不需要反复按 prefix；重新按 `prefix Ctrl-W` 会重新开始方向组合。
+不需要反复按 prefix；重新按 `prefix Ctrl-W` 会重新开始方向组合；鼠标点击其它窗格或切走焦点时，菜单浮窗会自动关闭并保留焦点在新选中的位置。
 浮窗边框计入可用区域。实现由 `float-position.conf` 和 `script/float_position.py` 提供。
 
 这项功能使用官方 tmux 3.8 的 `move-pane` / `resize-pane` 接口，无需补丁。

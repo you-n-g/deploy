@@ -138,18 +138,26 @@ def main():
 
     try:
         if args.action == "menu":
+            sess_id, win_id = tmux("display-message", "-p", "-t", args.pane,
+                                   "#{session_id} #{window_id}").split()
             try:
                 curses.wrapper(position_menu, tmux, args.pane)
             finally:
-                tmux("select-pane", "-t", args.pane)
+                tmux("set-hook", "-wu", "-t", win_id, "window-pane-changed[95]",
+                     ";", "set-hook", "-u", "-t", sess_id, "session-window-changed[95]",
+                     ";", "set-hook", "-gu", "client-session-changed[95]",
+                     ";", "select-pane", "-t", args.pane)
         else:
             origin = tmux("show-option", "-pqv", "-t", args.pane, "@float_position_target")
             if origin:
                 args.pane = origin
             apply_action(tmux, args.pane, args.action)
             if args.client and not origin:
-                win_w, win_h = map(int, tmux("display-message", "-p", "-t", args.pane,
-                                           "#{window_width} #{window_height}").split())
+                sess_id, win_id, win_w, win_h = tmux(
+                    "display-message", "-p", "-t", args.pane,
+                    "#{session_id} #{window_id} #{window_width} #{window_height}",
+                ).split()
+                win_w, win_h = int(win_w), int(win_h)
                 menu = subprocess.check_output(
                     [str(Path(__file__).with_name("new_float_pane.sh")), args.pane,
                      "-x", "40", "-y", "13", "-X", str(max(0, win_w - 40)),
@@ -157,8 +165,23 @@ def main():
                      sys.executable, __file__, "--socket", args.socket, "--client", args.client,
                      args.pane, "menu"],
                     env=dict(os.environ, TMUX=args.socket + ",0,0"), universal_newlines=True).strip()
-                tmux("set-option", "-pq", "-t", menu, "@float_position_target", args.pane,
-                     ";", "set-option", "-pq", "-t", menu, "@jump-history-skip", "1")
+                unhook = (
+                    "set-hook -wu -t {win} window-pane-changed[95] ; "
+                    "set-hook -u -t {sess} session-window-changed[95] ; "
+                    "set-hook -gu client-session-changed[95]"
+                ).format(win=win_id, sess=sess_id)
+                close_menu = unhook + " ; kill-pane -t " + menu
+                tmux(
+                    "set-option", "-pq", "-t", menu, "@float_position_target", args.pane,
+                    ";", "set-option", "-pq", "-t", menu, "@jump-history-skip", "1",
+                    ";", "set-hook", "-w", "-t", win_id, "window-pane-changed[95]",
+                    'if-shell -F "#{!=:#{pane_id},' + menu + '}" "' + close_menu + '"',
+                    ";", "set-hook", "-t", sess_id, "session-window-changed[95]",
+                    'if-shell -F "#{!=:#{window_id},' + win_id + '}" "' + close_menu + '"',
+                    ";", "set-hook", "-g", "client-session-changed[95]",
+                    'if-shell -F "#{&&:#{==:#{client_name},' + args.client + '},#{!=:#{session_id},' + sess_id + '}}" "' + close_menu + '"',
+                    ";", "if-shell", "-t", menu, "-F", "#{!:#{&&:#{pane_active},#{window_active}}}", close_menu,
+                )
     except (ValueError, subprocess.CalledProcessError) as error:
         message = error.stderr.strip() if isinstance(error, subprocess.CalledProcessError) else str(error)
         print("float_position: " + message, file=sys.stderr)
