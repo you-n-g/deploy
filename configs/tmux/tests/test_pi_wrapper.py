@@ -60,6 +60,8 @@ class PiConfigTest(unittest.TestCase):
             self.assertEqual(key.strip(), 'test-secret')
             self.assertTrue((agent / 'skills/personal').is_dir())
             self.assertEqual((agent / 'extensions/tma.js').resolve(), PI / 'tma.js')
+            self.assertEqual((agent / 'extensions/gateway.js').resolve(), PI / 'gateway.js')
+            self.assertEqual((agent / 'extensions/prompt.js').resolve(), PI / 'prompt.js')
             self.assertEqual((agent / 'AGENTS.md').read_text(), 'shared instructions\n')
             (home / '.gemini/.env').write_text('GEMINI_API_KEY="test-secret"\n')
             failed = subprocess.run(['python3', str(PI / 'configure.py')], env=env,
@@ -134,6 +136,84 @@ assert.equal(provider.streamSimple({id:'gemini-2.5-pro'}, {}, options), options)
 """
             subprocess.check_call(['node', '--input-type=module', '-e', script],
                                   cwd=directory, env=dict(os.environ, HOME=directory))
+
+    def test_prompt_extension_tracks_latest_input_skills_resize_and_tree(self):
+        pi_pkg = Path(shutil.which('pi')).resolve().parents[2]
+        with tempfile.TemporaryDirectory(prefix='pi-prompt-', dir='/tmp') as directory:
+            root = Path(directory)
+            scope = root / 'node_modules/@earendil-works'
+            scope.mkdir(parents=True)
+            (scope / 'pi-coding-agent').symlink_to(pi_pkg)
+            (scope / 'pi-tui').symlink_to(pi_pkg / 'node_modules/@earendil-works/pi-tui')
+            shutil.copy(str(PI / 'prompt.js'), str(root / 'prompt.js'))
+            script = """
+import assert from 'node:assert/strict';
+import { discoverAndLoadExtensions, SessionManager } from '@earendil-works/pi-coding-agent';
+import { visibleWidth } from '@earendil-works/pi-tui';
+
+const loaded = await discoverAndLoadExtensions(['./prompt.js'], process.cwd());
+assert.deepEqual(loaded.errors, []);
+const ext = loaded.extensions.find((e) => e.path.endsWith('prompt.js'));
+assert.ok(ext);
+const emit = async (name, event) => {
+  for (const fn of ext.handlers.get(name) ?? []) await fn(event, ctx);
+};
+
+let working = 'UNSET';
+const sm = SessionManager.inMemory('/tmp');
+const ctx = {
+  hasUI: true,
+  sessionManager: sm,
+  ui: { setWorkingMessage: (msg) => { working = msg; } },
+};
+
+process.env.COLUMNS = '40';
+Object.defineProperty(process.stdout, 'columns', { value: 40, configurable: true, writable: true });
+
+await emit('session_start', { reason: 'startup' });
+assert.equal(working, undefined);
+
+await emit('before_agent_start', { prompt: 'first line\\n  second line with extra details that exceed width', images: [] });
+assert.ok(working.startsWith('Working: first line second line'));
+assert.ok(working.endsWith('…'));
+assert.ok(visibleWidth(working) <= 35);
+
+process.stdout.columns = 80;
+process.stdout.emit('resize');
+assert.equal(working, 'Working: first line second line with extra details that exceed width');
+
+const skillPrompt = '<skill name="explain" location="/tmp/SKILL.md">\\nlong body\\n</skill>\\n\\nimpl foo.py';
+await emit('before_agent_start', { prompt: skillPrompt, images: [] });
+assert.equal(working, 'Working: /skill:explain impl foo.py');
+
+await emit('before_agent_start', { prompt: '   ', images: [{ type: 'image' }] });
+assert.equal(working, 'Working: [image]');
+
+await emit('message_start', {
+  message: { role: 'user', content: [{ type: 'text', text: 'steered mid-run' }] },
+});
+assert.equal(working, 'Working: steered mid-run');
+
+sm.appendMessage({ role: 'user', content: [{ type: 'text', text: 'branch A prompt' }], timestamp: 1 });
+const a1 = sm.appendMessage({
+  role: 'assistant', content: [{ type: 'text', text: 'reply A' }],
+  api: 'openai-responses', provider: 'test', model: 'm', stopReason: 'stop', timestamp: 2,
+  usage: { input: 1, output: 1, cacheRead: 0, cacheWrite: 0, totalTokens: 2, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+});
+sm.appendMessage({ role: 'user', content: [{ type: 'text', text: 'branch B prompt' }], timestamp: 3 });
+await emit('session_tree', {});
+assert.equal(working, 'Working: branch B prompt');
+sm.branch(a1);
+await emit('session_tree', {});
+assert.equal(working, 'Working: branch A prompt');
+
+const listenersBefore = process.stdout.listenerCount('resize');
+await emit('session_shutdown', {});
+assert.equal(process.stdout.listenerCount('resize'), listenersBefore - 1);
+"""
+            subprocess.check_call(['node', '--input-type=module', '-e', script], cwd=directory)
+
+
 
 class PiLifecycleTest(unittest.TestCase):
     def tmux(self, *args):
