@@ -88,8 +88,8 @@ tmuxg --force-new --tool pi --reasoning-effort high
 这两项是 Pi 全局设置，安装器保留用户现有值；它们与模型的官方容量参数不同。
 
 Pi 默认自动执行工具；`defaultProjectTrust=always` 让新目录也自动信任项目配置，无需启动确认。
-全局 AGENTS.md、共享 skills 和三个扩展（`tma.js`、`gateway.js`、`prompt.js`）安装到 `~/.pi/agent/`；已有 Pi 会话用 `/reload` 加载扩展，
-默认模型用于新会话。`prompt.js` 在输入框上方常驻显示单行截断的最新用户输入（运行中与运行结束后均可见，支持 `/skill:name` 折叠、排队消息切换与 `/tree` 分支同步，`/prompt` 可弹窗查看完整内容或 `toggle` 开关）。
+全局 AGENTS.md、共享 skills 和四个扩展（`tma.js`、`gateway.js`、`pull.js`、`prompt.js`）安装到 `~/.pi/agent/`；已有 Pi 会话用 `/reload` 加载扩展，
+默认模型用于新会话。`prompt.js` 在输入框上方常驻显示单行截断的最新用户输入（运行中与运行结束后均可见，支持 `/skill:name` 折叠、排队消息切换与 `/tree` 分支同步，`/prompt` 可弹窗查看完整内容或 `toggle` 开关）。`/pull [说明]` 复用原生 `/tree` 选择器与分支摘要接口，将另一条分支相对公共祖先的摘要合并进当前分支而不跳转位置。
 `gateway.js` 扩展把 Pi 0.84 的 `thinkingBudget` 转为网关接受的 `thinkingLevel`，
 同时支持 `pi.model` 及 `pi.aliases` 模型的聊天、压缩和分支摘要，保留其它模型的原生行为。
 同一模型各网关别名切换时保留历史工具调用的 thought signature；只在请求副本中统一模型标识，不改写会话日志。

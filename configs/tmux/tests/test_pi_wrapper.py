@@ -61,6 +61,7 @@ class PiConfigTest(unittest.TestCase):
             self.assertTrue((agent / 'skills/personal').is_dir())
             self.assertEqual((agent / 'extensions/tma.js').resolve(), PI / 'tma.js')
             self.assertEqual((agent / 'extensions/gateway.js').resolve(), PI / 'gateway.js')
+            self.assertEqual((agent / 'extensions/pull.js').resolve(), PI / 'pull.js')
             self.assertEqual((agent / 'extensions/prompt.js').resolve(), PI / 'prompt.js')
             self.assertEqual((agent / 'AGENTS.md').read_text(), 'shared instructions\n')
             (home / '.gemini/.env').write_text('GEMINI_API_KEY="test-secret"\n')
@@ -136,6 +137,106 @@ assert.equal(provider.streamSimple({id:'gemini-2.5-pro'}, {}, options), options)
 """
             subprocess.check_call(['node', '--input-type=module', '-e', script],
                                   cwd=directory, env=dict(os.environ, HOME=directory))
+
+    def test_pull_extension_merges_other_branch_summary_without_moving_leaf(self):
+        node_modules = Path(shutil.which('pi')).resolve().parents[4]
+        with tempfile.TemporaryDirectory(prefix='pi-pull-', dir='/tmp') as directory:
+            root = Path(directory)
+            (root / 'node_modules').symlink_to(node_modules)
+            shutil.copy(str(PI / 'pull.js'), str(root / 'pull.mjs'))
+            shutil.copy(str(PI / 'pull.js'), str(root / 'pull.js'))
+            script = """
+import assert from 'node:assert/strict';
+import register from './pull.mjs';
+import { discoverAndLoadExtensions, initTheme, SessionManager } from '@earendil-works/pi-coding-agent';
+
+initTheme('dark', false);
+const loaded = await discoverAndLoadExtensions(['./pull.js'], process.cwd());
+assert.deepEqual(loaded.errors, []);
+assert.ok(loaded.extensions.some((e) => e.commands.has('pull')));
+
+let command, renderer;
+const sent = [], notices = [];
+register({
+  registerMessageRenderer: (type, fn) => { assert.equal(type, 'branch-pull'); renderer = fn; },
+  registerCommand: (name, cfg) => { assert.equal(name, 'pull'); command = cfg; },
+  sendMessage: (msg) => sent.push(msg),
+  setLabel: () => {},
+});
+
+const sm = SessionManager.inMemory('/tmp');
+const rootUser = sm.appendMessage({ role: 'user', content: [{ type: 'text', text: 'shared root' }], timestamp: 1 });
+const rootReply = sm.appendMessage({
+  role: 'assistant', content: [{ type: 'text', text: 'shared answer' }],
+  api: 'openai-responses', provider: 'test', model: 'm', stopReason: 'stop', timestamp: 2,
+  usage: { input: 1, output: 1, cacheRead: 0, cacheWrite: 0, totalTokens: 2, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+});
+const otherUser = sm.appendMessage({ role: 'user', content: [{ type: 'text', text: 'explore branch B' }], timestamp: 3 });
+const otherLeaf = sm.appendMessage({
+  role: 'assistant', content: [
+    { type: 'toolCall', id: 'c1', name: 'edit', arguments: { path: 'src/b.py' } },
+    { type: 'text', text: 'branch B found speedup' },
+  ],
+  api: 'openai-responses', provider: 'test', model: 'm', stopReason: 'stop', timestamp: 4,
+  usage: { input: 1, output: 1, cacheRead: 0, cacheWrite: 0, totalTokens: 2, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+});
+sm.branch(rootReply);
+const mainUser = sm.appendMessage({ role: 'user', content: [{ type: 'text', text: 'stay on main branch' }], timestamp: 5 });
+assert.equal(sm.getLeafId(), mainUser);
+
+// First try selecting an ancestor on the current branch (should warn and re-prompt), then select otherLeaf.
+const picks = [rootReply, otherLeaf];
+let capturedPrompt = '';
+await command.handler('focus on speedup', {
+  hasUI: true,
+  isIdle: () => true,
+  model: { id: 'm', provider: 'test', api: 'openai-responses', contextWindow: 128000, maxTokens: 4096, reasoning: false },
+  sessionManager: sm,
+  modelRegistry: {
+    complete: async (_m, context) => {
+      capturedPrompt = context.messages[0].content[0].text;
+      return {
+        role: 'assistant', api: 'openai-responses', provider: 'test', model: 'm', stopReason: 'stop', timestamp: 6,
+        content: [{ type: 'text', text: '## Goal\\nKeep speedup from B' }],
+        usage: { input: 10, output: 5, cacheRead: 0, cacheWrite: 0, totalTokens: 15, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+      };
+    },
+  },
+  ui: {
+    notify: (msg, level) => notices.push([msg, level]),
+    select: async () => { throw new Error('args instructions should skip menu'); },
+    editor: async () => undefined,
+    custom: async (factory) => {
+      if (picks.length > 0) return picks.shift();
+      let resolved;
+      const done = (v) => { resolved = Promise.resolve(v); };
+      const comp = factory({ terminal: { rows: 40 }, requestRender() {} }, { fg: (_c, s) => s, bold: (s) => s }, {}, done);
+      while (!resolved) await new Promise((r) => setTimeout(r, 5));
+      assert.ok(!process.getActiveResourcesInfo().includes('Timeout'));
+      comp?.dispose?.();
+      return resolved;
+    },
+  },
+});
+
+assert.equal(sm.getLeafId(), mainUser);
+assert.ok(notices.some(([m]) => m.includes('already on the current branch')));
+assert.ok(capturedPrompt.includes('explore branch B'));
+assert.ok(capturedPrompt.includes('branch B found speedup'));
+assert.ok(capturedPrompt.includes('Additional focus: focus on speedup'));
+assert.ok(!capturedPrompt.includes('stay on main branch'));
+assert.equal(sent.length, 1);
+assert.equal(sent[0].customType, 'branch-pull');
+assert.equal(sent[0].display, true);
+assert.equal(sent[0].details.fromId, otherLeaf);
+assert.equal(sent[0].details.commonAncestorId, rootReply);
+assert.deepEqual(sent[0].details.modifiedFiles, ['src/b.py']);
+assert.ok(sent[0].content.includes('Keep speedup from B'));
+assert.ok(sent[0].content.includes('src/b.py'));
+const rendered = renderer({ ...sent[0], timestamp: Date.now() }, { expanded: true });
+assert.ok(rendered.render(80).join('\\n').includes('Keep speedup from B'));
+"""
+            subprocess.check_call(['node', '--input-type=module', '-e', script], cwd=directory, timeout=30)
 
     def test_prompt_extension_tracks_latest_input_skills_resize_and_tree(self):
         pi_pkg = Path(shutil.which('pi')).resolve().parents[2]
