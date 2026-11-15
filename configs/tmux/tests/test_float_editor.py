@@ -1,7 +1,10 @@
 """External prompt editing blocks until the floating Vim saves, exits or is closed."""
 
+import json
 import os
 from pathlib import Path
+import shlex
+import shutil
 import subprocess
 import tempfile
 import time
@@ -12,6 +15,7 @@ TMUX_DIR = Path(__file__).resolve().parents[1]
 REPO = TMUX_DIR.parents[1]
 VIM = str(REPO / "helper_scripts/bin/vim-fast")
 FLOAT = str(TMUX_DIR / "script/run_in_float.sh")
+PI_CONFIGURE = str(TMUX_DIR / "wrapper/pi/configure.py")
 
 
 class FloatEditorTest(unittest.TestCase):
@@ -108,6 +112,42 @@ class FloatEditorTest(unittest.TestCase):
             cwd=self.temp.name, env=env,
         )
         self.assertEqual(self.file.read_text(), "direct edit\n")
+        self.assert_clean()
+
+    def test_pi_ctrl_g_opens_floating_vim_fast_and_returns_prompt(self):
+        pi_bin = shutil.which("pi")
+        if not pi_bin:
+            self.skipTest("pi CLI is not installed")
+        home = self.root / "home"
+        (home / ".config/llm").mkdir(parents=True)
+        (home / ".config/llm/gateways.local.json").write_text(json.dumps({"pi": {
+            "provider": "google-test", "model": "gateway-model-test", "name": "Test Model",
+        }}))
+        (home / ".gemini").mkdir()
+        (home / ".gemini/.env").write_text(
+            'GOOGLE_GEMINI_BASE_URL="https://gateway.test"\nGEMINI_API_KEY="test-secret"\n'
+        )
+        subprocess.check_call(["python3", PI_CONFIGURE], env=dict(self.env, HOME=str(home)),
+                              stdout=subprocess.DEVNULL)
+        settings = json.loads((home / ".pi/agent/settings.json").read_text())
+        self.assertEqual(Path(settings["externalEditor"]).resolve(), Path(VIM).resolve())
+
+        cmd = "HOME={} PI_OFFLINE=1 exec {} --no-extensions --no-skills --no-session".format(
+            shlex.quote(str(home)), shlex.quote(pi_bin)
+        )
+        self.tmux("respawn-pane", "-k", "-t", self.pane, cmd)
+        self.wait_for(lambda: "escape interrupt" in self.tmux("capture-pane", "-p", "-t", self.pane))
+        self.tmux("send-keys", "-t", self.pane, "initial text")
+        self.wait_for(lambda: "initial text" in self.tmux("capture-pane", "-p", "-t", self.pane))
+
+        # Ctrl+G opens vim-fast in a floating pane; normal-mode `q` saves and quits.
+        self.tmux("send-keys", "-t", self.pane, "C-g")
+        self.wait_for(lambda: len(self.floats()) == 1)
+        floating = self.floats()[0]
+        self.wait_for(lambda: "initial text" in self.tmux("capture-pane", "-p", "-t", floating))
+        self.tmux("send-keys", "-t", floating, "gg0C", "from fastvim popup", "Escape", "q")
+        self.wait_for(lambda: self.floats() == [])
+        self.wait_for(lambda: "from fastvim popup" in self.tmux("capture-pane", "-p", "-t", self.pane))
         self.assert_clean()
 
 

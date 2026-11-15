@@ -81,7 +81,7 @@ python3 -m unittest discover -s configs/tmux/tests -v
 用 `module add tmux-3.8` 加载后，需要重启 server 才能升级；仅重新加载配置无效。
 `prefix + j → f` 使用 `break-pane -W` 将分屏直接转为浮窗，保留进程、pane ID 和 Agent 会话。
 
-通过 `codexr` / `clauder` 启动的 TMA 中，`Ctrl+G` 在窗口底部、水平居中的小浮窗里用 Vim 编辑输入，最大 100 列 × 20 行。普通模式按 `q` 或用 `:wq` 保存退出，内容回到原输入框；`:q!` 放弃未保存的修改。编辑期间调用方会等待，关闭浮窗也会结束等待。当前会话下次按 `Ctrl+G` 即使用新入口。
+通过 `codexr` / `clauder` 启动的 TMA 及 Pi 中，`Ctrl+G` 在窗口底部、水平居中的小浮窗里用 Vim 编辑输入，最大 100 列 × 20 行。普通模式按 `q` 或用 `:wq` 保存退出，内容回到原输入框；`:q!` 放弃未保存的修改。编辑期间调用方会等待，关闭浮窗也会结束等待。当前会话下次按 `Ctrl+G`（Pi 已运行会话执行一次 `/reload`）即使用新入口。
 
 tmux 3.7b 有个 bug：在 zoom 状态的 window 里用 `new-pane` 建的 floating pane，之后无论是进程退出、`kill-pane`，还是取消 zoom 后再关闭，server 都会在 `layout_destroy_cell` 里段错误退出，所有 session 一起没了。先建浮窗再 zoom 不会触发。
 

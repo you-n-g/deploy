@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# A vim that starts at once, for editing a prompt from Claude Code / Codex
-# (Ctrl+G, through VISUAL set in clauder / codexr in rcfile.sh). The system vim
-# on local disk -- the usual nvim lives on a network filesystem and loads the full config --
-# with a small vimrc (configs/vim/fast.vimrc), no viminfo, no swap file.
+# A vim that starts at once, for editing a prompt from Claude Code / Codex / Pi
+# (Ctrl+G, through VISUAL in clauder / codexr or externalEditor in Pi). The
+# system vim on local disk -- the usual nvim lives on a network filesystem and loads the full
+# config -- with a small vimrc (configs/vim/fast.vimrc), no viminfo, no swap file.
 # In tmux, edit in a small focused float and wait for it to return the prompt.
 set -euo pipefail
-editor=(/usr/bin/vim -u "$HOME/deploy/configs/vim/fast.vimrc" -i NONE -n)
+repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+editor=(/usr/bin/vim -u "$repo_dir/configs/vim/fast.vimrc" -i NONE -n)
 if [[ -n "${TMUX:-}" && -n "${TMUX_PANE:-}" ]]; then
-  exec "$HOME/deploy/configs/tmux/script/run_in_float.sh" "$TMUX_PANE" "${editor[@]}" "$@"
+  exec "$repo_dir/configs/tmux/script/run_in_float.sh" "$TMUX_PANE" "${editor[@]}" "$@"
 fi
 exec "${editor[@]}" "$@"

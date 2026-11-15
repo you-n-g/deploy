@@ -58,8 +58,12 @@ def configure():
                   thinkingLevelMap={'off': None, 'minimal': None,
                                     'low': 'low', 'medium': 'medium', 'high': 'high',
                                     'xhigh': None, 'max': None})
+    home_vim_fast = Path.home() / 'deploy/helper_scripts/bin/vim-fast'
+    vim_fast = str(home_vim_fast if home_vim_fast.is_file()
+                   else Path(__file__).resolve().parents[4] / 'helper_scripts/bin/vim-fast')
     settings.update(defaultProvider=provider_id, defaultModel=model_id,
-                    defaultThinkingLevel='high', defaultProjectTrust='always')
+                    defaultThinkingLevel='high', defaultProjectTrust='always',
+                    externalEditor=vim_fast)
     if 'enabledModels' in settings and provider_id + '/' + model_id not in settings['enabledModels']:
         settings['enabledModels'].append(provider_id + '/' + model_id)
     packages = settings.setdefault('packages', [])
