@@ -146,15 +146,18 @@ assert.equal(provider.streamSimple({id:'gemini-2.5-pro'}, {}, options), options)
                                   cwd=directory, env=dict(os.environ, HOME=directory))
 
     def test_pull_extension_merges_other_branch_summary_without_moving_leaf(self):
-        node_modules = Path(shutil.which('pi')).resolve().parents[4]
+        pi_pkg = Path(shutil.which('pi')).resolve().parents[2]
         with tempfile.TemporaryDirectory(prefix='pi-pull-', dir='/tmp') as directory:
             root = Path(directory)
-            (root / 'node_modules').symlink_to(node_modules)
+            scope = root / 'node_modules/@earendil-works'
+            scope.mkdir(parents=True)
+            (scope / 'pi-coding-agent').symlink_to(pi_pkg)
+            (scope / 'pi-tui').symlink_to(pi_pkg / 'node_modules/@earendil-works/pi-tui')
             shutil.copy(str(PI / 'pull.js'), str(root / 'pull.mjs'))
             shutil.copy(str(PI / 'pull.js'), str(root / 'pull.js'))
             script = """
 import assert from 'node:assert/strict';
-import register from './pull.mjs';
+import register, { collectSiblingBranchLeaves } from './pull.mjs';
 import { discoverAndLoadExtensions, initTheme, SessionManager } from '@earendil-works/pi-coding-agent';
 
 initTheme('dark', false);
@@ -168,7 +171,6 @@ register({
   registerMessageRenderer: (type, fn) => { assert.equal(type, 'branch-pull'); renderer = fn; },
   registerCommand: (name, cfg) => { assert.equal(name, 'pull'); command = cfg; },
   sendMessage: (msg) => sent.push(msg),
-  setLabel: () => {},
 });
 
 const sm = SessionManager.inMemory('/tmp');
@@ -178,22 +180,38 @@ const rootReply = sm.appendMessage({
   api: 'openai-responses', provider: 'test', model: 'm', stopReason: 'stop', timestamp: 2,
   usage: { input: 1, output: 1, cacheRead: 0, cacheWrite: 0, totalTokens: 2, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
 });
-const otherUser = sm.appendMessage({ role: 'user', content: [{ type: 'text', text: 'explore branch B' }], timestamp: 3 });
+const olderUser = sm.appendMessage({ role: 'user', content: [{ type: 'text', text: 'older branch A' }], timestamp: 3 });
+const olderLeaf = sm.appendMessage({
+  role: 'assistant', content: [{ type: 'text', text: 'branch A result' }],
+  api: 'openai-responses', provider: 'test', model: 'm', stopReason: 'stop', timestamp: 4,
+  usage: { input: 1, output: 1, cacheRead: 0, cacheWrite: 0, totalTokens: 2, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+});
+await new Promise((r) => setTimeout(r, 10));
+sm.branch(rootReply);
+const otherUser = sm.appendMessage({ role: 'user', content: [{ type: 'text', text: 'explore branch B' }], timestamp: 5 });
 const otherLeaf = sm.appendMessage({
   role: 'assistant', content: [
     { type: 'toolCall', id: 'c1', name: 'edit', arguments: { path: 'src/b.py' } },
     { type: 'text', text: 'branch B found speedup' },
   ],
-  api: 'openai-responses', provider: 'test', model: 'm', stopReason: 'stop', timestamp: 4,
+  api: 'openai-responses', provider: 'test', model: 'm', stopReason: 'stop', timestamp: 6,
   usage: { input: 1, output: 1, cacheRead: 0, cacheWrite: 0, totalTokens: 2, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
 });
 sm.branch(rootReply);
-const mainUser = sm.appendMessage({ role: 'user', content: [{ type: 'text', text: 'stay on main branch' }], timestamp: 5 });
+const mainUser = sm.appendMessage({ role: 'user', content: [{ type: 'text', text: 'stay on main branch' }], timestamp: 7 });
 assert.equal(sm.getLeafId(), mainUser);
 
-// First try selecting an ancestor on the current branch (should warn and re-prompt), then select otherLeaf.
-const picks = [rootReply, otherLeaf];
-let capturedPrompt = '';
+// Only sibling branch leaves appear (no intermediate nodes like olderUser/otherUser, no active branch nodes).
+const candidates = collectSiblingBranchLeaves(sm);
+assert.deepEqual(candidates.map((c) => c.leafId), [otherLeaf, olderLeaf]);
+assert.equal(candidates[0].merged, false);
+assert.equal(candidates[1].merged, false);
+assert.ok(candidates[0].title.includes('explore branch B'));
+assert.ok(candidates[0].meta.includes('branch B found speedup'));
+
+// Multi-select both sibling leaves via Space + down + Space + Enter:
+let step = 0;
+const capturedPrompts = [];
 await command.handler('focus on speedup', {
   hasUI: true,
   isIdle: () => true,
@@ -201,23 +219,35 @@ await command.handler('focus on speedup', {
   sessionManager: sm,
   modelRegistry: {
     complete: async (_m, context) => {
-      capturedPrompt = context.messages[0].content[0].text;
+      const prompt = context.messages[0].content[0].text;
+      capturedPrompts.push(prompt);
+      const tag = prompt.includes('explore branch B') ? 'Keep speedup from B' : 'Keep baseline from A';
       return {
-        role: 'assistant', api: 'openai-responses', provider: 'test', model: 'm', stopReason: 'stop', timestamp: 6,
-        content: [{ type: 'text', text: '## Goal\\nKeep speedup from B' }],
+        role: 'assistant', api: 'openai-responses', provider: 'test', model: 'm', stopReason: 'stop', timestamp: 8,
+        content: [{ type: 'text', text: '## Goal\\n' + tag }],
         usage: { input: 10, output: 5, cacheRead: 0, cacheWrite: 0, totalTokens: 15, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
       };
     },
   },
   ui: {
     notify: (msg, level) => notices.push([msg, level]),
-    select: async () => { throw new Error('args instructions should skip menu'); },
-    editor: async () => undefined,
     custom: async (factory) => {
-      if (picks.length > 0) return picks.shift();
+      step += 1;
       let resolved;
       const done = (v) => { resolved = Promise.resolve(v); };
       const comp = factory({ terminal: { rows: 40 }, requestRender() {} }, { fg: (_c, s) => s, bold: (s) => s }, {}, done);
+      if (step === 1) {
+        const pickerText = comp.render(100).join('\\n');
+        assert.ok(pickerText.includes('explore branch B'));
+        assert.ok(pickerText.includes('older branch A'));
+        assert.ok(!pickerText.includes('stay on main branch'));
+        assert.ok(!pickerText.includes('✓ merged'));
+        comp.handleInput(' ');  // select otherLeaf
+        comp.handleInput('j');  // move to olderLeaf
+        comp.handleInput(' ');  // select olderLeaf
+        assert.ok(comp.render(100).join('\\n').includes('2 selected'));
+        comp.handleInput('\\r'); // merge both
+      }
       while (!resolved) await new Promise((r) => setTimeout(r, 5));
       assert.ok(!process.getActiveResourcesInfo().includes('Timeout'));
       comp?.dispose?.();
@@ -227,21 +257,22 @@ await command.handler('focus on speedup', {
 });
 
 assert.equal(sm.getLeafId(), mainUser);
-assert.ok(notices.some(([m]) => m.includes('already on the current branch')));
-assert.ok(capturedPrompt.includes('explore branch B'));
-assert.ok(capturedPrompt.includes('branch B found speedup'));
-assert.ok(capturedPrompt.includes('Additional focus: focus on speedup'));
-assert.ok(!capturedPrompt.includes('stay on main branch'));
+assert.equal(capturedPrompts.length, 2);
+assert.ok(capturedPrompts.every((p) => p.includes('Additional focus: focus on speedup') && !p.includes('stay on main branch')));
 assert.equal(sent.length, 1);
 assert.equal(sent[0].customType, 'branch-pull');
 assert.equal(sent[0].display, true);
-assert.equal(sent[0].details.fromId, otherLeaf);
-assert.equal(sent[0].details.commonAncestorId, rootReply);
+assert.deepEqual(sent[0].details.fromIds, [otherLeaf, olderLeaf]);
 assert.deepEqual(sent[0].details.modifiedFiles, ['src/b.py']);
 assert.ok(sent[0].content.includes('Keep speedup from B'));
-assert.ok(sent[0].content.includes('src/b.py'));
+assert.ok(sent[0].content.includes('Keep baseline from A'));
 const rendered = renderer({ ...sent[0], timestamp: Date.now() }, { expanded: true });
 assert.ok(rendered.render(80).join('\\n').includes('Keep speedup from B'));
+
+// Once persisted onto the active branch, both pulled leaves (and native /tree branchWithSummary) show ✓ merged.
+sm.appendCustomMessageEntry(sent[0].customType, sent[0].content, sent[0].display, sent[0].details);
+const afterMerge = collectSiblingBranchLeaves(sm);
+assert.deepEqual(afterMerge.map((c) => c.merged), [true, true]);
 """
             subprocess.check_call(['node', '--input-type=module', '-e', script], cwd=directory, timeout=30)
 
