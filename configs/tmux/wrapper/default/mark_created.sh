@@ -19,10 +19,12 @@ window="${1:?usage: mark_tma_window.sh WINDOW}"
 if ps -u "$USER" -o pid=,ppid=,comm=,args= | awk '
   {
     pid = $1; parent[pid] = $2; name[pid] = $3
+    if ($3 == "dsh-tui") name[pid] = "dsh"
     if ($4 ~ /(^|\/)node$/) {
       for (i = 5; i <= NF && $i ~ /^-/; i++) {}
       if ($i ~ /^(gemini|.*\/bin\/gemini|.*\/@google\/gemini-cli\/bundle\/gemini\.js)$/) name[pid] = "gemini"
       if ($i ~ /^(pi|.*\/bin\/pi|.*\/@earendil-works\/pi-coding-agent\/dist\/(bundle\/)?cli\.js)$/) name[pid] = "pi"
+      if ($i ~ /^(dsh|dsh-tui|dst|.*\/bin\/(dsh|dsh-tui|dst)|.*\/@deepseek-ai\/dsh\/lib\/bin\.js|.*\/@deepseek-harness-tui\/dsh-tui\/bin\/dsh-tui\.js)$/) name[pid] = "dsh"
     }
     # A client renames itself "tmux: client", so comm reads "tmux:".
     if ($3 == "tmux:" && $4 == "client" && $0 ~ /[[:space:]](new-window|neww)([[:space:]]|$)/) creating[pid] = 1
@@ -30,7 +32,7 @@ if ps -u "$USER" -o pid=,ppid=,comm=,args= | awk '
   END {
     for (pid in creating)
       for (p = parent[pid]; p in parent; p = parent[p])
-        if (name[p] == "claude" || name[p] == "codex" || name[p] == "gemini" || name[p] == "pi" || name[p] ~ /^codex-/) { found = 1; exit }
+        if (name[p] == "claude" || name[p] == "codex" || name[p] == "gemini" || name[p] == "pi" || name[p] == "dsh" || name[p] ~ /^codex-/) { found = 1; exit }
     exit !found
   }'; then
   tmux set-option -wq -t "$window" @tma_created 1

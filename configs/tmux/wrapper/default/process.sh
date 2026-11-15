@@ -12,6 +12,7 @@ _node_ai_backend() {
     case "${1:-}" in
         gemini|*/bin/gemini|*/@google/gemini-cli/bundle/gemini.js) printf 'gemini\n' ;;
         pi|*/bin/pi|*/@earendil-works/pi-coding-agent/dist/cli.js|*/@earendil-works/pi-coding-agent/dist/bundle/cli.js) printf 'pi\n' ;;
+        dsh|dsh-tui|dst|*/bin/dsh|*/bin/dsh-tui|*/bin/dst|*/@deepseek-ai/dsh/lib/bin.js|*/@deepseek-harness-tui/dsh-tui/bin/dsh-tui.js) printf 'dsh\n' ;;
         *) return 1 ;;
     esac
 }
@@ -33,7 +34,9 @@ _find_ai_pid_procfs() {
         if [[ -r "/proc/$pid/comm" ]]; then
             comm=""
             IFS= read -r comm <"/proc/$pid/comm" || true
-            if [[ "$comm" == node || "$comm" == MainThread ]]; then
+            if [[ "$comm" == dsh-tui ]]; then
+                comm="dsh"
+            elif [[ "$comm" == node || "$comm" == MainThread ]]; then
                 argv=()
                 mapfile -d '' -t argv <"/proc/$pid/cmdline" 2>/dev/null || continue
                 if backend="$(_node_ai_backend "${argv[@]}")"; then comm="$backend"; fi
@@ -148,7 +151,9 @@ _ai_process_snapshot() {
                 next unless defined $line;
                 next unless $line =~ /^(\d+) \((.*)\) \S+ (\d+) /;
                 my ($pid, $name, $parent) = ($1, $2, $3);
-                if ($name eq "node" || $name eq "MainThread") {
+                if ($name eq "dsh-tui") {
+                    $name = "dsh";
+                } elsif ($name eq "node" || $name eq "MainThread") {
                     if (open my $cmd, "<", "/proc/$pid/cmdline") {
                         local $/;
                         my @args = split /\0/, <$cmd>;
@@ -162,6 +167,10 @@ _ai_process_snapshot() {
                             $args[0] =~ m{^(pi|.*/bin/pi|.*/\@earendil-works/pi-coding-agent/dist/(bundle/)?cli\.js)$}) {
                             $name = "pi";
                         }
+                        if ($exe =~ m{(^|/)node$} && @args &&
+                            $args[0] =~ m{^(dsh|dsh-tui|dst|.*/bin/(dsh|dsh-tui|dst)|.*/\@deepseek-ai/dsh/lib/bin\.js|.*/\@deepseek-harness-tui/dsh-tui/bin/dsh-tui\.js)$}) {
+                            $name = "dsh";
+                        }
                     }
                 }
                 print "$pid $parent $name\n";
@@ -169,10 +178,12 @@ _ai_process_snapshot() {
         '
     else
         ps -ax -o pid=,ppid=,comm=,args= | awk '
+            $3 == "dsh-tui" { $3 = "dsh" }
             $4 ~ /(^|\/)node$/ {
                 for (i = 5; i <= NF && $i ~ /^-/; i++) {}
                 if ($i ~ /^(gemini|.*\/bin\/gemini|.*\/@google\/gemini-cli\/bundle\/gemini\.js)$/) $3 = "gemini"
                 if ($i ~ /^(pi|.*\/bin\/pi|.*\/@earendil-works\/pi-coding-agent\/dist\/(bundle\/)?cli\.js)$/) $3 = "pi"
+                if ($i ~ /^(dsh|dsh-tui|dst|.*\/bin\/(dsh|dsh-tui|dst)|.*\/@deepseek-ai\/dsh\/lib\/bin\.js|.*\/@deepseek-harness-tui\/dsh-tui\/bin\/dsh-tui\.js)$/) $3 = "dsh"
             }
             { print $1, $2, $3 }
         '

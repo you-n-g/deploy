@@ -27,6 +27,8 @@ def is_broker(argv, broker):
 
 def agent_name(name, argv):
     # Same Node entry-point rules as process.sh's procfs and snapshot paths.
+    if name == "dsh-tui":
+        return "dsh"
     if name not in ("node", "MainThread") or not argv or os.path.basename(argv[0]) != "node":
         return name
     arguments = iter(argv[1:])
@@ -38,6 +40,11 @@ def agent_name(name, argv):
             or entry.endswith("/@earendil-works/pi-coding-agent/dist/cli.js")
             or entry.endswith("/@earendil-works/pi-coding-agent/dist/bundle/cli.js")):
         return "pi"
+    if (entry in ("dsh", "dsh-tui", "dst")
+            or entry.endswith("/bin/dsh") or entry.endswith("/bin/dsh-tui") or entry.endswith("/bin/dst")
+            or entry.endswith("/@deepseek-ai/dsh/lib/bin.js")
+            or entry.endswith("/@deepseek-harness-tui/dsh-tui/bin/dsh-tui.js")):
+        return "dsh"
     return name
 
 

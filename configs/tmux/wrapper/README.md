@@ -60,6 +60,7 @@ Codex 的 `last_message` 从当前会话日志的 `task_complete.last_agent_mess
 不会发送 Ctrl+O 或等待终端剪贴板确认；新回合的中途说明不会覆盖上一条完整回答。
 Gemini 支持启动、headless、hooks、TUI 状态检测、会话 ID 和历史导出；尚未实现 fork、最近回答提取或迁移恢复。
 Pi 支持启动、headless、原生事件、会话 ID、恢复、fork、最近回答和历史导出；尚未实现迁移恢复。
+DSH（DeepSeek Harness）通过 `dsh-tui` + 原生 `@deepseek-ai/dsh-llm-pi-ai` 接入本地网关配置（`~/.config/llm/gateways.local.json` 与 `~/.gemini/.env`，默认 `high` 推理强度），由轻量 `dsh/tma.mjs` 原生跟踪 `running`、`background`（后台 Job / 子 Agent 仍在运行时显示 `◒` / `◓`）、`idle` / `unread` 与 prompt 记录，并支持启动、headless、内核 `session.lock` 会话 ID 解析、恢复会话以及 `prefix + f` 全模式 fork（含运行中回合的安全截断复制）。
 
 ## Pi 与网关配置
 

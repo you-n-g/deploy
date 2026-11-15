@@ -10,7 +10,7 @@ from typing import DefaultDict, Dict, Iterable, List, Optional, Tuple
 
 from pane_processes import agent_name
 
-AI_PROCESS_NAMES = {"claude", "codex", "pi"}
+AI_PROCESS_NAMES = {"claude", "codex", "pi", "dsh"}
 SESSION_ID_RE = re.compile(r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}")
 Process = Tuple[int, str, str]
 
@@ -105,7 +105,7 @@ def ai_process(
         if process is None:
             continue
         name = os.path.basename(process[1])
-        if name in ("node", "MainThread"):
+        if name in ("node", "MainThread", "dsh-tui"):
             name = agent_name(name, command_line(pid))
         if name in AI_PROCESS_NAMES and not is_under_broker(pid, pane_pid, processes):
             return pid, name
@@ -199,6 +199,8 @@ def session_names(pane_ids: List[str]) -> Dict[str, str]:
             if binding['pid'] != str(agent[0]) or binding['process_start'] != processes[agent[0]][2]:
                 raise RuntimeError('Stale Pi session metadata for ' + pane_id)
             names[pane_id] = binding['name']
+        elif agent[1] == "dsh":
+            names[pane_id] = ""
         else:
             names[pane_id] = claude_name(agent[0], pane_id, processes[agent[0]])
     return names

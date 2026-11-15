@@ -85,6 +85,7 @@ SCOPES = (
 AI_TOOL_CHOICES = (
     ("codex", "codex — launch Codex with codexr"),
     ("pi", "pi — launch Pi"),
+    ("dsh", "dsh — launch DeepSeek Harness (dsh-tui)"),
     ("gemini", "gemini — launch Gemini with geminir"),
     ("claude", "claude — launch Claude Code with clauder"),
 )
