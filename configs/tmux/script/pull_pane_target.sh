@@ -13,10 +13,19 @@
 # picker instead, for its status column; it may offer PANE itself (and picks
 # alone when there is a single AI pane), so picking PANE is refused.
 #
-# usage: pull_pane_target.sh SCOPE PANE
+# usage: pull_pane_target.sh [--push] [--client CLIENT] SCOPE PANE
 set -euo pipefail
 
-usage="usage: pull_pane_target.sh session|all|session-ai|all-ai PANE"
+usage="usage: pull_pane_target.sh [--push] [--client CLIENT] session|all|session-ai|all-ai PANE"
+mode=pull
+client=""
+while [[ "${1:-}" == --* ]]; do
+  case "$1" in
+    --push) mode=push; shift ;;
+    --client) client="${2:?$usage}"; shift 2 ;;
+    *) echo "$usage" >&2; exit 2 ;;
+  esac
+done
 scope="${1:?$usage}"
 pane="${2:?$usage}"
 session="$(tmux display-message -p -t "$pane" '#{session_name}')"
@@ -28,8 +37,18 @@ case "$scope" in
   *) echo "$usage" >&2; exit 2 ;;
 esac
 
-insert_request() {
-  tmux send-keys -t "$pane" -l "$("$(dirname -- "${BASH_SOURCE[0]}")/capture_request.sh" "$1")"
+deliver_request() {
+  local picked="$1"
+  if [[ "$mode" == push ]]; then
+    tmux send-keys -t "$picked" -l "$("$(dirname -- "${BASH_SOURCE[0]}")/capture_request.sh" "$pane")"
+    if [[ -n "$client" ]]; then
+      tmux switch-client -c "$client" -t "$picked"
+    else
+      tmux select-window -t "$picked" \; select-pane -t "$picked"
+    fi
+  else
+    tmux send-keys -t "$pane" -l "$("$(dirname -- "${BASH_SOURCE[0]}")/capture_request.sh" "$picked")"
+  fi
 }
 
 if [[ "$scope" == *-ai ]]; then
@@ -51,7 +70,7 @@ if [[ "$scope" == *-ai ]]; then
     echo "选中的是当前 pane 自己（$scope 里可能只有它一个 AI pane）" >&2
     exit 1
   fi
-  insert_request "$picked"
+  deliver_request "$picked"
   exit 0
 fi
 
@@ -64,9 +83,11 @@ if [[ -z "$rows" ]]; then
   exit 1
 fi
 
+header="拉入 → 这个 pane（$scope）"
+[[ "$mode" != push ]] || header="这个 pane → 推送到（$scope）"
 rc=0
 selected="$(printf '%s\n' "$rows" | cut -f2- | column -t -s $'\t' \
-  | fzf --reverse --with-nth '2..' --header "拉入 → 这个 pane（$scope）" \
+  | fzf --reverse --with-nth '2..' --header "$header" \
       --preview 'tmux capture-pane -ept {1} | perl -0777 -pe "s/\s+\z/\n/"' \
       --preview-window 'up:60%,follow')" || rc=$?
 # 1: no match, 130: Esc / Ctrl-C -- nothing picked, close quietly.
@@ -75,4 +96,4 @@ case "$rc" in
   1|130) exit 0 ;;
   *) exit "$rc" ;;
 esac
-insert_request "${selected%% *}"
+deliver_request "${selected%% *}"

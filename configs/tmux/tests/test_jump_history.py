@@ -245,6 +245,16 @@ class JumpHistoryTest(unittest.TestCase):
         # No Enter: the text stays on the prompt line, so the shell never runs it.
         self.assertNotIn("not found", self.tmux("capture-pane", "-p", "-t", pane))
 
+    def test_push_previous_target_types_into_previous_pane_and_switches_there(self):
+        self.visit(self.c)
+        self.visit(self.b)
+        b_pane, c_pane = self.b.split(":.")[1], self.c.split(":.")[1]
+        subprocess.check_call([INSERT_SCRIPT, "--push", self.socket, self.client, b_pane])
+        expected = "请capture我的Tmux的这个pane[" + self.target(self.b) + "]（窗口 "
+        self.wait_for(lambda: expected in self.tmux("capture-pane", "-p", "-t", c_pane))
+        self.wait_for(lambda: self.current(self.client) == self.c)
+        self.assertNotIn("not found", self.tmux("capture-pane", "-p", "-t", c_pane))
+
     def test_capacity_and_repeated_visits(self):
         self.tmux("set-option", "-g", "@jump-history-limit", "3")
         for target in (self.b, self.c, self.b, self.a):
