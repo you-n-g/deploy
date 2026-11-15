@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# A vim that starts at once, for editing a prompt from Claude Code / Codex / Pi
-# (Ctrl+G, through VISUAL in clauder / codexr or externalEditor in Pi). The
+# A vim that starts at once, for editing a prompt from Claude Code / Codex / Pi / DSH
+# (Ctrl+G, through VISUAL in clauder / codexr / dsh or externalEditor in Pi). The
 # system vim on local disk -- the usual nvim lives on a network filesystem and loads the full
 # config -- with a small vimrc (configs/vim/fast.vimrc), no viminfo, no swap file.
 # In tmux, edit in a small focused float and wait for it to return the prompt.

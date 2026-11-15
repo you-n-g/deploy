@@ -74,6 +74,22 @@ def seed_json_if_absent(path, payload):
     path.write_text(json.dumps(payload, indent=2) + '\n')
 
 
+def ensure_tui_settings(path):
+    doc = {'version': 1, 'values': {}}
+    if path.exists():
+        loaded = json.loads(path.read_text())
+        if isinstance(loaded, dict):
+            doc = loaded
+    values = doc.setdefault('values', {})
+    if not isinstance(values, dict):
+        values = {}
+        doc['values'] = values
+    # Boot straight into Chat (PromptInput) instead of Launchpad so Ctrl+G
+    # external editor works immediately from the first prompt.
+    values.setdefault('launchpad', False)
+    write_private(path, json.dumps(doc, indent=2, ensure_ascii=False) + '\n')
+
+
 def configure():
     gateway = gateway_env()
     local = json.loads((Path.home() / '.config/llm/gateways.local.json').read_text())['pi']
@@ -126,6 +142,7 @@ def configure():
     seed_json_if_absent(tui_dir / 'onboarding.json', {'completed': True, 'version': 1})
     seed_json_if_absent(tui_dir / 'permission.json', {'permission': 'danger-full-access'})
     seed_json_if_absent(tui_dir / 'effort.json', {'effort': 'high'})
+    ensure_tui_settings(tui_dir / 'settings.json')
     print('DSH default: {}/{} (high); native TMA plugin enabled.'.format(provider_id, default_model))
 
 

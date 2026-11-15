@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { realpathSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -21,11 +21,18 @@ function extractPromptText(content) {
 }
 
 export function apply(ctx) {
-  const pane = process.env.TMUX_PANE;
   const profile = ctx.get?.("profileContext");
-  if (!pane || profile?.name !== "dsh-tui") return;
+  if (profile?.name !== "dsh-tui") return;
 
   const directory = dirname(realpathSync(fileURLToPath(import.meta.url)));
+  const vimFast = join(directory, "../../../../helper_scripts/bin/vim-fast");
+  if (!process.env.VISUAL && existsSync(vimFast)) {
+    process.env.VISUAL = vimFast;
+  }
+
+  const pane = process.env.TMUX_PANE;
+  if (!pane) return;
+
   const trackScript = join(directory, "../../script/track_ai_agent_state.sh");
 
   let active = true;

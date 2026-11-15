@@ -88,6 +88,8 @@ class DshWrapperTest(unittest.TestCase):
             self.assertEqual(json.loads((home / '.dsh-tui/effort.json').read_text())['effort'], 'medium')
             self.assertTrue(json.loads((home / '.dsh-tui/onboarding.json').read_text())['completed'])
             self.assertEqual(json.loads((home / '.dsh-tui/permission.json').read_text())['permission'], 'danger-full-access')
+            tui_settings = json.loads((home / '.dsh-tui/settings.json').read_text())
+            self.assertIs(tui_settings['values']['launchpad'], False)
 
             # Missing gateway URL fails loudly without leaking the secret.
             (home / '.gemini/.env').write_text('GEMINI_API_KEY="gw-secret"\n')
@@ -345,9 +347,11 @@ for await (const line of readline.createInterface({ input: process.stdin })) {
     plugin.apply(makeCtx());
     assert.equal(listeners.size, 0);
   } else if (step === 'init') {
+    delete process.env.VISUAL;
     profileName = 'dsh-tui';
     agents = [topAgent];
     plugin.apply(makeCtx());
+    assert.ok(process.env.VISUAL?.endsWith('/helper_scripts/bin/vim-fast'));
   } else if (step === 'running') {
     emit('session/event', topSession, {
       type: 'user/message',
