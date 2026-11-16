@@ -102,6 +102,19 @@ Pi 支持 `prefix + f` 菜单的窗口、分屏和浮窗 fork：复制当前选�
 包括工具记录、压缩摘要和模型设置，生成独立会话后启动交互式 Pi。源会话继续保留；
 fork 会沿当前 `/tree` 位置复制，不会误选日志末尾的其它分支。
 
+### 后续可补充的候选扩展
+
+以下扩展尚未纳入默认安装，后续可按需参考或自研补齐：
+
+- `subagents`：异步子代理委派（如只读调查 `explorer` 与实现检查 `worker` 角色），支持通过 `/subagents` 查看、引导与续聊，避免子任务污染主上下文。
+- `background-tasks`：非阻塞后台命令工具（`bg_run` / `bg_status` / `bg_logs` / `bg_kill`）与 `/tasks` 实时面板，任务结束自动唤醒 Agent，无需轮询。
+- `btw`：`/btw` 单轮侧问（以及忽略当前历史的 `/btw:tangent`），不打断运行中的主回合，也不写入主上下文。
+- `loop`：`/loop` 在会话开启期间按间隔定时重跑指定 prompt（如 `/loop 30m check CI`，`/loop stop` 停止）。
+- `collapse-output`：紧凑预览 Bash 命令输出，并可按需折叠主对话中的工具调用、思考块和中间回复。
+- `agentsmd-auto-read`：当 `@path` 引用或读写进入子目录时，自动加载对应子目录的 `AGENTS.md` / `CLAUDE.md`。
+- `queue-messages`：Agent 运行期间按 `Tab` 将下一条消息加入队列，待当前回合结束后自动发送。
+- `openai-compact`：使用 OpenAI 服务端压缩接口压缩 GPT 会话以节省开销并保留更多细节（频繁跨模型切换的会话不适用）。
+
 框架还调用以下共享操作：`selected_backend`（读 `TMUX_AI_TOOL`，未设置或空值时为 Codex）、
 `session_names PANES...`（输出 `pane<TAB>名称`）、`background_processes PID`、`mark_created WINDOW`，以及
 `global_window_name` / `global_window_command` / `livesync_command` / `image_staging_dir` 这些现有工作流的默认配置。
