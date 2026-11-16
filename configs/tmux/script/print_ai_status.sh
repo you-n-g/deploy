@@ -43,14 +43,18 @@ while IFS='|' read -r session_name pane_id window_name pane_unread pane_running 
     _ai_window_is_orchestrator "$window_name" && continue
   fi
   # Per count, a TMA-made window takes part only if its switch is on.
+  # Workspace restore writes @tma_created=0 on user windows, so check truthiness
+  # (= 1 via #{?@tma_created,1,0}), never non-empty (-n "0" is true).
   count_running=1 count_background=1 count_unread=1
-  if [ -n "$tma_created" ]; then
+  if [ "$tma_created" = "1" ]; then
     count_running="$tma_running" count_background="$tma_background" count_unread="$tma_unread"
   fi
   # Background and unread are orthogonal: a background pane with an unread
   # turn counts in both.
   [ "$pane_background" = "1" ] && [ "$count_background" = 1 ] && background=$((background + 1))
-  if [ "$pane_background" = "1" ] && [ "$pane_unread" != "1" ]; then
+  if [ -n "$_pane_pending" ]; then
+    :
+  elif [ "$pane_background" = "1" ] && [ "$pane_unread" != "1" ]; then
     :
   elif [ "$pane_running" = "1" ]; then
     [ "$count_running" = 1 ] && running=$((running + 1))
@@ -63,7 +67,7 @@ while IFS='|' read -r session_name pane_id window_name pane_unread pane_running 
       *) waiting_out=$((waiting_out + 1)) ;;
     esac
   fi
-done < <(tmux list-panes -a -F '#{session_name}|#{pane_id}|#{window_name}|#{@ai_agent_unread}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_pending}|#{@ai_agent_done}|#{@tma_created}|#{@ai_agent_attribute}' 2>/dev/null)
+done < <(tmux list-panes -a -F '#{session_name}|#{pane_id}|#{window_name}|#{@ai_agent_unread}|#{@ai_agent_running}|#{@ai_agent_background}|#{@ai_agent_pending}|#{@ai_agent_done}|#{?@tma_created,1,0}|#{@ai_agent_attribute}' 2>/dev/null)
 
 # The !N unread count encodes where the unread panes are: all in the auto-switch
 # list -> red (what I watch), all outside -> the group's cyan (least urgent),

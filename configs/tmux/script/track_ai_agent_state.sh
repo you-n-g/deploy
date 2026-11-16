@@ -674,14 +674,14 @@ case "$state" in
     ;;
   done|toggle-done)
     if [ "$state" = "toggle-done" ] \
-      && [ -n "$(tmux show -pv -t "$pane_id" @ai_agent_done 2>/dev/null || true)" ]; then
+      && [ "$(tmux show -pv -t "$pane_id" @ai_agent_done 2>/dev/null || true)" = "1" ]; then
       tmux set-option -pqu -t "$pane_id" @ai_agent_done
     else
       was_done="$(tmux show -pv -t "$pane_id" @ai_agent_done 2>/dev/null || true)"
       tmux set-option -pq -t "$pane_id" @ai_agent_done 1
       # Like setting pending, marking done hands the pane off: the auto-switch
       # loop (wait-until-submitted.sh) moves on to the next pane.
-      [ -n "$was_done" ] || emit_ai_agent_event done
+      [ "$was_done" = "1" ] || emit_ai_agent_event done
       release_waiters done
     fi
     ;;
@@ -703,7 +703,7 @@ setsid "$SCRIPT_DIR/refresh_status_lines.sh" "$pane_id" </dev/null >/dev/null \
 # tma-conf's switch @toast_tma_created ("on" / "off", unset = on): whether a
 # window a TMA agent made (@tma_created) pops the task-done toast.
 tma_window_toasts() {
-  [ -n "$(tmux show-option -wqv -t "$window_id" @tma_created 2>/dev/null)" ] || return 0
+  [ "$(tmux display-message -p -t "$window_id" '#{?@tma_created,1,0}' 2>/dev/null)" = "1" ] || return 0
   case "$(tmux show-option -gqv @toast_tma_created 2>/dev/null)" in
     ''|on) return 0 ;;
     off) return 1 ;;

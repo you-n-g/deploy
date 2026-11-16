@@ -142,7 +142,7 @@ if [[ "$target" == "$pane" ]]; then
 fi
 
 label="$(tmux display-message -p -t "$target" '#{session_name}:#{window_index}.#{pane_index} #{window_name}')"
-if [[ "$mode" == "done" && -n "$(tmux show-option -pqv -t "$target" @ai_agent_done)" ]]; then
+if [[ "$mode" == "done" && "$(tmux show-option -pqv -t "$target" @ai_agent_done)" == "1" ]]; then
   note "pend_until: $label 已标记完成，不用等"
   exit 0
 fi
