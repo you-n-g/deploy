@@ -700,7 +700,7 @@ esac
 setsid "$SCRIPT_DIR/refresh_status_lines.sh" "$pane_id" </dev/null >/dev/null \
   2>>"$HOME/.cache/tmux-status-refresh.err" &
 
-# tma-conf's switch @toast_tma_created ("on" / "off", unset = on): whether a
+# conf-tma's switch @toast_tma_created ("on" / "off", unset = on): whether a
 # window a TMA agent made (@tma_created) pops the task-done toast.
 tma_window_toasts() {
   [ "$(tmux display-message -p -t "$window_id" '#{?@tma_created,1,0}' 2>/dev/null)" = "1" ] || return 0

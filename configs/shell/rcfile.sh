@@ -716,7 +716,7 @@ _claude_env() {
 # nothing leaks from one provider into another.
 #
 # Same three scopes as _codex_default_provider, most specific wins: the
-# llm-conf pane override, the llm-conf session/global override, then the shell
+# conf-llm pane override, the conf-llm session/global override, then the shell
 # default from env.local. Override per shell with CLAUDER_PROVIDER=xyz clauder.
 _clauder_provider_dir() {
     printf '%s\n' "${CLAUDER_PROVIDER_DIR:-$HOME/.claude/providers}"
@@ -816,7 +816,7 @@ function clauder() {
     # `claude --model` beats settings.json: the launcher's TMUX_AI_MODEL
     # (same contract as codexr, which applies it unconditionally) wins
     # outright. Below that, most specific scope wins, mirroring
-    # _codex_default_provider: the llm-conf pane override, then the llm-conf
+    # _codex_default_provider: the conf-llm pane override, then the conf-llm
     # session/global override, then the provider file's own default, then the
     # shell default from env.local.
     local model

@@ -131,7 +131,7 @@ ai_group="#[fg=cyan]🤖 #(${SCRIPT_DIR}/print_ai_status.sh)#[default]"
 ai_group="${ai_group}#[range=user|sb_a]#[fg=colour201]#(${SCRIPT_DIR}/../auto-switch/print-waiting-hint.sh)#[fg=green]#{@auto_switch_status_symbol}#[fg=colour203]#(${SCRIPT_DIR}/print_current_window_hint.sh)#{?@ai_agent_muted, 🔇,}#[norange default]"
 
 # Today's prompt progress against a usual day, off unless the global
-# @lm_progress option is set (llm-conf toggles it). tmux expands only the
+# @lm_progress option is set (conf-tma toggles it). tmux expands only the
 # chosen branch, so the job does not run while it is off.
 lm_segment="#{?@lm_progress,#(${SCRIPT_DIR}/print_lm_progress.sh) ,}"
 

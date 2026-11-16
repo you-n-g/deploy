@@ -15,7 +15,7 @@ waiting_out=0
 ranked=" $(tmux show-option -gqv @auto_switch_ranked_panes 2>/dev/null || true) "
 blacklist_regexes="$(_tmuxg_session_blacklist_regexes)"
 # Whether windows a TMA agent made (@tma_created, mark_tma_window.sh) count in
-# running / background / unread: tma-conf's three switches, "on" / "off", unset
+# running / background / unread: conf-tma's three switches, "on" / "off", unset
 # = the default (running and background yes, unread no -- their orchestrator
 # reads them, not the user).
 tma_switch() {  # OPTION DEFAULT VARIABLE: sets VARIABLE to 1 / 0

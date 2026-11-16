@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Today's typed prompts against a whole-day target, for status-left when the
-# global @lm_progress option is set (in llm-conf). Its value is the target:
+# global @lm_progress option is set (in conf-tma). Its value is the target:
 # "mean" (a usual day) or "topN" (what only the best N% of days beat); "1",
 # from before targets existed, means mean. The counting lives in the dashboard
 # skill (dashboard.py --status TARGET) with the rest of the prompt-log filters;

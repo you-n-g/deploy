@@ -14,4 +14,4 @@ AI pane 和普通 pane（shell、SSH、编辑器等）都可以加入任务序�
 
 `prefix + A` 的连续模式仍由 AI 提交事件触发，也能切到序列中的普通 pane。普通 shell / SSH 命令不会发出 AI 提交事件，处理完后用 `prefix + a a` 继续。
 
-切走之后，离开的那个 pane 会浮在新 pane 的右上角显示几秒（`switch-next.sh` 的预览）。它的宽度用 `tma-conf` 调（TUI，或 `tma-conf --set preview-width 50`）：默认 `full` 是那个 pane 自己的宽度，也可以设成窗口的 3/4、2/3、1/2、1/3；高度固定是窗口的 45%。设置存在 tmux 全局选项 `@auto_switch_preview_width` 里，tmux server 重启后回到默认。
+切走之后，离开的那个 pane 会浮在新 pane 的右上角显示几秒（`switch-next.sh` 的预览）。它的宽度用 `conf-tma` 调（TUI，或 `conf-tma --set preview-width 50`）：默认 `full` 是那个 pane 自己的宽度，也可以设成窗口的 3/4、2/3、1/2、1/3；高度固定是窗口的 45%。设置存在 tmux 全局选项 `@auto_switch_preview_width` 里，tmux server 重启后回到默认。

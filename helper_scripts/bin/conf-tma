@@ -5,11 +5,11 @@
 #   "textual>=8.2,<9",
 # ]
 # ///
-"""tma-conf: settings of the tmux multi-agent setup (TMA), as llm-conf is for the LLM tools.
+"""conf-tma: settings of the tmux multi-agent setup (TMA), as conf-llm is for the LLM tools.
 
-Each setting is a tmux global option that the scripts read when they run, so a
-change takes effect at once. Like llm-conf's options they live in the tmux
-server: a server restart drops them back to their defaults.
+Each setting is a tmux global option or environment variable that the scripts
+read when they run, so a change takes effect at once. Like conf-llm's options
+they live in the tmux server: a server restart drops them back to their defaults.
 
 To add a setting: append a Setting (one of several choices: Enter / right picks
 the highlighted one) or a Switches group (on/off switches sharing a tab: Space
@@ -21,18 +21,21 @@ from __future__ import annotations
 import subprocess
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import ClassVar
 
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, OptionList, SelectionList, Static, TabbedContent, TabPane
 from textual.widgets.option_list import Option
 
+REFRESH_STATUS_LINES = Path(__file__).resolve().parents[2] / "configs/tmux/script/refresh_status_lines.sh"
+
 
 @dataclass(frozen=True)
 class Setting:
     tab: str  # tab id, also the key that picks the setting in --set
     title: str
-    option: str  # tmux global option; unset is the first choice
+    option: str  # tmux global option (@...) or environment variable; unset is the first choice
     choices: tuple[tuple[str, str], ...]  # (value, label); the first is the default
     help: str
 
@@ -41,7 +44,7 @@ class Setting:
 class Switch:
     key: str  # picks the switch in --set
     label: str
-    option: str  # tmux global option: "on" / "off", unset = default
+    option: str  # tmux global option: "on" / "off" (or "1" / "0"), unset = default
     default: bool
 
 
@@ -88,6 +91,63 @@ SETTINGS = (
             "pops the task-done toast, on by default (script/track_ai_agent_state.sh)."
         ),
     ),
+    Switches(
+        tab="orchestrator",
+        title="Orchestrator",
+        switches=(
+            Switch(
+                "show-orchestrator",
+                "show orchestrator in AI pickers, status counts, title & toast",
+                "@tmuxg-show-orchestrator",
+                True,
+            ),
+            Switch(
+                "send-to-orchestrator",
+                "show orchestrator in send-target picker  (prefix t p a/A)",
+                "@tmux-send-target-show-orchestrator",
+                True,
+            ),
+        ),
+        help=(
+            "Whether windows named 'orchestrator' take part in AI listings, counts, and notifications;\n"
+            "Space toggles. Also toggleable inside the fzf pickers with Ctrl-O (ai/lib.sh,\n"
+            "ai/send_current_target_to_ai.sh)."
+        ),
+    ),
+    Setting(
+        tab="ai-tool",
+        title="AI tool",
+        option="TMUX_AI_TOOL",
+        choices=(
+            ("codex", "codex — launch Codex with codexr (default)"),
+            ("pi", "pi — launch Pi"),
+            ("dsh", "dsh — launch DeepSeek Harness (dsh-tui)"),
+            ("gemini", "gemini — launch Gemini with geminir"),
+            ("claude", "claude — launch Claude Code with clauder"),
+        ),
+        help=(
+            "Which AI backend opens by default in new TMA windows and panes (prefix c, prefix g,\n"
+            "prefix M-c, orchestrator, c / v / D / N, and child TMA agents). Read by\n"
+            "wrapper/default/backend.sh (selected_backend)."
+        ),
+    ),
+    Setting(
+        tab="lm-progress",
+        title="LM progress",
+        option="@lm_progress",
+        choices=(
+            ("off", "off — hide it (default)"),
+            ("mean", "on — chase a usual day (mean of the other days)"),
+            ("top30", "on — chase the top 30% of days"),
+            ("top20", "on — chase the top 20% of days"),
+            ("top10", "on — chase the top 10% of days"),
+        ),
+        help=(
+            "Prompt progress at the bottom-left: messages you typed to agents today against the target\n"
+            "day (the usual day, or what only the best N% of days beat, counted by the dashboard's\n"
+            "Prompts page). The pace follows the usual hour-of-day profile; refreshed every 30 seconds."
+        ),
+    ),
 )
 
 
@@ -102,30 +162,53 @@ def tmux(*args: str) -> str:
     return result.stdout.strip()
 
 
-def refresh_clients() -> None:
+def refresh_status() -> None:
+    sessions = {s for s in tmux("list-clients", "-F", "#{client_session}").splitlines() if s}
+    for session in sorted(sessions):
+        subprocess.run([str(REFRESH_STATUS_LINES), session], check=True)
     for client in tmux("list-clients", "-F", "#{client_tty}").splitlines():
         tmux("refresh-client", "-S", "-t", client)  # redraw the status line now, not at the next tick
 
 
 def current(setting: Setting) -> str:
-    return tmux("show-option", "-gqv", setting.option) or setting.choices[0][0]
+    if setting.option.startswith("@"):
+        value = tmux("show-option", "-gqv", setting.option)
+        if setting.option == "@lm_progress" and value == "1":
+            return "mean"  # "1" was "on" before the bar had targets
+        return value or setting.choices[0][0]
+    result = subprocess.run(["tmux", "show-environment", "-g", setting.option], capture_output=True, text=True)
+    line = result.stdout.strip()
+    if line.startswith(f"{setting.option}="):
+        return line.split("=", 1)[1] or setting.choices[0][0]
+    if line == f"-{setting.option}" or (result.returncode and "unknown variable" in result.stderr):
+        return setting.choices[0][0]
+    if result.returncode:
+        raise ToolError(result.stderr.strip() or f"tmux show-environment exited with {result.returncode}")
+    return setting.choices[0][0]
 
 
 def apply(setting: Setting, value: str) -> None:
     if value not in [v for v, _ in setting.choices]:
         raise ToolError(f"{setting.tab}: {value!r} is not one of {[v for v, _ in setting.choices]}")
-    if value == setting.choices[0][0]:
-        tmux("set-option", "-gu", setting.option)
+    if setting.option.startswith("@"):
+        if value == setting.choices[0][0]:
+            tmux("set-option", "-gu", setting.option)
+        else:
+            tmux("set-option", "-g", setting.option, value)
     else:
-        tmux("set-option", "-g", setting.option, value)
-    refresh_clients()
+        tmux("set-environment", "-g", setting.option, value)
+    refresh_status()
 
 
 def is_on(switch: Switch) -> bool:
     value = tmux("show-option", "-gqv", switch.option)
-    if value not in ("", "on", "off"):
-        raise ToolError(f"{switch.option} is {value!r}, expected on / off")
-    return switch.default if not value else value == "on"
+    if value in ("on", "1", "true", "yes"):
+        return True
+    if value in ("off", "0", "false", "no"):
+        return False
+    if value == "":
+        return switch.default
+    raise ToolError(f"{switch.option} is {value!r}, expected on / off")
 
 
 def set_switch(switch: Switch, on: bool) -> None:
@@ -133,7 +216,7 @@ def set_switch(switch: Switch, on: bool) -> None:
         tmux("set-option", "-gu", switch.option)
     else:
         tmux("set-option", "-g", switch.option, "on" if on else "off")
-    refresh_clients()
+    refresh_status()
 
 
 def all_switches() -> dict[str, Switch]:
@@ -150,6 +233,7 @@ class TmaConf(App[None]):
     BINDINGS: ClassVar[list[tuple[str, str, str]]] = [
         ("right", "apply", "Apply"),
         *[(str(i + 1), f"show_tab('{s.tab}')", s.title) for i, s in enumerate(SETTINGS)],
+        ("r", "refresh", "Refresh"),
         ("left,escape,q", "quit", "Quit"),
     ]
 
@@ -180,22 +264,25 @@ class TmaConf(App[None]):
                 continue
             value = current(s)
             label = dict(s.choices).get(value, f"{value} (not a listed choice)")
+            carrier = f"tmux option {s.option}" if s.option.startswith("@") else f"tmux env {s.option}"
             self.query_one(f"#{s.tab}-status", Static).update(
-                f"{s.help}\n\nNow: {label}    (tmux option {s.option})")
+                f"{s.help}\n\nNow: {label}    ({carrier})")
             values = [v for v, _ in s.choices]
             self.query_one(f"#{s.tab}-choices", OptionList).highlighted = values.index(value) if value in values else None
 
-    def setting(self, tab: str) -> Setting:
+    def setting(self, tab: str) -> Setting | Switches:
         return next(s for s in SETTINGS if s.tab == tab)
 
     def choose(self, tab: str, value: str) -> None:
+        s = self.setting(tab)
+        assert isinstance(s, Setting)
         try:
-            apply(self.setting(tab), value)
-        except ToolError as error:
+            apply(s, value)
+        except (ToolError, subprocess.CalledProcessError) as error:
             self.notify(str(error), severity="error")
             return
         self.refresh_all()
-        self.notify(f"{self.setting(tab).title} → {dict(self.setting(tab).choices)[value]}")
+        self.notify(f"{s.title} → {dict(s.choices)[value]}")
 
     def action_apply(self) -> None:
         tab = self.query_one(TabbedContent).active
@@ -209,6 +296,9 @@ class TmaConf(App[None]):
         self.query_one(TabbedContent).active = tab
         self.query_one(f"#{tab}-choices").focus()
 
+    def action_refresh(self) -> None:
+        self.refresh_all()
+
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         if isinstance(event.option_list, SelectionList):
             return
@@ -219,7 +309,7 @@ class TmaConf(App[None]):
         on = event.selection.value in event.selection_list.selected
         try:
             set_switch(switch, on)
-        except ToolError as error:
+        except (ToolError, subprocess.CalledProcessError) as error:
             self.notify(str(error), severity="error")
             return
         self.refresh_all()
@@ -231,9 +321,9 @@ def main() -> int:
     switches = all_switches()
     if args in (["-h"], ["--help"]):
         print(__doc__.split("\n\n")[0])
-        print("\nusage: tma-conf                  open the settings TUI")
-        print("       tma-conf --show           print every setting")
-        print("       tma-conf --set KEY VALUE  set one without the TUI")
+        print("\nusage: conf-tma                  open the settings TUI")
+        print("       conf-tma --show           print every setting")
+        print("       conf-tma --set KEY VALUE  set one without the TUI")
         for s in SETTINGS:
             if isinstance(s, Switches):
                 for sw in s.switches:
@@ -264,7 +354,7 @@ def main() -> int:
         print(f"{key}\t{current(tabs[key])}")
         return 0
     if args:
-        raise ToolError(f"unknown arguments {args}; see tma-conf --help")
+        raise ToolError(f"unknown arguments {args}; see conf-tma --help")
     TmaConf().run()
     return 0
 
@@ -273,5 +363,5 @@ if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except ToolError as error:
-        print(f"tma-conf: {error}", file=sys.stderr)
+        print(f"conf-tma: {error}", file=sys.stderr)
         raise SystemExit(1) from error

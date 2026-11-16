@@ -118,7 +118,7 @@ if [[ -n "$skip_pane_id" && "$skip_pane_id" != "$target" ]] \
   # Size (-x/-y) and position (-X/-Y) are both set at creation, so it lands in a
   # fixed spot: floating panes otherwise cascade their position per window with
   # no way to move them afterwards. Pinned to the top-right, 45% of the window
-  # high. Width follows @auto_switch_preview_width (tma-conf): unset / "full" is
+  # high. Width follows @auto_switch_preview_width (conf-tma): unset / "full" is
   # the previewed pane's own width, so its lines show whole instead of clipped;
   # a number is that percent of the window. Either way it is capped to the
   # window, leaving room for the border.

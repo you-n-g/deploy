@@ -12,9 +12,9 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from textual.widgets import OptionList, TabbedContent
+from textual.widgets import OptionList, TabbedContent, TabPane
 
-loader = SourceFileLoader("llm_conf", str(Path(__file__).resolve().parents[1] / "bin/llm-conf"))
+loader = SourceFileLoader("conf_llm", str(Path(__file__).resolve().parents[1] / "bin/conf-llm"))
 conf = module_from_spec(spec_from_loader(loader.name, loader))
 loader.exec_module(conf)
 
@@ -56,7 +56,7 @@ class ProviderChoicesTests(unittest.TestCase):
 
 
 class StartupTests(unittest.IsolatedAsyncioTestCase):
-    async def test_missing_providers_does_not_block_other_settings_tabs(self):
+    async def test_pure_llm_and_agent_tabs_only(self):
         def tmux_read(*args, **kwargs):
             self.assertIn(args[0], {"show-option", "show-environment"})
             return subprocess.CompletedProcess(["tmux", *args], 0, stdout="", stderr="")
@@ -65,16 +65,16 @@ class StartupTests(unittest.IsolatedAsyncioTestCase):
             with patch.object(conf, "CLAUDER_PROVIDER_DIR", Path(directory) / "providers"), patch.object(conf, "run_tmux", side_effect=tmux_read):
                 app = conf.ProviderApp("%test", "test", conf.STATIC_CHOICES + (("inherit", "inherit"),), conf.clauder_provider_choices())
                 async with app.run_test(size=(120, 45)) as pilot:
+                    self.assertEqual(
+                        [pane.id for pane in app.query(TabPane)],
+                        ["provider-tab", "clauder-tab", "claude-tab"],
+                    )
                     self.assertEqual(app.query_one("#providers", OptionList).option_count, 5)
                     await pilot.press("2")
                     self.assertEqual(app.query_one(TabbedContent).active, "clauder-tab")
                     self.assertEqual(app.query_one("#clauder-providers", OptionList).option_count, 1)
-                    await pilot.press("4")
-                    self.assertEqual(app.query_one(TabbedContent).active, "ai-tool-tab")
-                    ai_tools = app.query_one("#ai-tools", OptionList)
-                    self.assertIn("pi", [ai_tools.get_option_at_index(i).id for i in range(ai_tools.option_count)])
-                    await pilot.press("5")
-                    self.assertEqual(app.query_one(TabbedContent).active, "lm-progress-tab")
+                    await pilot.press("3")
+                    self.assertEqual(app.query_one(TabbedContent).active, "claude-tab")
 
 
 if __name__ == "__main__":
