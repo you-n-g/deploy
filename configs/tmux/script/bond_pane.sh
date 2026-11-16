@@ -84,14 +84,20 @@ pane_label() {
   t display-message -p -t "$1" '#{session_name}:#{window_index}.#{pane_index} #{window_name}'
 }
 
+target_fmt_for() {
+  printf '#{S:#{W:#{P:#{?#{==:#{pane_id},%s},#S:#I.#P #W,}}}}' "$1"
+}
+
 detach_side() {
   local pane="$1" partner reverse
   partner="$(t show-option -pqv -t "$pane" @bond_pane 2>/dev/null || true)"
-  t set-option -pqu -t "$pane" @bond_pane 2>/dev/null || true
+  t set-option -pqu -t "$pane" @bond_pane \; \
+    set-option -pqu -t "$pane" @bond_target_fmt 2>/dev/null || true
   if [[ -n "$partner" ]] && pane_exists "$partner"; then
     reverse="$(t show-option -pqv -t "$partner" @bond_pane 2>/dev/null || true)"
     if [[ "$reverse" == "$pane" ]]; then
-      t set-option -pqu -t "$partner" @bond_pane 2>/dev/null || true
+      t set-option -pqu -t "$partner" @bond_pane \; \
+        set-option -pqu -t "$partner" @bond_target_fmt 2>/dev/null || true
     fi
   fi
 }
@@ -104,7 +110,9 @@ do_set() {
   detach_side "$src"
   detach_side "$dst"
   t set-option -pq -t "$src" @bond_pane "$dst" \; \
-    set-option -pq -t "$dst" @bond_pane "$src"
+    set-option -pq -t "$src" @bond_target_fmt "$(target_fmt_for "$dst")" \; \
+    set-option -pq -t "$dst" @bond_pane "$src" \; \
+    set-option -pq -t "$dst" @bond_target_fmt "$(target_fmt_for "$src")"
   report "已双向绑定：$(pane_label "$src") ↔ $(pane_label "$dst")  [prefix k b 互跳]"
 }
 
@@ -115,7 +123,8 @@ resolve_bonded_into() {
   p="$(t show-option -pqv -t "$s" @bond_pane 2>/dev/null || true)"
   [[ -n "$p" ]] || fail "当前 pane 尚未绑定目标（用 prefix + B 建立绑定）"
   if ! pane_exists "$p"; then
-    t set-option -pqu -t "$s" @bond_pane 2>/dev/null || true
+    t set-option -pqu -t "$s" @bond_pane \; \
+      set-option -pqu -t "$s" @bond_target_fmt 2>/dev/null || true
     fail "绑定的 pane $p 已关闭，已自动解除绑定"
   fi
   printf -v "$out_src" '%s' "$s"
@@ -255,7 +264,8 @@ case "$subcmd" in
     ' <<<"$rows")"
     while IFS= read -r p; do
       [[ -n "$p" ]] || continue
-      t set-option -pqu -t "$p" @bond_pane 2>/dev/null || true
+      t set-option -pqu -t "$p" @bond_pane \; \
+        set-option -pqu -t "$p" @bond_target_fmt 2>/dev/null || true
     done <<<"$stale"
     ;;
   menu)

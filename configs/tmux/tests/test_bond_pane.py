@@ -220,6 +220,18 @@ class BondPaneTest(unittest.TestCase):
         self.assertIn("对方任务：调试实验A", bonded_menu)
         self.assertIn("(u)nbond    解除与 work:1.0 agent-b 的绑定", bonded_menu)
 
+        # 4. prefix+k's native format string dynamically tracks rename, window move, and unbond in 0ms.
+        kb_fmt = "#{?#{!=:#{E:@bond_target_fmt},},(b)ond   → #{E:@bond_target_fmt},(b)ond   已绑定的 pane（未绑定）}"
+        self.assertEqual(self.tmux("display-message", "-p", "-t", self.a, kb_fmt),
+                         "(b)ond   → work:1.0 agent-b")
+        self.tmux("rename-window", "-t", self.b, "renamed-target")
+        self.tmux("move-window", "-s", self.b, "-t", "work:8")
+        self.assertEqual(self.tmux("display-message", "-p", "-t", self.a, kb_fmt),
+                         "(b)ond   → work:8.0 renamed-target")
+        self.bond_cmd("unbond", self.a)
+        self.assertEqual(self.tmux("display-message", "-p", "-t", self.a, kb_fmt),
+                         "(b)ond   已绑定的 pane（未绑定）")
+
 
 if __name__ == "__main__":
     unittest.main()
