@@ -79,7 +79,7 @@ python3 -m unittest discover -s configs/tmux/tests -v
 
 这项功能使用官方 tmux 3.8 的 `move-pane` / `resize-pane` 接口，无需补丁。
 用 `module add tmux-3.8` 加载后，需要重启 server 才能升级；仅重新加载配置无效。
-`prefix + j → f` 使用 `break-pane -W` 将分屏直接转为浮窗，保留进程、pane ID 和 Agent 会话。
+`prefix + j → f` / `V` / `S` 直接使用原生 `break-pane -W`、`move-pane -P top-right` 和 `join-pane` 在浮窗与分屏之间互转，保留进程、pane ID 和 Agent 会话。
 
 通过 `codexr` / `clauder` 启动的 TMA 及 Pi、DSH 中，`Ctrl+G` 在窗口底部、水平居中的小浮窗里用 Vim 编辑输入，最大 100 列 × 20 行。普通模式按 `q` 或用 `:wq` 保存退出，内容回到原输入框；`:q!` 放弃未保存的修改。编辑期间调用方会等待，关闭浮窗也会结束等待。当前会话下次按 `Ctrl+G`（Pi 已运行会话执行一次 `/reload`，DSH 已运行会话重开一次 `dsh-tui --continue`）即使用新入口。
 
@@ -87,7 +87,7 @@ tmux 3.7b 有个 bug：在 zoom 状态的 window 里用 `new-pane` 建的 floati
 
 所有浮窗都经 `script/new_float_pane.sh` 创建，它是唯一调用 `tmux new-pane` 的地方（`tests/test_float_panes.py` 会拒绝别处的直接调用）：默认先取消 zoom 再建；后台弹出的不打断 zoom：`--skip-if-zoomed` 时不建、退出码 3（auto-switch 切换预览）；`--zoomed-message TEXT` 同样不建，但先在状态栏显示 TEXT 5 秒（完成 toast）。tmux 修复前不要绕过它。
 
-另一个坑：window 处于 zoom 时，tmux 把浮窗的 `#{pane_floating_flag}` 报成 0。要按这个标志区分浮窗和分屏的脚本（`float_to_split.sh`、`split_to_float.sh`）都先取消 zoom 再判断。
+另一个坑：window 处于 zoom 时，tmux 把浮窗的 `#{pane_floating_flag}` 报成 0。按这个标志区分浮窗和分屏的地方（如 `prefix + j → f / V / S`、`float_position.py`）都先取消 zoom 再判断。
 
 # AI pane 状态标识
 

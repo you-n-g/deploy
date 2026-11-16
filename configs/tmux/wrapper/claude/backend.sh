@@ -25,13 +25,6 @@ tma_claude_history() {
   python3 "$TMA_WRAPPER_ROOT/claude/history.py" "$pid" "$session" "$pane" "${3:-markdown}"
 }
 tma_claude_resume_command() { tma_quote_command clauder --resume "$1"; }
-tma_claude_relocate() {
-  local session cwd
-  session="$(tma_claude_session_id "$1" "$2")" || return
-  cwd="$(jq -er '.cwd' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions/$1.json")" || return
-  printf '%s\t' "$cwd"
-  tma_claude_resume_command "$session"
-}
 tma_claude_fork_command() {
   local session
   if session="$(tma_claude_session_id "$1" "$2")"; then

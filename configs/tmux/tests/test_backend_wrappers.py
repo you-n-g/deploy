@@ -150,12 +150,11 @@ tma_example_headless_command() { printf 'cat > %q' "$3"; }
         panes = tmux("list-panes", "-t", "test:", "-F", "#{pane_id}")
         self.assertEqual(len(panes.splitlines()), 2)
         pid = tmux("display-message", "-p", "-t", pane, "#{pane_pid}")
-        result = subprocess.run(["bash", str(TMUX_DIR / "script/split_to_float.sh"), pane],
-                                env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                universal_newlines=True)
-        self.assertEqual(result.returncode, 0, result.stderr)
+        tmux("break-pane", "-W", "-s", pane, "-x", "50%", "-y", "50%", ";", "move-pane", "-t", pane, "-P", "top-right")
         self.assertEqual(tmux("display-message", "-p", "-t", pane, "#{pane_pid} #{pane_floating_flag}"), pid + " 1")
         self.assertEqual(tmux("list-panes", "-t", "test:", "-F", "#{pane_id}"), panes)
+        tmux("join-pane", "-h", "-s", pane, "-t", "{bottom-right}")
+        self.assertEqual(tmux("display-message", "-p", "-t", pane, "#{pane_pid} #{pane_floating_flag}"), pid + " 0")
 
     def test_codex_and_claude_wrapper_hooks_preserve_turn_events(self):
         tmux, pane = self.start_tmux()

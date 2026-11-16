@@ -46,7 +46,6 @@ stdout 只放结果，诊断写 stderr。`*_command` 返回命令文本，不执
 | `session_id` | `PID PANE` → 当前会话 ID；找不到返回非零 |
 | `resume_command` | `SESSION_ID` → 恢复会话命令 |
 | `fork_command` | `PID PANE PANE_ROOT_PID` → fork 命令；Codex 在这里保留远程连接参数 |
-| `relocate` | `PID PANE` → `cwd<TAB>resume_command`；用于分屏转浮窗，当前只有 Claude 实现 |
 | `last_message` | `PANE PID` → 最近完整回答文本；框架负责写入目标文件/复制缓冲区 |
 | `history` | `PANE PID [markdown\|jsonl]` → 会话正文 Markdown（默认）或完整原始 JSONL |
 | `tui_state` | `RECENT_SCREEN` → 无输出，或 `running<TAB>事件来源`；补原生 hook 的事件缺口 |
@@ -55,11 +54,11 @@ stdout 只放结果，诊断写 stderr。`*_command` 返回命令文本，不执
 | `install_cli` | 无 → CLI 未安装时安装 |
 | `skills_dir` | 无 → skills 链接路径，默认 `~/.<backend>/skills` |
 
-`session_id`、`fork_command`、`relocate`、`last_message`、`history` 等没有通用实现，未实现时明确报不支持。
+`session_id`、`fork_command`、`last_message`、`history` 等没有通用实现，未实现时明确报不支持。
 Codex 的 `last_message` 从当前会话日志的 `task_complete.last_agent_message` 读取最近完整回答，
 不会发送 Ctrl+O 或等待终端剪贴板确认；新回合的中途说明不会覆盖上一条完整回答。
-Gemini 支持启动、headless、hooks、TUI 状态检测、会话 ID 和历史导出；尚未实现 fork、最近回答提取或迁移恢复。
-Pi 支持启动、headless、原生事件、会话 ID、恢复、fork、最近回答和历史导出；尚未实现迁移恢复。
+Gemini 支持启动、headless、hooks、TUI 状态检测、会话 ID 和历史导出；尚未实现 fork 或最近回答提取。
+Pi 支持启动、headless、原生事件、会话 ID、恢复、fork、最近回答和历史导出。
 DSH（DeepSeek Harness）通过 `dsh-tui` + 原生 `@deepseek-ai/dsh-llm-pi-ai` 接入本地网关配置（`~/.config/llm/gateways.local.json` 与 `~/.gemini/.env`，默认 `high` 推理强度），由轻量 `dsh/tma.mjs` 原生跟踪 `running`、`background`（后台 Job / 子 Agent 仍在运行时显示 `◒` / `◓`）、`idle` / `unread` 与 prompt 记录，并支持启动、headless、内核 `session.lock` 会话 ID 解析、恢复会话以及 `prefix + f` 全模式 fork（含运行中回合的安全截断复制）。
 
 ## Pi 与网关配置
