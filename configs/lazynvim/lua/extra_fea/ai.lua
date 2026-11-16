@@ -7,13 +7,15 @@
          t  a request to capture this editor's tmux pane
   where: a  the AI pane of this session (picked when there are several; asks for
             a target when there is none)
+         b  the pane bonded to this editor's pane (@bond_pane, prefix + B)
          l  the AI pane visited last, in any session
          n  the nearest AI pane: in this window, else the session window
             closest by index
          f  the floating AI pane of this window, created (and waited for)
             when there is none
   A lowercase <where> pastes and switches there; uppercase pastes, presses
-  Enter and stays here. E.g. \cel sends the block to the last AI pane.
+  Enter and stays here. E.g. \cel sends the block to the last AI pane; \ceb to
+  the bonded pane.
 --]]
 local M = {}
 local utils = require("navigate-note.utils")
@@ -265,6 +267,25 @@ local contents = {
 
 local destinations = {
   a = { desc = "本 session 的 AI", resolve = get_target_tmux },
+  b = {
+    desc = "已绑定的 pane（@bond_pane）",
+    resolve = function(callback)
+      local host = vim.env.TMUX_PANE
+      if not host or host == "" then
+        vim.notify("Not inside a tmux pane", vim.log.levels.WARN)
+        return
+      end
+      local target = trim(vim.fn.system({
+        vim.fn.expand("~/deploy/configs/tmux/script/bond_pane.sh"),
+        "target", "--format", "target", host,
+      }))
+      if vim.v.shell_error ~= 0 or target == "" then
+        vim.notify(target ~= "" and target or "当前 Vim pane 尚未绑定目标（用 tmux prefix + B 绑定）", vim.log.levels.WARN)
+        return
+      end
+      callback(target:match("^([^:]+):([^%.]+)%.(.+)$"))
+    end,
+  },
   l = {
     desc = "最近访问的 AI",
     resolve = function(callback)

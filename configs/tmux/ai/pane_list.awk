@@ -76,6 +76,7 @@ function age(seconds) {
     marker = "pane " pane
     if (marked[pane]) marker = marker " marked"
     if (pane == switcher) marker = marker " switcher"
+    if (pane == bonded) marker = marker " bonded"
     key = key (created[pane] ? "1" : "0")
     if (preserve == "1") key = sprintf("%08d", input_index)
     printf "%s\t%s\t%s %s %s%s%s%s%s  %s%s%s%s%s  %s[%s]%s%s%s%s\n", \

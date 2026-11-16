@@ -353,17 +353,22 @@ _ai_pane_rows() {
 #   %14 learn:0.0 ◉ codex          [act 1m] [unread]  [pane %14]
 _ai_pane_fzf_list() {
     local current_target="${1:-}" now="${2:-$(date +%s)}"
-    local switcher_pane_id ranked_pane_ids metadata script_dir
+    local switcher_pane_id bonded_pane_id ranked_pane_ids metadata script_dir
 
     switcher_pane_id="$(tmux show-option -gqv @tma_window_switcher_pane 2>/dev/null || true)"
     if [[ -n "$switcher_pane_id" ]]; then
         switcher_pane_id="$(tmux display-message -p -t "$switcher_pane_id" '#{pane_id}' 2>/dev/null || true)"
+    fi
+    bonded_pane_id=""
+    if [[ -n "$current_target" ]]; then
+        bonded_pane_id="$(tmux show-option -pqv -t "$current_target" @bond_pane 2>/dev/null || true)"
     fi
     ranked_pane_ids="$(_ai_ranked_pane_id_set)"
     metadata="$(tmux list-panes -a -F $'#{pane_id}\t#{pane_marked}\t#{?@ai_agent_done,1,0}\t#{?@ai_agent_woke,1,0}\t#{?@ai_agent_muted,1,0}\t#{?@tma_created,1,0}')" || return
     script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
     awk -v current="$current_target" -v now="$now" -v switcher="$switcher_pane_id" \
+        -v bonded="$bonded_pane_id" \
         -v ranked="$ranked_pane_ids" -v palette="${_AI_FZF_SESSION_COLOR_CODES[*]}" \
         -v preserve="${AI_PANE_FZF_PRESERVE_ORDER:-0}" -f "$script_dir/pane_list.awk" \
         <(printf '%s\n' "$metadata") - |
