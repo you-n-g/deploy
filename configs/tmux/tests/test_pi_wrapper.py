@@ -69,7 +69,6 @@ class PiConfigTest(unittest.TestCase):
             self.assertEqual((agent / 'extensions/tma.js').resolve(), PI / 'tma.js')
             self.assertEqual((agent / 'extensions/gateway.js').resolve(), PI / 'gateway.js')
             self.assertEqual((agent / 'extensions/pull.js').resolve(), PI / 'pull.js')
-            self.assertEqual((agent / 'extensions/prompt.js').resolve(), PI / 'prompt.js')
             self.assertEqual((agent / 'AGENTS.md').read_text(), 'shared instructions\n')
             (home / '.gemini/.env').write_text('GEMINI_API_KEY="test-secret"\n')
             failed = subprocess.run(['python3', str(PI / 'configure.py')], env=env,
@@ -275,110 +274,6 @@ const afterMerge = collectSiblingBranchLeaves(sm);
 assert.deepEqual(afterMerge.map((c) => c.merged), [true, true]);
 """
             subprocess.check_call(['node', '--input-type=module', '-e', script], cwd=directory, timeout=30)
-
-    def test_prompt_extension_tracks_latest_input_skills_resize_and_tree(self):
-        pi_pkg = Path(shutil.which('pi')).resolve().parents[2]
-        with tempfile.TemporaryDirectory(prefix='pi-prompt-', dir='/tmp') as directory:
-            root = Path(directory)
-            scope = root / 'node_modules/@earendil-works'
-            scope.mkdir(parents=True)
-            (scope / 'pi-coding-agent').symlink_to(pi_pkg)
-            (scope / 'pi-tui').symlink_to(pi_pkg / 'node_modules/@earendil-works/pi-tui')
-            shutil.copy(str(PI / 'prompt.js'), str(root / 'prompt.js'))
-            script = """
-import assert from 'node:assert/strict';
-import { discoverAndLoadExtensions, initTheme, SessionManager } from '@earendil-works/pi-coding-agent';
-import { stripTerminalSequences, visibleWidth } from '@earendil-works/pi-tui';
-
-initTheme('dark', false);
-const loaded = await discoverAndLoadExtensions(['./prompt.js'], process.cwd());
-assert.deepEqual(loaded.errors, []);
-const ext = loaded.extensions.find((e) => e.path.endsWith('prompt.js'));
-assert.ok(ext);
-const emit = async (name, event) => {
-  for (const fn of ext.handlers.get(name) ?? []) await fn(event, ctx);
-};
-
-let widget;
-let renders = 0;
-const theme = { fg: (_c, s) => s, bold: (s) => s };
-const tui = { terminal: { rows: 24 }, requestRender: () => { renders += 1; } };
-const sm = SessionManager.inMemory('/tmp');
-let overlayLines;
-const ctx = {
-  hasUI: true,
-  sessionManager: sm,
-  ui: {
-    setWidget: (key, factory) => {
-      assert.equal(key, 'prompt');
-      widget = factory(tui, theme);
-    },
-    notify: () => {},
-    custom: async (factory, opts) => {
-      assert.equal(opts.overlay, true);
-      let closed = false;
-      const comp = factory(tui, theme, {}, () => { closed = true; });
-      overlayLines = comp.render(50);
-      comp.handleInput('q');
-      assert.ok(closed);
-    },
-  },
-};
-
-await emit('session_start', { reason: 'startup' });
-assert.deepEqual(widget.render(40), []);
-
-await emit('before_agent_start', { prompt: 'first line\\n  second line with extra details that exceed width', images: [] });
-let lines = widget.render(35);
-assert.equal(lines.length, 1);
-assert.ok(stripTerminalSequences(lines[0]).startsWith('❯ first line second line'));
-assert.ok(stripTerminalSequences(lines[0]).endsWith('…'));
-assert.ok(visibleWidth(lines[0]) <= 35);
-
-// Still visible after agent finishes and dynamically adapts to wider render width
-await emit('agent_end', { messages: [] });
-await emit('agent_settled', {});
-lines = widget.render(80);
-assert.equal(stripTerminalSequences(lines[0]), '❯ first line second line with extra details that exceed width');
-
-const skillPrompt = '<skill name="explain" location="/tmp/SKILL.md">\\nlong body\\n</skill>\\n\\nimpl foo.py\\nline two';
-await emit('before_agent_start', { prompt: skillPrompt, images: [] });
-assert.equal(stripTerminalSequences(widget.render(80)[0]), '❯ /skill:explain impl foo.py line two');
-
-// /prompt opens full multi-line overlay; /prompt toggle hides/shows widget
-const cmd = ext.commands.get('prompt');
-assert.ok(cmd);
-await cmd.handler('', ctx);
-assert.ok(overlayLines.some((l) => l.includes('/skill:explain')));
-assert.ok(overlayLines.some((l) => l.includes('line two')));
-await cmd.handler('off', ctx);
-assert.deepEqual(widget.render(80), []);
-await cmd.handler('on', ctx);
-assert.equal(widget.render(80).length, 1);
-
-await emit('before_agent_start', { prompt: '   ', images: [{ type: 'image' }] });
-assert.equal(stripTerminalSequences(widget.render(80)[0]), '❯ [image]');
-
-await emit('message_start', {
-  message: { role: 'user', content: [{ type: 'text', text: 'steered mid-run' }] },
-});
-assert.equal(stripTerminalSequences(widget.render(80)[0]), '❯ steered mid-run');
-
-sm.appendMessage({ role: 'user', content: [{ type: 'text', text: 'branch A prompt' }], timestamp: 1 });
-const a1 = sm.appendMessage({
-  role: 'assistant', content: [{ type: 'text', text: 'reply A' }],
-  api: 'openai-responses', provider: 'test', model: 'm', stopReason: 'stop', timestamp: 2,
-  usage: { input: 1, output: 1, cacheRead: 0, cacheWrite: 0, totalTokens: 2, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
-});
-sm.appendMessage({ role: 'user', content: [{ type: 'text', text: 'branch B prompt' }], timestamp: 3 });
-await emit('session_tree', {});
-assert.equal(stripTerminalSequences(widget.render(80)[0]), '❯ branch B prompt');
-sm.branch(a1);
-await emit('session_tree', {});
-assert.equal(stripTerminalSequences(widget.render(80)[0]), '❯ branch A prompt');
-assert.ok(renders > 0);
-"""
-            subprocess.check_call(['node', '--input-type=module', '-e', script], cwd=directory)
 
 
 class PiLifecycleTest(unittest.TestCase):

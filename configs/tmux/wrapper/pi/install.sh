@@ -8,7 +8,6 @@ ln -snf "$HOME/farside/AGENTS.md" "$HOME/.pi/agent/AGENTS.md"
 ln -snf "$dir/tma.js" "$HOME/.pi/agent/extensions/tma.js"
 ln -snf "$dir/gateway.js" "$HOME/.pi/agent/extensions/gateway.js"
 ln -snf "$dir/pull.js" "$HOME/.pi/agent/extensions/pull.js"
-ln -snf "$dir/prompt.js" "$HOME/.pi/agent/extensions/prompt.js"
 # Use the shared skill collection without replacing an existing Pi skills dir.
 mkdir -p "$HOME/.pi/agent/skills"
 ln -snf "$dir/../../../llm/merged-skills" "$HOME/.pi/agent/skills/tma"
