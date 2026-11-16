@@ -15,6 +15,8 @@ FILENAME != "-" {
     woke[$1] = $4 == "1"
     muted[$1] = $5 == "1"
     created[$1] = $6 == "1"
+    bond_to[$1] = $7
+    loc_of[$1] = $8
     next
 }
 function paint(code, text) { return esc "[" code "m" text reset }
@@ -68,6 +70,8 @@ function age(seconds) {
         if (woke[pane]) tags = tags " " paint(33, "[woke]")
     } else tags = tags " [idle]"
     if (muted[pane]) tags = tags " [muted]"
+    if (pane == bonded) tags = tags " " paint(36, "[⇔ bonded]")
+    else if (bond_to[pane] != "" && (bond_to[pane] in loc_of)) tags = tags " [↔ " loc_of[bond_to[pane]] "]"
 
     display_name = (pane in in_sequence) ? paint("1;91", name) : name
     if (created[pane]) display_name = display_name " " paint(36, "[agent]")

@@ -27,6 +27,7 @@ t() { tmux "${tmux_args[@]}" "$@"; }
 
 quiet=0
 tmux_menu=0
+dry_run=0
 fmt=id
 client=""
 other_session=()
@@ -35,6 +36,7 @@ while [[ "${1:-}" == -* ]]; do
     -S) socket_opt="${2:?missing socket}"; tmux_args=(-S "$socket_opt"); shift 2 ;;
     --quiet) quiet=1; shift ;;
     --tmux-menu) tmux_menu=1; shift ;;
+    --dry-run) dry_run=1; shift ;;
     --format) fmt="${2:?missing format}"; shift 2 ;;
     --client) client="${2:?missing client}"; shift 2 ;;
     --other-session) other_session=(--other-session); shift ;;
@@ -205,9 +207,19 @@ case "$subcmd" in
       all) list_args=(-a) ;;
       *) fail "unknown pick scope: $scope" ;;
     esac
+    all_map="$(t list-panes -a -F $'#{pane_id}\t#{session_name}:#{window_index}.#{pane_index}' 2>/dev/null || true)"
     rows="$(t list-panes "${list_args[@]}" -F \
-      $'#{?@last_visit,#{@last_visit},0}\t#{pane_id}\t#{session_name}:#{window_index}.#{pane_index}\t#{window_name}\t#{pane_current_command}\t#{pane_current_path}' \
-      | awk -F '\t' -v a="$src" -v b="${TMUX_PANE:-}" '$2 != a && $2 != b' | sort -t $'\t' -k1,1nr)"
+      $'#{?@last_visit,#{@last_visit},0}\t#{pane_id}\t#{session_name}:#{window_index}.#{pane_index}\t#{window_name}\t#{pane_current_command}\t#{@bond_pane}\t#{pane_current_path}' \
+      | awk -F '\t' -v a="$src" -v b="${TMUX_PANE:-}" '
+          NR == FNR { loc[$1] = $2; next }
+          $2 != a && $2 != b {
+            tag = "-"
+            if ($6 == a) tag = "[⇔ 当前绑定]"
+            else if ($6 != "" && ($6 in loc)) tag = "[↔ " loc[$6] "]"
+            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", $1, $2, $3, $4, $5, tag, $7
+          }
+        ' <(printf '%s\n' "$all_map") - \
+      | sort -t $'\t' -k1,1nr)"
     if [[ -z "$rows" ]]; then
       fail "没有其它可选的 pane（$scope）"
     fi
@@ -253,28 +265,94 @@ case "$subcmd" in
     client="$menu_client"
     resolve_pane_into src "${2:?missing source pane}" || fail "找不到当前 pane"
     socket_path="${socket_opt:-$(t display-message -p '#{socket_path}')}"
-    partner_label="$("$0" target -S "$socket_path" --quiet --format label "$src" 2>/dev/null || true)"
-    if [[ -n "$partner_label" ]]; then
-      safe_label="${partner_label//#/##}"
-      title="#[align=centre] 绑定：↔ ${safe_label} "
+    esc_menu() { printf '%s' "${1//#/##}"; }
+
+    src_label="$(esc_menu "$(pane_label "$src")")"
+    partner_id="$("$0" target -S "$socket_path" --quiet --format id "$src" 2>/dev/null || true)"
+    menu_items=()
+    # -C selects the first actionable item (row index, 0-based, counting blank separators).
+    default_idx=3
+    if [[ -n "$partner_id" ]]; then
+      partner_label="$(esc_menu "$(pane_label "$partner_id")")"
+      partner_attr="$(t show-option -pqv -t "$partner_id" @ai_agent_attribute 2>/dev/null || true)"
+      title="#[align=centre,fg=colour46,bold] ⇔ 已绑定 #[default]"
+      menu_items+=("-当前已绑定：${src_label} (${src}) ↔ ${partner_label} (${partner_id})" "" "")
+      if [[ -n "$partner_attr" ]]; then
+        menu_items+=("-  对方任务：$(esc_menu "${partner_attr:0:36}")" "" "")
+        default_idx=4
+      fi
     else
-      title="#[align=centre] 绑定 pane（未绑定） "
+      title="#[align=centre,fg=colour244] ○ 未绑定 #[default]"
+      menu_items+=("-当前未绑定：${src_label} (${src})" "" "")
     fi
+
     printf -v q_self '%q' "$0"
     printf -v q_open '%q' "$script_dir/open_float_pane.sh"
     printf -v q_sock '%q' "$socket_path"
     printf -v q_cli '%q' "$menu_client"
     printf -v q_src '%q' "$src"
-    t display-menu -c "$menu_client" -t "$src" -C 1 -T "$title" -x C -y C -- \
-      "-建立双向绑定（小写=本 session，大写=所有/跨 session）" "" "" \
-      "  (a)i       选本 session 的 AI 绑定  — 回车默认" a "run-shell \"$q_open --skip-jump-history $q_src $q_self pick -S $q_sock session-ai $q_src\"" \
-      "  (A)I       选所有 session 的 AI 绑定"         A "run-shell \"$q_open --skip-jump-history $q_src $q_self pick -S $q_sock all-ai $q_src\"" \
-      "  (s)ession  选本 session 的任意 pane 绑定"     s "run-shell \"$q_open --skip-jump-history $q_src $q_self pick -S $q_sock session $q_src\"" \
-      "  (S)        选所有 session 的任意 pane 绑定"   S "run-shell \"$q_open --skip-jump-history $q_src $q_self pick -S $q_sock all $q_src\"" \
-      "  (l)ast     绑定上一个访问的 pane"             l "run-shell \"$q_self last -S $q_sock --tmux-menu $q_cli $q_src\"" \
-      "  (L)ast     绑定上一个 session 的最近 pane"    L "run-shell \"$q_self last -S $q_sock --tmux-menu --other-session $q_cli $q_src\"" \
-      "" \
-      "(u)nbond    解除当前绑定"                       u "run-shell \"$q_self unbond -S $q_sock --tmux-menu $q_src\""
+
+    last_item=("-(l)ast     绑定上一个访问的 pane（无记录）" "" "")
+    if last_target="$(python3 "$script_dir/jump_history.py" --socket "$socket_path" previous "$menu_client" 2>/dev/null)" \
+      && last_id="$(t display-message -p -t "$last_target" '#{pane_id}' 2>/dev/null)" \
+      && [[ -n "$last_id" && "$last_id" != "$src" ]]; then
+      last_item=("  (l)ast     绑定上一个：$(esc_menu "$(pane_label "$last_id")")" l "run-shell \"$q_self last -S $q_sock --tmux-menu $q_cli $q_src\"")
+    fi
+
+    last_other_item=("-(L)ast     绑定跨 session 最近 pane（无记录）" "" "")
+    if other_target="$(python3 "$script_dir/jump_history.py" --socket "$socket_path" --other-session previous "$menu_client" 2>/dev/null)" \
+      && other_id="$(t display-message -p -t "$other_target" '#{pane_id}' 2>/dev/null)" \
+      && [[ -n "$other_id" && "$other_id" != "$src" ]]; then
+      last_other_item=("  (L)ast     绑定跨 session 最近：$(esc_menu "$(pane_label "$other_id")")" L "run-shell \"$q_self last -S $q_sock --tmux-menu --other-session $q_cli $q_src\"")
+    fi
+
+    menu_items+=(
+      ""
+      "-建立 / 切换双向绑定（小写=本 session，大写=所有/跨 session）" "" ""
+      "  (a)i       选本 session 的 AI 绑定  — 回车默认" a "run-shell \"$q_open --skip-jump-history $q_src $q_self pick -S $q_sock session-ai $q_src\""
+      "  (A)I       选所有 session 的 AI 绑定"         A "run-shell \"$q_open --skip-jump-history $q_src $q_self pick -S $q_sock all-ai $q_src\""
+      "  (s)ession  选本 session 的任意 pane 绑定"     s "run-shell \"$q_open --skip-jump-history $q_src $q_self pick -S $q_sock session $q_src\""
+      "  (S)        选所有 session 的任意 pane 绑定"   S "run-shell \"$q_open --skip-jump-history $q_src $q_self pick -S $q_sock all $q_src\""
+      "${last_item[@]}"
+      "${last_other_item[@]}"
+      ""
+    )
+
+    if [[ -n "$partner_id" ]]; then
+      menu_items+=("(u)nbond    解除与 ${partner_label} 的绑定" u "run-shell \"$q_self unbond -S $q_sock --tmux-menu $q_src\"")
+    else
+      menu_items+=("-(u)nbond    解除当前绑定（当前未绑定）" "" "")
+    fi
+
+    # List any other active bonded pairs across tmux so all live bonds are visible at a glance.
+    other_bonds="$(t list-panes -a -F $'#{pane_id}\t#{session_name}:#{window_index}.#{pane_index} #{window_name}\t#{@bond_pane}' 2>/dev/null \
+      | awk -F '\t' -v s="$src" -v p="$partner_id" '
+          { label[$1] = $2; if ($3 != "") bond[$1] = $3 }
+          END {
+            for (a in bond) {
+              b = bond[a]
+              if (a == s || a == p || b == s || b == p) continue
+              if ((b in label) && a < b) printf "%s ↔ %s\n", label[a], label[b]
+            }
+          }
+        ' | sort)"
+    if [[ -n "$other_bonds" ]]; then
+      menu_items+=("" "-其它已绑定窗格对" "" "")
+      while IFS= read -r pair_line; do
+        [[ -n "$pair_line" ]] || continue
+        menu_items+=("-  $(esc_menu "$pair_line")" "" "")
+      done <<<"$other_bonds"
+    fi
+
+    if (( dry_run )); then
+      printf 'TITLE: %s\n' "$title"
+      for (( idx = 0; idx < ${#menu_items[@]}; idx += 1 )); do
+        printf '%s\n' "${menu_items[$idx]}"
+      done
+      exit 0
+    fi
+
+    t display-menu -c "$menu_client" -t "$src" -C "$default_idx" -T "$title" -x C -y C -- "${menu_items[@]}"
     ;;
   *)
     echo "unknown bond_pane.sh subcommand: $subcmd" >&2

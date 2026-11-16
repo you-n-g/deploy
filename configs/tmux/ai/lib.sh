@@ -364,7 +364,7 @@ _ai_pane_fzf_list() {
         bonded_pane_id="$(tmux show-option -pqv -t "$current_target" @bond_pane 2>/dev/null || true)"
     fi
     ranked_pane_ids="$(_ai_ranked_pane_id_set)"
-    metadata="$(tmux list-panes -a -F $'#{pane_id}\t#{pane_marked}\t#{?@ai_agent_done,1,0}\t#{?@ai_agent_woke,1,0}\t#{?@ai_agent_muted,1,0}\t#{?@tma_created,1,0}')" || return
+    metadata="$(tmux list-panes -a -F $'#{pane_id}\t#{pane_marked}\t#{?@ai_agent_done,1,0}\t#{?@ai_agent_woke,1,0}\t#{?@ai_agent_muted,1,0}\t#{?@tma_created,1,0}\t#{@bond_pane}\t#{session_name}:#{window_index}.#{pane_index}')" || return
     script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
     awk -v current="$current_target" -v now="$now" -v switcher="$switcher_pane_id" \

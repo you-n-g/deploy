@@ -196,6 +196,30 @@ class BondPaneTest(unittest.TestCase):
         self.assertEqual(self.tmux("display-message", "-p", "-t", self.a, "#{pane_in_mode}"), "0")
         self.assertIn("尚未绑定目标", self.tmux("show-messages"))
 
+    def test_menu_dynamically_displays_current_bond_unbonded_state_and_other_pairs(self):
+        # 1. Unbonded state: shows "○ 未绑定", "-当前未绑定", and disables `(u)nbond`.
+        unbonded_menu = self.bond_cmd("menu", "--dry-run", self.client, self.a).stdout
+        self.assertIn("○ 未绑定", unbonded_menu)
+        self.assertIn("-当前未绑定：", unbonded_menu)
+        self.assertIn("-(u)nbond    解除当前绑定（当前未绑定）", unbonded_menu)
+
+        # 2. Bond b <-> c (another pair), while `a` is still unbonded -> `a`'s menu lists `b <-> c` under 其它已绑定窗格对!
+        self.bond_cmd("set", self.b, self.c)
+        with_other = self.bond_cmd("menu", "--dry-run", self.client, self.a).stdout
+        self.assertIn("-其它已绑定窗格对", with_other)
+        self.assertIn("work:1.0 agent-b", with_other)
+        self.assertIn("other:0.0", with_other)
+
+        # 3. Now bond a <-> b (with an @ai_agent_attribute on b) -> `a`'s menu shows green "⇔ 已绑定",
+        #    who is bonded, partner's task attribute, and active `(u)nbond 解除与 work:1.0 agent-b 的绑定`.
+        self.tmux("set-option", "-pq", "-t", self.b, "@ai_agent_attribute", "调试实验A")
+        self.bond_cmd("set", self.a, self.b)
+        bonded_menu = self.bond_cmd("menu", "--dry-run", self.client, self.a).stdout
+        self.assertIn("⇔ 已绑定", bonded_menu)
+        self.assertIn(f"({self.a}) ↔ work:1.0 agent-b ({self.b})", bonded_menu)
+        self.assertIn("对方任务：调试实验A", bonded_menu)
+        self.assertIn("(u)nbond    解除与 work:1.0 agent-b 的绑定", bonded_menu)
+
 
 if __name__ == "__main__":
     unittest.main()
