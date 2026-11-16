@@ -555,8 +555,32 @@ _codex_extract_config_boundary_command() {
     done
 }
 
+# TMA requires Codex embedded mode (--no-daemon) rather than Codex 0.169+'s
+# shared background `app-server --managed-daemon`:
+# 1. Hooks (wrapper/codex/hook.sh) run under the server process; a shared daemon
+#    inherits the first pane's $TMUX_PANE and sends every pane's running / idle /
+#    unread state updates to that wrong pane.
+# 2. Session UUID lookup (wrapper/codex/session.sh: fork, history, retire,
+#    respawn) inspects /proc/$ai_pid/fd for rollout-*.jsonl, which is empty on
+#    thin TUI clients when the shared daemon owns the rollout fds.
+# 3. conf-llm / codexr isolates model_provider (-c) and API keys per pane and
+#    session, which a single shared server process cannot do (and causes Codex
+#    to emit a startup fallback warning unless --no-daemon is passed).
+# Skip --no-daemon only for flags/subcommands that explicitly target a remote or
+# shared server (--remote, remote-control, queue).
+_codex_uses_daemon_transport() {
+    local arg
+    for arg in "$@"; do
+        case "$arg" in
+            --remote|--remote=*|--no-daemon|remote-control|queue) return 0 ;;
+        esac
+    done
+    return 1
+}
+
 _codex_run_login() {
     local auto_flag
+    local -a daemon_flag=()
     # 将 auto_flag 拆成数组，而不是一个字符串
     auto_flag=($(_codex_auto_flag))
 
@@ -568,13 +592,15 @@ _codex_run_login() {
         return
     fi
 
+    _codex_uses_daemon_transport "${reply[@]}" || daemon_flag=(--no-daemon)
     # 展开数组，用 "${auto_flag[@]}"，这样每个 flag 都是独立参数
     _start_ai_tui_output_tracker
-    _with_tmux_rename "$MYPROXY_CODEX" codex "${auto_flag[@]}" "${reply[@]}"
+    _with_tmux_rename "$MYPROXY_CODEX" codex "${daemon_flag[@]}" "${auto_flag[@]}" "${reply[@]}"
 }
 
 _codex_run_api() {
     local auto_flag
+    local -a daemon_flag=()
     auto_flag=($(_codex_auto_flag))
 
     _codex_extract_config_boundary_command "$@"
@@ -585,8 +611,9 @@ _codex_run_api() {
         return
     fi
 
+    _codex_uses_daemon_transport "${reply[@]}" || daemon_flag=(--no-daemon)
     _start_ai_tui_output_tracker
-    _codex_env _with_tmux_rename "$MYPROXY_CODEX" codex "${auto_flag[@]}" "${reply[@]}"
+    _codex_env _with_tmux_rename "$MYPROXY_CODEX" codex "${daemon_flag[@]}" "${auto_flag[@]}" "${reply[@]}"
 }
 
 function codexa() {

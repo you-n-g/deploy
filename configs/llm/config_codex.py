@@ -97,6 +97,18 @@ def ensure_hooks_feature(doc):
         doc["features"] = tomlkit.table()
     doc["features"].pop("codex_hooks", None)
     doc["features"]["hooks"] = True
+    # Codex 0.169+ defaults daemon_auto_start=true (a single shared background
+    # `codex app-server --managed-daemon` across all TUI windows), which breaks
+    # TMA in three ways:
+    # 1. Hooks (wrapper/codex/hook.sh) are spawned by the shared daemon and
+    #    inherit the first window's $TMUX_PANE, routing every pane's running /
+    #    idle / unread transitions to that first pane.
+    # 2. The shared daemon holds all rollout-*.jsonl fds while TUI client
+    #    processes hold none, breaking per-pane /proc/$ai_pid/fd session UUID
+    #    lookup (wrapper/codex/session.sh: fork, history, retire, respawn).
+    # 3. One daemon has one config and process env, whereas conf-llm / codexr
+    #    isolates model_provider (-c) and API keys per pane/session.
+    doc["features"]["daemon_auto_start"] = False
 
 
 def update_config_toml_for_api():
