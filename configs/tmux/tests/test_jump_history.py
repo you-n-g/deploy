@@ -20,6 +20,7 @@ SCRIPT = str(TMUX_DIR / "script/jump_history.py")
 INSERT_SCRIPT = str(TMUX_DIR / "script/insert_previous_target.sh")
 JOIN_SCRIPT = str(TMUX_DIR / "script/join_previous.sh")
 FLOAT_SCRIPT = str(TMUX_DIR / "script/open_float_pane.sh")
+EXTKEYS_SCRIPT = str(TMUX_DIR / "script/ensure_extkeys.sh")
 
 
 class JumpHistoryTest(unittest.TestCase):
@@ -444,6 +445,75 @@ class JumpHistoryTest(unittest.TestCase):
             os.write(terminal, b"y")
             self.wait_for(lambda: received.read_bytes().endswith(b"y"))
             self.assertEqual(received.read_bytes(), b"x\x1by")
+        finally:
+            os.kill(child, signal.SIGTERM)
+            os.waitpid(child, 0)
+            reader.join(timeout=1)
+            os.close(terminal)
+
+    def test_extkeys_reasserted_on_reload_and_focus_without_focus_loop(self):
+        tmux_conf = (TMUX_DIR / "tmux.conf").read_text()
+        match = re.search(
+            r"^set -s focus-events on\n.*?ensure_extkeys\.sh --all #\{q:socket_path\}'$",
+            tmux_conf,
+            re.M | re.S,
+        )
+        self.assertIsNotNone(match, "extended-keys block missing from tmux.conf")
+        extkeys_conf = match.group(0).replace(
+            "~/deploy/configs/tmux/script/ensure_extkeys.sh", EXTKEYS_SCRIPT
+        )
+
+        captured = bytearray()
+        lock = threading.Lock()
+        child, terminal = pty.fork()
+        if child == 0:
+            os.execvpe("tmux", ["tmux", "-S", self.socket, "attach-session", "-t", "one"],
+                       dict(os.environ, TERM="xterm-256color"))
+
+        def drain():
+            try:
+                while True:
+                    chunk = os.read(terminal, 65536)
+                    if not chunk:
+                        break
+                    with lock:
+                        captured.extend(chunk)
+            except OSError as error:
+                if error.errno != errno.EIO:
+                    raise
+
+        reader = threading.Thread(target=drain, daemon=True)
+        reader.start()
+        try:
+            self.wait_for(lambda: str(child) in self.tmux("list-clients", "-F", "#{client_pid}").splitlines())
+            client = dict(row.split("\t") for row in self.tmux(
+                "list-clients", "-F", "#{client_pid}\t#{client_name}"
+            ).splitlines())[str(child)]
+            self.wait_for(lambda: self.state(client).get("entries") == [self.a])
+            self.visit(self.c, client)
+
+            with lock:
+                captured.clear()
+
+            # Sourcing tmux.conf on an already-attached client must push Eneks + Enfcs.
+            subprocess.run(["tmux", "-S", self.socket, "source-file", "-"],
+                           input=extkeys_conf, universal_newlines=True, check=True)
+            self.wait_for(lambda: b"\x1b[>4;2m\x1b[=1u\x1b[?1004h" in bytes(captured))
+
+            # Simulate VS Code Remote-SSH / Reload Window replay: SerializeAddon drops
+            # \x1b[=1u, then replays \x1b[?1004h which makes xterm.js emit FocusIn (\x1b[I).
+            with lock:
+                captured.clear()
+            os.write(terminal, b"\x1b[I")
+            self.wait_for(lambda: b"\x1b[>4;2m\x1b[=1u" in bytes(captured))
+            time.sleep(0.1)
+            with lock:
+                focus_bytes = bytes(captured)
+            self.assertNotIn(b"\x1b[?1004h", focus_bytes)
+
+            # Prefix + Ctrl-[ (CSI 91;5u) jumps back after recovery.
+            os.write(terminal, b"\x02\x1b[91;5u")
+            self.wait_for(lambda: self.current(client) == self.a)
         finally:
             os.kill(child, signal.SIGTERM)
             os.waitpid(child, 0)

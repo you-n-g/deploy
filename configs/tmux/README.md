@@ -27,8 +27,8 @@
 此时遵循 tmux 原有的 prefix 等待行为，不是两秒倒计时。
 
 `Ctrl-[` 和 `Esc` 在传统终端编码中相同。`tmux.conf` 为 xterm-256color
-开启扩展按键，并请求 xterm modifyOtherKeys / Kitty 消歧模式；VS Code 使用后者。
-键盘协议配置改动后需要重新 attach 当前终端连接（无需重启 tmux server 或 pane）。
+开启扩展按键与焦点事件，并请求 xterm modifyOtherKeys / Kitty 消歧模式；VS Code 使用后者。
+VS Code Remote-SSH 重连或 Reload Window 时，远端 `ptyHost` 保持 `tmux attach` 不断开，但 `@xterm/addon-serialize` 重放屏幕状态时会丢掉 Kitty 键盘协议标记 `\e[=1u`，因此 `script/ensure_extkeys.sh` 会在 `source-file`、`client-focus-in` 和 `client-resized` 时对已连接的 `xterm-256color` 客户端重新下发 `\e[>4;2m\e[=1u`，无需手动重新 attach。
 VS Code 的 `terminal.integrated.enableKittyKeyboardProtocol` 需要为 `true`（当前版本默认开启）。
 不支持这些协议的终端无法区分这两个键，`Ctrl-[` 会被识别成取消等待的 `Esc`。
 tmux 3.7b 不能直接解析 Kitty 的短 Esc 编码 `ESC [ 27 u`，因此配置保留
