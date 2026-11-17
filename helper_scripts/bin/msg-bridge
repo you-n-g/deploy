@@ -50,15 +50,11 @@ WEB_PAGE = r"""<!doctype html>
 </head>
 <body>
   <main>
-    <p class="label">MSG BRIDGE</p>
-    <h1>发送消息</h1>
-    <p class="intro">把想说的话，发送到当前连接的接收端。</p>
     <form id="login" hidden>
       <label for="password">访问密码</label>
       <input id="password" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" required>
       <div class="actions"><span>每次访问续期 30 天</span><button type="submit">登录</button></div>
     </form>
-    <div id="account" hidden><button id="logout" type="button">退出登录</button></div>
     <div id="workspace" hidden>
     <div class="message-column">
     <form id="sender">
@@ -94,6 +90,7 @@ WEB_PAGE = r"""<!doctype html>
       </section>
     </aside>
     </div>
+    <div id="account" hidden><button id="logout" type="button">退出登录</button></div>
     <p id="status" role="status" aria-live="polite">正在检查登录状态…</p>
   </main>
 </body>
@@ -866,11 +863,8 @@ if (initialState.authenticated) {
 
 WEB_STYLE = r""":root { font-family: system-ui, sans-serif; color: #172c2a; background: #f2f5f1; }
 * { box-sizing: border-box; }
-body { margin: 0; padding: 8vh 20px; }
-main { max-width: 1180px; margin: auto; padding: 36px; background: #fff; border: 1px solid #dce5dd; border-radius: 20px; box-shadow: 0 12px 50px #18372c08; }
-.label { font-size: 12px; font-weight: 700; letter-spacing: .16em; color: #54766c; }
-h1 { margin: 12px 0; font-size: 30px; }
-.intro { color: #64716b; line-height: 1.7; margin-bottom: 28px; }
+body { margin: 0; padding: 12px 20px; }
+main { max-width: 1180px; margin: auto; padding: 16px 28px; background: #fff; border: 1px solid #dce5dd; border-radius: 20px; box-shadow: 0 12px 50px #18372c08; }
 label { display: block; font-size: 14px; font-weight: 600; margin: 20px 0 8px; }
 input, textarea { width: 100%; font: inherit; border: 1px solid #c9d5cd; border-radius: 10px; padding: 12px; background: #fcfdfb; }
 textarea { resize: none; line-height: 1.7; min-height: 96px; max-height: min(45vh, 420px); overflow-y: auto; }
@@ -921,10 +915,11 @@ button { border: 0; border-radius: 10px; background: #235c4a; color: #fff; paddi
 button:disabled { opacity: .5; cursor: wait; }
 #status { min-height: 24px; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
 #status[data-error="true"] { color: #ad302d; }
-#account { text-align: right; }
+#account { text-align: right; margin-top: 12px; }
 #logout { color: #54766c; background: transparent; padding: 4px 0; font-size: 13px; }
 #login { max-width: 480px; }
-#workspace:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 36px; margin-top: 20px; }
+#login label { margin-top: 0; }
+#workspace:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 36px; }
 .message-column { min-width: 0; }
 .history-panel { margin-top: 24px; }
 #sender label { margin-top: 0; }
@@ -941,7 +936,7 @@ h2 { margin: 0; font-size: 17px; }
 .history-item time { display: block; margin-bottom: 6px; font-size: 11px; color: #738077; }
 .history-content { display: block; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 180px; overflow-y: auto; line-height: 1.6; font-size: 14px; }
 @media (max-width: 760px) { #workspace:not([hidden]) { grid-template-columns: minmax(0, 1fr); } aside { border-left: 0; border-top: 1px solid #e2e9e3; padding: 24px 0 0; } }
-@media (max-width: 480px) { body { padding: 24px 12px; } main { padding: 24px; } }
+@media (max-width: 480px) { body { padding: 6px 8px; } main { padding: 12px; } }
 """
 SESSION_COOKIE = "msg_bridge_session"
 SESSION_AGE = 30 * 24 * 60 * 60
