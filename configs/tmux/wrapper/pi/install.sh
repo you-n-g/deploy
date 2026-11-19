@@ -6,7 +6,6 @@ python3 "$dir/configure.py"
 mkdir -p "$HOME/.pi/agent/extensions"
 ln -snf "$HOME/farside/AGENTS.md" "$HOME/.pi/agent/AGENTS.md"
 ln -snf "$dir/tma.js" "$HOME/.pi/agent/extensions/tma.js"
-ln -snf "$dir/gateway.js" "$HOME/.pi/agent/extensions/gateway.js"
 ln -snf "$dir/pull.js" "$HOME/.pi/agent/extensions/pull.js"
 # Use the shared skill collection without replacing an existing Pi skills dir.
 mkdir -p "$HOME/.pi/agent/skills"

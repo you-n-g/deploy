@@ -15,6 +15,30 @@ PI = WRAPPERS / 'pi'
 
 
 class PiConfigTest(unittest.TestCase):
+    def test_install_with_native_xai_default_and_no_gateway(self):
+        with tempfile.TemporaryDirectory(prefix='pi-config-', dir='/tmp') as directory:
+            home = Path(directory)
+            (home / 'farside').mkdir()
+            (home / 'farside/AGENTS.md').write_text('shared instructions\n')
+            agent = home / '.pi/agent'
+            (agent / 'extensions').mkdir(parents=True)
+            (agent / 'extensions/gateway.js').symlink_to(PI / 'gateway.js')
+            (agent / 'settings.json').write_text(json.dumps({
+                'defaultProvider': 'xai', 'defaultModel': 'grok-4.7', 'defaultThinkingLevel': 'medium'}))
+            auth = {'xai': {'type': 'api_key', 'key': '!cat /private/xai-key'}}
+            (agent / 'auth.json').write_text(json.dumps(auth))
+            env = dict(os.environ, HOME=str(home))
+            subprocess.check_call(['bash', str(PI / 'install.sh')], env=env, stdout=subprocess.DEVNULL)
+            settings = json.loads((agent / 'settings.json').read_text())
+            self.assertEqual(settings['defaultProvider'], 'xai')
+            self.assertEqual(settings['defaultModel'], 'grok-4.7')
+            self.assertEqual(settings['defaultThinkingLevel'], 'medium')
+            self.assertEqual(json.loads((agent / 'auth.json').read_text()), auth)
+            self.assertEqual((agent / 'extensions/tma.js').resolve(), PI / 'tma.js')
+            self.assertEqual((agent / 'extensions/pull.js').resolve(), PI / 'pull.js')
+            self.assertFalse((agent / 'extensions/gateway.js').is_symlink())
+            self.assertFalse((agent / 'models.json').exists())
+
     def test_install_preserves_user_config_and_reuses_gateway_secret(self):
         with tempfile.TemporaryDirectory(prefix='pi-config-', dir='/tmp') as directory:
             home = Path(directory)
@@ -218,7 +242,8 @@ await command.handler('focus on speedup', {
   sessionManager: sm,
   modelRegistry: {
     complete: async (_m, context) => {
-      const prompt = context.messages[0].content[0].text;
+      const content = context.messages.find((message) => message.role === 'user').content;
+      const prompt = typeof content === 'string' ? content : content[0].text;
       capturedPrompts.push(prompt);
       const tag = prompt.includes('explore branch B') ? 'Keep speedup from B' : 'Keep baseline from A';
       return {

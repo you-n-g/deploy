@@ -70,10 +70,12 @@ pi
 tmuxg --force-new --tool pi --reasoning-effort high
 ```
 
-要求已安装 `@earendil-works/pi-coding-agent`（验证版本 0.84.3），并已通过 Gemini 配置生成
-`~/.gemini/.env` 中的 `GOOGLE_GEMINI_BASE_URL` 和 `GEMINI_API_KEY`。安装器保留 Pi 的其它 provider 和主题，
-默认 provider、模型 ID 和显示名称从本机 `~/.config/llm/gateways.local.json` 的 `pi` 对象读取
-（`provider`、`model`、`name` 三个字段），默认推理强度设为 `high`。
+要求已安装 `@earendil-works/pi-coding-agent`。使用 `xai` 等 Pi 内置 provider 时，安装器保留
+`~/.pi/agent/settings.json` 中已选的 provider 和模型，以及 `auth.json` 中的凭据。
+
+如果本机 `~/.config/llm/gateways.local.json` 包含 `pi` 对象，安装器会额外配置 Gemini 网关，
+并从 `~/.gemini/.env` 读取 `GOOGLE_GEMINI_BASE_URL` 和 `GEMINI_API_KEY`。网关模型由 `provider`、
+`model`、`name` 三个字段指定。首次选择网关时，默认推理强度为 `high`。
 此文件不在仓库内；例如 `{"pi":{"provider":"google-gateway","model":"model-id","name":"Gateway Model","aliases":["model-alias"]}}`。
 凭据通过 Pi 官方 `!command` 机制读取现有文件，不复制进 models.json。
 模型参数按 [Gemini Thinking 文档](https://ai.google.dev/gemini-api/docs/thinking)配置为
@@ -88,7 +90,7 @@ tmuxg --force-new --tool pi --reasoning-effort high
 这两项是 Pi 全局设置，安装器保留用户现有值；它们与模型的官方容量参数不同。
 
 Pi 默认自动执行工具；`defaultProjectTrust=always` 让新目录也自动信任项目配置，无需启动确认。
-全局 AGENTS.md、共享 skills、三个扩展（`tma.js`、`gateway.js`、`pull.js`）以及默认包 `npm:pi-web-access` 安装到 `~/.pi/agent/`；已有 Pi 会话用 `/reload` 加载扩展，
+全局 AGENTS.md、共享 skills、`tma.js`、`pull.js` 和默认包 `npm:pi-web-access` 配置在 `~/.pi/agent/`。`gateway.js` 随 Gemini 网关配置加载。已有 Pi 会话用 `/reload` 加载扩展，
 默认模型用于新会话。`/pull [说明]` 只列出其它兄弟分支的叶子节点（已合并的分支标 `✓ merged`，支持 `Space`/`Tab` 多选或 `a` 全选未合并分支），回车即可将所选分支相对公共祖先的摘要合并进当前分支而不跳转位置。
 `gateway.js` 扩展把 Pi 0.84 的 `thinkingBudget` 转为网关接受的 `thinkingLevel`，
 同时支持 `pi.model` 及 `pi.aliases` 模型的聊天、压缩和分支摘要，保留其它模型的原生行为。
