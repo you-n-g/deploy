@@ -32,6 +32,7 @@ DEFAULT_STATUS_LINE = [
     "model-with-reasoning",
     "current-dir",
     "context-remaining",
+    "context-window-size",
     "five-hour-limit",
     "weekly-limit",
     "total-input-tokens",
