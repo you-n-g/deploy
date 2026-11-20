@@ -434,7 +434,8 @@ class JumpHistoryTest(unittest.TestCase):
             os.write(terminal, b"\x02")
             self.wait_for(lambda: table() == "prefix")
             steps = [(b"\x1b[91;5u", self.a), (b"\x1b[93;5u", target),
-                     (b"\x1b[91;5u", self.a), (b"\x1d", target)]
+                     (b"\x08", self.a), (b"\x0c", target),
+                     (b"\x08", self.a), (b"\x1d", target)]
             for key, destination in steps * 2:
                 time.sleep(0.12)
                 os.write(terminal, key)
@@ -444,6 +445,14 @@ class JumpHistoryTest(unittest.TestCase):
             self.wait_for(lambda: table() == "root")
             os.write(terminal, b"y")
             self.wait_for(lambda: received.read_bytes().endswith(b"y"))
+            self.assertEqual(received.read_bytes(), b"x\x1by")
+
+            # Termux sends the same raw Escape byte for both Escape and Ctrl-[.
+            os.write(terminal, b"\x02")
+            self.wait_for(lambda: table() == "prefix")
+            os.write(terminal, b"\x1b")
+            self.wait_for(lambda: table() == "root")
+            self.assertEqual(self.current(client), target)
             self.assertEqual(received.read_bytes(), b"x\x1by")
         finally:
             os.kill(child, signal.SIGTERM)

@@ -6,9 +6,9 @@
 
 # 访问历史
 
-- `prefix + Ctrl-[`：回到上一次访问的位置。
-- `prefix + Ctrl-]`：沿历史前进。
-- 按一次 prefix 后，`Ctrl-[` / `Ctrl-]` 可以任意交替连按，不必重新按 prefix。
+- `prefix + Ctrl-h` 或 `prefix + Ctrl-[`：回到上一次访问的位置。
+- `prefix + Ctrl-l` 或 `prefix + Ctrl-]`：沿历史前进。
+- Termux 可以用 `Ctrl-h` 和 `Ctrl-l`。按一次 prefix 后，可以交替连按后退键和前进键。
   每次按键都会重新开始 2 秒连按计时；两次按键的最大间隔由 `repeat-time` 控制。
   这是 tmux 通用设置，也适用于方向键等其它可连按绑定。
 - `Esc` 取消 prefix 或连按等待，不触发历史跳转。
