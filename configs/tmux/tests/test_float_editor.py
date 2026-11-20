@@ -41,8 +41,9 @@ class FloatEditorTest(unittest.TestCase):
             ["tmux", "-S", self.socket, "kill-server"], stderr=subprocess.DEVNULL
         ))
         self.pane = self.tmux("display-message", "-p", "-t", "test:", "#{pane_id}")
+        self.sentences = self.root / "sentences"
         self.env = dict(os.environ, TMUX=self.socket + ",0,0", TMUX_PANE=self.pane,
-                        TMPDIR=self.temp.name)
+                        TMPDIR=self.temp.name, TMA_FAST_SENTENCES=str(self.sentences))
         self.file = self.root / "prompt's $(literal) 中文.md"
         self.file.write_text("draft prompt\n")
 
@@ -63,11 +64,11 @@ class FloatEditorTest(unittest.TestCase):
         return self.tmux("list-panes", "-t", self.pane, "-f", "#{pane_floating_flag}",
                          "-F", "#{pane_id}").splitlines()
 
-    def start_vim(self):
+    def start_vim(self, visible="draft prompt"):
         process = self.start([VIM, self.file.name])
         self.wait_for(lambda: len(self.floats()) == 1)
         floating = self.floats()[0]
-        self.wait_for(lambda: "draft prompt" in self.tmux("capture-pane", "-p", "-t", floating))
+        self.wait_for(lambda: visible in self.tmux("capture-pane", "-p", "-t", floating))
         return process, floating
 
     def assert_clean(self):
@@ -82,7 +83,7 @@ class FloatEditorTest(unittest.TestCase):
         self.assertEqual(self.tmux("display-message", "-p", "-t", floating,
                                    "#{pane_width}|#{pane_height}|#{pane_active}|#{@jump-history-skip}"),
                          "98|18|1|1")
-        self.tmux("send-keys", "-t", floating, "gg0C", "edited prompt", "Escape")
+        self.tmux("send-keys", "-t", floating, "gg^C", "edited prompt", "Escape")
         self.assertEqual(self.file.read_text(), "draft prompt\n")
         self.assertIsNone(process.poll())
         self.tmux("send-keys", "-t", floating, ":wq", "Enter")
@@ -145,10 +146,104 @@ class FloatEditorTest(unittest.TestCase):
         self.wait_for(lambda: len(self.floats()) == 1)
         floating = self.floats()[0]
         self.wait_for(lambda: "initial text" in self.tmux("capture-pane", "-p", "-t", floating))
-        self.tmux("send-keys", "-t", floating, "gg0C", "from fastvim popup", "Escape", "q")
+        self.tmux("send-keys", "-t", floating, "gg^C", "from fastvim popup", "Escape", "q")
         self.wait_for(lambda: self.floats() == [])
         self.wait_for(lambda: "from fastvim popup" in self.tmux("capture-pane", "-p", "-t", self.pane))
         self.assert_clean()
+
+    def test_quit_returns_draft_and_keeps_sentence_list_out_of_prompt(self):
+        self.sentences.write_text("# header\n0 saved sentence\n")
+        process, floating = self.start_vim()
+        self.wait_for(lambda: "saved sentence" in self.tmux("capture-pane", "-p", "-t", floating))
+        self.tmux("send-keys", "-t", floating, "gg^C", "hello", "Escape", "q")
+        self.assertEqual(process.wait(timeout=5), 0, process.stderr.read().decode())
+        self.assertEqual(self.file.read_text(), "hello\n")
+        self.assertNotIn("saved sentence", self.file.read_text())
+        self.assertNotIn("\u2500", self.file.read_text())
+        self.assert_clean()
+
+    def test_number_sends_that_sentence_and_leaves_other_slots(self):
+        self.sentences.write_text("3 third sentence\n")
+        process, floating = self.start_vim()
+        self.wait_for(lambda: "third sentence" in self.tmux("capture-pane", "-p", "-t", floating))
+        self.tmux("send-keys", "-t", floating, "3")
+        self.assertEqual(process.wait(timeout=5), 0, process.stderr.read().decode())
+        self.assertEqual(self.file.read_text(), "third sentence\n")
+        self.assertEqual(self.sentences.read_text(), "3 third sentence\n")
+        self.assert_clean()
+
+    def test_empty_number_does_not_quit_or_change_prompt(self):
+        process, floating = self.start_vim()
+        self.wait_for(lambda: "\u2500" in self.tmux("capture-pane", "-p", "-t", floating))
+        self.tmux("send-keys", "-t", floating, "4")
+        time.sleep(0.2)
+        self.assertIsNone(process.poll())
+        self.assertEqual(self.file.read_text(), "draft prompt\n")
+        self.assertFalse(self.sentences.exists())
+        self.tmux("send-keys", "-t", floating, ":q!", "Enter")
+        self.assertEqual(process.wait(timeout=5), 0, process.stderr.read().decode())
+        self.assert_clean()
+
+    def test_ga_saves_current_line_and_later_number_sends_it(self):
+        process, floating = self.start_vim()
+        self.wait_for(lambda: "\u2500" in self.tmux("capture-pane", "-p", "-t", floating))
+        self.tmux("send-keys", "-t", floating, "gg^C", "remember me", "Escape", "ga", "q")
+        self.assertEqual(process.wait(timeout=5), 0, process.stderr.read().decode())
+        self.assertEqual(self.file.read_text(), "remember me\n")
+        self.assertIn("0 remember me", self.sentences.read_text().splitlines())
+
+        self.file.write_text("other draft\n")
+        process, floating = self.start_vim("other draft")
+        self.wait_for(lambda: "remember me" in self.tmux("capture-pane", "-p", "-t", floating))
+        self.tmux("send-keys", "-t", floating, "0")
+        self.assertEqual(process.wait(timeout=5), 0, process.stderr.read().decode())
+        self.assertEqual(self.file.read_text(), "remember me\n")
+        self.assert_clean()
+
+    def test_editing_a_numbered_line_is_saved_on_quit(self):
+        self.sentences.write_text("1 old\n")
+        process, floating = self.start_vim()
+        self.wait_for(lambda: "1 old" in self.tmux("capture-pane", "-p", "-t", floating))
+        self.tmux("send-keys", "-t", floating, "/^1 old", "Enter", "f ", "lC", "new text", "Escape", "q")
+        self.assertEqual(process.wait(timeout=5), 0, process.stderr.read().decode())
+        self.assertEqual(self.file.read_text(), "draft prompt\n")
+        self.assertIn("1 new text", self.sentences.read_text().splitlines())
+        self.assert_clean()
+
+    def sentences_env(self, home):
+        env = dict(self.env)
+        env.pop("TMA_FAST_SENTENCES")
+        env.pop("XDG_DATA_HOME", None)
+        env["HOME"] = str(home)
+        return env
+
+    def test_sentences_link_to_farside_when_repo_exists(self):
+        home = self.root / "home"
+        farside = home / "farside"
+        (farside / ".git").mkdir(parents=True)
+        local = home / ".local/share/tma/vim-fast-sentences"
+        local.parent.mkdir(parents=True)
+        local.write_text("0 kept\n")
+        out = subprocess.check_output(
+            [VIM, "--resolve-sentences"], env=self.sentences_env(home), text=True).strip()
+        target = farside / "vim-fast-sentences"
+        self.assertEqual(out, str(target))
+        self.assertEqual(target.read_text(), "0 kept\n")
+        self.assertTrue(local.is_symlink())
+        self.assertEqual(os.readlink(local), str(target))
+        again = subprocess.check_output(
+            [VIM, "--resolve-sentences"], env=self.sentences_env(home), text=True).strip()
+        self.assertEqual(again, str(target))
+
+    def test_sentences_stay_local_without_farside(self):
+        home = self.root / "home-no-repo"
+        home.mkdir()
+        out = subprocess.check_output(
+            [VIM, "--resolve-sentences"], env=self.sentences_env(home), text=True).strip()
+        local = home / ".local/share/tma/vim-fast-sentences"
+        self.assertEqual(out, str(local))
+        self.assertFalse(local.exists())
+        self.assertFalse((home / "farside").exists())
 
 
 if __name__ == "__main__":

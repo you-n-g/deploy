@@ -81,7 +81,7 @@ python3 -m unittest discover -s configs/tmux/tests -v
 用 `module add tmux-3.8` 加载后，需要重启 server 才能升级；仅重新加载配置无效。
 `prefix + j → f` / `V` / `S` 直接使用原生 `break-pane -W`、`move-pane -P top-right` 和 `join-pane` 在浮窗与分屏之间互转，保留进程、pane ID 和 Agent 会话。
 
-通过 `codexr` / `clauder` 启动的 TMA 及 Pi、DSH 中，`Ctrl+G` 在窗口底部、水平居中的小浮窗里用 Vim 编辑输入，最大 100 列 × 20 行。普通模式按 `q` 或用 `:wq` 保存退出，内容回到原输入框；`:q!` 放弃未保存的修改。编辑期间调用方会等待，关闭浮窗也会结束等待。当前会话下次按 `Ctrl+G`（Pi 已运行会话执行一次 `/reload`，DSH 已运行会话重开一次 `dsh-tui --continue`）即使用新入口。
+通过 `codexr` / `clauder` 启动的 TMA 及 Pi、DSH 中，`Ctrl+G` 在窗口底部、水平居中的小浮窗里用 Vim 编辑输入，最大 100 列 × 20 行。缓冲区上下两段，中间一条横线：上面是这次要返回的文字（打开时就是输入框里的内容），下面是编号 0–9 的常用句。普通模式按数字立刻用那一句作为结果并退出，空号不退出；没有按数字时，`q` 或 `:wq` 返回横线以上的内容。`ga` 把光标所在行存进第一个空号，马上写到 `~/farside/vim-fast-sentences`（farside 仓库存在时；`~/.local/share/tma/vim-fast-sentences` 是指向它的符号链接。仓库不在时直接写后者。可用 `TMA_FAST_SENTENCES` 换路径）；改了编号行再退出也会写回。`:q!` 放弃未保存的修改，也不改常用句文件。编辑期间调用方会等待，关闭浮窗也会结束等待。当前会话下次按 `Ctrl+G`（Pi 已运行会话执行一次 `/reload`，DSH 已运行会话重开一次 `dsh-tui --continue`）即使用新入口。
 
 tmux 3.7b 有个 bug：在 zoom 状态的 window 里用 `new-pane` 建的 floating pane，之后无论是进程退出、`kill-pane`，还是取消 zoom 后再关闭，server 都会在 `layout_destroy_cell` 里段错误退出，所有 session 一起没了。先建浮窗再 zoom 不会触发。
 

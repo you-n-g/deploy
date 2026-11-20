@@ -3,11 +3,73 @@
 # (Ctrl+G, through VISUAL in clauder / codexr / dsh or externalEditor in Pi). The
 # system vim on local disk -- the usual nvim lives on a network filesystem and loads the full
 # config -- with a small vimrc (configs/vim/fast.vimrc), no viminfo, no swap file.
+# The vimrc shows saved sentences 0-9 under the draft (configs/vim/fast-sentences.vim).
 # In tmux, edit in a small focused float and wait for it to return the prompt.
 set -euo pipefail
 repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-editor=(/usr/bin/vim -u "$repo_dir/configs/vim/fast.vimrc" -i NONE -n)
-if [[ -n "${TMUX:-}" && -n "${TMUX_PANE:-}" ]]; then
-  exec "$repo_dir/configs/tmux/script/run_in_float.sh" "$TMUX_PANE" "${editor[@]}" "$@"
+
+# Sentences live in ~/farside when that repo exists, so they travel with it.
+# ~/.local/share/tma/vim-fast-sentences is only a symlink to that file.
+# TMA_FAST_SENTENCES overrides both and does not create a link.
+sentences_link() {
+  printf '%s\n' "${XDG_DATA_HOME:-$HOME/.local/share}/tma/vim-fast-sentences"
+}
+
+ensure_sentences_link() {
+  local link="$1" target="$2"
+  mkdir -p -- "$(dirname -- "$link")"
+  if [[ -L "$link" ]]; then
+    local current
+    current="$(readlink -- "$link")"
+    if [[ "$current" == "$target" ]]; then
+      return
+    fi
+    echo "vim-fast: $link already points to $current, not $target" >&2
+    exit 1
+  fi
+  if [[ -e "$link" ]]; then
+    if [[ -e "$target" ]]; then
+      if cmp -s -- "$link" "$target"; then
+        rm -- "$link"
+      else
+        echo "vim-fast: $link and $target both exist and differ" >&2
+        exit 1
+      fi
+    else
+      mv -- "$link" "$target"
+    fi
+  fi
+  ln -s -- "$target" "$link"
+}
+
+resolve_sentences() {
+  if [[ -n "${TMA_FAST_SENTENCES:-}" ]]; then
+    printf '%s\n' "$TMA_FAST_SENTENCES"
+    return
+  fi
+  local link
+  link="$(sentences_link)"
+  if [[ -e "$HOME/farside/.git" ]]; then
+    local canonical="$HOME/farside/vim-fast-sentences"
+    ensure_sentences_link "$link" "$canonical"
+    printf '%s\n' "$canonical"
+    return
+  fi
+  printf '%s\n' "$link"
+}
+
+if [[ "${1:-}" == --resolve-sentences ]]; then
+  resolve_sentences
+  exit 0
 fi
+
+sentences="$(resolve_sentences)"
+editor=(/usr/bin/vim -u "$repo_dir/configs/vim/fast.vimrc" -i NONE -n)
+# The float is a new pane, so it does not inherit this process's environment.
+# Pass the resolved path on the command line.
+if [[ -n "${TMUX:-}" && -n "${TMUX_PANE:-}" ]]; then
+  exec "$repo_dir/configs/tmux/script/run_in_float.sh" "$TMUX_PANE" \
+    env "TMA_FAST_SENTENCES=$sentences" "${editor[@]}" "$@"
+fi
+export TMA_FAST_SENTENCES="$sentences"
 exec "${editor[@]}" "$@"
